@@ -61,7 +61,22 @@ export async function loader({ request }) {
     colorName: f["ColorName"],
     adminPaletteCodesRaw: f["AdminPaletteCodes"],
     paletteCodesRaw: f["PaletteCodes"],
+const debugRecords = allRecords.slice(0, 10).map((record) => {
+  const f = record.fields || {};
+
+  return {
+    colorName: f["ColorName"],
+    adminPaletteCodesRaw: f["AdminPaletteCodes"],
+    paletteCodesRaw: f["PaletteCodes"],
     bestPaletteCodesRaw: f["BestPaletteCodes"]
+  };
+});
+
+return Response.json({
+  palette: paletteCode,
+  isAdminPalette,
+  debugRecords
+});    bestPaletteCodesRaw: f["BestPaletteCodes"]
   };
 });
 
