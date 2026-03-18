@@ -69,6 +69,6 @@ export async function loader({ request }) {
   palette: paletteCode,
   isAdminPalette,
   debugRecords,
-  testMarker: "NEW_DEBUG_VERSION"
+  testMarker: "NEW_DEBUG_VERSION_123"
 });
 }
