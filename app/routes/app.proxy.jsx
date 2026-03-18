@@ -66,8 +66,9 @@ export async function loader({ request }) {
   });
 
   return Response.json({
-    palette: paletteCode,
-    isAdminPalette,
-    debugRecords
-  });
+  palette: paletteCode,
+  isAdminPalette,
+  debugRecords,
+  testMarker: "NEW_DEBUG_VERSION"
+});
 }
