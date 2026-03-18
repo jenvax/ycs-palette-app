@@ -12,6 +12,7 @@ function normalizeList(value) {
 export async function loader({ request }) {
   const url = new URL(request.url);
   const paletteCode = String(url.searchParams.get("palette") || "").toUpperCase().trim();
+  const isAdminPalette = paletteCode.startsWith("ADMIN_");
 
   if (!paletteCode) {
     return Response.json({ error: "Missing palette parameter" }, { status: 400 });
@@ -63,6 +64,9 @@ export async function loader({ request }) {
       const bestPalettes = normalizeList(f["BestPaletteCodes"]).map((p) =>
         String(p).toUpperCase().trim()
       );
+      const adminPalettes = normalizeList(f["AdminPaletteCodes"]).map((p) =>
+        String(p).toUpperCase().trim()
+      );
       const categories = normalizeList(f["CategoryNames"]);
       const category = normalizeField(f["CategoryNames"]);
 
@@ -73,11 +77,17 @@ export async function loader({ request }) {
         category: category || categories[0] || "Other",
         isBest: bestPalettes.includes(paletteCode),
         palettes: linkedPalettes,
+        adminPalettes: adminPalettes,
       };
     })
     .filter((color) => color.name && color.hex)
-    .filter((color) => color.palettes.includes(paletteCode))
-    .map(({ palettes, ...color }) => color);
+    .filter((color) => {
+      if (isAdminPalette) {
+        return color.adminPalettes.includes(paletteCode);
+      }
+      return color.palettes.includes(paletteCode);
+    })
+    .map(({ palettes, adminPalettes, ...color }) => color);
 
   return Response.json({
     palette: paletteCode,
