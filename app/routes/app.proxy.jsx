@@ -225,7 +225,7 @@ export async function loader({ request }) {
       .map((record) => {
         const f = record.fields || {};
 
-        const linkedPalettes = String(f["PaletteCodes_Final"] || "")
+        const linkedPalettes = String(f["PaletteCodes_Final_Manual"]|| "")
   .split(",")
   .map((p) => p.toUpperCase().trim())
   .filter(Boolean);
