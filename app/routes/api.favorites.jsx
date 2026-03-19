@@ -16,7 +16,7 @@ function escapeFormulaValue(value) {
 function corsHeaders() {
   return {
     "Access-Control-Allow-Origin": "https://yourcolorstyle.com",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
     "Content-Type": "application/json",
   };
@@ -163,13 +163,18 @@ async function toggleFavorite({
 
 export async function loader({ request }) {
   const url = new URL(request.url);
-  const customerId = String(url.searchParams.get("customerId") || "").trim();
-  const paletteCode = String(url.searchParams.get("palette") || "").toUpperCase().trim();
 
   const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
   const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
   const AIRTABLE_FAVORITES_TABLE =
     process.env.AIRTABLE_FAVORITES_TABLE || "PaletteFavorites";
+
+  if (request.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders(),
+    });
+  }
 
   if (!AIRTABLE_TOKEN || !AIRTABLE_BASE_ID) {
     return new Response(
@@ -178,14 +183,45 @@ export async function loader({ request }) {
     );
   }
 
-  if (!customerId || !paletteCode) {
-    return new Response(
-      JSON.stringify({ error: "Missing customerId or palette" }),
-      { status: 400, headers: corsHeaders() }
-    );
-  }
+  const action = String(url.searchParams.get("action") || "").trim();
+  const customerId = String(url.searchParams.get("customerId") || "").trim();
+  const paletteCode = String(url.searchParams.get("palette") || "").toUpperCase().trim();
 
   try {
+    if (action === "toggleFavorite") {
+      const colorName = String(url.searchParams.get("colorName") || "").trim();
+      const hex = String(url.searchParams.get("hex") || "").trim();
+
+      if (!customerId || !paletteCode || !hex) {
+        return new Response(
+          JSON.stringify({ error: "Missing customerId, palette, or hex" }),
+          { status: 400, headers: corsHeaders() }
+        );
+      }
+
+      const result = await toggleFavorite({
+        customerId,
+        paletteCode,
+        colorName,
+        hex,
+        baseId: AIRTABLE_BASE_ID,
+        tableName: AIRTABLE_FAVORITES_TABLE,
+        token: AIRTABLE_TOKEN,
+      });
+
+      return new Response(JSON.stringify(result), {
+        status: 200,
+        headers: corsHeaders(),
+      });
+    }
+
+    if (!customerId || !paletteCode) {
+      return new Response(
+        JSON.stringify({ error: "Missing customerId or palette" }),
+        { status: 400, headers: corsHeaders() }
+      );
+    }
+
     const favorites = await getFavorites({
       customerId,
       paletteCode,
@@ -201,72 +237,7 @@ export async function loader({ request }) {
   } catch (error) {
     console.error(error);
     return new Response(
-      JSON.stringify({ error: error.message || "Failed to load favorites" }),
-      { status: 500, headers: corsHeaders() }
-    );
-  }
-}
-
-export async function action({ request }) {
-  const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
-  const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
-  const AIRTABLE_FAVORITES_TABLE =
-    process.env.AIRTABLE_FAVORITES_TABLE || "PaletteFavorites";
-
-  if (!AIRTABLE_TOKEN || !AIRTABLE_BASE_ID) {
-    return new Response(
-      JSON.stringify({ error: "Missing Airtable server configuration" }),
-      { status: 500, headers: corsHeaders() }
-    );
-  }
-
-  if (request.method === "OPTIONS") {
-    return new Response(null, {
-      status: 204,
-      headers: corsHeaders(),
-    });
-  }
-
-  if (request.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405,
-      headers: corsHeaders(),
-    });
-  }
-
-  try {
-    const body = await request.json();
-
-    const customerId = String(body.customerId || "").trim();
-    const paletteCode = String(body.paletteCode || "").toUpperCase().trim();
-    const colorName = String(body.colorName || "").trim();
-    const hex = String(body.hex || "").trim();
-
-    if (!customerId || !paletteCode || !hex) {
-      return new Response(
-        JSON.stringify({ error: "Missing customerId, paletteCode, or hex" }),
-        { status: 400, headers: corsHeaders() }
-      );
-    }
-
-    const result = await toggleFavorite({
-      customerId,
-      paletteCode,
-      colorName,
-      hex,
-      baseId: AIRTABLE_BASE_ID,
-      tableName: AIRTABLE_FAVORITES_TABLE,
-      token: AIRTABLE_TOKEN,
-    });
-
-    return new Response(JSON.stringify(result), {
-      status: 200,
-      headers: corsHeaders(),
-    });
-  } catch (error) {
-    console.error(error);
-    return new Response(
-      JSON.stringify({ error: error.message || "Failed to toggle favorite" }),
+      JSON.stringify({ error: error.message || "Favorites API failed" }),
       { status: 500, headers: corsHeaders() }
     );
   }
