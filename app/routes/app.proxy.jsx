@@ -234,9 +234,10 @@ export async function loader({ request }) {
           String(p).toUpperCase().trim()
         );
 
-        const adminPalettes = normalizeList(f["AdminPaletteCodes"]).map((p) =>
-          String(p).toUpperCase().trim()
-        );
+       const adminPalettes = String(f["AdminPaletteCodes"] || "")
+  .split(/\s+/)
+  .map((p) => p.toUpperCase().trim())
+  .filter(Boolean);
 
         const categories = normalizeList(f["CategoryNames"]);
         const category = normalizeField(f["CategoryNames"]);
