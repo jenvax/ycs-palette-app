@@ -54,21 +54,46 @@ export async function loader({ request }) {
     offset = data.offset;
   }
 
-  const debugRecords = allRecords.slice(0, 10).map((record) => {
+  const colors = allRecords
+  .map((record) => {
     const f = record.fields || {};
 
-    return {
-      colorName: f["ColorName"],
-      adminPaletteCodesRaw: f["AdminPaletteCodes"],
-      paletteCodesRaw: f["PaletteCodes"],
-      bestPaletteCodesRaw: f["BestPaletteCodes"]
-    };
-  });
+    const linkedPalettes = normalizeList(f["PaletteCodes"]).map((p) =>
+      String(p).toUpperCase().trim()
+    );
 
-  return Response.json({
+    const bestPalettes = normalizeList(f["BestPaletteCodes"]).map((p) =>
+      String(p).toUpperCase().trim()
+    );
+
+    const adminPalettes = normalizeList(f["AdminPaletteCodes"]).map((p) =>
+      String(p).toUpperCase().trim()
+    );
+
+    const categories = normalizeList(f["CategoryNames"]);
+    const category = normalizeField(f["CategoryNames"]);
+
+    return {
+      name: normalizeField(f["ColorName"]),
+      hex: normalizeField(f["Hex"]),
+      sortOrder: Number(normalizeField(f["SortOrder"])) || 999,
+      category: category || categories[0] || "Other",
+      isBest: bestPalettes.includes(paletteCode),
+      palettes: linkedPalettes,
+      adminPalettes: adminPalettes,
+    };
+  })
+  .filter((color) => color.name && color.hex)
+  .filter((color) => {
+    if (isAdminPalette) {
+      return color.adminPalettes.includes(paletteCode);
+    }
+    return color.palettes.includes(paletteCode);
+  })
+  .map(({ palettes, adminPalettes, ...color }) => color);
+
+return Response.json({
   palette: paletteCode,
-  isAdminPalette,
-  debugRecords,
-  testMarker: "NEW_DEBUG_VERSION_123"
+  colors,
 });
 }
