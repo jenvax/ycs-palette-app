@@ -225,9 +225,10 @@ export async function loader({ request }) {
       .map((record) => {
         const f = record.fields || {};
 
-        const linkedPalettes = normalizeList(f["PaletteCodes"]).map((p) =>
-          String(p).toUpperCase().trim()
-        );
+        const linkedPalettes = String(f["PaletteCodes_Final"] || "")
+  .split(",")
+  .map((p) => p.toUpperCase().trim())
+  .filter(Boolean);
 
         const bestPalettes = normalizeList(f["BestPaletteCodes"]).map((p) =>
           String(p).toUpperCase().trim()
