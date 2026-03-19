@@ -95,5 +95,6 @@ export async function loader({ request }) {
 return Response.json({
   palette: paletteCode,
   colors,
+  marker: "ADMIN_FIX_LIVE"
 });
 }
