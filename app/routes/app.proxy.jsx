@@ -243,14 +243,20 @@ export async function loader({ request }) {
         const category = normalizeField(f["CategoryNames"]);
 
         return {
-          name: normalizeField(f["ColorName"]),
-          hex: normalizeField(f["Hex"]),
-          sortOrder: Number(normalizeField(f["SortOrder"])) || 999,
-          category: category || categories[0] || "Other",
-          isBest: bestPalettes.includes(paletteCode),
-          palettes: linkedPalettes,
-          adminPalettes: adminPalettes,
-        };
+  name: normalizeField(f["ColorName"]),
+  hex: normalizeField(f["Hex"]),
+  sortOrder: Number(normalizeField(f["SortOrder"])) || 999,
+  category: category || categories[0] || "Other",
+  isBest: bestPalettes.includes(paletteCode),
+
+  // EXISTING
+  palettes: linkedPalettes,
+  adminPalettes: adminPalettes,
+
+  // ✅ NEW (THIS IS THE FIX)
+  isNeutral: f["IsNeutral"] === true || f["IsNeutral"] === 1 || String(f["IsNeutral"]).toLowerCase() === "true",
+  neutralDepth: normalizeField(f["NeutralDepth"])
+};
       })
       .filter((color) => color.name && color.hex)
       .filter((color) => {
