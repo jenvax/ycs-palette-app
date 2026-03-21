@@ -249,13 +249,12 @@ export async function loader({ request }) {
   category: category || categories[0] || "Other",
   isBest: bestPalettes.includes(paletteCode),
 
-  // EXISTING
   palettes: linkedPalettes,
   adminPalettes: adminPalettes,
 
-  // ✅ NEW (THIS IS THE FIX)
   isNeutral: f["IsNeutral"] === true || f["IsNeutral"] === 1 || String(f["IsNeutral"]).toLowerCase() === "true",
-  neutralDepth: normalizeField(f["NeutralDepth"])
+  neutralDepth: normalizeField(f["NeutralDepth"]),
+  depth: normalizeField(f["Depth"])
 };
       })
       .filter((color) => color.name && color.hex)
