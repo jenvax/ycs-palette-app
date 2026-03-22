@@ -242,7 +242,7 @@ export async function loader({ request }) {
         const categories = normalizeList(f["CategoryNames"]);
         const category = normalizeField(f["CategoryNames"]);
 
-                return {
+                 return {
           name: normalizeField(f["ColorName"]),
           hex: normalizeField(f["Hex"]),
           sortOrder: Number(normalizeField(f["SortOrder"])) || 999,
@@ -261,6 +261,7 @@ export async function loader({ request }) {
           depth: normalizeField(f["Depth"]),
           neutralFamily: normalizeField(f["NeutralFamily"])
         };
+      })
       .filter((color) => color.name && color.hex)
       .filter((color) => {
         if (isAdminPalette) {
