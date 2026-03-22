@@ -255,6 +255,7 @@ export async function loader({ request }) {
   isNeutral: f["IsNeutral"] === true || f["IsNeutral"] === 1 || String(f["IsNeutral"]).toLowerCase() === "true",
   neutralDepth: normalizeField(f["NeutralDepth"]),
   depth: normalizeField(f["Depth"])
+  neutralFamily: normalizeField(f["NeutralFamily"])
 };
       })
       .filter((color) => color.name && color.hex)
