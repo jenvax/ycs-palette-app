@@ -242,25 +242,30 @@ export async function loader({ request }) {
         const categories = normalizeList(f["CategoryNames"]);
         const category = normalizeField(f["CategoryNames"]);
 
-                 return {
-          name: normalizeField(f["ColorName"]),
-          hex: normalizeField(f["Hex"]),
-          sortOrder: Number(normalizeField(f["SortOrder"])) || 999,
-          category: category || categories[0] || "Other",
-          isBest: bestPalettes.includes(paletteCode),
+         return {
+  name: normalizeField(f["ColorName"]),
+  hex: normalizeField(f["Hex"]),
+  sortOrder: Number(normalizeField(f["SortOrder"])) || 999,
+  category: category || categories[0] || "Other",
 
-          palettes: linkedPalettes,
-          adminPalettes: adminPalettes,
+  // ⭐ ADD THESE
+  chroma: normalizeField(f["Chroma"]),
+  temperature: normalizeField(f["Temperature"]),
+  depth: normalizeField(f["Depth"]),
 
-          isNeutral:
-            f["IsNeutral"] === true ||
-            f["IsNeutral"] === 1 ||
-            String(f["IsNeutral"]).toLowerCase() === "true",
+  isBest: bestPalettes.includes(paletteCode),
 
-          neutralDepth: normalizeField(f["NeutralDepth"]),
-          depth: normalizeField(f["Depth"]),
-          neutralFamily: normalizeField(f["NeutralFamily"])
-        };
+  palettes: linkedPalettes,
+  adminPalettes: adminPalettes,
+
+  isNeutral:
+    f["IsNeutral"] === true ||
+    f["IsNeutral"] === 1 ||
+    String(f["IsNeutral"]).toLowerCase() === "true",
+
+  neutralDepth: normalizeField(f["NeutralDepth"]),
+  neutralFamily: normalizeField(f["NeutralFamily"])
+};
       })
       .filter((color) => color.name && color.hex)
       .filter((color) => {
