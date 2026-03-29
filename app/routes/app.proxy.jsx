@@ -19,6 +19,37 @@ function escapeFormulaValue(value) {
     .replace(/"/g, '\\"');
 }
 
+async function removeBackgroundImage({ imageBase64, apiKey }) {
+  if (!imageBase64) {
+    throw new Error("Missing imageBase64");
+  }
+
+  const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+  const imageBuffer = Buffer.from(base64Data, "base64");
+
+  const formData = new FormData();
+  const blob = new Blob([imageBuffer], { type: "image/png" });
+
+  formData.append("image_file", blob, "upload.png");
+  formData.append("size", "auto");
+
+  const response = await fetch('/apps/palette-data?action=removeBackground', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ imageBase64 })
+});
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || "Background removal failed");
+  }
+
+  const arrayBuffer = await response.arrayBuffer();
+  const resultBase64 = Buffer.from(arrayBuffer).toString("base64");
+
+  return `data:image/png;base64,${resultBase64}`;
+}
+
 async function airtableFetchJson(url, token, options = {}) {
   const response = await fetch(url, {
     ...options,
@@ -298,13 +329,51 @@ export async function action({ request }) {
   const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
   const AIRTABLE_FAVORITES_TABLE =
     process.env.AIRTABLE_FAVORITES_TABLE || "PaletteFavorites";
-
-  if (!AIRTABLE_TOKEN || !AIRTABLE_BASE_ID) {
-    return Response.json({ error: "Missing Airtable server configuration" }, { status: 500 });
-  }
+  const REMOVE_BG_API_KEY = process.env.REMOVE_BG_API_KEY;
 
   if (request.method !== "POST") {
     return Response.json({ error: "Method not allowed" }, { status: 405 });
+  }
+
+  if (actionName === "removeBackground") {
+    if (!REMOVE_BG_API_KEY) {
+      return Response.json(
+        { error: "Missing remove.bg configuration" },
+        { status: 500 }
+      );
+    }
+
+    try {
+      const body = await request.json();
+      const imageBase64 = String(body.imageBase64 || "").trim();
+
+      if (!imageBase64) {
+        return Response.json(
+          { error: "Missing imageBase64" },
+          { status: 400 }
+        );
+      }
+
+      const image = await removeBackgroundImage({
+        imageBase64,
+        apiKey: REMOVE_BG_API_KEY,
+      });
+
+      return Response.json({ image });
+    } catch (error) {
+      console.error(error);
+      return Response.json(
+        { error: error.message || "Failed to remove background" },
+        { status: 500 }
+      );
+    }
+  }
+
+  if (!AIRTABLE_TOKEN || !AIRTABLE_BASE_ID) {
+    return Response.json(
+      { error: "Missing Airtable server configuration" },
+      { status: 500 }
+    );
   }
 
   if (actionName !== "toggleFavorite") {
