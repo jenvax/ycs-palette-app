@@ -1,34 +1,92 @@
-import { Outlet, useLoaderData, useRouteError } from "react-router";
-import { boundary } from "@shopify/shopify-app-react-router/server";
-import { AppProvider } from "@shopify/shopify-app-react-router/react";
-import { authenticate } from "../shopify.server";
-
-export const loader = async ({ request }) => {
-  await authenticate.admin(request);
-
-  // eslint-disable-next-line no-undef
-  return { apiKey: process.env.SHOPIFY_API_KEY || "" };
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "https://yourcolorstyle.com",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
 };
 
-export default function App() {
-  const { apiKey } = useLoaderData();
-
-  return (
-    <AppProvider embedded apiKey={apiKey}>
-      <s-app-nav>
-        <s-link href="/app">Home</s-link>
-        <s-link href="/app/additional">Additional page</s-link>
-      </s-app-nav>
-      <Outlet />
-    </AppProvider>
-  );
+export async function loader() {
+  return new Response(null, {
+    status: 204,
+    headers: corsHeaders,
+  });
 }
 
-// Shopify needs React Router to catch some thrown responses, so that their headers are included in the response.
-export function ErrorBoundary() {
-  return boundary.error(useRouteError());
-}
+export async function action({ request }) {
+  if (request.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders,
+    });
+  }
 
-export const headers = (headersArgs) => {
-  return boundary.headers(headersArgs);
-};
+  if (request.method !== "POST") {
+    return Response.json(
+      { error: "Method not allowed" },
+      {
+        status: 405,
+        headers: corsHeaders,
+      }
+    );
+  }
+
+  try {
+    const { imageBase64 } = await request.json();
+
+    if (!imageBase64) {
+      return Response.json(
+        { error: "Missing imageBase64" },
+        {
+          status: 400,
+          headers: corsHeaders,
+        }
+      );
+    }
+
+    const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+    const imageBuffer = Buffer.from(base64Data, "base64");
+
+    const formData = new FormData();
+    const blob = new Blob([imageBuffer], { type: "image/png" });
+
+    formData.append("image_file", blob, "upload.png");
+    formData.append("size", "auto");
+
+    const response = await fetch("https://api.remove.bg/v1.0/removebg", {
+      method: "POST",
+      headers: {
+        "X-Api-Key": process.env.REMOVE_BG_API_KEY,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return Response.json(
+        { error: "Background removal failed", details: errorText },
+        {
+          status: response.status,
+          headers: corsHeaders,
+        }
+      );
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const resultBase64 = Buffer.from(arrayBuffer).toString("base64");
+    const dataUrl = `data:image/png;base64,${resultBase64}`;
+
+    return Response.json(
+      { image: dataUrl },
+      {
+        headers: corsHeaders,
+      }
+    );
+  } catch (error) {
+    return Response.json(
+      { error: "Server error", details: error.message },
+      {
+        status: 500,
+        headers: corsHeaders,
+      }
+    );
+  }
+}
