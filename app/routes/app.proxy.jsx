@@ -33,11 +33,13 @@ async function removeBackgroundImage({ imageBase64, apiKey }) {
   formData.append("image_file", blob, "upload.png");
   formData.append("size", "auto");
 
-  const response = await fetch('/apps/palette-data?action=removeBackground', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ imageBase64 })
-});
+  const response = await fetch("https://api.remove.bg/v1.0/removebg", {
+    method: "POST",
+    headers: {
+      "X-Api-Key": apiKey,
+    },
+    body: formData,
+  });
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -206,7 +208,10 @@ export async function loader({ request }) {
     process.env.AIRTABLE_FAVORITES_TABLE || "PaletteFavorites";
 
   if (!AIRTABLE_TOKEN || !AIRTABLE_BASE_ID || !AIRTABLE_TABLE_NAME) {
-    return Response.json({ error: "Missing Airtable server configuration" }, { status: 500 });
+    return Response.json(
+      { error: "Missing Airtable server configuration" },
+      { status: 500 }
+    );
   }
 
   if (action === "getFavorites") {
@@ -256,47 +261,47 @@ export async function loader({ request }) {
       .map((record) => {
         const f = record.fields || {};
 
-        const linkedPalettes = String(f["PaletteCodes_Final_Manual"]|| "")
-  .split(",")
-  .map((p) => p.toUpperCase().trim())
-  .filter(Boolean);
+        const linkedPalettes = String(f["PaletteCodes_Final_Manual"] || "")
+          .split(",")
+          .map((p) => p.toUpperCase().trim())
+          .filter(Boolean);
 
         const bestPalettes = normalizeList(f["BestPaletteCodes"]).map((p) =>
           String(p).toUpperCase().trim()
         );
 
-       const adminPalettes = String(f["AdminPaletteCodes"] || "")
-  .split(/\s+/)
-  .map((p) => p.toUpperCase().trim())
-  .filter(Boolean);
+        const adminPalettes = String(f["AdminPaletteCodes"] || "")
+          .split(/\s+/)
+          .map((p) => p.toUpperCase().trim())
+          .filter(Boolean);
 
         const categories = normalizeList(f["CategoryNames"]);
         const category = normalizeField(f["CategoryNames"]);
 
- return {
-  name: normalizeField(f["ColorName"]),
-  hex: normalizeField(f["Hex"]),
-  sortOrder: Number(normalizeField(f["SortOrder"])) || 999,
-  category: category || categories[0] || "Other",
+        return {
+          name: normalizeField(f["ColorName"]),
+          hex: normalizeField(f["Hex"]),
+          sortOrder: Number(normalizeField(f["SortOrder"])) || 999,
+          category: category || categories[0] || "Other",
 
-  paletteCodes: normalizeField(f["PaletteCodes_Final_Manual"]),
-  chroma: normalizeField(f["Chroma"]),
-  temperature: normalizeField(f["Temperature"]),
-  depth: normalizeField(f["Depth"]),
+          paletteCodes: normalizeField(f["PaletteCodes_Final_Manual"]),
+          chroma: normalizeField(f["Chroma"]),
+          temperature: normalizeField(f["Temperature"]),
+          depth: normalizeField(f["Depth"]),
 
-  isBest: bestPalettes.includes(paletteCode),
+          isBest: bestPalettes.includes(paletteCode),
 
-  palettes: linkedPalettes,
-  adminPalettes: adminPalettes,
+          palettes: linkedPalettes,
+          adminPalettes: adminPalettes,
 
-  isNeutral:
-    f["IsNeutral"] === true ||
-    f["IsNeutral"] === 1 ||
-    String(f["IsNeutral"]).toLowerCase() === "true",
+          isNeutral:
+            f["IsNeutral"] === true ||
+            f["IsNeutral"] === 1 ||
+            String(f["IsNeutral"]).toLowerCase() === "true",
 
-  neutralDepth: normalizeField(f["NeutralDepth"]),
-  neutralFamily: normalizeField(f["NeutralFamily"])
-};
+          neutralDepth: normalizeField(f["NeutralDepth"]),
+          neutralFamily: normalizeField(f["NeutralFamily"]),
+        };
       })
       .filter((color) => color.name && color.hex)
       .filter((color) => {
