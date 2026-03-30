@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { authenticate } from "../shopify.server";
 
 function getCorsHeaders(origin) {
@@ -16,6 +17,18 @@ function getCorsHeaders(origin) {
     "Access-Control-Allow-Headers": "Content-Type",
     "Vary": "Origin"
   };
+}
+
+function signCloudinaryParams(params, apiSecret) {
+  const stringToSign = Object.keys(params)
+    .sort()
+    .map((key) => `${key}=${params[key]}`)
+    .join("&");
+
+  return crypto
+    .createHash("sha1")
+    .update(stringToSign + apiSecret)
+    .digest("hex");
 }
 
 export async function loader({ request }) {
@@ -62,9 +75,10 @@ export async function action({ request }) {
     }
 
     const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-    const uploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET;
+    const apiKey = process.env.CLOUDINARY_API_KEY;
+    const apiSecret = process.env.CLOUDINARY_API_SECRET;
 
-    if (!cloudName || !uploadPreset) {
+    if (!cloudName || !apiKey || !apiSecret) {
       return Response.json(
         { error: "Missing Cloudinary configuration" },
         {
@@ -74,12 +88,25 @@ export async function action({ request }) {
       );
     }
 
+    const timestamp = Math.floor(Date.now() / 1000);
+
+    const cloudinaryParams = {
+      folder: "ycs-drape-photos",
+      overwrite: "true",
+      public_id: `customer-${customerId}`,
+      timestamp: String(timestamp)
+    };
+
+    const signature = signCloudinaryParams(cloudinaryParams, apiSecret);
+
     const formData = new FormData();
     formData.append("file", imageBase64);
-    formData.append("upload_preset", uploadPreset);
-    formData.append("folder", "ycs-drape-photos");
-    formData.append("public_id", `customer-${customerId}`);
-    formData.append("overwrite", "true");
+    formData.append("api_key", apiKey);
+    formData.append("timestamp", String(timestamp));
+    formData.append("signature", signature);
+    formData.append("folder", cloudinaryParams.folder);
+    formData.append("public_id", cloudinaryParams.public_id);
+    formData.append("overwrite", cloudinaryParams.overwrite);
 
     const uploadResponse = await fetch(
       `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
@@ -109,7 +136,6 @@ export async function action({ request }) {
     const imageUrl = uploadData.secure_url;
 
     const { admin } = await authenticate.admin(request);
-
     const customerGid = `gid://shopify/Customer/${customerId}`;
 
     const metafieldMutation = `
