@@ -39,7 +39,7 @@ export async function loader({ request }) {
     }
 
     const airtableBase = process.env.AIRTABLE_BASE_ID;
-    const airtableToken = process.env.AIRTABLE_API_KEY;
+    const airtableToken = process.env.AIRTABLE_TOKEN;
 
     if (!airtableBase || !airtableToken) {
       return Response.json(

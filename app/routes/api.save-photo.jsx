@@ -101,7 +101,7 @@ export async function action({ request }) {
     // 🔹 AIRTABLE SAVE (UPSERT)
     const airtableBase = process.env.AIRTABLE_BASE_ID;
     const airtableTable = "CustomerPhotos";
-    const airtableToken = process.env.AIRTABLE_API_KEY;
+    const airtableToken = process.env.AIRTABLE_TOKEN;
 
     // Check if record exists
     const findRes = await fetch(
