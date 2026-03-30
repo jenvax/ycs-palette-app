@@ -1,5 +1,4 @@
 import crypto from "node:crypto";
-import { authenticate } from "../shopify.server";
 
 function getCorsHeaders(origin) {
   const allowedOrigins = [
@@ -44,72 +43,42 @@ export async function action({ request }) {
   const origin = request.headers.get("Origin") || "";
   const corsHeaders = getCorsHeaders(origin);
 
-  if (request.method === "OPTIONS") {
-    return new Response(null, {
-      status: 204,
-      headers: corsHeaders
-    });
-  }
-
-  if (request.method !== "POST") {
-    return Response.json(
-      { error: "Method not allowed" },
-      {
-        status: 405,
-        headers: corsHeaders
-      }
-    );
-  }
-
   try {
     const { imageBase64, customerId } = await request.json();
 
     if (!imageBase64 || !customerId) {
       return Response.json(
         { error: "Missing imageBase64 or customerId" },
-        {
-          status: 400,
-          headers: corsHeaders
-        }
+        { status: 400, headers: corsHeaders }
       );
     }
 
-    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-    const apiKey = process.env.CLOUDINARY_API_KEY;
-    const apiSecret = process.env.CLOUDINARY_API_SECRET;
-
-    if (!cloudName || !apiKey || !apiSecret) {
-      return Response.json(
-        { error: "Missing Cloudinary configuration" },
-        {
-          status: 500,
-          headers: corsHeaders
-        }
-      );
-    }
-
+    // 🔹 CLOUDINARY UPLOAD
     const timestamp = Math.floor(Date.now() / 1000);
 
-    const cloudinaryParams = {
+    const paramsToSign = {
       folder: "ycs-drape-photos",
-      overwrite: "true",
       public_id: `customer-${customerId}`,
+      overwrite: "true",
       timestamp: String(timestamp)
     };
 
-    const signature = signCloudinaryParams(cloudinaryParams, apiSecret);
+    const signature = signCloudinaryParams(
+      paramsToSign,
+      process.env.CLOUDINARY_API_SECRET
+    );
 
     const formData = new FormData();
     formData.append("file", imageBase64);
-    formData.append("api_key", apiKey);
+    formData.append("api_key", process.env.CLOUDINARY_API_KEY);
     formData.append("timestamp", String(timestamp));
     formData.append("signature", signature);
-    formData.append("folder", cloudinaryParams.folder);
-    formData.append("public_id", cloudinaryParams.public_id);
-    formData.append("overwrite", cloudinaryParams.overwrite);
+    formData.append("folder", paramsToSign.folder);
+    formData.append("public_id", paramsToSign.public_id);
+    formData.append("overwrite", "true");
 
     const uploadResponse = await fetch(
-      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+      `https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload`,
       {
         method: "POST",
         body: formData
@@ -119,97 +88,82 @@ export async function action({ request }) {
     const uploadData = await uploadResponse.json();
 
     if (!uploadResponse.ok || !uploadData.secure_url) {
-      console.error("Cloudinary upload failed:", uploadData);
+      console.error("Cloudinary error:", uploadData);
 
       return Response.json(
-        {
-          error: "Cloudinary upload failed",
-          details: uploadData
-        },
-        {
-          status: 500,
-          headers: corsHeaders
-        }
+        { error: "Cloudinary upload failed", details: uploadData },
+        { status: 500, headers: corsHeaders }
       );
     }
 
     const imageUrl = uploadData.secure_url;
 
-    const { admin } = await authenticate.admin(request);
-    const customerGid = `gid://shopify/Customer/${customerId}`;
+    // 🔹 AIRTABLE SAVE (UPSERT)
+    const airtableBase = process.env.AIRTABLE_BASE_ID;
+    const airtableTable = "CustomerPhotos";
+    const airtableToken = process.env.AIRTABLE_API_KEY;
 
-    const metafieldMutation = `
-      mutation SetCustomerPhoto($metafields: [MetafieldsSetInput!]!) {
-        metafieldsSet(metafields: $metafields) {
-          metafields {
-            id
-            namespace
-            key
-            value
-          }
-          userErrors {
-            field
-            message
-          }
+    // Check if record exists
+    const findRes = await fetch(
+      `https://api.airtable.com/v0/${airtableBase}/${airtableTable}?filterByFormula={CustomerId}="${customerId}"`,
+      {
+        headers: {
+          Authorization: `Bearer ${airtableToken}`
         }
       }
-    `;
+    );
 
-    const metafieldResponse = await admin.graphql(metafieldMutation, {
-      variables: {
-        metafields: [
-          {
-            ownerId: customerGid,
-            namespace: "ycs",
-            key: "drape_photo_url",
-            type: "single_line_text_field",
-            value: imageUrl
-          }
-        ]
+    const findData = await findRes.json();
+    const existing = findData.records?.[0];
+
+    const payload = {
+      fields: {
+        CustomerId: customerId,
+        PhotoUrl: imageUrl,
+        PhotoKey: uploadData.public_id,
+        UpdatedAt: new Date().toISOString()
       }
-    });
+    };
 
-    const metafieldData = await metafieldResponse.json();
-    const userErrors = metafieldData?.data?.metafieldsSet?.userErrors || [];
-
-    if (userErrors.length > 0) {
-      console.error("Shopify metafield save failed:", userErrors);
-
-      return Response.json(
+    if (existing) {
+      // UPDATE
+      await fetch(
+        `https://api.airtable.com/v0/${airtableBase}/${airtableTable}/${existing.id}`,
         {
-          error: "Failed to save photo URL to Shopify metafield",
-          details: userErrors
-        },
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${airtableToken}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        }
+      );
+    } else {
+      // CREATE
+      await fetch(
+        `https://api.airtable.com/v0/${airtableBase}/${airtableTable}`,
         {
-          status: 500,
-          headers: corsHeaders
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${airtableToken}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
         }
       );
     }
 
     return Response.json(
-      {
-        success: true,
-        imageUrl,
-        publicId: uploadData.public_id
-      },
-      {
-        status: 200,
-        headers: corsHeaders
-      }
+      { success: true, imageUrl },
+      { status: 200, headers: corsHeaders }
     );
+
   } catch (error) {
-    console.error("Save photo route failed:", error);
+    console.error("Save photo failed:", error);
 
     return Response.json(
-      {
-        error: "Server error",
-        details: error.message
-      },
-      {
-        status: 500,
-        headers: corsHeaders
-      }
+      { error: error.message },
+      { status: 500, headers: corsHeaders }
     );
   }
 }
