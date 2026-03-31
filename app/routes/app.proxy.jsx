@@ -272,18 +272,37 @@ export async function loader({ request }) {
       );
     }
 
-    const customerPhotoRecords = await fetchAllAirtableRecords({
-      baseId: AIRTABLE_BASE_ID,
-      tableName: "CustomerPhotos",
-      token: AIRTABLE_TOKEN,
-      sortField: "UpdatedAt"
+    const [directoryRecords, customerPhotoRecords] = await Promise.all([
+      fetchAllAirtableRecords({
+        baseId: AIRTABLE_BASE_ID,
+        tableName: "CustomerDirectory",
+        token: AIRTABLE_TOKEN,
+        sortField: "LastName"
+      }),
+      fetchAllAirtableRecords({
+        baseId: AIRTABLE_BASE_ID,
+        tableName: "CustomerPhotos",
+        token: AIRTABLE_TOKEN,
+        sortField: "UpdatedAt"
+      })
+    ]);
+
+    const photoMap = {};
+
+    customerPhotoRecords.forEach((record) => {
+      const fields = record.fields || {};
+      const customerId = String(fields.CustomerId || "").trim();
+      const photoUrl = String(fields.PhotoUrl || "").trim() || null;
+
+      if (customerId) {
+        photoMap[customerId] = photoUrl;
+      }
     });
 
-    const members = customerPhotoRecords
+    const members = directoryRecords
       .map((record) => {
         const fields = record.fields || {};
         const customerId = String(fields.CustomerId || "").trim();
-        const photoUrl = String(fields.PhotoUrl || "").trim() || null;
         const email = String(fields.Email || "").trim();
         const firstName = String(fields.FirstName || "").trim();
         const lastName = String(fields.LastName || "").trim();
@@ -293,6 +312,7 @@ export async function loader({ request }) {
           .filter(Boolean);
 
         const name = `${firstName} ${lastName}`.trim() || email || `Customer ${customerId}`;
+        const photoUrl = photoMap[customerId] || null;
 
         return {
           customerId,
