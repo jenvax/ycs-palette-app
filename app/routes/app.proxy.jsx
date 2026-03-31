@@ -1,3 +1,5 @@
+import { authenticate } from "../shopify.server";
+
 function normalizeField(value) {
   if (Array.isArray(value)) return value[0] || "";
   return value || "";
@@ -17,6 +19,41 @@ function escapeFormulaValue(value) {
   return String(value || "")
     .replace(/\\/g, "\\\\")
     .replace(/"/g, '\\"');
+}
+
+const PALETTE_TAGS = new Set([
+  "CWL", "CWM", "CWD",
+  "CCL", "CCM", "CCD",
+  "SWL", "SWM", "SWD",
+  "SCL", "SCM", "SCD",
+  "LO", "MO", "DO",
+  "CWLG", "CWMG", "CWDG",
+  "SWLG", "SWMG", "SWDG",
+  "SCLG", "SCMG", "SCDG"
+]);
+
+function normalizeTagList(tags) {
+  return (tags || []).map((tag) => String(tag || "").trim().toUpperCase()).filter(Boolean);
+}
+
+function hasRelevantMemberTag(tags) {
+  const normalized = normalizeTagList(tags);
+  return normalized.includes("VIP") || normalized.some((tag) => PALETTE_TAGS.has(tag));
+}
+
+function isAdminTagPresent(tags) {
+  return normalizeTagList(tags).includes("YCS_ADMIN");
+}
+
+function extractNumericCustomerId(gid) {
+  return String(gid || "").split("/").pop() || "";
+}
+
+function buildMemberName(customer) {
+  const first = String(customer.firstName || "").trim();
+  const last = String(customer.lastName || "").trim();
+  const full = `${first} ${last}`.trim();
+  return full || String(customer.email || "Unnamed customer");
 }
 
 async function removeBackgroundImage({ imageBase64, apiKey }) {
@@ -196,10 +233,104 @@ async function toggleFavorite({
   return { success: true, isFavorite: true };
 }
 
+async function fetchViewerCustomer({ admin, customerId }) {
+  const response = await admin.graphql(
+    `#graphql
+    query ViewerCustomer($id: ID!) {
+      customer(id: $id) {
+        id
+        firstName
+        lastName
+        email
+        tags
+      }
+    }`,
+    {
+      variables: {
+        id: `gid://shopify/Customer/${customerId}`
+      }
+    }
+  );
+
+  const json = await response.json();
+  return json?.data?.customer || null;
+}
+
+async function fetchAllRelevantCustomers(admin) {
+  let hasNextPage = true;
+  let after = null;
+  const customers = [];
+
+  while (hasNextPage) {
+    const response = await admin.graphql(
+      `#graphql
+      query AdminMembers($after: String) {
+        customers(first: 250, after: $after) {
+          edges {
+            node {
+              id
+              firstName
+              lastName
+              email
+              tags
+            }
+          }
+          pageInfo {
+            hasNextPage
+            endCursor
+          }
+        }
+      }`,
+      {
+        variables: { after }
+      }
+    );
+
+    const json = await response.json();
+    const connection = json?.data?.customers;
+
+    const nodes = (connection?.edges || [])
+      .map((edge) => edge?.node)
+      .filter(Boolean)
+      .filter((customer) => hasRelevantMemberTag(customer.tags));
+
+    customers.push(...nodes);
+
+    hasNextPage = Boolean(connection?.pageInfo?.hasNextPage);
+    after = connection?.pageInfo?.endCursor || null;
+  }
+
+  return customers;
+}
+
+async function fetchCustomerPhotoMap({ baseId, token }) {
+  const records = await fetchAllAirtableRecords({
+    baseId,
+    tableName: "CustomerPhotos",
+    token
+  });
+
+  const photoMap = {};
+
+  records.forEach((record) => {
+    const customerId = String(record?.fields?.CustomerId || "").trim();
+    const photoUrl = String(record?.fields?.PhotoUrl || "").trim();
+
+    if (customerId) {
+      photoMap[customerId] = photoUrl || null;
+    }
+  });
+
+  return photoMap;
+}
+
 export async function loader({ request }) {
+  const { admin } = await authenticate.public.appProxy(request);
+
   const url = new URL(request.url);
   const paletteCode = String(url.searchParams.get("palette") || "").toUpperCase().trim();
   const action = String(url.searchParams.get("action") || "").trim();
+  const loggedInCustomerId = String(url.searchParams.get("logged_in_customer_id") || "").trim();
 
   const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
   const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
@@ -212,6 +343,69 @@ export async function loader({ request }) {
       { error: "Missing Airtable server configuration" },
       { status: 500 }
     );
+  }
+
+  if (action === "getAdminMembers") {
+    try {
+      if (!admin) {
+        return Response.json(
+          { error: "Admin API unavailable for this app proxy request" },
+          { status: 403 }
+        );
+      }
+
+      if (!loggedInCustomerId) {
+        return Response.json(
+          { error: "You must be signed in to use this tool" },
+          { status: 401 }
+        );
+      }
+
+      const viewerCustomer = await fetchViewerCustomer({
+        admin,
+        customerId: loggedInCustomerId
+      });
+
+      if (!viewerCustomer || !isAdminTagPresent(viewerCustomer.tags)) {
+        return Response.json(
+          { error: "Admin access required" },
+          { status: 403 }
+        );
+      }
+
+      const [customers, photoMap] = await Promise.all([
+        fetchAllRelevantCustomers(admin),
+        fetchCustomerPhotoMap({
+          baseId: AIRTABLE_BASE_ID,
+          token: AIRTABLE_TOKEN
+        })
+      ]);
+
+      const members = customers
+        .map((customer) => {
+          const customerId = extractNumericCustomerId(customer.id);
+          const tags = normalizeTagList(customer.tags);
+          const photoUrl = photoMap[customerId] || null;
+
+          return {
+            customerId,
+            name: buildMemberName(customer),
+            email: String(customer.email || "").trim(),
+            tags,
+            photoUrl,
+            hasPhoto: Boolean(photoUrl)
+          };
+        })
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      return Response.json({ members });
+    } catch (error) {
+      console.error("getAdminMembers failed:", error);
+      return Response.json(
+        { error: error.message || "Failed to load admin members" },
+        { status: 500 }
+      );
+    }
   }
 
   if (action === "getFavorites") {
