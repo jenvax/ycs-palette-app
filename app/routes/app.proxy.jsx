@@ -306,10 +306,26 @@ export async function loader({ request }) {
         const email = String(fields.Email || "").trim();
         const firstName = String(fields.FirstName || "").trim();
         const lastName = String(fields.LastName || "").trim();
+
         const tags = String(fields.Tags || "")
           .split(",")
           .map((tag) => tag.trim())
           .filter(Boolean);
+
+        const isVIP = tags.includes("VIP");
+
+        const paletteTags = String(fields.PaletteTags || "")
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter(Boolean);
+
+        const hasPaletteAccessRaw = fields.HasPaletteAccess;
+        const hasPaletteAccess =
+          hasPaletteAccessRaw === true ||
+          hasPaletteAccessRaw === 1 ||
+          String(hasPaletteAccessRaw || "").toLowerCase() === "true" ||
+          String(hasPaletteAccessRaw || "") === "1" ||
+          paletteTags.length > 0;
 
         const name = `${firstName} ${lastName}`.trim() || email || `Customer ${customerId}`;
         const photoUrl = photoMap[customerId] || null;
@@ -319,11 +335,14 @@ export async function loader({ request }) {
           name,
           email,
           tags,
+          isVIP,
+          paletteTags,
+          hasPaletteAccess,
           photoUrl,
           hasPhoto: Boolean(photoUrl)
         };
       })
-      .filter((member) => member.customerId)
+      .filter((member) => member.customerId && member.isVIP)
       .sort((a, b) => a.name.localeCompare(b.name));
 
     return Response.json({ members });
