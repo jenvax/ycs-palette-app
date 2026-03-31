@@ -327,8 +327,15 @@ export async function loader({ request }) {
           String(hasPaletteAccessRaw || "") === "1" ||
           paletteTags.length > 0;
 
-        const name = `${firstName} ${lastName}`.trim() || email || `Customer ${customerId}`;
-        const photoUrl = photoMap[customerId] || null;
+let name = "";
+
+if (firstName || lastName) {
+  name = `${firstName} ${lastName}`.trim();
+} else if (email) {
+  name = email.split("@")[0]; // cleaner fallback
+} else {
+  name = `Customer ${customerId}`;
+}        const photoUrl = photoMap[customerId] || null;
 
         return {
           customerId,
