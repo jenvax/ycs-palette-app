@@ -249,6 +249,103 @@ async function fetchCustomerPhotoMap({ baseId, token }) {
   return photoMap;
 }
 
+async function shopifyAdminGraphQL({ shop, accessToken, query, variables = {} }) {
+  const response = await fetch(`https://${shop}/admin/api/2026-01/graphql.json`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Shopify-Access-Token": accessToken
+    },
+    body: JSON.stringify({ query, variables })
+  });
+
+  const json = await response.json();
+
+  if (!response.ok || json.errors) {
+    throw new Error(json.errors?.[0]?.message || "Shopify Admin GraphQL request failed");
+  }
+
+  return json.data;
+}
+
+async function fetchShopifyCustomersForDirectory({ shop, accessToken }) {
+  const query = `
+    query getCustomers($cursor: String) {
+      customers(first: 100, after: $cursor, query: "tag:VIP OR tag:CWL OR tag:CWM OR tag:CWD OR tag:CCL OR tag:CCM OR tag:CCD OR tag:SWL OR tag:SWM OR tag:SWD OR tag:SCL OR tag:SCM OR tag:SCD OR tag:LO OR tag:MO OR tag:DO OR tag:CWLG OR tag:CWMG OR tag:CWDG OR tag:SWLG OR tag:SWMG OR tag:SWDG OR tag:SCLG OR tag:SCMG OR tag:SCDG") {
+        edges {
+          cursor
+          node {
+            id
+            firstName
+            lastName
+            email
+            tags
+            metafield(namespace: "membership", key: "style_masters_start") {
+              value
+            }
+          }
+        }
+        pageInfo {
+          hasNextPage
+        }
+      }
+    }
+  `;
+
+  const customers = [];
+  let cursor = null;
+  let hasNextPage = true;
+
+  while (hasNextPage) {
+    const data = await shopifyAdminGraphQL({
+      shop,
+      accessToken,
+      query,
+      variables: { cursor }
+    });
+
+    const edges = data.customers.edges || [];
+    edges.forEach((edge) => customers.push(edge.node));
+
+    hasNextPage = data.customers.pageInfo.hasNextPage;
+    cursor = hasNextPage ? edges[edges.length - 1]?.cursor : null;
+  }
+
+  return customers.map((customer) => {
+    const customerId = normalizeCustomerId(customer.id);
+    const tags = Array.isArray(customer.tags) ? customer.tags : [];
+    const joinedDate = customer.metafield?.value ? String(customer.metafield.value).trim() : "";
+
+    const paletteTags = tags.filter((tag) => PALETTE_TAGS.has(String(tag).toUpperCase().trim()));
+    const isVIP = tags.includes("VIP");
+
+    let name = `${customer.firstName || ""} ${customer.lastName || ""}`.trim();
+    if (!name && customer.email) name = customer.email.split("@")[0];
+    if (!name) name = `Customer ${customerId}`;
+
+    return {
+      customerId,
+      firstName: String(customer.firstName || "").trim(),
+      lastName: String(customer.lastName || "").trim(),
+      name,
+      email: String(customer.email || "").trim(),
+      tags,
+      paletteTags,
+      isVIP,
+      joinedDate
+    };
+  });
+}
+
+async function updateAirtableRecord({ baseId, tableName, token, recordId, fields }) {
+  const url = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}/${recordId}`;
+
+  return airtableFetchJson(url, token, {
+    method: "PATCH",
+    body: JSON.stringify({ fields })
+  });
+}
+
 export async function loader({ request }) {
 
   const url = new URL(request.url);
@@ -268,6 +365,183 @@ export async function loader({ request }) {
       { status: 500 }
     );
   }
+
+  async function syncCustomerDirectoryFromShopify({ shop, accessToken, baseId, token }) {
+  const nowIso = new Date().toISOString();
+
+  const [shopifyCustomers, directoryRecords] = await Promise.all([
+    fetchShopifyCustomersForDirectory({ shop, accessToken }),
+    fetchAllAirtableRecords({
+      baseId,
+      tableName: "CustomerDirectory",
+      token,
+      sortField: "LastName"
+    })
+  ]);
+
+  const directoryByCustomerId = new Map();
+
+  directoryRecords.forEach((record) => {
+    const fields = record.fields || {};
+    const customerId = normalizeCustomerId(fields.CustomerId);
+    if (!customerId) return;
+    directoryByCustomerId.set(customerId, record);
+  });
+
+  const seenIds = new Set();
+
+  let created = 0;
+  let updated = 0;
+  let becameVIP = 0;
+  let lostVIP = 0;
+  let legacyVIP = 0;
+  let unchanged = 0;
+
+  for (const customer of shopifyCustomers) {
+    seenIds.add(customer.customerId);
+
+    const existing = directoryByCustomerId.get(customer.customerId);
+    const existingFields = existing?.fields || {};
+
+    const previousIsVIP = parseTruthy(existingFields.IsVIP);
+    const currentIsVIP = customer.isVIP;
+
+    let membershipStatus = "Unknown";
+    if (currentIsVIP && customer.joinedDate) membershipStatus = "Active";
+    else if (currentIsVIP && !customer.joinedDate) membershipStatus = "Legacy";
+    else membershipStatus = "Inactive";
+
+    const fieldsToWrite = {
+      CustomerId: customer.customerId,
+      FirstName: customer.firstName,
+      LastName: customer.lastName,
+      Email: customer.email,
+      ShopifyTags: customer.tags.join(", "),
+      IsVIP: currentIsVIP,
+      MembershipStatus: membershipStatus,
+      LastSyncedAt: nowIso
+    };
+
+    if (customer.joinedDate) {
+      fieldsToWrite.JoinedDate = customer.joinedDate;
+    }
+
+    if (!existing) {
+      fieldsToWrite.FirstSeenAt = nowIso;
+
+      if (currentIsVIP) {
+        fieldsToWrite.BecameVIPAt = nowIso;
+        if (!customer.joinedDate) legacyVIP += 1;
+      }
+
+      await createAirtableRecord({
+        baseId,
+        tableName: "CustomerDirectory",
+        token,
+        fields: fieldsToWrite
+      });
+
+      created += 1;
+      continue;
+    }
+
+    let changed = false;
+
+    const comparePairs = [
+      [String(existingFields.FirstName || ""), fieldsToWrite.FirstName],
+      [String(existingFields.LastName || ""), fieldsToWrite.LastName],
+      [String(existingFields.Email || ""), fieldsToWrite.Email],
+      [String(existingFields.ShopifyTags || ""), fieldsToWrite.ShopifyTags],
+      [parseTruthy(existingFields.IsVIP), fieldsToWrite.IsVIP],
+      [String(existingFields.MembershipStatus || ""), fieldsToWrite.MembershipStatus],
+      [String(existingFields.JoinedDate || ""), String(fieldsToWrite.JoinedDate || "")]
+    ];
+
+    changed = comparePairs.some(([a, b]) => String(a) !== String(b));
+
+    if (!previousIsVIP && currentIsVIP) {
+      fieldsToWrite.BecameVIPAt = existingFields.BecameVIPAt || nowIso;
+      fieldsToWrite.LostVIPAt = null;
+      becameVIP += 1;
+      changed = true;
+    }
+
+    if (previousIsVIP && !currentIsVIP) {
+      fieldsToWrite.LostVIPAt = nowIso;
+      lostVIP += 1;
+      changed = true;
+    }
+
+    if (currentIsVIP && !customer.joinedDate) {
+      legacyVIP += 1;
+    }
+
+    if (changed) {
+      await updateAirtableRecord({
+        baseId,
+        tableName: "CustomerDirectory",
+        token,
+        recordId: existing.id,
+        fields: fieldsToWrite
+      });
+      updated += 1;
+    } else {
+      unchanged += 1;
+
+      await updateAirtableRecord({
+        baseId,
+        tableName: "CustomerDirectory",
+        token,
+        recordId: existing.id,
+        fields: { LastSyncedAt: nowIso }
+      });
+    }
+  }
+
+  for (const record of directoryRecords) {
+    const fields = record.fields || {};
+    const customerId = normalizeCustomerId(fields.CustomerId);
+
+    if (!customerId || seenIds.has(customerId)) continue;
+
+    if (parseTruthy(fields.IsVIP)) {
+      await updateAirtableRecord({
+        baseId,
+        tableName: "CustomerDirectory",
+        token,
+        recordId: record.id,
+        fields: {
+          IsVIP: false,
+          MembershipStatus: "Inactive",
+          LostVIPAt: nowIso,
+          LastSyncedAt: nowIso
+        }
+      });
+      lostVIP += 1;
+      updated += 1;
+    } else {
+      await updateAirtableRecord({
+        baseId,
+        tableName: "CustomerDirectory",
+        token,
+        recordId: record.id,
+        fields: {
+          MembershipStatus: String(fields.MembershipStatus || "Inactive"),
+          LastSyncedAt: nowIso
+        }
+      });
+    }
+  }
+
+  return {
+    created,
+    updated,
+    becameVIP,
+    lostVIP,
+    legacyVIP,
+    unchanged
+  };
+}
 
   if (action === "getAdminMembers") {
   try {
@@ -541,6 +815,42 @@ export async function action({ request }) {
       { status: 500 }
     );
   }
+
+if (actionName === "syncCustomerDirectory") {
+  try {
+    const body = await request.json();
+    const isAdmin = body?.isAdmin === true || String(body?.isAdmin || "") === "true";
+
+    if (!isAdmin) {
+      return Response.json({ error: "Admin access required" }, { status: 403 });
+    }
+
+    const SHOPIFY_SHOP = process.env.SHOPIFY_SHOP;
+    const SHOPIFY_ADMIN_ACCESS_TOKEN = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
+
+    if (!SHOPIFY_SHOP || !SHOPIFY_ADMIN_ACCESS_TOKEN) {
+      return Response.json(
+        { error: "Missing Shopify admin configuration" },
+        { status: 500 }
+      );
+    }
+
+    const result = await syncCustomerDirectoryFromShopify({
+      shop: SHOPIFY_SHOP,
+      accessToken: SHOPIFY_ADMIN_ACCESS_TOKEN,
+      baseId: AIRTABLE_BASE_ID,
+      token: AIRTABLE_TOKEN
+    });
+
+    return Response.json({ success: true, summary: result });
+  } catch (error) {
+    console.error("syncCustomerDirectory failed:", error);
+    return Response.json(
+      { error: error.message || "Failed to sync customer directory" },
+      { status: 500 }
+    );
+  }
+}
 
   if (actionName !== "toggleFavorite") {
     return Response.json({ error: "Unknown action" }, { status: 400 });
