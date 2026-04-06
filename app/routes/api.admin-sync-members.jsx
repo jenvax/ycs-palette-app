@@ -1,3 +1,5 @@
+import { unauthenticated } from "../shopify.server";
+
 function getCorsHeaders(origin) {
   const allowedOrigins = [
     "https://yourcolorstyle.com",
@@ -31,26 +33,20 @@ function parseTruthy(value) {
   );
 }
 
-async function shopifyAdminGraphQL({ shop, accessToken, query, variables = {} }) {
-  const response = await fetch(`https://${shop}/admin/api/2026-01/graphql.json`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Shopify-Access-Token": accessToken
-    },
-    body: JSON.stringify({ query, variables })
-  });
+async function shopifyAdminGraphQL({ shop, query, variables = {} }) {
+  const { admin } = await unauthenticated.admin(shop);
 
+  const response = await admin.graphql(query, { variables });
   const json = await response.json();
 
-  if (!response.ok || json.errors) {
+  if (json.errors) {
     throw new Error(json.errors?.[0]?.message || "Shopify request failed");
   }
 
   return json.data;
 }
 
-async function fetchShopifyCustomers({ shop, accessToken }) {
+async function fetchShopifyCustomers({ shop }) {
   const query = `
     query getCustomers($cursor: String) {
       customers(first: 100, after: $cursor, query: "tag:VIP") {
@@ -81,7 +77,6 @@ async function fetchShopifyCustomers({ shop, accessToken }) {
   while (hasNextPage) {
     const data = await shopifyAdminGraphQL({
       shop,
-      accessToken,
       query,
       variables: { cursor }
     });
@@ -94,36 +89,56 @@ async function fetchShopifyCustomers({ shop, accessToken }) {
     cursor = hasNextPage ? edges[edges.length - 1]?.cursor : null;
   }
 
-  return customers.map((c) => {
-    const id = normalizeCustomerId(c.id);
-    const tags = Array.isArray(c.tags) ? c.tags : [];
-    const joinedDate = c.metafield?.value || "";
+  return customers.map((customer) => {
+    const customerId = normalizeCustomerId(customer.id);
+    const tags = Array.isArray(customer.tags) ? customer.tags : [];
+    const joinedDate = customer.metafield?.value
+      ? String(customer.metafield.value).trim()
+      : "";
 
     return {
-      customerId: id,
-      firstName: c.firstName || "",
-      lastName: c.lastName || "",
-      email: c.email || "",
+      customerId,
+      firstName: String(customer.firstName || "").trim(),
+      lastName: String(customer.lastName || "").trim(),
+      email: String(customer.email || "").trim(),
       tags,
       isVIP: tags.includes("VIP"),
-      joinedDate: joinedDate ? String(joinedDate).trim() : ""
+      joinedDate
     };
   });
 }
 
 async function fetchAirtableRecords(baseId, table, token) {
-  const url = `https://api.airtable.com/v0/${baseId}/${table}`;
+  let records = [];
+  let offset = "";
 
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
+  while (true) {
+    const url = new URL(`https://api.airtable.com/v0/${baseId}/${table}`);
+    if (offset) url.searchParams.set("offset", offset);
 
-  const data = await res.json();
-  return data.records || [];
+    const res = await fetch(url.toString(), {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data?.error?.message || "Failed to fetch Airtable records");
+    }
+
+    records = records.concat(data.records || []);
+
+    if (!data.offset) break;
+    offset = data.offset;
+  }
+
+  return records;
 }
 
 async function createRecord(baseId, table, token, fields) {
-  await fetch(`https://api.airtable.com/v0/${baseId}/${table}`, {
+  const res = await fetch(`https://api.airtable.com/v0/${baseId}/${table}`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -131,10 +146,18 @@ async function createRecord(baseId, table, token, fields) {
     },
     body: JSON.stringify({ fields })
   });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data?.error?.message || "Failed to create Airtable record");
+  }
+
+  return data;
 }
 
 async function updateRecord(baseId, table, token, id, fields) {
-  await fetch(`https://api.airtable.com/v0/${baseId}/${table}/${id}`, {
+  const res = await fetch(`https://api.airtable.com/v0/${baseId}/${table}/${id}`, {
     method: "PATCH",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -142,6 +165,14 @@ async function updateRecord(baseId, table, token, id, fields) {
     },
     body: JSON.stringify({ fields })
   });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data?.error?.message || "Failed to update Airtable record");
+  }
+
+  return data;
 }
 
 export async function loader({ request }) {
@@ -158,20 +189,35 @@ export async function action({ request }) {
   const corsHeaders = getCorsHeaders(origin);
 
   try {
+    const body = await request.json();
+    const isAdmin = body?.isAdmin === true || String(body?.isAdmin || "") === "true";
+
+    if (!isAdmin) {
+      return Response.json(
+        { error: "Admin access required" },
+        { status: 403, headers: corsHeaders }
+      );
+    }
+
     const SHOP = process.env.SHOPIFY_SHOP;
-    const TOKEN = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
     const AIRTABLE_BASE = process.env.AIRTABLE_BASE_ID;
     const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
 
-    if (!SHOP || !TOKEN) {
-      throw new Error("Missing Shopify credentials");
+    if (!SHOP) {
+      return Response.json(
+        { error: "Missing SHOPIFY_SHOP" },
+        { status: 500, headers: corsHeaders }
+      );
     }
 
-    const shopifyCustomers = await fetchShopifyCustomers({
-      shop: SHOP,
-      accessToken: TOKEN
-    });
+    if (!AIRTABLE_BASE || !AIRTABLE_TOKEN) {
+      return Response.json(
+        { error: "Missing Airtable configuration" },
+        { status: 500, headers: corsHeaders }
+      );
+    }
 
+    const shopifyCustomers = await fetchShopifyCustomers({ shop: SHOP });
     const airtableRecords = await fetchAirtableRecords(
       AIRTABLE_BASE,
       "CustomerDirectory",
@@ -179,25 +225,35 @@ export async function action({ request }) {
     );
 
     const airtableMap = {};
-    airtableRecords.forEach((r) => {
-      const id = normalizeCustomerId(r.fields.CustomerId);
-      if (id) airtableMap[id] = r;
+    airtableRecords.forEach((record) => {
+      const customerId = normalizeCustomerId(record?.fields?.CustomerId);
+      if (customerId) {
+        airtableMap[customerId] = record;
+      }
     });
 
     let created = 0;
     let updated = 0;
     let becameVIP = 0;
     let lostVIP = 0;
+    let legacyVIP = 0;
 
     const now = new Date().toISOString();
+    const seenCustomerIds = new Set();
 
     for (const customer of shopifyCustomers) {
+      seenCustomerIds.add(customer.customerId);
+
       const existing = airtableMap[customer.customerId];
       const previousVIP = parseTruthy(existing?.fields?.IsVIP);
 
-      let status = "Inactive";
-      if (customer.isVIP && customer.joinedDate) status = "Active";
-      else if (customer.isVIP) status = "Legacy";
+      let membershipStatus = "Inactive";
+      if (customer.isVIP && customer.joinedDate) membershipStatus = "Active";
+      else if (customer.isVIP) membershipStatus = "Legacy";
+
+      if (membershipStatus === "Legacy") {
+        legacyVIP += 1;
+      }
 
       const fields = {
         CustomerId: customer.customerId,
@@ -206,7 +262,7 @@ export async function action({ request }) {
         Email: customer.email,
         ShopifyTags: customer.tags.join(", "),
         IsVIP: customer.isVIP,
-        MembershipStatus: status,
+        MembershipStatus: membershipStatus,
         LastSyncedAt: now
       };
 
@@ -216,46 +272,81 @@ export async function action({ request }) {
 
       if (!existing) {
         fields.FirstSeenAt = now;
-        if (customer.isVIP) fields.BecameVIPAt = now;
+
+        if (customer.isVIP) {
+          fields.BecameVIPAt = now;
+        }
 
         await createRecord(AIRTABLE_BASE, "CustomerDirectory", AIRTABLE_TOKEN, fields);
-        created++;
-      } else {
-        if (!previousVIP && customer.isVIP) {
-          fields.BecameVIPAt = existing.fields.BecameVIPAt || now;
-          becameVIP++;
-        }
+        created += 1;
+        continue;
+      }
 
-        if (previousVIP && !customer.isVIP) {
-          fields.LostVIPAt = now;
-          lostVIP++;
-        }
+      if (!previousVIP && customer.isVIP) {
+        fields.BecameVIPAt = existing.fields?.BecameVIPAt || now;
+        fields.LostVIPAt = null;
+        becameVIP += 1;
+      }
 
+      if (previousVIP && !customer.isVIP) {
+        fields.LostVIPAt = now;
+        lostVIP += 1;
+      }
+
+      await updateRecord(
+        AIRTABLE_BASE,
+        "CustomerDirectory",
+        AIRTABLE_TOKEN,
+        existing.id,
+        fields
+      );
+
+      updated += 1;
+    }
+
+    for (const record of airtableRecords) {
+      const customerId = normalizeCustomerId(record?.fields?.CustomerId);
+      if (!customerId || seenCustomerIds.has(customerId)) continue;
+
+      const wasVIP = parseTruthy(record?.fields?.IsVIP);
+
+      if (wasVIP) {
         await updateRecord(
           AIRTABLE_BASE,
           "CustomerDirectory",
           AIRTABLE_TOKEN,
-          existing.id,
-          fields
+          record.id,
+          {
+            IsVIP: false,
+            MembershipStatus: "Inactive",
+            LostVIPAt: now,
+            LastSyncedAt: now
+          }
         );
 
-        updated++;
+        lostVIP += 1;
+        updated += 1;
       }
     }
 
     return Response.json(
       {
         success: true,
-        summary: { created, updated, becameVIP, lostVIP }
+        summary: {
+          created,
+          updated,
+          becameVIP,
+          lostVIP,
+          legacyVIP
+        }
       },
-      { headers: corsHeaders }
+      { status: 200, headers: corsHeaders }
     );
-
   } catch (error) {
     console.error("SYNC ERROR:", error);
 
     return Response.json(
-      { error: error.message },
+      { error: error.message || "Sync failed" },
       { status: 500, headers: corsHeaders }
     );
   }
