@@ -21,6 +21,21 @@ function escapeFormulaValue(value) {
     .replace(/"/g, '\\"');
 }
 
+function normalizeCustomerId(value) {
+  return String(value || "")
+    .replace("gid://shopify/Customer/", "")
+    .trim();
+}
+
+function parseTruthy(value) {
+  return (
+    value === true ||
+    value === 1 ||
+    String(value || "").toLowerCase() === "true" ||
+    String(value || "") === "1"
+  );
+}
+
 const PALETTE_TAGS = new Set([
   "CWL", "CWM", "CWD",
   "CCL", "CCM", "CCD",
@@ -223,7 +238,7 @@ async function fetchCustomerPhotoMap({ baseId, token }) {
   const photoMap = {};
 
   records.forEach((record) => {
-    const customerId = String(record?.fields?.CustomerId || "").trim();
+    const customerId = normalizeCustomerId(record?.fields?.CustomerId);
     const photoUrl = String(record?.fields?.PhotoUrl || "").trim();
 
     if (customerId) {
@@ -291,7 +306,7 @@ export async function loader({ request }) {
 
     customerPhotoRecords.forEach((record) => {
       const fields = record.fields || {};
-      const customerId = String(fields.CustomerId || "").trim();
+      const customerId = normalizeCustomerId(fields.CustomerId);
       const photoUrl = String(fields.PhotoUrl || "").trim() || null;
 
       if (customerId) {
@@ -302,54 +317,51 @@ export async function loader({ request }) {
     const members = directoryRecords
       .map((record) => {
         const fields = record.fields || {};
-        const customerId = String(fields.CustomerId || "").trim();
+
+        const customerId = normalizeCustomerId(fields.CustomerId);
+        if (!customerId) return null;
+
         const email = String(fields.Email || "").trim();
         const firstName = String(fields.FirstName || "").trim();
         const lastName = String(fields.LastName || "").trim();
 
-        const tags = String(fields.Tags || "")
-          .split(",")
-          .map((tag) => tag.trim())
-          .filter(Boolean);
+        const tags = normalizeList(fields.Tags)
+  .map((tag) => String(tag).trim())
+  .filter(Boolean);
 
-        const isVIP = tags.includes("VIP");
+        const isVIP =
+          tags.includes("VIP") ||
+          parseTruthy(fields.IsVIP);
+
+        if (!isVIP) return null;
 
         const paletteTags = String(fields.PaletteTags || "")
           .split(",")
           .map((tag) => tag.trim())
           .filter(Boolean);
 
-        const hasPaletteAccessRaw = fields.HasPaletteAccess;
         const hasPaletteAccess =
-          hasPaletteAccessRaw === true ||
-          hasPaletteAccessRaw === 1 ||
-          String(hasPaletteAccessRaw || "").toLowerCase() === "true" ||
-          String(hasPaletteAccessRaw || "") === "1" ||
-          paletteTags.length > 0;
+          parseTruthy(fields.HasPaletteAccess) || paletteTags.length > 0;
 
-let name = "";
+        let name = `${firstName} ${lastName}`.trim();
+        if (!name && email) name = email.split("@")[0];
+        if (!name) name = `Customer ${customerId}`;
 
-if (firstName || lastName) {
-  name = `${firstName} ${lastName}`.trim();
-} else if (email) {
-  name = email.split("@")[0]; // cleaner fallback
-} else {
-  name = `Customer ${customerId}`;
-}        const photoUrl = photoMap[customerId] || null;
+        const photoUrl = photoMap[customerId] || null;
 
         return {
           customerId,
           name,
           email,
-          tags,
-          isVIP,
+          colorType: String(fields.ColorType || "").trim(),
+          joinedDate: fields.JoinedDate ? String(fields.JoinedDate).trim() : "",
           paletteTags,
           hasPaletteAccess,
           photoUrl,
           hasPhoto: Boolean(photoUrl)
         };
       })
-      .filter((member) => member.customerId && member.isVIP)
+      .filter(Boolean)
       .sort((a, b) => a.name.localeCompare(b.name));
 
     return Response.json({ members });
@@ -361,7 +373,6 @@ if (firstName || lastName) {
     );
   }
 }
-
   if (action === "getFavorites") {
     const customerId = String(url.searchParams.get("customerId") || "").trim();
 
@@ -473,6 +484,8 @@ if (firstName || lastName) {
     );
   }
 }
+
+
 
 export async function action({ request }) {
   const url = new URL(request.url);
