@@ -1,5 +1,3 @@
-
-
 function normalizeField(value) {
   if (Array.isArray(value)) return value[0] || "";
   return value || "";
@@ -46,8 +44,6 @@ const PALETTE_TAGS = new Set([
   "SWLG", "SWMG", "SWDG",
   "SCLG", "SCMG", "SCDG"
 ]);
-
-
 
 async function removeBackgroundImage({ imageBase64, apiKey }) {
   if (!imageBase64) {
@@ -150,6 +146,15 @@ async function createAirtableRecord({ baseId, tableName, token, fields }) {
   return data.records?.[0] || null;
 }
 
+async function updateAirtableRecord({ baseId, tableName, token, recordId, fields }) {
+  const url = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}/${recordId}`;
+
+  return airtableFetchJson(url, token, {
+    method: "PATCH",
+    body: JSON.stringify({ fields }),
+  });
+}
+
 async function deleteAirtableRecord({ baseId, tableName, token, recordId }) {
   const url = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(
     tableName
@@ -225,8 +230,6 @@ async function toggleFavorite({
 
   return { success: true, isFavorite: true };
 }
-
-
 
 async function fetchCustomerPhotoMap({ baseId, token }) {
   const records = await fetchAllAirtableRecords({
@@ -337,36 +340,7 @@ async function fetchShopifyCustomersForDirectory({ shop, accessToken }) {
   });
 }
 
-async function updateAirtableRecord({ baseId, tableName, token, recordId, fields }) {
-  const url = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}/${recordId}`;
-
-  return airtableFetchJson(url, token, {
-    method: "PATCH",
-    body: JSON.stringify({ fields })
-  });
-}
-
-export async function loader({ request }) {
-
-  const url = new URL(request.url);
-  const paletteCode = String(url.searchParams.get("palette") || "").toUpperCase().trim();
-  const action = String(url.searchParams.get("action") || "").trim();
-  const loggedInCustomerId = String(url.searchParams.get("logged_in_customer_id") || "").trim();
-
-  const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
-  const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
-  const AIRTABLE_TABLE_NAME = process.env.AIRTABLE_TABLE_NAME;
-  const AIRTABLE_FAVORITES_TABLE =
-    process.env.AIRTABLE_FAVORITES_TABLE || "PaletteFavorites";
-
-  if (!AIRTABLE_TOKEN || !AIRTABLE_BASE_ID || !AIRTABLE_TABLE_NAME) {
-    return Response.json(
-      { error: "Missing Airtable server configuration" },
-      { status: 500 }
-    );
-  }
-
-  async function syncCustomerDirectoryFromShopify({ shop, accessToken, baseId, token }) {
+async function syncCustomerDirectoryFromShopify({ shop, accessToken, baseId, token }) {
   const nowIso = new Date().toISOString();
 
   const [shopifyCustomers, directoryRecords] = await Promise.all([
@@ -543,110 +517,130 @@ export async function loader({ request }) {
   };
 }
 
-  if (action === "getAdminMembers") {
-  try {
-    const isAdmin = String(url.searchParams.get("isAdmin") || "").trim() === "true";
+export async function loader({ request }) {
+  const url = new URL(request.url);
+  const paletteCode = String(url.searchParams.get("palette") || "").toUpperCase().trim();
+  const action = String(url.searchParams.get("action") || "").trim();
+  const loggedInCustomerId = String(url.searchParams.get("logged_in_customer_id") || "").trim();
 
-    if (!loggedInCustomerId) {
-      return Response.json(
-        { error: "You must be signed in to use this tool" },
-        { status: 401 }
-      );
-    }
+  const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
+  const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
+  const AIRTABLE_TABLE_NAME = process.env.AIRTABLE_TABLE_NAME;
+  const AIRTABLE_FAVORITES_TABLE =
+    process.env.AIRTABLE_FAVORITES_TABLE || "PaletteFavorites";
 
-    if (!isAdmin) {
-      return Response.json(
-        { error: "Admin access required" },
-        { status: 403 }
-      );
-    }
-
-    const [directoryRecords, customerPhotoRecords] = await Promise.all([
-      fetchAllAirtableRecords({
-        baseId: AIRTABLE_BASE_ID,
-        tableName: "CustomerDirectory",
-        token: AIRTABLE_TOKEN,
-        sortField: "LastName"
-      }),
-      fetchAllAirtableRecords({
-        baseId: AIRTABLE_BASE_ID,
-        tableName: "CustomerPhotos",
-        token: AIRTABLE_TOKEN,
-        sortField: "UpdatedAt"
-      })
-    ]);
-
-    const photoMap = {};
-
-    customerPhotoRecords.forEach((record) => {
-      const fields = record.fields || {};
-      const customerId = normalizeCustomerId(fields.CustomerId);
-      const photoUrl = String(fields.PhotoUrl || "").trim() || null;
-
-      if (customerId) {
-        photoMap[customerId] = photoUrl;
-      }
-    });
-
-    const members = directoryRecords
-      .map((record) => {
-        const fields = record.fields || {};
-
-        const customerId = normalizeCustomerId(fields.CustomerId);
-        if (!customerId) return null;
-
-        const email = String(fields.Email || "").trim();
-        const firstName = String(fields.FirstName || "").trim();
-        const lastName = String(fields.LastName || "").trim();
-
-        const tags = normalizeList(fields.Tags)
-  .map((tag) => String(tag).trim())
-  .filter(Boolean);
-
-        const isVIP =
-          tags.includes("VIP") ||
-          parseTruthy(fields.IsVIP);
-
-        if (!isVIP) return null;
-
-        const paletteTags = String(fields.PaletteTags || "")
-          .split(",")
-          .map((tag) => tag.trim())
-          .filter(Boolean);
-
-        const hasPaletteAccess =
-          parseTruthy(fields.HasPaletteAccess) || paletteTags.length > 0;
-
-        let name = `${firstName} ${lastName}`.trim();
-        if (!name && email) name = email.split("@")[0];
-        if (!name) name = `Customer ${customerId}`;
-
-        const photoUrl = photoMap[customerId] || null;
-
-        return {
-          customerId,
-          name,
-          email,
-          colorType: String(fields.ColorType || "").trim(),
-          joinedDate: fields.JoinedDate ? String(fields.JoinedDate).trim() : "",
-          paletteTags,
-          hasPaletteAccess,
-          photoUrl,
-          hasPhoto: Boolean(photoUrl)
-        };
-      })
-      .filter(Boolean)
-      .sort((a, b) => a.name.localeCompare(b.name));
-
-    return Response.json({ members });
-  } catch (error) {
-    console.error("getAdminMembers failed:", error);
+  if (!AIRTABLE_TOKEN || !AIRTABLE_BASE_ID || !AIRTABLE_TABLE_NAME) {
     return Response.json(
-      { error: error.message || "Failed to load admin members" },
+      { error: "Missing Airtable server configuration" },
       { status: 500 }
     );
   }
-}
+
+  if (action === "getAdminMembers") {
+    try {
+      const isAdmin = String(url.searchParams.get("isAdmin") || "").trim() === "true";
+
+      if (!loggedInCustomerId) {
+        return Response.json(
+          { error: "You must be signed in to use this tool" },
+          { status: 401 }
+        );
+      }
+
+      if (!isAdmin) {
+        return Response.json(
+          { error: "Admin access required" },
+          { status: 403 }
+        );
+      }
+
+      const [directoryRecords, customerPhotoRecords] = await Promise.all([
+        fetchAllAirtableRecords({
+          baseId: AIRTABLE_BASE_ID,
+          tableName: "CustomerDirectory",
+          token: AIRTABLE_TOKEN,
+          sortField: "LastName"
+        }),
+        fetchAllAirtableRecords({
+          baseId: AIRTABLE_BASE_ID,
+          tableName: "CustomerPhotos",
+          token: AIRTABLE_TOKEN,
+          sortField: "UpdatedAt"
+        })
+      ]);
+
+      const photoMap = {};
+
+      customerPhotoRecords.forEach((record) => {
+        const fields = record.fields || {};
+        const customerId = normalizeCustomerId(fields.CustomerId);
+        const photoUrl = String(fields.PhotoUrl || "").trim() || null;
+
+        if (customerId) {
+          photoMap[customerId] = photoUrl;
+        }
+      });
+
+      const members = directoryRecords
+        .map((record) => {
+          const fields = record.fields || {};
+
+          const customerId = normalizeCustomerId(fields.CustomerId);
+          if (!customerId) return null;
+
+          const email = String(fields.Email || "").trim();
+          const firstName = String(fields.FirstName || "").trim();
+          const lastName = String(fields.LastName || "").trim();
+
+          const tags = normalizeList(fields.Tags)
+            .map((tag) => String(tag).trim())
+            .filter(Boolean);
+
+          const isVIP =
+            tags.includes("VIP") ||
+            parseTruthy(fields.IsVIP);
+
+          if (!isVIP) return null;
+
+          const paletteTags = String(fields.PaletteTags || "")
+            .split(",")
+            .map((tag) => tag.trim())
+            .filter(Boolean);
+
+          const hasPaletteAccess =
+            parseTruthy(fields.HasPaletteAccess) || paletteTags.length > 0;
+
+          let name = `${firstName} ${lastName}`.trim();
+          if (!name && email) name = email.split("@")[0];
+          if (!name) name = `Customer ${customerId}`;
+
+          const photoUrl = photoMap[customerId] || null;
+
+          return {
+            customerId,
+            name,
+            email,
+            colorType: String(fields.ColorType || "").trim(),
+            joinedDate: fields.JoinedDate ? String(fields.JoinedDate).trim() : "",
+            paletteTags,
+            hasPaletteAccess,
+            photoUrl,
+            hasPhoto: Boolean(photoUrl)
+          };
+        })
+        .filter(Boolean)
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      return Response.json({ members });
+    } catch (error) {
+      console.error("getAdminMembers failed:", error);
+      return Response.json(
+        { error: error.message || "Failed to load admin members" },
+        { status: 500 }
+      );
+    }
+  }
+
   if (action === "getFavorites") {
     const customerId = String(url.searchParams.get("customerId") || "").trim();
 
@@ -759,8 +753,6 @@ export async function loader({ request }) {
   }
 }
 
-
-
 export async function action({ request }) {
   const url = new URL(request.url);
   const actionName = String(url.searchParams.get("action") || "").trim();
@@ -816,41 +808,41 @@ export async function action({ request }) {
     );
   }
 
-if (actionName === "syncCustomerDirectory") {
-  try {
-    const body = await request.json();
-    const isAdmin = body?.isAdmin === true || String(body?.isAdmin || "") === "true";
+  if (actionName === "syncCustomerDirectory") {
+    try {
+      const body = await request.json();
+      const isAdmin = body?.isAdmin === true || String(body?.isAdmin || "") === "true";
 
-    if (!isAdmin) {
-      return Response.json({ error: "Admin access required" }, { status: 403 });
-    }
+      if (!isAdmin) {
+        return Response.json({ error: "Admin access required" }, { status: 403 });
+      }
 
-    const SHOPIFY_SHOP = process.env.SHOPIFY_SHOP;
-    const SHOPIFY_ADMIN_ACCESS_TOKEN = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
+      const SHOPIFY_SHOP = process.env.SHOPIFY_SHOP;
+      const SHOPIFY_ADMIN_ACCESS_TOKEN = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
 
-    if (!SHOPIFY_SHOP || !SHOPIFY_ADMIN_ACCESS_TOKEN) {
+      if (!SHOPIFY_SHOP || !SHOPIFY_ADMIN_ACCESS_TOKEN) {
+        return Response.json(
+          { error: "Missing Shopify admin configuration" },
+          { status: 500 }
+        );
+      }
+
+      const result = await syncCustomerDirectoryFromShopify({
+        shop: SHOPIFY_SHOP,
+        accessToken: SHOPIFY_ADMIN_ACCESS_TOKEN,
+        baseId: AIRTABLE_BASE_ID,
+        token: AIRTABLE_TOKEN
+      });
+
+      return Response.json({ success: true, summary: result });
+    } catch (error) {
+      console.error("syncCustomerDirectory failed:", error);
       return Response.json(
-        { error: "Missing Shopify admin configuration" },
+        { error: error.message || "Failed to sync customer directory" },
         { status: 500 }
       );
     }
-
-    const result = await syncCustomerDirectoryFromShopify({
-      shop: SHOPIFY_SHOP,
-      accessToken: SHOPIFY_ADMIN_ACCESS_TOKEN,
-      baseId: AIRTABLE_BASE_ID,
-      token: AIRTABLE_TOKEN
-    });
-
-    return Response.json({ success: true, summary: result });
-  } catch (error) {
-    console.error("syncCustomerDirectory failed:", error);
-    return Response.json(
-      { error: error.message || "Failed to sync customer directory" },
-      { status: 500 }
-    );
   }
-}
 
   if (actionName !== "toggleFavorite") {
     return Response.json({ error: "Unknown action" }, { status: 400 });
