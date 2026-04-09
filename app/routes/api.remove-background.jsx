@@ -47,7 +47,7 @@ export async function action({ request }) {
   }
 
   try {
-    const { imageBase64, customerId } = await request.json();
+    const { imageBase64, customerId, isAdmin } = await request.json();
 
     if (!imageBase64 || !customerId) {
       return Response.json(
@@ -77,32 +77,37 @@ export async function action({ request }) {
     const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const usageKey = `${customerId}__${monthKey}`;
 
-    const usageFormula = `{Key}="${usageKey}"`;
+    let usageRecord = null;
+let currentCount = 0;
 
-    const usageRes = await fetch(
-      `https://api.airtable.com/v0/${airtableBase}/${encodeURIComponent(usageTable)}?filterByFormula=${encodeURIComponent(usageFormula)}`,
+if (!isAdmin) {
+  const usageFormula = `{Key}="${usageKey}"`;
+
+  const usageRes = await fetch(
+    `https://api.airtable.com/v0/${airtableBase}/${encodeURIComponent(usageTable)}?filterByFormula=${encodeURIComponent(usageFormula)}`,
+    {
+      headers: {
+        Authorization: `Bearer ${airtableToken}`
+      }
+    }
+  );
+
+  const usageData = await usageRes.json();
+  usageRecord = usageData.records?.[0] || null;
+  currentCount = Number(usageRecord?.fields?.UploadCount || 0);
+
+  if (currentCount >= 3) {
+    return Response.json(
       {
-        headers: {
-          Authorization: `Bearer ${airtableToken}`
-        }
+        error: "You’ve used all 3 uploads for this month."
+      },
+      {
+        status: 403,
+        headers: corsHeaders
       }
     );
-
-    const usageData = await usageRes.json();
-    const usageRecord = usageData.records?.[0] || null;
-    const currentCount = Number(usageRecord?.fields?.UploadCount || 0);
-
-    if (currentCount >= 3) {
-      return Response.json(
-        {
-          error: "You’ve used all 3 uploads for this month."
-        },
-        {
-          status: 403,
-          headers: corsHeaders
-        }
-      );
-    }
+  }
+}
 
     const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
     const imageBuffer = Buffer.from(base64Data, "base64");
@@ -141,46 +146,48 @@ export async function action({ request }) {
     const dataUrl = `data:image/png;base64,${resultBase64}`;
 
     // Increment usage ONLY after success
-    if (usageRecord) {
-      await fetch(
-        `https://api.airtable.com/v0/${airtableBase}/${encodeURIComponent(usageTable)}/${usageRecord.id}`,
-        {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${airtableToken}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            fields: {
-              UploadCount: currentCount + 1
-            }
-          })
-        }
-      );
-    } else {
-      await fetch(
-        `https://api.airtable.com/v0/${airtableBase}/${encodeURIComponent(usageTable)}`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${airtableToken}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            records: [
-              {
-                fields: {
-                  CustomerId: String(customerId),
-                  MonthKey: monthKey,
-                  UploadCount: 1,
-                  Key: usageKey
-                }
+    if (!isAdmin) {
+  if (usageRecord) {
+    await fetch(
+      `https://api.airtable.com/v0/${airtableBase}/${encodeURIComponent(usageTable)}/${usageRecord.id}`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${airtableToken}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          fields: {
+            UploadCount: currentCount + 1
+          }
+        })
+      }
+    );
+  } else {
+    await fetch(
+      `https://api.airtable.com/v0/${airtableBase}/${encodeURIComponent(usageTable)}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${airtableToken}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          records: [
+            {
+              fields: {
+                CustomerId: String(customerId),
+                MonthKey: monthKey,
+                UploadCount: 1,
+                Key: usageKey
               }
-            ]
-          })
-        }
-      );
-    }
+            }
+          ]
+        })
+      }
+    );
+  }
+}
 
     return Response.json(
       { image: dataUrl },
