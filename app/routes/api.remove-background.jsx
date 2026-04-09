@@ -47,13 +47,58 @@ export async function action({ request }) {
   }
 
   try {
-    const { imageBase64 } = await request.json();
+    const { imageBase64, customerId } = await request.json();
 
-    if (!imageBase64) {
+    if (!imageBase64 || !customerId) {
       return Response.json(
-        { error: "Missing imageBase64" },
+        { error: "Missing imageBase64 or customerId" },
         {
           status: 400,
+          headers: corsHeaders
+        }
+      );
+    }
+
+    const airtableBase = process.env.AIRTABLE_BASE_ID;
+    const airtableToken = process.env.AIRTABLE_TOKEN;
+    const usageTable = "UploadUsage";
+
+    if (!airtableBase || !airtableToken || !process.env.REMOVE_BG_API_KEY) {
+      return Response.json(
+        { error: "Missing server configuration" },
+        {
+          status: 500,
+          headers: corsHeaders
+        }
+      );
+    }
+
+    const now = new Date();
+    const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const usageKey = `${customerId}__${monthKey}`;
+
+    const usageFormula = `{Key}="${usageKey}"`;
+
+    const usageRes = await fetch(
+      `https://api.airtable.com/v0/${airtableBase}/${encodeURIComponent(usageTable)}?filterByFormula=${encodeURIComponent(usageFormula)}`,
+      {
+        headers: {
+          Authorization: `Bearer ${airtableToken}`
+        }
+      }
+    );
+
+    const usageData = await usageRes.json();
+    const usageRecord = usageData.records?.[0] || null;
+    const currentCount = Number(usageRecord?.fields?.UploadCount || 0);
+
+    if (currentCount >= 3) {
+      return Response.json(
+        {
+          error: "You’ve used all 3 uploads for this month."
+        },
+        {
+          status: 403,
           headers: corsHeaders
         }
       );
@@ -71,9 +116,9 @@ export async function action({ request }) {
     const response = await fetch("https://api.remove.bg/v1.0/removebg", {
       method: "POST",
       headers: {
-        "X-Api-Key": process.env.REMOVE_BG_API_KEY,
+        "X-Api-Key": process.env.REMOVE_BG_API_KEY
       },
-      body: formData,
+      body: formData
     });
 
     if (!response.ok) {
@@ -94,6 +139,48 @@ export async function action({ request }) {
     const arrayBuffer = await response.arrayBuffer();
     const resultBase64 = Buffer.from(arrayBuffer).toString("base64");
     const dataUrl = `data:image/png;base64,${resultBase64}`;
+
+    // Increment usage ONLY after success
+    if (usageRecord) {
+      await fetch(
+        `https://api.airtable.com/v0/${airtableBase}/${encodeURIComponent(usageTable)}/${usageRecord.id}`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${airtableToken}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            fields: {
+              UploadCount: currentCount + 1
+            }
+          })
+        }
+      );
+    } else {
+      await fetch(
+        `https://api.airtable.com/v0/${airtableBase}/${encodeURIComponent(usageTable)}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${airtableToken}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            records: [
+              {
+                fields: {
+                  CustomerId: String(customerId),
+                  MonthKey: monthKey,
+                  UploadCount: 1,
+                  Key: usageKey
+                }
+              }
+            ]
+          })
+        }
+      );
+    }
 
     return Response.json(
       { image: dataUrl },
