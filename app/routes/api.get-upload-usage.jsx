@@ -31,6 +31,7 @@ export async function loader({ request }) {
     const url = new URL(request.url);
     const customerId = String(url.searchParams.get("customerId") || "").trim();
     const isAdmin = String(url.searchParams.get("isAdmin") || "").trim() === "true";
+    const isSampleUser = String(url.searchParams.get("isSampleUser") || "").trim() === "true";
 
     if (!customerId) {
       return Response.json(
@@ -43,6 +44,7 @@ export async function loader({ request }) {
       return Response.json(
         {
           isAdmin: true,
+          isSampleUser: false,
           used: 0,
           remaining: null,
           limit: null
@@ -77,15 +79,28 @@ export async function loader({ request }) {
       }
     );
 
+    if (!usageRes.ok) {
+      const errorText = await usageRes.text();
+      return Response.json(
+        {
+          error: "Could not load upload usage",
+          details: errorText
+        },
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
     const usageData = await usageRes.json();
     const usageRecord = usageData.records?.[0] || null;
     const used = Number(usageRecord?.fields?.UploadCount || 0);
-    const limit = 3;
+
+    const limit = isSampleUser ? 1 : 3;
     const remaining = Math.max(0, limit - used);
 
     return Response.json(
       {
         isAdmin: false,
+        isSampleUser,
         used,
         remaining,
         limit
