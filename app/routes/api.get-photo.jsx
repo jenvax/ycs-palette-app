@@ -33,7 +33,12 @@ export async function loader({ request }) {
 
     if (!customerId) {
       return Response.json(
-        { photoUrl: null },
+        {
+          photoUrl: null,
+          originalPhotoUrl: null,
+          adjustedPhotoUrl: null,
+          activePhotoUrl: null
+        },
         { status: 200, headers: corsHeaders }
       );
     }
@@ -60,10 +65,24 @@ export async function loader({ request }) {
 
     const data = await res.json();
     const record = data.records?.[0] || null;
-    const photoUrl = record?.fields?.PhotoUrl || null;
+    const fields = record?.fields || {};
+
+    const originalPhotoUrl = fields.OriginalPhotoUrl || null;
+    const adjustedPhotoUrl = fields.AdjustedPhotoUrl || null;
+    const activePhotoUrl =
+      fields.ActivePhotoUrl ||
+      fields.PhotoUrl ||
+      adjustedPhotoUrl ||
+      originalPhotoUrl ||
+      null;
 
     return Response.json(
-      { photoUrl },
+      {
+        photoUrl: activePhotoUrl,
+        originalPhotoUrl,
+        adjustedPhotoUrl,
+        activePhotoUrl
+      },
       { status: 200, headers: corsHeaders }
     );
   } catch (error) {

@@ -44,7 +44,7 @@ export async function action({ request }) {
   const corsHeaders = getCorsHeaders(origin);
 
   try {
-    const { imageBase64, customerId } = await request.json();
+    const { imageBase64, customerId, saveType } = await request.json();
 
     if (!imageBase64 || !customerId) {
       return Response.json(
@@ -53,12 +53,17 @@ export async function action({ request }) {
       );
     }
 
-    // 🔹 CLOUDINARY UPLOAD
+    const mode = String(saveType || "original").trim().toLowerCase();
+    const isAdjusted = mode === "adjusted";
+
     const timestamp = Math.floor(Date.now() / 1000);
+    const publicId = isAdjusted
+      ? `customer-${customerId}-adjusted`
+      : `customer-${customerId}`;
 
     const paramsToSign = {
       folder: "ycs-drape-photos",
-      public_id: `customer-${customerId}`,
+      public_id: publicId,
       overwrite: "true",
       timestamp: String(timestamp)
     };
@@ -98,14 +103,12 @@ export async function action({ request }) {
 
     const imageUrl = uploadData.secure_url;
 
-    // 🔹 AIRTABLE SAVE (UPSERT)
     const airtableBase = process.env.AIRTABLE_BASE_ID;
     const airtableTable = "CustomerPhotos";
     const airtableToken = process.env.AIRTABLE_TOKEN;
 
-    // Check if record exists
     const findRes = await fetch(
-      `https://api.airtable.com/v0/${airtableBase}/${airtableTable}?filterByFormula={CustomerId}="${customerId}"`,
+      `https://api.airtable.com/v0/${airtableBase}/${airtableTable}?filterByFormula=${encodeURIComponent(`{CustomerId}="${customerId}"`)}`,
       {
         headers: {
           Authorization: `Bearer ${airtableToken}`
@@ -115,19 +118,37 @@ export async function action({ request }) {
 
     const findData = await findRes.json();
     const existing = findData.records?.[0];
+    const existingFields = existing?.fields || {};
 
-    const payload = {
-      fields: {
+    let fields;
+
+    if (isAdjusted) {
+      fields = {
         CustomerId: customerId,
+        AdjustedPhotoUrl: imageUrl,
+        ActivePhotoUrl: imageUrl,
+        PhotoUrl: imageUrl,
+        UpdatedAt: new Date().toISOString()
+      };
+
+      if (!existingFields.OriginalPhotoUrl && existingFields.PhotoUrl) {
+        fields.OriginalPhotoUrl = existingFields.PhotoUrl;
+      }
+    } else {
+      fields = {
+        CustomerId: customerId,
+        OriginalPhotoUrl: imageUrl,
+        ActivePhotoUrl: imageUrl,
         PhotoUrl: imageUrl,
         PhotoKey: uploadData.public_id,
         UpdatedAt: new Date().toISOString()
-      }
-    };
+      };
+    }
+
+    const payload = { fields };
 
     if (existing) {
-      // UPDATE
-      await fetch(
+      const patchRes = await fetch(
         `https://api.airtable.com/v0/${airtableBase}/${airtableTable}/${existing.id}`,
         {
           method: "PATCH",
@@ -138,9 +159,18 @@ export async function action({ request }) {
           body: JSON.stringify(payload)
         }
       );
+
+      const patchData = await patchRes.json();
+
+      if (!patchRes.ok) {
+        console.error("Airtable patch error:", patchData);
+        return Response.json(
+          { error: "Airtable update failed", details: patchData },
+          { status: 500, headers: corsHeaders }
+        );
+      }
     } else {
-      // CREATE
-      await fetch(
+      const createRes = await fetch(
         `https://api.airtable.com/v0/${airtableBase}/${airtableTable}`,
         {
           method: "POST",
@@ -151,13 +181,26 @@ export async function action({ request }) {
           body: JSON.stringify(payload)
         }
       );
+
+      const createData = await createRes.json();
+
+      if (!createRes.ok) {
+        console.error("Airtable create error:", createData);
+        return Response.json(
+          { error: "Airtable create failed", details: createData },
+          { status: 500, headers: corsHeaders }
+        );
+      }
     }
 
     return Response.json(
-      { success: true, imageUrl },
+      {
+        success: true,
+        imageUrl,
+        saveType: mode
+      },
       { status: 200, headers: corsHeaders }
     );
-
   } catch (error) {
     console.error("Save photo failed:", error);
 
