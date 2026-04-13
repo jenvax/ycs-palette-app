@@ -30,6 +30,11 @@ function signCloudinaryParams(params, apiSecret) {
     .digest("hex");
 }
 
+function cleanString(value) {
+  const stringValue = String(value || "").trim();
+  return stringValue || null;
+}
+
 export async function loader({ request }) {
   const origin = request.headers.get("Origin") || "";
 
@@ -44,7 +49,14 @@ export async function action({ request }) {
   const corsHeaders = getCorsHeaders(origin);
 
   try {
-    const { imageBase64, customerId, saveType } = await request.json();
+    const {
+      imageBase64,
+      customerId,
+      saveType,
+      firstName,
+      lastName,
+      email
+    } = await request.json();
 
     if (!imageBase64 || !customerId) {
       return Response.json(
@@ -56,10 +68,15 @@ export async function action({ request }) {
     const mode = String(saveType || "original").trim().toLowerCase();
     const isAdjusted = mode === "adjusted";
 
+    const safeCustomerId = String(customerId).trim();
+    const safeFirstName = cleanString(firstName);
+    const safeLastName = cleanString(lastName);
+    const safeEmail = cleanString(email);
+
     const timestamp = Math.floor(Date.now() / 1000);
     const publicId = isAdjusted
-      ? `customer-${customerId}-adjusted`
-      : `customer-${customerId}`;
+      ? `customer-${safeCustomerId}-adjusted`
+      : `customer-${safeCustomerId}`;
 
     const paramsToSign = {
       folder: "ycs-drape-photos",
@@ -107,8 +124,15 @@ export async function action({ request }) {
     const airtableTable = "CustomerPhotos";
     const airtableToken = process.env.AIRTABLE_TOKEN;
 
+    if (!airtableBase || !airtableToken) {
+      return Response.json(
+        { error: "Missing Airtable configuration" },
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
     const findRes = await fetch(
-      `https://api.airtable.com/v0/${airtableBase}/${airtableTable}?filterByFormula=${encodeURIComponent(`{CustomerId}="${customerId}"`)}`,
+      `https://api.airtable.com/v0/${airtableBase}/${airtableTable}?filterByFormula=${encodeURIComponent(`{CustomerId}="${safeCustomerId}"`)}`,
       {
         headers: {
           Authorization: `Bearer ${airtableToken}`
@@ -120,30 +144,42 @@ export async function action({ request }) {
     const existing = findData.records?.[0];
     const existingFields = existing?.fields || {};
 
-    let fields;
+    const fields = {
+      CustomerId: safeCustomerId,
+      UpdatedAt: new Date().toISOString()
+    };
+
+    // Preserve existing identity values unless new ones were provided
+    fields.FirstName = safeFirstName || existingFields.FirstName || undefined;
+    fields.LastName = safeLastName || existingFields.LastName || undefined;
+    fields.Email = safeEmail || existingFields.Email || undefined;
 
     if (isAdjusted) {
-      fields = {
-        CustomerId: customerId,
-        AdjustedPhotoUrl: imageUrl,
-        ActivePhotoUrl: imageUrl,
-        PhotoUrl: imageUrl,
-        UpdatedAt: new Date().toISOString()
-      };
+      fields.AdjustedPhotoUrl = imageUrl;
+      fields.ActivePhotoUrl = imageUrl;
+      fields.PhotoUrl = imageUrl;
 
       if (!existingFields.OriginalPhotoUrl && existingFields.PhotoUrl) {
         fields.OriginalPhotoUrl = existingFields.PhotoUrl;
       }
     } else {
-      fields = {
-        CustomerId: customerId,
-        OriginalPhotoUrl: imageUrl,
-        ActivePhotoUrl: imageUrl,
-        PhotoUrl: imageUrl,
-        PhotoKey: uploadData.public_id,
-        UpdatedAt: new Date().toISOString()
-      };
+      fields.OriginalPhotoUrl = imageUrl;
+      fields.ActivePhotoUrl = imageUrl;
+      fields.PhotoUrl = imageUrl;
+      fields.PhotoKey = uploadData.public_id;
+
+      // Optional: if there is already an adjusted photo, leave it alone
+      if (existingFields.AdjustedPhotoUrl) {
+        fields.AdjustedPhotoUrl = existingFields.AdjustedPhotoUrl;
+      }
     }
+
+    // Remove undefined keys so Airtable only gets real values
+    Object.keys(fields).forEach((key) => {
+      if (fields[key] === undefined) {
+        delete fields[key];
+      }
+    });
 
     const payload = { fields };
 
@@ -197,7 +233,10 @@ export async function action({ request }) {
       {
         success: true,
         imageUrl,
-        saveType: mode
+        saveType: mode,
+        firstName: fields.FirstName || null,
+        lastName: fields.LastName || null,
+        email: fields.Email || null
       },
       { status: 200, headers: corsHeaders }
     );
