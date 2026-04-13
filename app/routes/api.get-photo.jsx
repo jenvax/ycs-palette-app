@@ -37,7 +37,10 @@ export async function loader({ request }) {
           photoUrl: null,
           originalPhotoUrl: null,
           adjustedPhotoUrl: null,
-          activePhotoUrl: null
+          activePhotoUrl: null,
+          photoScale: 1,
+          photoX: 0,
+          photoY: 0
         },
         { status: 200, headers: corsHeaders }
       );
@@ -76,12 +79,24 @@ export async function loader({ request }) {
       originalPhotoUrl ||
       null;
 
+    const photoScale =
+      typeof fields.PhotoScale === "number" ? fields.PhotoScale : 1;
+
+    const photoX =
+      typeof fields.PhotoX === "number" ? fields.PhotoX : 0;
+
+    const photoY =
+      typeof fields.PhotoY === "number" ? fields.PhotoY : 0;
+
     return Response.json(
       {
         photoUrl: activePhotoUrl,
         originalPhotoUrl,
         adjustedPhotoUrl,
-        activePhotoUrl
+        activePhotoUrl,
+        photoScale,
+        photoX,
+        photoY
       },
       { status: 200, headers: corsHeaders }
     );
