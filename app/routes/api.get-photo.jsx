@@ -38,9 +38,10 @@ export async function loader({ request }) {
           originalPhotoUrl: null,
           adjustedPhotoUrl: null,
           activePhotoUrl: null,
-          photoScale: 1,
-          photoX: 0,
-          photoY: 0
+          customerId: null,
+          firstName: null,
+          lastName: null,
+          email: null
         },
         { status: 200, headers: corsHeaders }
       );
@@ -79,24 +80,16 @@ export async function loader({ request }) {
       originalPhotoUrl ||
       null;
 
-    const photoScale =
-      typeof fields.PhotoScale === "number" ? fields.PhotoScale : 1;
-
-    const photoX =
-      typeof fields.PhotoX === "number" ? fields.PhotoX : 0;
-
-    const photoY =
-      typeof fields.PhotoY === "number" ? fields.PhotoY : 0;
-
     return Response.json(
       {
         photoUrl: activePhotoUrl,
         originalPhotoUrl,
         adjustedPhotoUrl,
         activePhotoUrl,
-        photoScale,
-        photoX,
-        photoY
+        customerId,
+        firstName: fields.FirstName || null,
+        lastName: fields.LastName || null,
+        email: fields.Email || null
       },
       { status: 200, headers: corsHeaders }
     );
