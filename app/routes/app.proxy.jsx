@@ -702,19 +702,27 @@ export async function loader({ request }) {
           .map((p) => p.toUpperCase().trim())
           .filter(Boolean);
 
-        const categories = normalizeList(f["CategoryNames"]);
-        const category = normalizeField(f["CategoryNames"]);
+        const categories = normalizeList(f["CategoryNames"]).map((item) =>
+  String(item || "").trim()
+).filter(Boolean);
 
-        return {
-          name: normalizeField(f["ColorName"]),
-          hex: normalizeField(f["Hex"]),
-          sortOrder: Number(normalizeField(f["SortOrder"])) || 999,
-          category: category || categories[0] || "Other",
+const category = normalizeField(f["CategoryNames"]);
 
-          paletteCodes: normalizeField(f["PaletteCodes_Final_Manual"]),
-          chroma: normalizeField(f["Chroma"]),
-          temperature: normalizeField(f["Temperature"]),
-          depth: normalizeField(f["Depth"]),
+return {
+  name: normalizeField(f["ColorName"]),
+  hex: normalizeField(f["Hex"]),
+  sortOrder: Number(normalizeField(f["SortOrder"])) || 999,
+
+  // Keep existing app behavior unchanged
+  category: category || categories[0] || "Other",
+
+  // New: full category list for Color Analysis Tool
+  categories: categories,
+
+  paletteCodes: normalizeField(f["PaletteCodes_Final_Manual"]),
+  chroma: normalizeField(f["Chroma"]),
+  temperature: normalizeField(f["Temperature"]),
+  depth: normalizeField(f["Depth"]),
 
           isBest: bestPalettes.includes(paletteCode),
 
