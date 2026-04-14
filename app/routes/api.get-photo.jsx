@@ -82,28 +82,30 @@ try {
 }
 
     const originalPhotoUrl = fields.OriginalPhotoUrl || null;
-    const adjustedPhotoUrl = fields.AdjustedPhotoUrl || null;
-    const activePhotoUrl =
-      fields.ActivePhotoUrl ||
-      fields.PhotoUrl ||
-      adjustedPhotoUrl ||
-      originalPhotoUrl ||
-      null;
+const adjustedPhotoUrl = fields.AdjustedPhotoUrl || null;
+const photoUrl = fields.PhotoUrl || null;
 
-    return Response.json(
-      {
-        photoUrl: activePhotoUrl,
-        originalPhotoUrl,
-        adjustedPhotoUrl,
-        activePhotoUrl,
+const activePhotoUrl =
+  fields.ActivePhotoUrl ||
+  adjustedPhotoUrl ||
+  photoUrl ||
+  originalPhotoUrl ||
+  null;
+
+return Response.json(
+  {
+    photoUrl,
+    originalPhotoUrl,
+    adjustedPhotoUrl,
+    activePhotoUrl,
     photoTransform,
-        customerId,
-        firstName: fields.FirstName || null,
-        lastName: fields.LastName || null,
-        email: fields.Email || null
-      },
-      { status: 200, headers: corsHeaders }
-    );
+    customerId,
+    firstName: fields.FirstName || null,
+    lastName: fields.LastName || null,
+    email: fields.Email || null
+  },
+  { status: 200, headers: corsHeaders }
+);
   } catch (error) {
     console.error("Get photo failed:", error);
 
