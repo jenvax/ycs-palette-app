@@ -71,6 +71,16 @@ export async function loader({ request }) {
     const record = data.records?.[0] || null;
     const fields = record?.fields || {};
 
+    let photoTransform = null;
+
+try {
+  photoTransform = fields.PhotoTransform
+    ? JSON.parse(fields.PhotoTransform)
+    : null;
+} catch (error) {
+  photoTransform = null;
+}
+
     const originalPhotoUrl = fields.OriginalPhotoUrl || null;
     const adjustedPhotoUrl = fields.AdjustedPhotoUrl || null;
     const activePhotoUrl =
@@ -86,6 +96,7 @@ export async function loader({ request }) {
         originalPhotoUrl,
         adjustedPhotoUrl,
         activePhotoUrl,
+    photoTransform,
         customerId,
         firstName: fields.FirstName || null,
         lastName: fields.LastName || null,
