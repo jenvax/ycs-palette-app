@@ -151,6 +151,7 @@ export async function action({ request }) {
     const findData = await findRes.json();
     const existing = findData.records?.[0];
     const existingFields = existing?.fields || {};
+    const fields = {};
 
    
 
