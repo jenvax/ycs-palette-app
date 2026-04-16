@@ -16,6 +16,11 @@ function getCorsHeaders(origin) {
   };
 }
 
+function cleanString(value) {
+  const stringValue = String(value || "").trim();
+  return stringValue || null;
+}
+
 export async function loader({ request }) {
   const origin = request.headers.get("Origin") || "";
 
@@ -37,18 +42,26 @@ export async function action({ request }) {
   }
 
   try {
-    const { customerId, photoType } = await request.json();
+    const { customerId, clientRecordId, photoType } = await request.json();
 
-    if (!customerId || !photoType) {
+    const safeCustomerId = cleanString(customerId);
+    const safeClientRecordId = cleanString(clientRecordId);
+    const safePhotoType = cleanString(photoType);
+
+    if ((!safeCustomerId && !safeClientRecordId) || !safePhotoType) {
       return Response.json(
-        { error: "Missing customerId or photoType" },
+        { error: "Missing customerId/clientRecordId or photoType" },
         { status: 400, headers: corsHeaders }
       );
     }
 
+    const isConsultantClient = !!safeClientRecordId;
+    const recordId = safeClientRecordId || safeCustomerId;
+
     const airtableBase = process.env.AIRTABLE_BASE_ID;
-    const airtableTable = "CustomerPhotos";
     const airtableToken = process.env.AIRTABLE_TOKEN;
+    const airtableTable = isConsultantClient ? "ConsultantClients" : "CustomerPhotos";
+    const lookupField = isConsultantClient ? "ClientRecordId" : "CustomerId";
 
     if (!airtableBase || !airtableToken) {
       return Response.json(
@@ -58,7 +71,7 @@ export async function action({ request }) {
     }
 
     const findRes = await fetch(
-      `https://api.airtable.com/v0/${airtableBase}/${airtableTable}?filterByFormula=${encodeURIComponent(`{CustomerId}="${customerId}"`)}`,
+      `https://api.airtable.com/v0/${airtableBase}/${airtableTable}?filterByFormula=${encodeURIComponent(`{${lookupField}}="${recordId}"`)}`,
       {
         headers: {
           Authorization: `Bearer ${airtableToken}`
@@ -72,16 +85,16 @@ export async function action({ request }) {
 
     if (!existing) {
       return Response.json(
-        { error: "Customer photo record not found" },
+        { error: "Photo record not found" },
         { status: 404, headers: corsHeaders }
       );
     }
 
     let nextUrl = null;
 
-    if (photoType === "original") {
+    if (safePhotoType === "original") {
       nextUrl = fields.OriginalPhotoUrl || null;
-    } else if (photoType === "adjusted") {
+    } else if (safePhotoType === "adjusted") {
       nextUrl = fields.AdjustedPhotoUrl || null;
     } else {
       return Response.json(
@@ -92,7 +105,7 @@ export async function action({ request }) {
 
     if (!nextUrl) {
       return Response.json(
-        { error: `No ${photoType} photo found` },
+        { error: `No ${safePhotoType} photo found` },
         { status: 400, headers: corsHeaders }
       );
     }
@@ -131,7 +144,10 @@ export async function action({ request }) {
     return Response.json(
       {
         success: true,
-        activePhotoUrl: nextUrl
+        activePhotoUrl: nextUrl,
+        customerId: safeCustomerId,
+        clientRecordId: safeClientRecordId,
+        recordType: isConsultantClient ? "consultant_client" : "shopify_customer"
       },
       { status: 200, headers: corsHeaders }
     );

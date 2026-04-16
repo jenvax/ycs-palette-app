@@ -52,31 +52,37 @@ export async function action({ request }) {
     const {
       imageBase64,
       customerId,
+      clientRecordId,
       saveType,
       firstName,
       lastName,
       email
     } = await request.json();
 
-    if (!imageBase64 || !customerId) {
+    const safeCustomerId = cleanString(customerId);
+    const safeClientRecordId = cleanString(clientRecordId);
+
+    if (!imageBase64 || (!safeCustomerId && !safeClientRecordId)) {
       return Response.json(
-        { error: "Missing imageBase64 or customerId" },
+        { error: "Missing imageBase64 and record ID" },
         { status: 400, headers: corsHeaders }
       );
     }
 
+    const isConsultantClient = !!safeClientRecordId;
+    const recordId = safeClientRecordId || safeCustomerId;
+
     const mode = String(saveType || "original").trim().toLowerCase();
     const isAdjusted = mode === "adjusted";
 
-    const safeCustomerId = String(customerId).trim();
     const safeFirstName = cleanString(firstName);
     const safeLastName = cleanString(lastName);
     const safeEmail = cleanString(email);
 
     const timestamp = Math.floor(Date.now() / 1000);
     const publicId = isAdjusted
-      ? `customer-${safeCustomerId}-adjusted`
-      : `customer-${safeCustomerId}`;
+      ? `${isConsultantClient ? "consultant-client" : "customer"}-${recordId}-adjusted`
+      : `${isConsultantClient ? "consultant-client" : "customer"}-${recordId}`;
 
     const paramsToSign = {
       folder: "ycs-drape-photos",
@@ -121,7 +127,6 @@ export async function action({ request }) {
     const imageUrl = uploadData.secure_url;
 
     const airtableBase = process.env.AIRTABLE_BASE_ID;
-    const airtableTable = "CustomerPhotos";
     const airtableToken = process.env.AIRTABLE_TOKEN;
 
     if (!airtableBase || !airtableToken) {
@@ -131,8 +136,11 @@ export async function action({ request }) {
       );
     }
 
+    const airtableTable = isConsultantClient ? "ConsultantClients" : "CustomerPhotos";
+    const lookupField = isConsultantClient ? "ClientRecordId" : "CustomerId";
+
     const findRes = await fetch(
-      `https://api.airtable.com/v0/${airtableBase}/${airtableTable}?filterByFormula=${encodeURIComponent(`{CustomerId}="${safeCustomerId}"`)}`,
+      `https://api.airtable.com/v0/${airtableBase}/${airtableTable}?filterByFormula=${encodeURIComponent(`{${lookupField}}="${recordId}"`)}`,
       {
         headers: {
           Authorization: `Bearer ${airtableToken}`
@@ -145,11 +153,15 @@ export async function action({ request }) {
     const existingFields = existing?.fields || {};
 
     const fields = {
-      CustomerId: safeCustomerId,
       UpdatedAt: new Date().toISOString()
     };
 
-    // Preserve existing identity values unless new ones were provided
+    if (isConsultantClient) {
+      fields.ClientRecordId = recordId;
+    } else {
+      fields.CustomerId = recordId;
+    }
+
     fields.FirstName = safeFirstName || existingFields.FirstName || undefined;
     fields.LastName = safeLastName || existingFields.LastName || undefined;
     fields.Email = safeEmail || existingFields.Email || undefined;
@@ -168,13 +180,11 @@ export async function action({ request }) {
       fields.PhotoUrl = imageUrl;
       fields.PhotoKey = uploadData.public_id;
 
-      // Optional: if there is already an adjusted photo, leave it alone
       if (existingFields.AdjustedPhotoUrl) {
         fields.AdjustedPhotoUrl = existingFields.AdjustedPhotoUrl;
       }
     }
 
-    // Remove undefined keys so Airtable only gets real values
     Object.keys(fields).forEach((key) => {
       if (fields[key] === undefined) {
         delete fields[key];
@@ -234,6 +244,9 @@ export async function action({ request }) {
         success: true,
         imageUrl,
         saveType: mode,
+        customerId: safeCustomerId,
+        clientRecordId: safeClientRecordId,
+        recordType: isConsultantClient ? "consultant_client" : "shopify_customer",
         firstName: fields.FirstName || null,
         lastName: fields.LastName || null,
         email: fields.Email || null

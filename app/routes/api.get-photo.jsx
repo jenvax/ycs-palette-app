@@ -16,6 +16,11 @@ function getCorsHeaders(origin) {
   };
 }
 
+function cleanString(value) {
+  const stringValue = String(value || "").trim();
+  return stringValue || null;
+}
+
 export async function loader({ request }) {
   const origin = request.headers.get("Origin") || "";
   const corsHeaders = getCorsHeaders(origin);
@@ -29,9 +34,11 @@ export async function loader({ request }) {
 
   try {
     const url = new URL(request.url);
-    const customerId = String(url.searchParams.get("customerId") || "").trim();
 
-    if (!customerId) {
+    const customerId = cleanString(url.searchParams.get("customerId"));
+    const clientRecordId = cleanString(url.searchParams.get("clientRecordId"));
+
+    if (!customerId && !clientRecordId) {
       return Response.json(
         {
           photoUrl: null,
@@ -39,6 +46,7 @@ export async function loader({ request }) {
           adjustedPhotoUrl: null,
           activePhotoUrl: null,
           customerId: null,
+          clientRecordId: null,
           firstName: null,
           lastName: null,
           email: null
@@ -57,9 +65,15 @@ export async function loader({ request }) {
       );
     }
 
+    const isConsultantClient = !!clientRecordId;
+
+    const tableName = isConsultantClient ? "ConsultantClients" : "CustomerPhotos";
+    const lookupField = isConsultantClient ? "ClientRecordId" : "CustomerId";
+    const lookupValue = isConsultantClient ? clientRecordId : customerId;
+
     const airtableUrl =
-      `https://api.airtable.com/v0/${airtableBase}/CustomerPhotos` +
-      `?filterByFormula=${encodeURIComponent(`{CustomerId}="${customerId}"`)}`;
+      `https://api.airtable.com/v0/${airtableBase}/${tableName}` +
+      `?filterByFormula=${encodeURIComponent(`{${lookupField}}="${lookupValue}"`)}`;
 
     const res = await fetch(airtableUrl, {
       headers: {
@@ -68,44 +82,59 @@ export async function loader({ request }) {
     });
 
     const data = await res.json();
+
+    if (!res.ok) {
+      return Response.json(
+        {
+          error: "Airtable lookup failed",
+          details: data
+        },
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
     const record = data.records?.[0] || null;
     const fields = record?.fields || {};
 
     let photoTransform = null;
 
-try {
-  photoTransform = fields.PhotoTransform
-    ? JSON.parse(fields.PhotoTransform)
-    : null;
-} catch (error) {
-  photoTransform = null;
-}
+    try {
+      photoTransform = fields.PhotoTransformJson
+        ? JSON.parse(fields.PhotoTransformJson)
+        : fields.PhotoTransform
+          ? JSON.parse(fields.PhotoTransform)
+          : null;
+    } catch (error) {
+      photoTransform = null;
+    }
 
     const originalPhotoUrl = fields.OriginalPhotoUrl || null;
-const adjustedPhotoUrl = fields.AdjustedPhotoUrl || null;
-const photoUrl = fields.PhotoUrl || null;
+    const adjustedPhotoUrl = fields.AdjustedPhotoUrl || null;
+    const photoUrl = fields.PhotoUrl || null;
 
-const activePhotoUrl =
-  fields.ActivePhotoUrl ||
-  adjustedPhotoUrl ||
-  photoUrl ||
-  originalPhotoUrl ||
-  null;
+    const activePhotoUrl =
+      fields.ActivePhotoUrl ||
+      adjustedPhotoUrl ||
+      photoUrl ||
+      originalPhotoUrl ||
+      null;
 
-return Response.json(
-  {
-    photoUrl,
-    originalPhotoUrl,
-    adjustedPhotoUrl,
-    activePhotoUrl,
-    photoTransform,
-    customerId,
-    firstName: fields.FirstName || null,
-    lastName: fields.LastName || null,
-    email: fields.Email || null
-  },
-  { status: 200, headers: corsHeaders }
-);
+    return Response.json(
+      {
+        photoUrl,
+        originalPhotoUrl,
+        adjustedPhotoUrl,
+        activePhotoUrl,
+        photoTransform,
+        customerId: customerId || null,
+        clientRecordId: clientRecordId || null,
+        firstName: fields.FirstName || null,
+        lastName: fields.LastName || null,
+        email: fields.Email || null,
+        recordType: isConsultantClient ? "consultant_client" : "shopify_customer"
+      },
+      { status: 200, headers: corsHeaders }
+    );
   } catch (error) {
     console.error("Get photo failed:", error);
 
