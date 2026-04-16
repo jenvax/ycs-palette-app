@@ -111,12 +111,11 @@ export async function action({ request }) {
     }
 
     const payload = {
-      fields: {
-        ActivePhotoUrl: nextUrl,
-        PhotoUrl: nextUrl,
-        UpdatedAt: new Date().toISOString()
-      }
-    };
+  fields: {
+    ActivePhotoUrl: nextUrl,
+    PhotoUrl: nextUrl
+  }
+};
 
     const patchRes = await fetch(
       `https://api.airtable.com/v0/${airtableBase}/${airtableTable}/${existing.id}`,
