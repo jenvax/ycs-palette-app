@@ -90,7 +90,7 @@ export async function action({ request }) {
 
     const payload = {
       fields: {
-        PhotoTransformJson: JSON.stringify({
+        PhotoTransform: JSON.stringify({
           x: Number.isFinite(Number(photoTransform.x)) ? Number(photoTransform.x) : 0,
           y: Number.isFinite(Number(photoTransform.y)) ? Number(photoTransform.y) : 0,
           scale: Number.isFinite(Number(photoTransform.scale)) ? Number(photoTransform.scale) : 1
