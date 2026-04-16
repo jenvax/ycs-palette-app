@@ -152,9 +152,7 @@ export async function action({ request }) {
     const existing = findData.records?.[0];
     const existingFields = existing?.fields || {};
 
-    const fields = {
-      UpdatedAt: new Date().toISOString()
-    };
+   
 
     if (isConsultantClient) {
       fields.ClientRecordId = recordId;
@@ -178,7 +176,9 @@ export async function action({ request }) {
       fields.OriginalPhotoUrl = imageUrl;
       fields.ActivePhotoUrl = imageUrl;
       fields.PhotoUrl = imageUrl;
-      fields.PhotoKey = uploadData.public_id;
+      if (!isConsultantClient) {
+  fields.PhotoKey = uploadData.public_id;
+}
 
       if (existingFields.AdjustedPhotoUrl) {
         fields.AdjustedPhotoUrl = existingFields.AdjustedPhotoUrl;
