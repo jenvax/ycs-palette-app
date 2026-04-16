@@ -16,8 +16,14 @@ function getCorsHeaders(origin) {
   };
 }
 
+function cleanString(value) {
+  const stringValue = String(value || "").trim();
+  return stringValue || null;
+}
+
 export async function loader({ request }) {
   const origin = request.headers.get("Origin") || "";
+
   return new Response(null, {
     status: 204,
     headers: getCorsHeaders(origin)
@@ -36,24 +42,25 @@ export async function action({ request }) {
   }
 
   try {
-    const { customerId, x, y, scale } = await request.json();
+    const { customerId, clientRecordId, photoTransform } = await request.json();
 
-    if (!customerId) {
+    const safeCustomerId = cleanString(customerId);
+    const safeClientRecordId = cleanString(clientRecordId);
+
+    if ((!safeCustomerId && !safeClientRecordId) || !photoTransform) {
       return Response.json(
-        { error: "Missing customerId" },
+        { error: "Missing customerId/clientRecordId or photoTransform" },
         { status: 400, headers: corsHeaders }
       );
     }
 
-    const transform = {
-      x: Number(x || 0),
-      y: Number(y || 0),
-      scale: Number(scale || 1)
-    };
+    const isConsultantClient = !!safeClientRecordId;
+    const recordId = safeClientRecordId || safeCustomerId;
 
     const airtableBase = process.env.AIRTABLE_BASE_ID;
-    const airtableTable = "CustomerPhotos";
+    const airtableTable = isConsultantClient ? "ConsultantClients" : "CustomerPhotos";
     const airtableToken = process.env.AIRTABLE_TOKEN;
+    const lookupField = isConsultantClient ? "ClientRecordId" : "CustomerId";
 
     if (!airtableBase || !airtableToken) {
       return Response.json(
@@ -63,7 +70,7 @@ export async function action({ request }) {
     }
 
     const findRes = await fetch(
-      `https://api.airtable.com/v0/${airtableBase}/${airtableTable}?filterByFormula=${encodeURIComponent(`{CustomerId}="${customerId}"`)}`,
+      `https://api.airtable.com/v0/${airtableBase}/${airtableTable}?filterByFormula=${encodeURIComponent(`{${lookupField}}="${recordId}"`)}`,
       {
         headers: {
           Authorization: `Bearer ${airtableToken}`
@@ -76,15 +83,18 @@ export async function action({ request }) {
 
     if (!existing) {
       return Response.json(
-        { error: "Customer photo record not found" },
+        { error: "Photo record not found" },
         { status: 404, headers: corsHeaders }
       );
     }
 
     const payload = {
       fields: {
-        PhotoTransform: JSON.stringify(transform),
-        UpdatedAt: new Date().toISOString()
+        PhotoTransform: JSON.stringify({
+          x: Number.isFinite(Number(photoTransform.x)) ? Number(photoTransform.x) : 0,
+          y: Number.isFinite(Number(photoTransform.y)) ? Number(photoTransform.y) : 0,
+          scale: Number.isFinite(Number(photoTransform.scale)) ? Number(photoTransform.scale) : 1
+        })
       }
     };
 
@@ -103,6 +113,8 @@ export async function action({ request }) {
     const patchData = await patchRes.json();
 
     if (!patchRes.ok) {
+      console.error("Airtable patch error:", patchData);
+
       return Response.json(
         { error: "Airtable update failed", details: patchData },
         { status: 500, headers: corsHeaders }
@@ -110,7 +122,7 @@ export async function action({ request }) {
     }
 
     return Response.json(
-      { success: true, transform },
+      { success: true },
       { status: 200, headers: corsHeaders }
     );
   } catch (error) {
