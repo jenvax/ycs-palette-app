@@ -16,6 +16,11 @@ function getCorsHeaders(origin) {
   };
 }
 
+function cleanString(value) {
+  const stringValue = String(value || "").trim();
+  return stringValue || null;
+}
+
 export async function loader({ request }) {
   const origin = request.headers.get("Origin") || "";
 
@@ -37,18 +42,25 @@ export async function action({ request }) {
   }
 
   try {
-    const { customerId, photoScale, photoX, photoY } = await request.json();
+    const { customerId, clientRecordId, photoTransform } = await request.json();
 
-    if (!customerId) {
+    const safeCustomerId = cleanString(customerId);
+    const safeClientRecordId = cleanString(clientRecordId);
+
+    if ((!safeCustomerId && !safeClientRecordId) || !photoTransform) {
       return Response.json(
-        { error: "Missing customerId" },
+        { error: "Missing customerId/clientRecordId or photoTransform" },
         { status: 400, headers: corsHeaders }
       );
     }
 
+    const isConsultantClient = !!safeClientRecordId;
+    const recordId = safeClientRecordId || safeCustomerId;
+
     const airtableBase = process.env.AIRTABLE_BASE_ID;
-    const airtableTable = "CustomerPhotos";
+    const airtableTable = isConsultantClient ? "ConsultantClients" : "CustomerPhotos";
     const airtableToken = process.env.AIRTABLE_TOKEN;
+    const lookupField = isConsultantClient ? "ClientRecordId" : "CustomerId";
 
     if (!airtableBase || !airtableToken) {
       return Response.json(
@@ -58,7 +70,7 @@ export async function action({ request }) {
     }
 
     const findRes = await fetch(
-      `https://api.airtable.com/v0/${airtableBase}/${airtableTable}?filterByFormula=${encodeURIComponent(`{CustomerId}="${customerId}"`)}`,
+      `https://api.airtable.com/v0/${airtableBase}/${airtableTable}?filterByFormula=${encodeURIComponent(`{${lookupField}}="${recordId}"`)}`,
       {
         headers: {
           Authorization: `Bearer ${airtableToken}`
@@ -71,17 +83,18 @@ export async function action({ request }) {
 
     if (!existing) {
       return Response.json(
-        { error: "Customer photo record not found" },
+        { error: "Photo record not found" },
         { status: 404, headers: corsHeaders }
       );
     }
 
     const payload = {
       fields: {
-        PhotoScale: Number.isFinite(Number(photoScale)) ? Number(photoScale) : 1,
-        PhotoX: Number.isFinite(Number(photoX)) ? Number(photoX) : 0,
-        PhotoY: Number.isFinite(Number(photoY)) ? Number(photoY) : 0,
-        UpdatedAt: new Date().toISOString()
+        PhotoTransformJson: JSON.stringify({
+          x: Number.isFinite(Number(photoTransform.x)) ? Number(photoTransform.x) : 0,
+          y: Number.isFinite(Number(photoTransform.y)) ? Number(photoTransform.y) : 0,
+          scale: Number.isFinite(Number(photoTransform.scale)) ? Number(photoTransform.scale) : 1
+        })
       }
     };
 
