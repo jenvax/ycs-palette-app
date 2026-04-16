@@ -85,14 +85,13 @@ export async function action({ request }) {
     const clientRecordId = generateClientRecordId();
 
     const fields = {
-      ClientRecordId: clientRecordId,
-      ConsultantId: safeConsultantId,
-      FirstName: safeFirstName,
-      LastName: safeLastName,
-      Email: safeEmail || undefined,
-      Status: "New",
-      UpdatedAt: new Date().toISOString()
-    };
+  ClientRecordId: clientRecordId,
+  ConsultantId: safeConsultantId,
+  FirstName: safeFirstName,
+  LastName: safeLastName,
+  Email: safeEmail || undefined,
+  UpdatedAt: new Date().toISOString()
+};
 
     Object.keys(fields).forEach((key) => {
       if (fields[key] === undefined) {
