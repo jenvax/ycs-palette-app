@@ -89,8 +89,7 @@ export async function action({ request }) {
   ConsultantId: safeConsultantId,
   FirstName: safeFirstName,
   LastName: safeLastName,
-  Email: safeEmail || undefined,
-  UpdatedAt: new Date().toISOString()
+  Email: safeEmail || undefined
 };
 
     Object.keys(fields).forEach((key) => {
