@@ -16,6 +16,122 @@ function getCorsHeaders(origin) {
   };
 }
 
+function toBool(value) {
+  return String(value || "").trim().toLowerCase() === "true";
+}
+
+function cleanString(value) {
+  const stringValue = String(value || "").trim();
+  return stringValue || null;
+}
+
+function getMonthKey() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function buildUsageKey({ customerId, tool, scope, monthKey }) {
+  if (scope === "total") {
+    return `${customerId}__${tool}__TOTAL`;
+  }
+
+  return `${customerId}__${tool}__${monthKey}`;
+}
+
+function getUsageConfig(params) {
+  const {
+    tool,
+    isAdmin,
+    isTrade,
+    isCatool,
+    isCatoolGrowth,
+    isVip,
+    hasDrapingStudio,
+    isSampleUser
+  } = params;
+
+  // Admin = unlimited everywhere
+  if (isAdmin) {
+    return {
+      allowed: true,
+      scope: "unlimited",
+      limit: null
+    };
+  }
+
+  // PHOTO PREP
+  if (tool === "photo-prep") {
+    if (isTrade) {
+      return {
+        allowed: true,
+        scope: "monthly",
+        limit: 10
+      };
+    }
+
+    if (isCatoolGrowth) {
+      return {
+        allowed: true,
+        scope: "monthly",
+        limit: 15
+      };
+    }
+
+    if (isCatool) {
+      return {
+        allowed: true,
+        scope: "monthly",
+        limit: 5
+      };
+    }
+
+    return {
+      allowed: false,
+      scope: "monthly",
+      limit: 0
+    };
+  }
+
+  // PHOTO DRAPING
+  if (tool === "photo-draping") {
+    if (isVip) {
+      return {
+        allowed: true,
+        scope: "monthly",
+        limit: 3
+      };
+    }
+
+    if (hasDrapingStudio) {
+      return {
+        allowed: true,
+        scope: "total",
+        limit: 2
+      };
+    }
+
+    if (isSampleUser) {
+      return {
+        allowed: true,
+        scope: "total",
+        limit: 1
+      };
+    }
+
+    return {
+      allowed: false,
+      scope: "monthly",
+      limit: 0
+    };
+  }
+
+  return {
+    allowed: false,
+    scope: "monthly",
+    limit: 0
+  };
+}
+
 export async function loader({ request }) {
   const origin = request.headers.get("Origin") || "";
   const corsHeaders = getCorsHeaders(origin);
@@ -29,9 +145,17 @@ export async function loader({ request }) {
 
   try {
     const url = new URL(request.url);
-    const customerId = String(url.searchParams.get("customerId") || "").trim();
-    const isAdmin = String(url.searchParams.get("isAdmin") || "").trim() === "true";
-    const isSampleUser = String(url.searchParams.get("isSampleUser") || "").trim() === "true";
+
+    const customerId = cleanString(url.searchParams.get("customerId"));
+    const tool = cleanString(url.searchParams.get("tool")) || "photo-draping";
+
+    const isAdmin = toBool(url.searchParams.get("isAdmin"));
+    const isTrade = toBool(url.searchParams.get("isTrade"));
+    const isCatool = toBool(url.searchParams.get("isCatool"));
+    const isCatoolGrowth = toBool(url.searchParams.get("isCatoolGrowth"));
+    const isVip = toBool(url.searchParams.get("isVip"));
+    const hasDrapingStudio = toBool(url.searchParams.get("hasDrapingStudio"));
+    const isSampleUser = toBool(url.searchParams.get("isSampleUser"));
 
     if (!customerId) {
       return Response.json(
@@ -40,14 +164,46 @@ export async function loader({ request }) {
       );
     }
 
-    if (isAdmin) {
+    const usageConfig = getUsageConfig({
+      tool,
+      isAdmin,
+      isTrade,
+      isCatool,
+      isCatoolGrowth,
+      isVip,
+      hasDrapingStudio,
+      isSampleUser
+    });
+
+    if (usageConfig.scope === "unlimited") {
       return Response.json(
         {
+          tool,
+          allowed: true,
           isAdmin: true,
-          isSampleUser: false,
           used: 0,
           remaining: null,
-          limit: null
+          limit: null,
+          scope: "unlimited",
+          usageKey: null,
+          monthKey: null
+        },
+        { status: 200, headers: corsHeaders }
+      );
+    }
+
+    if (!usageConfig.allowed) {
+      return Response.json(
+        {
+          tool,
+          allowed: false,
+          isAdmin: false,
+          used: 0,
+          remaining: 0,
+          limit: 0,
+          scope: usageConfig.scope,
+          usageKey: null,
+          monthKey: usageConfig.scope === "monthly" ? getMonthKey() : "TOTAL"
         },
         { status: 200, headers: corsHeaders }
       );
@@ -64,9 +220,13 @@ export async function loader({ request }) {
       );
     }
 
-    const now = new Date();
-    const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    const usageKey = `${customerId}__${monthKey}`;
+    const monthKey = usageConfig.scope === "monthly" ? getMonthKey() : "TOTAL";
+    const usageKey = buildUsageKey({
+      customerId,
+      tool,
+      scope: usageConfig.scope,
+      monthKey
+    });
 
     const usageFormula = `{Key}="${usageKey}"`;
 
@@ -93,17 +253,20 @@ export async function loader({ request }) {
     const usageData = await usageRes.json();
     const usageRecord = usageData.records?.[0] || null;
     const used = Number(usageRecord?.fields?.UploadCount || 0);
-
-    const limit = isSampleUser ? 1 : 3;
+    const limit = usageConfig.limit;
     const remaining = Math.max(0, limit - used);
 
     return Response.json(
       {
+        tool,
+        allowed: true,
         isAdmin: false,
-        isSampleUser,
         used,
         remaining,
-        limit
+        limit,
+        scope: usageConfig.scope,
+        usageKey,
+        monthKey
       },
       { status: 200, headers: corsHeaders }
     );

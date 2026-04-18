@@ -47,7 +47,14 @@ export async function action({ request }) {
   }
 
   try {
-    const { imageBase64, customerId, isAdmin } = await request.json();
+    const {
+  imageBase64,
+  customerId,
+  isAdmin,
+  isTrade,
+  isCatool,
+  isCatoolGrowth
+} = await request.json();
 
     if (!imageBase64 || !customerId) {
       return Response.json(
@@ -73,14 +80,39 @@ export async function action({ request }) {
       );
     }
 
-    const now = new Date();
-    const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    const usageKey = `${customerId}__${monthKey}`;
+    // ===== HELPERS =====
+function getMonthKey() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
 
-    let usageRecord = null;
+function buildUsageKey(customerId, tool, monthKey) {
+  return `${customerId}__${tool}__${monthKey}`;
+}
+
+function getPhotoPrepLimit({ isAdmin, isTrade, isCatool, isCatoolGrowth }) {
+  if (isAdmin) return null;
+  if (isTrade) return 10;
+  if (isCatoolGrowth) return 15;
+  if (isCatool) return 5;
+  return 0;
+}
+
+// ===== USAGE CHECK =====
+const limit = getPhotoPrepLimit({
+  isAdmin,
+  isTrade,
+  isCatool,
+  isCatoolGrowth
+});
+
+let usageRecord = null;
 let currentCount = 0;
 
-if (!isAdmin) {
+if (limit !== null) {
+  const monthKey = getMonthKey();
+  const usageKey = buildUsageKey(customerId, "photo-prep", monthKey);
+
   const usageFormula = `{Key}="${usageKey}"`;
 
   const usageRes = await fetch(
@@ -96,10 +128,10 @@ if (!isAdmin) {
   usageRecord = usageData.records?.[0] || null;
   currentCount = Number(usageRecord?.fields?.UploadCount || 0);
 
-  if (currentCount >= 3) {
+  if (currentCount >= limit) {
     return Response.json(
       {
-        error: "You’ve used all 3 uploads for this month."
+        error: `You’ve used all ${limit} uploads for this month.`
       },
       {
         status: 403,
@@ -146,7 +178,10 @@ if (!isAdmin) {
     const dataUrl = `data:image/png;base64,${resultBase64}`;
 
     // Increment usage ONLY after success
-    if (!isAdmin) {
+    if (limit !== null) {
+  const monthKey = getMonthKey();
+const usageKey = buildUsageKey(customerId, "photo-prep", monthKey);
+
   if (usageRecord) {
     await fetch(
       `https://api.airtable.com/v0/${airtableBase}/${encodeURIComponent(usageTable)}/${usageRecord.id}`,
@@ -176,11 +211,11 @@ if (!isAdmin) {
           records: [
             {
               fields: {
-                CustomerId: String(customerId),
-                MonthKey: monthKey,
-                UploadCount: 1,
-                Key: usageKey
-              }
+  CustomerId: String(customerId),
+  MonthKey: monthKey,
+  UploadCount: 1,
+  Key: usageKey
+}
             }
           ]
         })
