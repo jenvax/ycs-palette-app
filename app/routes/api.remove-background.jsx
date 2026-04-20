@@ -50,6 +50,7 @@ export async function action({ request }) {
     const {
   imageBase64,
   customerId,
+  clientRecordId,
   tool,
   isAdmin,
   isTrade,
@@ -60,15 +61,17 @@ export async function action({ request }) {
   isSampleUser
 } = await request.json();
 
-    if (!imageBase64 || !customerId) {
-      return Response.json(
-        { error: "Missing imageBase64 or customerId" },
-        {
-          status: 400,
-          headers: corsHeaders
-        }
-      );
+const usageCustomerId = String(customerId || "").trim();
+
+    if (!imageBase64 || !usageCustomerId) {
+  return Response.json(
+    { error: "Missing imageBase64 or customerId" },
+    {
+      status: 400,
+      headers: corsHeaders
     }
+  );
+}
 
     const airtableBase = process.env.AIRTABLE_BASE_ID;
     const airtableToken = process.env.AIRTABLE_TOKEN;
@@ -180,11 +183,11 @@ if (usageConfig.scope !== "unlimited") {
 
   const monthKey = usageConfig.scope === "monthly" ? getMonthKey() : "TOTAL";
   const usageKey = buildUsageKey({
-    customerId,
-    tool: tool || "photo-draping",
-    scope: usageConfig.scope,
-    monthKey
-  });
+  customerId: usageCustomerId,
+  tool: tool || "photo-draping",
+  scope: usageConfig.scope,
+  monthKey
+});
 
   const usageFormula = `{Key}="${usageKey}"`;
 
@@ -259,11 +262,11 @@ if (usageConfig.scope !== "unlimited") {
 if (usageConfig.scope !== "unlimited") {
   const monthKey = usageConfig.scope === "monthly" ? getMonthKey() : "TOTAL";
   const usageKey = buildUsageKey({
-    customerId,
-    tool: tool || "photo-draping",
-    scope: usageConfig.scope,
-    monthKey
-  });
+  customerId: usageCustomerId,
+  tool: tool || "photo-draping",
+  scope: usageConfig.scope,
+  monthKey
+});
 
   if (usageRecord) {
     await fetch(
@@ -294,11 +297,11 @@ if (usageConfig.scope !== "unlimited") {
           records: [
             {
               fields: {
-                CustomerId: String(customerId),
-                MonthKey: monthKey,
-                UploadCount: 1,
-                Key: usageKey
-              }
+  CustomerId: usageCustomerId,
+  MonthKey: monthKey,
+  UploadCount: 1,
+  Key: usageKey
+}
             }
           ]
         })
