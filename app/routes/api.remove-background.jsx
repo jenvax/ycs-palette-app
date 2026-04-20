@@ -50,10 +50,14 @@ export async function action({ request }) {
     const {
   imageBase64,
   customerId,
+  tool,
   isAdmin,
   isTrade,
   isCatool,
-  isCatoolGrowth
+  isCatoolGrowth,
+  isVip,
+  hasDrapingStudio,
+  isSampleUser
 } = await request.json();
 
     if (!imageBase64 || !customerId) {
@@ -86,32 +90,144 @@ function getMonthKey() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
-function buildUsageKey(customerId, tool, monthKey) {
+function buildUsageKey({ customerId, tool, scope, monthKey }) {
+  if (scope === "total") {
+    return `${customerId}__${tool}__TOTAL`;
+  }
+
   return `${customerId}__${tool}__${monthKey}`;
 }
 
-function getPhotoPrepLimit({ isAdmin, isTrade, isCatool, isCatoolGrowth }) {
-  if (isAdmin) return null;
-  if (isTrade) return 10;
-  if (isCatoolGrowth) return 15;
-  if (isCatool) return 5;
-  return 0;
+function getUsageConfig(params) {
+  const {
+    tool,
+    isAdmin,
+    isTrade,
+    isCatool,
+    isCatoolGrowth,
+    isVip,
+    hasDrapingStudio,
+    isSampleUser
+  } = params;
+
+  if (isAdmin) {
+    return {
+      allowed: true,
+      scope: "unlimited",
+      limit: null
+    };
+  }
+
+  if (tool === "photo-prep") {
+    if (isTrade) {
+      return { allowed: true, scope: "monthly", limit: 10 };
+    }
+
+    if (isCatoolGrowth) {
+      return { allowed: true, scope: "monthly", limit: 15 };
+    }
+
+    if (isCatool) {
+      return { allowed: true, scope: "monthly", limit: 5 };
+    }
+
+    return { allowed: false, scope: "monthly", limit: 0 };
+  }
+
+  if (tool === "photo-draping") {
+    if (isVip) {
+      return { allowed: true, scope: "monthly", limit: 3 };
+    }
+
+    if (hasDrapingStudio) {
+      return { allowed: true, scope: "total", limit: 2 };
+    }
+
+    if (isSampleUser) {
+      return { allowed: true, scope: "total", limit: 1 };
+    }
+
+    return { allowed: false, scope: "monthly", limit: 0 };
+  }
+
+  return { allowed: false, scope: "monthly", limit: 0 };
 }
 
-// ===== USAGE CHECK =====
-const limit = getPhotoPrepLimit({
+const usageConfig = getUsageConfig({
+  tool,
   isAdmin,
   isTrade,
   isCatool,
-  isCatoolGrowth
+  isCatoolGrowth,
+  isVip,
+  hasDrapingStudio,
+  isSampleUser
 });
 
 let usageRecord = null;
 let currentCount = 0;
 
-if (limit !== null) {
-  const monthKey = getMonthKey();
-  const usageKey = buildUsageKey(customerId, "photo-prep", monthKey);
+if (usageConfig.scope !== "unlimited") {
+  if (!usageConfig.allowed) {
+    return Response.json(
+      { error: "This tool is not available for your account." },
+      {
+        status: 403,
+        headers: corsHeaders
+      }
+    );
+  }
+
+  const monthKey = usageConfig.scope === "monthly" ? getMonthKey() : "TOTAL";
+  const usageKey = buildUsageKey({
+    customerId,
+    tool: tool || "photo-draping",
+    scope: usageConfig.scope,
+    monthKey
+  });
+
+  const usageFormula = `{Key}="${usageKey}"`;
+
+  const usageRes = await fetch(
+    `https://api.airtable.com/v0/${airtableBase}/${encodeURIComponent(usageTable)}?filterByFormula=${encodeURIComponent(usageFormula)}`,
+    {
+      headers: {
+        Authorization: `Bearer ${airtableToken}`
+      }
+    }
+  );
+
+  const usageData = await usageRes.json();
+  usageRecord = usageData.records?.[0] || null;
+  currentCount = Number(usageRecord?.fields?.UploadCount || 0);
+
+  if (currentCount >= usageConfig.limit) {
+    const message =
+      usageConfig.scope === "total"
+        ? `You’ve used all ${usageConfig.limit} available uploads.`
+        : `You’ve used all ${usageConfig.limit} uploads for this month.`;
+
+    return Response.json(
+      { error: message },
+      {
+        status: 403,
+        headers: corsHeaders
+      }
+    );
+  }
+}
+
+let usageRecord = null;
+let currentCount = 0;
+
+if (usageConfig.scope !== "unlimited") {
+  const monthKey = usageConfig.scope === "monthly" ? getMonthKey() : "TOTAL";
+  const usageKey = buildUsageKey({
+    customerId,
+    tool: tool || "photo-draping",
+    scope: usageConfig.scope,
+    monthKey
+  });
 
   const usageFormula = `{Key}="${usageKey}"`;
 
