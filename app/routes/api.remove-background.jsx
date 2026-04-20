@@ -217,45 +217,7 @@ if (usageConfig.scope !== "unlimited") {
   }
 }
 
-let usageRecord = null;
-let currentCount = 0;
 
-if (usageConfig.scope !== "unlimited") {
-  const monthKey = usageConfig.scope === "monthly" ? getMonthKey() : "TOTAL";
-  const usageKey = buildUsageKey({
-    customerId,
-    tool: tool || "photo-draping",
-    scope: usageConfig.scope,
-    monthKey
-  });
-
-  const usageFormula = `{Key}="${usageKey}"`;
-
-  const usageRes = await fetch(
-    `https://api.airtable.com/v0/${airtableBase}/${encodeURIComponent(usageTable)}?filterByFormula=${encodeURIComponent(usageFormula)}`,
-    {
-      headers: {
-        Authorization: `Bearer ${airtableToken}`
-      }
-    }
-  );
-
-  const usageData = await usageRes.json();
-  usageRecord = usageData.records?.[0] || null;
-  currentCount = Number(usageRecord?.fields?.UploadCount || 0);
-
-  if (currentCount >= limit) {
-    return Response.json(
-      {
-        error: `You’ve used all ${limit} uploads for this month.`
-      },
-      {
-        status: 403,
-        headers: corsHeaders
-      }
-    );
-  }
-}
 
     const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
     const imageBuffer = Buffer.from(base64Data, "base64");
@@ -294,9 +256,14 @@ if (usageConfig.scope !== "unlimited") {
     const dataUrl = `data:image/png;base64,${resultBase64}`;
 
     // Increment usage ONLY after success
-    if (limit !== null) {
-  const monthKey = getMonthKey();
-const usageKey = buildUsageKey(customerId, "photo-prep", monthKey);
+if (usageConfig.scope !== "unlimited") {
+  const monthKey = usageConfig.scope === "monthly" ? getMonthKey() : "TOTAL";
+  const usageKey = buildUsageKey({
+    customerId,
+    tool: tool || "photo-draping",
+    scope: usageConfig.scope,
+    monthKey
+  });
 
   if (usageRecord) {
     await fetch(
@@ -327,11 +294,11 @@ const usageKey = buildUsageKey(customerId, "photo-prep", monthKey);
           records: [
             {
               fields: {
-  CustomerId: String(customerId),
-  MonthKey: monthKey,
-  UploadCount: 1,
-  Key: usageKey
-}
+                CustomerId: String(customerId),
+                MonthKey: monthKey,
+                UploadCount: 1,
+                Key: usageKey
+              }
             }
           ]
         })
