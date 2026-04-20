@@ -109,23 +109,28 @@ export async function loader({ request }) {
     }
 
     const originalPhotoUrl = fields.OriginalPhotoUrl || null;
-    const adjustedPhotoUrl = fields.AdjustedPhotoUrl || null;
-    const photoUrl = fields.PhotoUrl || null;
+const adjustedPhotoUrl = fields.AdjustedPhotoUrl || null;
+const photoUrl = fields.PhotoUrl || null;
 
-    const activePhotoUrl =
-      fields.ActivePhotoUrl ||
-      adjustedPhotoUrl ||
-      photoUrl ||
-      originalPhotoUrl ||
-      null;
+const activePhotoUrl =
+  fields.ActivePhotoUrl ||
+  adjustedPhotoUrl ||
+  photoUrl ||
+  originalPhotoUrl ||
+  null;
+
+const activePhotoSessionKey =
+  activePhotoUrl ||
+  null;
 
     return Response.json(
       {
         photoUrl,
-        originalPhotoUrl,
-        adjustedPhotoUrl,
-        activePhotoUrl,
-        photoTransform,
+    originalPhotoUrl,
+    adjustedPhotoUrl,
+    activePhotoUrl,
+    activePhotoSessionKey,
+    photoTransform,
         customerId: customerId || null,
         clientRecordId: clientRecordId || null,
         firstName: fields.FirstName || null,
