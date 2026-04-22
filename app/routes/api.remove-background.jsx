@@ -52,6 +52,7 @@ export async function action({ request }) {
   customerId,
   clientRecordId,
   tool,
+  mode,
   isAdmin,
   isTrade,
   isCatool,
@@ -110,7 +111,8 @@ function getUsageConfig(params) {
     isCatoolGrowth,
     isVip,
     hasDrapingStudio,
-    isSampleUser
+    isSampleUser,
+    mode
   } = params;
 
   if (isAdmin) {
@@ -119,6 +121,38 @@ function getUsageConfig(params) {
       scope: "unlimited",
       limit: null
     };
+  }
+
+  if (mode === "trade") {
+    if (isTrade) {
+      return { allowed: true, scope: "monthly", limit: 10 };
+    }
+
+    if (isCatoolGrowth) {
+      return { allowed: true, scope: "monthly", limit: 15 };
+    }
+
+    if (isCatool) {
+      return { allowed: true, scope: "monthly", limit: 5 };
+    }
+
+    return { allowed: false, scope: "monthly", limit: 0 };
+  }
+
+  if (mode === "personal") {
+    if (isVip) {
+      return { allowed: true, scope: "monthly", limit: 5 };
+    }
+
+    if (hasDrapingStudio) {
+      return { allowed: true, scope: "total", limit: 2 };
+    }
+
+    if (isSampleUser) {
+      return { allowed: true, scope: "total", limit: 1 };
+    }
+
+    return { allowed: false, scope: "monthly", limit: 0 };
   }
 
   if (tool === "photo-prep") {
@@ -139,7 +173,7 @@ function getUsageConfig(params) {
 
   if (tool === "photo-draping") {
     if (isVip) {
-      return { allowed: true, scope: "monthly", limit: 3 };
+      return { allowed: true, scope: "monthly", limit: 5 };
     }
 
     if (hasDrapingStudio) {
@@ -158,6 +192,7 @@ function getUsageConfig(params) {
 
 const usageConfig = getUsageConfig({
   tool,
+  mode,
   isAdmin,
   isTrade,
   isCatool,

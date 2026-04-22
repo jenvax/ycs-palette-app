@@ -47,10 +47,10 @@ function getUsageConfig(params) {
     isCatoolGrowth,
     isVip,
     hasDrapingStudio,
-    isSampleUser
+    isSampleUser,
+    mode
   } = params;
 
-  // Admin = unlimited everywhere
   if (isAdmin) {
     return {
       allowed: true,
@@ -59,8 +59,7 @@ function getUsageConfig(params) {
     };
   }
 
-  // PHOTO PREP
-  if (tool === "photo-prep") {
+  if (mode === "trade") {
     if (isTrade) {
       return {
         allowed: true,
@@ -92,13 +91,12 @@ function getUsageConfig(params) {
     };
   }
 
-  // PHOTO DRAPING
-  if (tool === "photo-draping") {
+  if (mode === "personal") {
     if (isVip) {
       return {
         allowed: true,
         scope: "monthly",
-        limit: 3
+        limit: 5
       };
     }
 
@@ -123,6 +121,39 @@ function getUsageConfig(params) {
       scope: "monthly",
       limit: 0
     };
+  }
+
+  // fallback to old behavior if mode is missing
+  if (tool === "photo-prep") {
+    if (isTrade) {
+      return { allowed: true, scope: "monthly", limit: 10 };
+    }
+
+    if (isCatoolGrowth) {
+      return { allowed: true, scope: "monthly", limit: 15 };
+    }
+
+    if (isCatool) {
+      return { allowed: true, scope: "monthly", limit: 5 };
+    }
+
+    return { allowed: false, scope: "monthly", limit: 0 };
+  }
+
+  if (tool === "photo-draping") {
+    if (isVip) {
+      return { allowed: true, scope: "monthly", limit: 5 };
+    }
+
+    if (hasDrapingStudio) {
+      return { allowed: true, scope: "total", limit: 2 };
+    }
+
+    if (isSampleUser) {
+      return { allowed: true, scope: "total", limit: 1 };
+    }
+
+    return { allowed: false, scope: "monthly", limit: 0 };
   }
 
   return {
@@ -156,6 +187,7 @@ export async function loader({ request }) {
     const isVip = toBool(url.searchParams.get("isVip"));
     const hasDrapingStudio = toBool(url.searchParams.get("hasDrapingStudio"));
     const isSampleUser = toBool(url.searchParams.get("isSampleUser"));
+    const mode = cleanString(url.searchParams.get("mode")) || "";
 
     if (!customerId) {
       return Response.json(
@@ -172,7 +204,8 @@ export async function loader({ request }) {
       isCatoolGrowth,
       isVip,
       hasDrapingStudio,
-      isSampleUser
+      isSampleUser,
+      mode
     });
 
     if (usageConfig.scope === "unlimited") {
