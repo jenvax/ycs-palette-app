@@ -90,7 +90,7 @@ async function fetchShopifyCustomers({ shop, accessToken }) {
       customers(
         first: 100,
         after: $cursor,
-        query: "tag:VIP OR tag:CWL OR tag:CWM OR tag:CWD OR tag:CCL OR tag:CCM OR tag:CCD OR tag:SWL OR tag:SWM OR tag:SWD OR tag:SCL OR tag:SCM OR tag:SCD OR tag:LO OR tag:MO OR tag:DO OR tag:CWLG OR tag:CWMG OR tag:CWDG OR tag:SWLG OR tag:SWMG OR tag:SWDG OR tag:SCLG OR tag:SCMG OR tag:SCDG"
+        query: "tag:VIP"
       ) {
         edges {
           cursor
@@ -278,7 +278,7 @@ async function syncCustomerDirectory({ shop, accessToken, baseId, token }) {
     const existing = airtableByCustomerId.get(customer.customerId);
     const existingFields = existing?.fields || {};
 
-    const previousIsVIP = parseTruthy(existingFields.IsVIP);
+    const previousIsVIP = String(existingFields.IsVIP) === "1";
     const currentIsVIP = Boolean(customer.isVIP);
 
     let membershipStatus = "Inactive";
@@ -381,21 +381,31 @@ async function syncCustomerDirectory({ shop, accessToken, baseId, token }) {
     const wasVIP = parseTruthy(fields.IsVIP);
 
     if (wasVIP) {
-      await updateAirtableRecord({
-        baseId,
-        tableName: CUSTOMER_DIRECTORY_TABLE,
-        token,
-        recordId: record.id,
-        fields: {
-          MembershipStatus: "Inactive",
-          LostVIPAt: nowIso,
-          LastSyncedAt: nowIso
-        }
-      });
+  const existingTags = String(fields.Tags || "")
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
 
-      lostVIP += 1;
-      updated += 1;
-    } else {
+  const updatedTags = existingTags
+    .filter((tag) => tag.toUpperCase() !== "VIP")
+    .join(", ");
+
+  await updateAirtableRecord({
+    baseId,
+    tableName: CUSTOMER_DIRECTORY_TABLE,
+    token,
+    recordId: record.id,
+    fields: {
+      Tags: updatedTags,
+      MembershipStatus: "Inactive",
+      LostVIPAt: nowIso,
+      LastSyncedAt: nowIso
+    }
+  });
+
+  lostVIP += 1;
+  updated += 1;
+} else {
       await updateAirtableRecord({
         baseId,
         tableName: CUSTOMER_DIRECTORY_TABLE,
