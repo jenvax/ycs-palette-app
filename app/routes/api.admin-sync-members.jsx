@@ -367,9 +367,8 @@ async function syncCustomerDirectory({ shop, accessToken, baseId, token }) {
     baseId,
     tableName: CUSTOMER_DIRECTORY_TABLE,
     token,
-    recordId: record.id,
+    recordId: existing.id,
     fields: {
-      MembershipStatus: "Inactive",
       LastSyncedAt: nowIso
     }
   });
@@ -412,18 +411,19 @@ async function syncCustomerDirectory({ shop, accessToken, baseId, token }) {
   lostVIP += 1;
   updated += 1;
 } else {
-      await updateAirtableRecord({
-        baseId,
-        tableName: CUSTOMER_DIRECTORY_TABLE,
-        token,
-        recordId: record.id,
-        fields: {
-          LastSyncedAt: nowIso
-        }
-      });
-
-      unchanged += 1;
+  await updateAirtableRecord({
+    baseId,
+    tableName: CUSTOMER_DIRECTORY_TABLE,
+    token,
+    recordId: record.id,
+    fields: {
+      MembershipStatus: "Inactive",
+      LastSyncedAt: nowIso
     }
+  });
+
+  unchanged += 1;
+}
   }
 
   return {
