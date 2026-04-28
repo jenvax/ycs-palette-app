@@ -1,3 +1,24 @@
+async function getAccessToken({ shop, apiKey, apiSecret }) {
+  const response = await fetch(`https://${shop}/admin/oauth/access_token`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      client_id: apiKey,
+      client_secret: apiSecret,
+      grant_type: "client_credentials"
+    })
+  });
+
+  const data = await response.json();
+
+  if (!response.ok || !data.access_token) {
+    throw new Error("Failed to generate Shopify access token");
+  }
+
+  return data.access_token;
+}
 const CUSTOMER_DIRECTORY_TABLE = "CustomerDirectory";
 
 const PALETTE_TAGS = new Set([
@@ -433,22 +454,22 @@ export async function action({ request }) {
     }
 
     const SHOPIFY_SHOP = process.env.SHOPIFY_SHOP;
-    const SHOPIFY_ADMIN_ACCESS_TOKEN = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
     const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
     const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
 
-    if (!SHOPIFY_SHOP || !SHOPIFY_ADMIN_ACCESS_TOKEN) {
-      return Response.json(
-        {
-          error: "Missing Shopify admin configuration",
-          missing: {
-            SHOPIFY_SHOP: !SHOPIFY_SHOP,
-            SHOPIFY_ADMIN_ACCESS_TOKEN: !SHOPIFY_ADMIN_ACCESS_TOKEN
-          }
-        },
-        { status: 500, headers: corsHeaders }
-      );
-    }
+    if (!SHOPIFY_SHOP || !process.env.SHOPIFY_API_KEY || !process.env.SHOPIFY_API_SECRET) {
+  return Response.json(
+    {
+      error: "Missing Shopify API credentials",
+      missing: {
+        SHOPIFY_SHOP: !SHOPIFY_SHOP,
+        SHOPIFY_API_KEY: !process.env.SHOPIFY_API_KEY,
+        SHOPIFY_API_SECRET: !process.env.SHOPIFY_API_SECRET
+      }
+    },
+    { status: 500, headers: corsHeaders }
+  );
+}
 
     if (!AIRTABLE_BASE_ID || !AIRTABLE_TOKEN) {
       return Response.json(
@@ -463,12 +484,18 @@ export async function action({ request }) {
       );
     }
 
-    const summary = await syncCustomerDirectory({
-      shop: SHOPIFY_SHOP,
-      accessToken: SHOPIFY_ADMIN_ACCESS_TOKEN,
-      baseId: AIRTABLE_BASE_ID,
-      token: AIRTABLE_TOKEN
-    });
+    const accessToken = await getAccessToken({
+  shop: SHOPIFY_SHOP,
+  apiKey: process.env.SHOPIFY_API_KEY,
+  apiSecret: process.env.SHOPIFY_API_SECRET
+});
+
+const summary = await syncCustomerDirectory({
+  shop: SHOPIFY_SHOP,
+  accessToken,
+  baseId: AIRTABLE_BASE_ID,
+  token: AIRTABLE_TOKEN
+});
 
     return Response.json(
       {
