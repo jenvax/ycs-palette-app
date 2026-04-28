@@ -664,6 +664,8 @@ export async function loader({ request }) {
           return {
   customerId,
   name,
+  firstName,
+  lastName,
   email,
   colorType: String(fields.ColorType || "").trim(),
   joinedDate: fields.JoinedDate ? String(fields.JoinedDate).trim() : "",
