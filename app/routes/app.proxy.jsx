@@ -592,9 +592,10 @@ export async function loader({ request }) {
           const firstName = String(fields.FirstName || "").trim();
           const lastName = String(fields.LastName || "").trim();
 
-          const tags = normalizeList(fields.Tags)
-            .map((tag) => String(tag).trim())
-            .filter(Boolean);
+          const tags = String(fields.ShopifyTags || "")
+  .split(",")
+  .map((tag) => String(tag).trim())
+  .filter(Boolean);
 
           const isVIP =
             tags.includes("VIP") ||
