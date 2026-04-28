@@ -598,20 +598,24 @@ export async function loader({ request }) {
         );
       }
 
-      const [directoryRecords, customerPhotoRecords] = await Promise.all([
-        fetchAllAirtableRecords({
-          baseId: AIRTABLE_BASE_ID,
-          tableName: "CustomerDirectory",
-          token: AIRTABLE_TOKEN,
-          sortField: "LastName"
-        }),
-        fetchAllAirtableRecords({
-          baseId: AIRTABLE_BASE_ID,
-          tableName: "CustomerPhotos",
-          token: AIRTABLE_TOKEN,
-          sortField: "UpdatedAt"
-        })
-      ]);
+      const [directoryRecords, customerPhotoRecords, drapingHistoryMap] = await Promise.all([
+  fetchAllAirtableRecords({
+    baseId: AIRTABLE_BASE_ID,
+    tableName: "CustomerDirectory",
+    token: AIRTABLE_TOKEN,
+    sortField: "LastName"
+  }),
+  fetchAllAirtableRecords({
+    baseId: AIRTABLE_BASE_ID,
+    tableName: "CustomerPhotos",
+    token: AIRTABLE_TOKEN,
+    sortField: "UpdatedAt"
+  }),
+  fetchMemberDrapingHistoryMap({
+    baseId: AIRTABLE_BASE_ID,
+    token: AIRTABLE_TOKEN
+  })
+]);
 
       const photoMap = {};
 
@@ -673,13 +677,48 @@ export async function loader({ request }) {
   paletteTags,
   hasPaletteAccess,
   photoUrl,
-  hasPhoto: Boolean(photoUrl)
+  hasPhoto: Boolean(photoUrl),
+  drapingHistory: drapingHistoryMap[customerId] || []
 };
         })
         .filter(Boolean)
         .sort((a, b) => a.name.localeCompare(b.name));
+        const startOfMonth = new Date();
+startOfMonth.setDate(1);
+startOfMonth.setHours(0, 0, 0, 0);
 
-      return Response.json({ members });
+const stats = {
+  active: 0,
+  inactive: 0,
+  newThisMonth: 0,
+  lostThisMonth: 0,
+  netGrowthThisMonth: 0
+};
+
+directoryRecords.forEach((record) => {
+  const fields = record.fields || {};
+  const status = String(fields.MembershipStatus || "").toLowerCase();
+
+  if (status === "active" || status === "legacy") {
+    stats.active += 1;
+  } else {
+    stats.inactive += 1;
+  }
+
+  const becameVIPAt = fields.BecameVIPAt ? new Date(fields.BecameVIPAt) : null;
+  const lostVIPAt = fields.LostVIPAt ? new Date(fields.LostVIPAt) : null;
+
+  if (becameVIPAt && !Number.isNaN(becameVIPAt.getTime()) && becameVIPAt >= startOfMonth) {
+    stats.newThisMonth += 1;
+  }
+
+  if (lostVIPAt && !Number.isNaN(lostVIPAt.getTime()) && lostVIPAt >= startOfMonth) {
+    stats.lostThisMonth += 1;
+  }
+});
+
+stats.netGrowthThisMonth = stats.newThisMonth - stats.lostThisMonth;
+      return Response.json({ members, stats });
     } catch (error) {
       console.error("getAdminMembers failed:", error);
       return Response.json(
@@ -808,6 +847,42 @@ return {
     );
   }
 }
+async function fetchMemberDrapingHistoryMap({ baseId, token }) {
+  const records = await fetchAllAirtableRecords({
+    baseId,
+    tableName: "MemberDrapingHistory",
+    token
+  });
+
+  const historyMap = {};
+
+  records.forEach((record) => {
+    const fields = record.fields || {};
+    const customerId = normalizeCustomerId(fields.CustomerId);
+    if (!customerId) return;
+
+    if (!historyMap[customerId]) historyMap[customerId] = [];
+
+    historyMap[customerId].push({
+      recordId: record.id,
+      drapedDate: fields.DrapedDate ? String(fields.DrapedDate) : "",
+      drapedMonthYear: fields.DrapedMonthYear ? String(fields.DrapedMonthYear) : "",
+      colorName: fields.ColorName ? String(fields.ColorName) : "",
+      colorHex: fields.ColorHex ? String(fields.ColorHex) : "",
+      paletteCode: fields.PaletteCode ? String(fields.PaletteCode) : "",
+      callTheme: fields.CallTheme ? String(fields.CallTheme) : "",
+      notes: fields.Notes ? String(fields.Notes) : ""
+    });
+  });
+
+  Object.keys(historyMap).forEach((customerId) => {
+    historyMap[customerId].sort((a, b) => {
+      return new Date(b.drapedDate || 0) - new Date(a.drapedDate || 0);
+    });
+  });
+
+  return historyMap;
+}
 
 export async function action({ request }) {
   const url = new URL(request.url);
@@ -899,7 +974,54 @@ export async function action({ request }) {
       );
     }
   }
+  if (actionName === "addMemberDrapingHistory") {
+  try {
+    const body = await request.json();
 
+    const customerId = String(body.customerId || "").trim();
+    const memberName = String(body.memberName || "").trim();
+    const email = String(body.email || "").trim();
+    const drapedDate = String(body.drapedDate || "").trim();
+    const colorName = String(body.colorName || "").trim();
+    const colorHex = String(body.colorHex || "").trim();
+    const paletteCode = String(body.paletteCode || "").trim();
+    const callTheme = String(body.callTheme || "").trim();
+    const notes = String(body.notes || "").trim();
+
+    if (!customerId || !drapedDate || !colorName) {
+      return Response.json(
+        { error: "Missing customerId, drapedDate, or colorName" },
+        { status: 400 }
+      );
+    }
+
+    const created = await createAirtableRecord({
+      baseId: AIRTABLE_BASE_ID,
+      tableName: "MemberDrapingHistory",
+      token: AIRTABLE_TOKEN,
+      fields: {
+        CustomerId: customerId,
+        MemberName: memberName,
+        Email: email,
+        DrapedDate: drapedDate,
+        ColorName: colorName,
+        ColorHex: colorHex,
+        PaletteCode: paletteCode,
+        CallTheme: callTheme,
+        Notes: notes,
+        CreatedAt: new Date().toISOString()
+      }
+    });
+
+    return Response.json({ success: true, record: created });
+  } catch (error) {
+    console.error("addMemberDrapingHistory failed:", error);
+    return Response.json(
+      { error: error.message || "Failed to save draping history" },
+      { status: 500 }
+    );
+  }
+}
   if (actionName !== "toggleFavorite") {
     return Response.json({ error: "Unknown action" }, { status: 400 });
   }
