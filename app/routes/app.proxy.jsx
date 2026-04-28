@@ -328,15 +328,14 @@ async function fetchShopifyCustomersForDirectory({ shop, accessToken }) {
 
     return {
   customerId,
+  firstName: String(customer.firstName || "").trim(),
+  lastName: String(customer.lastName || "").trim(),
   name,
-  email,
-  colorType: String(fields.ColorType || "").trim(),
-  joinedDate: fields.JoinedDate ? String(fields.JoinedDate).trim() : "",
-  membershipStatus: String(fields.MembershipStatus || "").trim(),
+  email: String(customer.email || "").trim(),
+  tags,
   paletteTags,
-  hasPaletteAccess,
-  photoUrl,
-  hasPhoto: Boolean(photoUrl)
+  isVIP,
+  joinedDate
 };
   });
 }
@@ -663,16 +662,17 @@ export async function loader({ request }) {
           const photoUrl = photoMap[customerId] || null;
 
           return {
-            customerId,
-            name,
-            email,
-            colorType: String(fields.ColorType || "").trim(),
-            joinedDate: fields.JoinedDate ? String(fields.JoinedDate).trim() : "",
-            paletteTags,
-            hasPaletteAccess,
-            photoUrl,
-            hasPhoto: Boolean(photoUrl)
-          };
+  customerId,
+  name,
+  email,
+  colorType: String(fields.ColorType || "").trim(),
+  joinedDate: fields.JoinedDate ? String(fields.JoinedDate).trim() : "",
+  membershipStatus: String(fields.MembershipStatus || "").trim(),
+  paletteTags,
+  hasPaletteAccess,
+  photoUrl,
+  hasPhoto: Boolean(photoUrl)
+};
         })
         .filter(Boolean)
         .sort((a, b) => a.name.localeCompare(b.name));
