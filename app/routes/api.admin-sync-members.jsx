@@ -301,9 +301,14 @@ async function syncCustomerDirectory({ shop, accessToken, baseId, token }) {
       LastSyncedAt: nowIso
     };
 
-    if (customer.joinedDate) {
-      fieldsToWrite.JoinedDate = customer.joinedDate;
-    }
+   if (customer.joinedDate) {
+  const joinedDate = new Date(customer.joinedDate);
+
+  if (!Number.isNaN(joinedDate.getTime())) {
+    fieldsToWrite.JoinedDate = joinedDate.toISOString().split("T")[0];
+  }
+}
+
 
     if (!existing) {
       fieldsToWrite.FirstSeenAt = nowIso;
