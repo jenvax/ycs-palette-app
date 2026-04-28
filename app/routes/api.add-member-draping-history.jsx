@@ -103,8 +103,7 @@ export async function action({ request }) {
         ColorHex: colorHex,
         PaletteCode: paletteCode,
         CallTheme: callTheme,
-        Notes: notes,
-        CreatedAt: new Date().toISOString()
+        Notes: notes
       }
     });
 
