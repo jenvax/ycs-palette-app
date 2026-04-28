@@ -12,8 +12,13 @@ export async function action({ request }) {
     const token = process.env.AIRTABLE_TOKEN;
 
     const res = await fetch(
-      `https://api.airtable.com/v0/${baseId}/CustomerDirectory?filterByFormula=${encodeURIComponent(`{CustomerId}="${customerId}"`)}`
-    );
+  `https://api.airtable.com/v0/${baseId}/CustomerDirectory?filterByFormula=${encodeURIComponent(`{CustomerId}="${customerId}"`)}`,
+  {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }
+);
 
     const data = await res.json();
     const record = data.records?.[0];

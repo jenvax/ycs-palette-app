@@ -13,9 +13,13 @@ export async function action({ request }) {
 
     // Find existing latest record
     const res = await fetch(
-      `https://api.airtable.com/v0/${baseId}/MemberDrapingHistory?filterByFormula=${encodeURIComponent(`{CustomerId}="${customerId}"`)}`
-    );
-
+  `https://api.airtable.com/v0/${baseId}/MemberDrapingHistory?filterByFormula=${encodeURIComponent(`{CustomerId}="${customerId}"`)}`,
+  {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }
+);
     const data = await res.json();
     const records = data.records || [];
 
