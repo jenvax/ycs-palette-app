@@ -274,7 +274,7 @@ async function shopifyAdminGraphQL({ shop, accessToken, query, variables = {} })
 async function fetchShopifyCustomersForDirectory({ shop, accessToken }) {
   const query = `
     query getCustomers($cursor: String) {
-      customers(first: 100, after: $cursor, query: "tag:VIP OR tag:CWL OR tag:CWM OR tag:CWD OR tag:CCL OR tag:CCM OR tag:CCD OR tag:SWL OR tag:SWM OR tag:SWD OR tag:SCL OR tag:SCM OR tag:SCD OR tag:LO OR tag:MO OR tag:DO OR tag:CWLG OR tag:CWMG OR tag:CWDG OR tag:SWLG OR tag:SWMG OR tag:SWDG OR tag:SCLG OR tag:SCMG OR tag:SCDG") {
+      customers(first: 100, after: $cursor, query: "tag:VIP") {
         edges {
           cursor
           node {
@@ -327,16 +327,17 @@ async function fetchShopifyCustomersForDirectory({ shop, accessToken }) {
     if (!name) name = `Customer ${customerId}`;
 
     return {
-      customerId,
-      firstName: String(customer.firstName || "").trim(),
-      lastName: String(customer.lastName || "").trim(),
-      name,
-      email: String(customer.email || "").trim(),
-      tags,
-      paletteTags,
-      isVIP,
-      joinedDate
-    };
+  customerId,
+  name,
+  email,
+  colorType: String(fields.ColorType || "").trim(),
+  joinedDate: fields.JoinedDate ? String(fields.JoinedDate).trim() : "",
+  membershipStatus: String(fields.MembershipStatus || "").trim(),
+  paletteTags,
+  hasPaletteAccess,
+  photoUrl,
+  hasPhoto: Boolean(photoUrl)
+};
   });
 }
 
@@ -500,7 +501,7 @@ async function syncCustomerDirectoryFromShopify({ shop, accessToken, baseId, tok
         token,
         recordId: record.id,
         fields: {
-          MembershipStatus: String(fields.MembershipStatus || "Inactive"),
+          membershipStatus: String(fields.MembershipStatus || "").trim(),
           LastSyncedAt: nowIso
         }
       });
@@ -645,7 +646,7 @@ export async function loader({ request }) {
             tags.includes("VIP") ||
             parseTruthy(fields.IsVIP);
 
-          if (!isVIP) return null;
+          
 
           const paletteTags = String(fields.PaletteTags || "")
             .split(",")
