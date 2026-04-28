@@ -535,7 +535,51 @@ export async function loader({ request }) {
       { status: 500 }
     );
   }
+  if (action === "syncCustomerDirectory") {
+  try {
+    const isAdmin = String(url.searchParams.get("isAdmin") || "").trim() === "true";
 
+    if (!loggedInCustomerId) {
+      return Response.json(
+        { error: "You must be signed in to use this tool" },
+        { status: 401 }
+      );
+    }
+
+    if (!isAdmin) {
+      return Response.json(
+        { error: "Admin access required" },
+        { status: 403 }
+      );
+    }
+
+    const SHOPIFY_SHOP = process.env.SHOPIFY_SHOP;
+    const SHOPIFY_ADMIN_ACCESS_TOKEN = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
+
+    if (!SHOPIFY_SHOP || !SHOPIFY_ADMIN_ACCESS_TOKEN) {
+      return Response.json(
+        { error: "Missing Shopify admin configuration" },
+        { status: 500 }
+      );
+    }
+
+    const result = await syncCustomerDirectoryFromShopify({
+      shop: SHOPIFY_SHOP,
+      accessToken: SHOPIFY_ADMIN_ACCESS_TOKEN,
+      baseId: AIRTABLE_BASE_ID,
+      token: AIRTABLE_TOKEN
+    });
+
+    return Response.json({ success: true, summary: result });
+  } catch (error) {
+    console.error("syncCustomerDirectory failed:", error);
+
+    return Response.json(
+      { error: error.message || "Failed to sync customer directory" },
+      { status: 500 }
+    );
+  }
+}
   if (action === "getAdminMembers") {
     try {
       const isAdmin = String(url.searchParams.get("isAdmin") || "").trim() === "true";
