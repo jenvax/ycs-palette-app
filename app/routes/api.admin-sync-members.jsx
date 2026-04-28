@@ -281,15 +281,10 @@ async function syncCustomerDirectory({ shop, accessToken, baseId, token }) {
     const previousIsVIP = String(existingFields.IsVIP) === "1";
     const currentIsVIP = Boolean(customer.isVIP);
 
-    let membershipStatus = "Inactive";
-
-    if (currentIsVIP && customer.joinedDate) {
-      membershipStatus = "Active";
-    } else if (currentIsVIP) {
-      membershipStatus = "Legacy";
-      legacyVIP += 1;
-    }
-
+    let membershipStatus = currentIsVIP ? "Active" : "Inactive";
+if (fields.MembershipStatus === "Legacy") {
+  fields.MembershipStatus = "Active";
+}
     const fieldsToWrite = {
       CustomerId: customer.customerId,
       Email: customer.email,
