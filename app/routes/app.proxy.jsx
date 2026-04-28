@@ -665,7 +665,10 @@ export async function loader({ request }) {
 
           const photoUrl = photoMap[customerId] || null;
 
-          return {
+          const drapingHistory = drapingHistoryMap[customerId] || [];
+const lastDraping = drapingHistory[0] || null;
+
+return {
   customerId,
   name,
   firstName,
@@ -673,12 +676,19 @@ export async function loader({ request }) {
   email,
   colorType: String(fields.ColorType || "").trim(),
   joinedDate: fields.JoinedDate ? String(fields.JoinedDate).trim() : "",
-  membershipStatus: String(fields.MembershipStatus || "").trim(),
+  membershipStatus: String(fields.MembershipStatus || "Inactive").trim(),
   paletteTags,
   hasPaletteAccess,
   photoUrl,
   hasPhoto: Boolean(photoUrl),
-  drapingHistory: drapingHistoryMap[customerId] || []
+
+  drapingHistory,
+  drapedCount: drapingHistory.length,
+  lastDrapedDate: lastDraping?.drapedDate || "",
+  lastDrapedMonthYear: lastDraping?.drapedMonthYear || "",
+  lastDrapedColor: lastDraping?.colorName || "",
+  lastDrapedHex: lastDraping?.colorHex || "",
+  drapingRecency: getDrapingRecencyBucket(lastDraping?.drapedDate || "")
 };
         })
         .filter(Boolean)
@@ -882,6 +892,29 @@ async function fetchMemberDrapingHistoryMap({ baseId, token }) {
   });
 
   return historyMap;
+}
+
+function getDrapingRecencyBucket(dateValue) {
+  if (!dateValue) return "never";
+
+  const now = new Date();
+  const date = new Date(dateValue);
+
+  if (Number.isNaN(date.getTime())) return "never";
+
+  const diffMonths =
+    (now.getFullYear() - date.getFullYear()) * 12 +
+    (now.getMonth() - date.getMonth());
+
+  if (diffMonths === 0) return "thisMonth";
+  if (diffMonths === 1) return "lastMonth";
+  if (diffMonths === 2) return "twoMonthsAgo";
+  if (diffMonths === 3) return "threeMonthsAgo";
+  if (diffMonths === 4) return "fourMonthsAgo";
+  if (diffMonths === 5) return "fiveMonthsAgo";
+  if (diffMonths === 6) return "sixMonthsAgo";
+
+  return "older";
 }
 
 export async function action({ request }) {
