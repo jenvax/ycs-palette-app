@@ -463,7 +463,7 @@ export async function action({ request }) {
       );
     }
 
-    const SHOPIFY_SHOP = process.env.SHOPIFY_SHOP;
+    const SHOPIFY_SHOP = process.env.SHOPIFY_SYNC_SHOP || process.env.SHOPIFY_SHOP;
     const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
     const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
 
