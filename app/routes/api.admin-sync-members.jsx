@@ -320,7 +320,6 @@ async function syncCustomerDirectory({ shop, accessToken, baseId, token }) {
       [String(existingFields.Tags || ""), fieldsToWrite.Tags],
       [String(existingFields.PaletteTags || ""), fieldsToWrite.PaletteTags],
       [parseTruthy(existingFields.HasPaletteAccess), fieldsToWrite.HasPaletteAccess],
-      [parseTruthy(existingFields.IsVIP), fieldsToWrite.IsVIP],
       [String(existingFields.MembershipStatus || ""), fieldsToWrite.MembershipStatus],
       [String(existingFields.JoinedDate || ""), String(fieldsToWrite.JoinedDate || "")]
     ];
@@ -367,7 +366,6 @@ async function syncCustomerDirectory({ shop, accessToken, baseId, token }) {
         token,
         recordId: record.id,
         fields: {
-          IsVIP: false,
           MembershipStatus: "Inactive",
           LostVIPAt: nowIso,
           LastSyncedAt: nowIso
