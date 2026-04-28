@@ -363,18 +363,19 @@ async function syncCustomerDirectory({ shop, accessToken, baseId, token }) {
 
       updated += 1;
     } else {
-      await updateAirtableRecord({
-        baseId,
-        tableName: CUSTOMER_DIRECTORY_TABLE,
-        token,
-        recordId: existing.id,
-        fields: {
-          LastSyncedAt: nowIso
-        }
-      });
-
-      unchanged += 1;
+  await updateAirtableRecord({
+    baseId,
+    tableName: CUSTOMER_DIRECTORY_TABLE,
+    token,
+    recordId: record.id,
+    fields: {
+      MembershipStatus: "Inactive",
+      LastSyncedAt: nowIso
     }
+  });
+
+  unchanged += 1;
+}
   }
 
   for (const record of airtableRecords) {
