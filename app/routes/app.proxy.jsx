@@ -598,7 +598,12 @@ export async function loader({ request }) {
         );
       }
 
-      const [directoryRecords, customerPhotoRecords, drapingHistoryMap] = await Promise.all([
+      const [
+  directoryRecords,
+  customerPhotoRecords,
+  personalPhotoRecords,
+  drapingHistoryMap
+] = await Promise.all([
   fetchAllAirtableRecords({
     baseId: AIRTABLE_BASE_ID,
     tableName: "CustomerDirectory",
@@ -608,6 +613,11 @@ export async function loader({ request }) {
   fetchAllAirtableRecords({
     baseId: AIRTABLE_BASE_ID,
     tableName: "CustomerPhotos",
+    token: AIRTABLE_TOKEN
+  }),
+  fetchAllAirtableRecords({
+    baseId: AIRTABLE_BASE_ID,
+    tableName: "PersonalStudioPhotos",
     token: AIRTABLE_TOKEN,
     sortField: "UpdatedAt"
   }),
@@ -619,15 +629,52 @@ export async function loader({ request }) {
 
       const photoMap = {};
 
-      customerPhotoRecords.forEach((record) => {
-        const fields = record.fields || {};
-        const customerId = normalizeCustomerId(fields.CustomerId);
-        const photoUrl = String(fields.PhotoUrl || "").trim() || null;
+function addPhoto(customerId, photo) {
+  if (!customerId) return;
 
-        if (customerId) {
-          photoMap[customerId] = photoUrl;
-        }
-      });
+  if (!photoMap[customerId]) {
+    photoMap[customerId] = [];
+  }
+
+  photoMap[customerId].push(photo);
+}
+
+// 1. PersonalStudioPhotos (PRIMARY)
+personalPhotoRecords.forEach((record) => {
+  const f = record.fields || {};
+  const customerId = normalizeCustomerId(f.CustomerId);
+
+  const activePhotoUrl =
+    f.ActivePhotoUrl ||
+    f.AdjustedPhotoUrl ||
+    f.PhotoUrl ||
+    f.OriginalPhotoUrl ||
+    null;
+
+  addPhoto(customerId, {
+    photoId: record.id,
+    photoUrl: activePhotoUrl,
+    originalPhotoUrl: f.OriginalPhotoUrl || null,
+    adjustedPhotoUrl: f.AdjustedPhotoUrl || null,
+    updatedAt: f.UpdatedAt || ""
+  });
+});
+
+// 2. CustomerPhotos (FALLBACK ONLY)
+customerPhotoRecords.forEach((record) => {
+  const f = record.fields || {};
+  const customerId = normalizeCustomerId(f.CustomerId);
+
+  if (!photoMap[customerId] || photoMap[customerId].length === 0) {
+    addPhoto(customerId, {
+      photoId: record.id,
+      photoUrl: f.PhotoUrl || null,
+      originalPhotoUrl: f.OriginalPhotoUrl || null,
+      adjustedPhotoUrl: f.AdjustedPhotoUrl || null,
+      updatedAt: f.UpdatedAt || ""
+    });
+  }
+});
 
       const members = directoryRecords
         .map((record) => {
@@ -663,7 +710,7 @@ export async function loader({ request }) {
           if (!name && email) name = email.split("@")[0];
           if (!name) name = `Customer ${customerId}`;
 
-          const photoUrl = photoMap[customerId] || null;
+          const photos = photoMap[customerId] || [];
 
           const drapingHistory = drapingHistoryMap[customerId] || [];
 const lastDraping = drapingHistory[0] || null;
@@ -679,8 +726,10 @@ return {
   membershipStatus: String(fields.MembershipStatus || "Inactive").trim(),
   paletteTags,
   hasPaletteAccess,
-  photoUrl,
-  hasPhoto: Boolean(photoUrl),
+  photos,
+photoCount: photos.length,
+photoUrl: photos[0]?.photoUrl || null,
+hasPhoto: photos.length > 0,
 
   drapingHistory,
   drapedCount: drapingHistory.length,
