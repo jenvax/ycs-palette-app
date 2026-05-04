@@ -724,7 +724,11 @@ return {
   colorType: String(fields.ColorType || "").trim(),
   joinedDate: fields.JoinedDate ? String(fields.JoinedDate).trim() : "",
   membershipStatus: String(fields.MembershipStatus || "Inactive").trim(),
-  paletteTags,
+becameVIPAt: fields.BecameVIPAt || "",
+lostVIPAt: fields.LostVIPAt || "",
+isNewThisMonth: isOnOrAfterStartDate(fields.BecameVIPAt),
+isLostThisMonth: isOnOrAfterStartDate(fields.LostVIPAt),
+paletteTags,
   hasPaletteAccess,
   photos,
 photoCount: photos.length,
@@ -742,9 +746,16 @@ hasPhoto: photos.length > 0,
         })
         .filter(Boolean)
         .sort((a, b) => a.name.localeCompare(b.name));
-        const startOfMonth = new Date();
-startOfMonth.setDate(1);
-startOfMonth.setHours(0, 0, 0, 0);
+        const startDate = new Date();
+startDate.setDate(startDate.getDate() - 30);
+startDate.setHours(0, 0, 0, 0);
+
+function isOnOrAfterStartDate(value) {
+  if (!value) return false;
+
+  const date = new Date(value);
+  return !Number.isNaN(date.getTime()) && date >= startDate;
+}
 
 const stats = {
   active: 0,
@@ -767,11 +778,11 @@ directoryRecords.forEach((record) => {
   const becameVIPAt = fields.BecameVIPAt ? new Date(fields.BecameVIPAt) : null;
   const lostVIPAt = fields.LostVIPAt ? new Date(fields.LostVIPAt) : null;
 
-  if (becameVIPAt && !Number.isNaN(becameVIPAt.getTime()) && becameVIPAt >= startOfMonth) {
+  if (becameVIPAt && !Number.isNaN(becameVIPAt.getTime()) && becameVIPAt >= startDate) {
     stats.newThisMonth += 1;
   }
 
-  if (lostVIPAt && !Number.isNaN(lostVIPAt.getTime()) && lostVIPAt >= startOfMonth) {
+  if (lostVIPAt && !Number.isNaN(lostVIPAt.getTime()) && lostVIPAt >= startDate) {
     stats.lostThisMonth += 1;
   }
 });
