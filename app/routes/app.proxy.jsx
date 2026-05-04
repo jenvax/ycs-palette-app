@@ -521,6 +521,53 @@ export async function loader({ request }) {
   const url = new URL(request.url);
   const paletteCode = String(url.searchParams.get("palette") || "").toUpperCase().trim();
   const action = String(url.searchParams.get("action") || "").trim();
+  if (action === "getSignatureLipColors") {
+  if (!paletteCode) {
+    return Response.json(
+      { error: "Missing palette parameter" },
+      { status: 400 }
+    );
+  }
+
+  try {
+    const records = await fetchAllAirtableRecords({
+      baseId: AIRTABLE_BASE_ID,
+      tableName: "PaletteLipColors",
+      token: AIRTABLE_TOKEN
+    });
+
+    const lipColors = records
+      .map((record) => {
+        const f = record.fields || {};
+
+        const paletteCodes = String(f.PaletteCode || "")
+          .split(",")
+          .map((code) => code.toUpperCase().trim())
+          .filter(Boolean);
+
+        return {
+          name: normalizeField(f.ColorName),
+          hex: normalizeField(f.Hex),
+          paletteCodes
+        };
+      })
+      .filter((c) => c.name && c.hex)
+      .filter((c) => c.paletteCodes.includes(paletteCode))
+      .map(({ paletteCodes, ...c }) => c);
+
+    return Response.json({
+      palette: paletteCode,
+      lipColors
+    });
+  } catch (error) {
+    console.error("getSignatureLipColors failed:", error);
+
+    return Response.json(
+      { error: error.message || "Failed to load lip colors" },
+      { status: 500 }
+    );
+  }
+}
   const loggedInCustomerId = String(url.searchParams.get("logged_in_customer_id") || "").trim();
 
   const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
