@@ -760,9 +760,12 @@ hasPhoto: photos.length > 0,
 const stats = {
   active: 0,
   inactive: 0,
-  newThisMonth: 0,
-  lostThisMonth: 0,
-  netGrowthThisMonth: 0
+  newLast30Days: 0,
+  lostLast30Days: 0,
+  netGrowthLast30Days: 0,
+  totalBecameVIP: 0,
+  totalLostVIP: 0,
+  totalNetGrowth: 0
 };
 
 directoryRecords.forEach((record) => {
@@ -778,16 +781,25 @@ directoryRecords.forEach((record) => {
   const becameVIPAt = fields.BecameVIPAt ? new Date(fields.BecameVIPAt) : null;
   const lostVIPAt = fields.LostVIPAt ? new Date(fields.LostVIPAt) : null;
 
-  if (becameVIPAt && !Number.isNaN(becameVIPAt.getTime()) && becameVIPAt >= startDate) {
-    stats.newThisMonth += 1;
-  }
+  if (becameVIPAt && !Number.isNaN(becameVIPAt.getTime())) {
+  stats.totalBecameVIP += 1;
 
-  if (lostVIPAt && !Number.isNaN(lostVIPAt.getTime()) && lostVIPAt >= startDate) {
-    stats.lostThisMonth += 1;
+  if (becameVIPAt >= startDate) {
+    stats.newLast30Days += 1;
   }
+}
+
+if (lostVIPAt && !Number.isNaN(lostVIPAt.getTime())) {
+  stats.totalLostVIP += 1;
+
+  if (lostVIPAt >= startDate) {
+    stats.lostLast30Days += 1;
+  }
+}
 });
 
-stats.netGrowthThisMonth = stats.newThisMonth - stats.lostThisMonth;
+stats.netGrowthLast30Days = stats.newLast30Days - stats.lostLast30Days;
+stats.totalNetGrowth = stats.totalBecameVIP - stats.totalLostVIP;
       return Response.json({ members, stats });
     } catch (error) {
       console.error("getAdminMembers failed:", error);
