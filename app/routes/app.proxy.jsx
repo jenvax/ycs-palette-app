@@ -675,7 +675,16 @@ customerPhotoRecords.forEach((record) => {
     });
   }
 });
+const startDate = new Date();
+startDate.setDate(startDate.getDate() - 30);
+startDate.setHours(0, 0, 0, 0);
 
+function isOnOrAfterStartDate(value) {
+  if (!value) return false;
+
+  const date = new Date(value);
+  return !Number.isNaN(date.getTime()) && date >= startDate;
+}
       const members = directoryRecords
         .map((record) => {
           const fields = record.fields || {};
@@ -746,16 +755,7 @@ hasPhoto: photos.length > 0,
         })
         .filter(Boolean)
         .sort((a, b) => a.name.localeCompare(b.name));
-        const startDate = new Date();
-startDate.setDate(startDate.getDate() - 30);
-startDate.setHours(0, 0, 0, 0);
-
-function isOnOrAfterStartDate(value) {
-  if (!value) return false;
-
-  const date = new Date(value);
-  return !Number.isNaN(date.getTime()) && date >= startDate;
-}
+        
 
 const stats = {
   active: 0,
