@@ -521,53 +521,6 @@ export async function loader({ request }) {
   const url = new URL(request.url);
   const paletteCode = String(url.searchParams.get("palette") || "").toUpperCase().trim();
   const action = String(url.searchParams.get("action") || "").trim();
-  if (action === "getSignatureLipColors") {
-  if (!paletteCode) {
-    return Response.json(
-      { error: "Missing palette parameter" },
-      { status: 400 }
-    );
-  }
-
-  try {
-    const records = await fetchAllAirtableRecords({
-      baseId: AIRTABLE_BASE_ID,
-      tableName: "PaletteLipColors",
-      token: AIRTABLE_TOKEN
-    });
-
-    const lipColors = records
-      .map((record) => {
-        const f = record.fields || {};
-
-        const paletteCodes = String(f.PaletteCode || "")
-          .split(",")
-          .map((code) => code.toUpperCase().trim())
-          .filter(Boolean);
-
-        return {
-          name: normalizeField(f.ColorName),
-          hex: normalizeField(f.Hex),
-          paletteCodes
-        };
-      })
-      .filter((c) => c.name && c.hex)
-      .filter((c) => c.paletteCodes.includes(paletteCode))
-      .map(({ paletteCodes, ...c }) => c);
-
-    return Response.json({
-      palette: paletteCode,
-      lipColors
-    });
-  } catch (error) {
-    console.error("getSignatureLipColors failed:", error);
-
-    return Response.json(
-      { error: error.message || "Failed to load lip colors" },
-      { status: 500 }
-    );
-  }
-}
   const loggedInCustomerId = String(url.searchParams.get("logged_in_customer_id") || "").trim();
 
   const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
@@ -582,51 +535,102 @@ export async function loader({ request }) {
       { status: 500 }
     );
   }
-  if (action === "syncCustomerDirectory") {
-  try {
-    const isAdmin = String(url.searchParams.get("isAdmin") || "").trim() === "true";
 
-    if (!loggedInCustomerId) {
+  if (action === "getSignatureLipColors") {
+    if (!paletteCode) {
       return Response.json(
-        { error: "You must be signed in to use this tool" },
-        { status: 401 }
+        { error: "Missing palette parameter" },
+        { status: 400 }
       );
     }
 
-    if (!isAdmin) {
-      return Response.json(
-        { error: "Admin access required" },
-        { status: 403 }
-      );
-    }
+    try {
+      const records = await fetchAllAirtableRecords({
+        baseId: AIRTABLE_BASE_ID,
+        tableName: "PaletteLipColors",
+        token: AIRTABLE_TOKEN
+      });
 
-    const SHOPIFY_SHOP = process.env.SHOPIFY_SHOP;
-    const SHOPIFY_ADMIN_ACCESS_TOKEN = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
+      const lipColors = records
+        .map((record) => {
+          const f = record.fields || {};
 
-    if (!SHOPIFY_SHOP || !SHOPIFY_ADMIN_ACCESS_TOKEN) {
+          const paletteCodes = String(f.PaletteCode || "")
+            .split(",")
+            .map((code) => code.toUpperCase().trim())
+            .filter(Boolean);
+
+          return {
+            name: normalizeField(f.ColorName),
+            hex: normalizeField(f.Hex),
+            category: normalizeField(f.Category),
+            paletteCodes
+          };
+        })
+        .filter((color) => color.name && color.hex)
+        .filter((color) => color.paletteCodes.includes(paletteCode))
+        .map(({ paletteCodes, ...color }) => color);
+
+      return Response.json({
+        palette: paletteCode,
+        lipColors
+      });
+    } catch (error) {
+      console.error("getSignatureLipColors failed:", error);
+
       return Response.json(
-        { error: "Missing Shopify admin configuration" },
+        { error: error.message || "Failed to load lip colors" },
         { status: 500 }
       );
     }
-
-    const result = await syncCustomerDirectoryFromShopify({
-      shop: SHOPIFY_SHOP,
-      accessToken: SHOPIFY_ADMIN_ACCESS_TOKEN,
-      baseId: AIRTABLE_BASE_ID,
-      token: AIRTABLE_TOKEN
-    });
-
-    return Response.json({ success: true, summary: result });
-  } catch (error) {
-    console.error("syncCustomerDirectory failed:", error);
-
-    return Response.json(
-      { error: error.message || "Failed to sync customer directory" },
-      { status: 500 }
-    );
   }
-}
+
+  if (action === "syncCustomerDirectory") {
+    try {
+      const isAdmin = String(url.searchParams.get("isAdmin") || "").trim() === "true";
+
+      if (!loggedInCustomerId) {
+        return Response.json(
+          { error: "You must be signed in to use this tool" },
+          { status: 401 }
+        );
+      }
+
+      if (!isAdmin) {
+        return Response.json(
+          { error: "Admin access required" },
+          { status: 403 }
+        );
+      }
+
+      const SHOPIFY_SHOP = process.env.SHOPIFY_SHOP;
+      const SHOPIFY_ADMIN_ACCESS_TOKEN = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
+
+      if (!SHOPIFY_SHOP || !SHOPIFY_ADMIN_ACCESS_TOKEN) {
+        return Response.json(
+          { error: "Missing Shopify admin configuration" },
+          { status: 500 }
+        );
+      }
+
+      const result = await syncCustomerDirectoryFromShopify({
+        shop: SHOPIFY_SHOP,
+        accessToken: SHOPIFY_ADMIN_ACCESS_TOKEN,
+        baseId: AIRTABLE_BASE_ID,
+        token: AIRTABLE_TOKEN
+      });
+
+      return Response.json({ success: true, summary: result });
+    } catch (error) {
+      console.error("syncCustomerDirectory failed:", error);
+
+      return Response.json(
+        { error: error.message || "Failed to sync customer directory" },
+        { status: 500 }
+      );
+    }
+  }
+
   if (action === "getAdminMembers") {
     try {
       const isAdmin = String(url.searchParams.get("isAdmin") || "").trim() === "true";
@@ -646,92 +650,92 @@ export async function loader({ request }) {
       }
 
       const [
-  directoryRecords,
-  customerPhotoRecords,
-  personalPhotoRecords,
-  drapingHistoryMap
-] = await Promise.all([
-  fetchAllAirtableRecords({
-    baseId: AIRTABLE_BASE_ID,
-    tableName: "CustomerDirectory",
-    token: AIRTABLE_TOKEN,
-    sortField: "LastName"
-  }),
-  fetchAllAirtableRecords({
-    baseId: AIRTABLE_BASE_ID,
-    tableName: "CustomerPhotos",
-    token: AIRTABLE_TOKEN
-  }),
-  fetchAllAirtableRecords({
-    baseId: AIRTABLE_BASE_ID,
-    tableName: "PersonalStudioPhotos",
-    token: AIRTABLE_TOKEN,
-    sortField: "UpdatedAt"
-  }),
-  fetchMemberDrapingHistoryMap({
-    baseId: AIRTABLE_BASE_ID,
-    token: AIRTABLE_TOKEN
-  })
-]);
+        directoryRecords,
+        customerPhotoRecords,
+        personalPhotoRecords,
+        drapingHistoryMap
+      ] = await Promise.all([
+        fetchAllAirtableRecords({
+          baseId: AIRTABLE_BASE_ID,
+          tableName: "CustomerDirectory",
+          token: AIRTABLE_TOKEN,
+          sortField: "LastName"
+        }),
+        fetchAllAirtableRecords({
+          baseId: AIRTABLE_BASE_ID,
+          tableName: "CustomerPhotos",
+          token: AIRTABLE_TOKEN
+        }),
+        fetchAllAirtableRecords({
+          baseId: AIRTABLE_BASE_ID,
+          tableName: "PersonalStudioPhotos",
+          token: AIRTABLE_TOKEN,
+          sortField: "UpdatedAt"
+        }),
+        fetchMemberDrapingHistoryMap({
+          baseId: AIRTABLE_BASE_ID,
+          token: AIRTABLE_TOKEN
+        })
+      ]);
 
       const photoMap = {};
 
-function addPhoto(customerId, photo) {
-  if (!customerId) return;
+      function addPhoto(customerId, photo) {
+        if (!customerId) return;
 
-  if (!photoMap[customerId]) {
-    photoMap[customerId] = [];
-  }
+        if (!photoMap[customerId]) {
+          photoMap[customerId] = [];
+        }
 
-  photoMap[customerId].push(photo);
-}
+        photoMap[customerId].push(photo);
+      }
 
-// 1. PersonalStudioPhotos (PRIMARY)
-personalPhotoRecords.forEach((record) => {
-  const f = record.fields || {};
-  const customerId = normalizeCustomerId(f.CustomerId);
+      personalPhotoRecords.forEach((record) => {
+        const f = record.fields || {};
+        const customerId = normalizeCustomerId(f.CustomerId);
 
-  const activePhotoUrl =
-    f.ActivePhotoUrl ||
-    f.AdjustedPhotoUrl ||
-    f.PhotoUrl ||
-    f.OriginalPhotoUrl ||
-    null;
+        const activePhotoUrl =
+          f.ActivePhotoUrl ||
+          f.AdjustedPhotoUrl ||
+          f.PhotoUrl ||
+          f.OriginalPhotoUrl ||
+          null;
 
-  addPhoto(customerId, {
-    photoId: record.id,
-    photoUrl: activePhotoUrl,
-    originalPhotoUrl: f.OriginalPhotoUrl || null,
-    adjustedPhotoUrl: f.AdjustedPhotoUrl || null,
-    updatedAt: f.UpdatedAt || ""
-  });
-});
+        addPhoto(customerId, {
+          photoId: record.id,
+          photoUrl: activePhotoUrl,
+          originalPhotoUrl: f.OriginalPhotoUrl || null,
+          adjustedPhotoUrl: f.AdjustedPhotoUrl || null,
+          updatedAt: f.UpdatedAt || ""
+        });
+      });
 
-// 2. CustomerPhotos (FALLBACK ONLY)
-customerPhotoRecords.forEach((record) => {
-  const f = record.fields || {};
-  const customerId = normalizeCustomerId(f.CustomerId);
+      customerPhotoRecords.forEach((record) => {
+        const f = record.fields || {};
+        const customerId = normalizeCustomerId(f.CustomerId);
 
-  if (!photoMap[customerId] || photoMap[customerId].length === 0) {
-    addPhoto(customerId, {
-      photoId: record.id,
-      photoUrl: f.PhotoUrl || null,
-      originalPhotoUrl: f.OriginalPhotoUrl || null,
-      adjustedPhotoUrl: f.AdjustedPhotoUrl || null,
-      updatedAt: f.UpdatedAt || ""
-    });
-  }
-});
-const startDate = new Date();
-startDate.setDate(startDate.getDate() - 30);
-startDate.setHours(0, 0, 0, 0);
+        if (!photoMap[customerId] || photoMap[customerId].length === 0) {
+          addPhoto(customerId, {
+            photoId: record.id,
+            photoUrl: f.PhotoUrl || null,
+            originalPhotoUrl: f.OriginalPhotoUrl || null,
+            adjustedPhotoUrl: f.AdjustedPhotoUrl || null,
+            updatedAt: f.UpdatedAt || ""
+          });
+        }
+      });
 
-function isOnOrAfterStartDate(value) {
-  if (!value) return false;
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - 30);
+      startDate.setHours(0, 0, 0, 0);
 
-  const date = new Date(value);
-  return !Number.isNaN(date.getTime()) && date >= startDate;
-}
+      function isOnOrAfterStartDate(value) {
+        if (!value) return false;
+
+        const date = new Date(value);
+        return !Number.isNaN(date.getTime()) && date >= startDate;
+      }
+
       const members = directoryRecords
         .map((record) => {
           const fields = record.fields || {};
@@ -744,15 +748,13 @@ function isOnOrAfterStartDate(value) {
           const lastName = String(fields.LastName || "").trim();
 
           const tags = String(fields.ShopifyTags || "")
-  .split(",")
-  .map((tag) => String(tag).trim())
-  .filter(Boolean);
+            .split(",")
+            .map((tag) => String(tag).trim())
+            .filter(Boolean);
 
           const isVIP =
             tags.includes("VIP") ||
             parseTruthy(fields.IsVIP);
-
-          
 
           const paletteTags = String(fields.PaletteTags || "")
             .split(",")
@@ -769,85 +771,83 @@ function isOnOrAfterStartDate(value) {
           const photos = photoMap[customerId] || [];
 
           const drapingHistory = drapingHistoryMap[customerId] || [];
-const lastDraping = drapingHistory[0] || null;
+          const lastDraping = drapingHistory[0] || null;
 
-return {
-  customerId,
-  name,
-  firstName,
-  lastName,
-  email,
-  colorType: String(fields.ColorType || "").trim(),
-  joinedDate: fields.JoinedDate ? String(fields.JoinedDate).trim() : "",
-  membershipStatus: String(fields.MembershipStatus || "Inactive").trim(),
-becameVIPAt: fields.BecameVIPAt || "",
-lostVIPAt: fields.LostVIPAt || "",
-isNewThisMonth: isOnOrAfterStartDate(fields.BecameVIPAt),
-isLostThisMonth: isOnOrAfterStartDate(fields.LostVIPAt),
-paletteTags,
-  hasPaletteAccess,
-  photos,
-photoCount: photos.length,
-photoUrl: photos[0]?.photoUrl || null,
-hasPhoto: photos.length > 0,
-
-  drapingHistory,
-  drapedCount: drapingHistory.length,
-  lastDrapedDate: lastDraping?.drapedDate || "",
-  lastDrapedMonthYear: lastDraping?.drapedMonthYear || "",
-  lastDrapedColor: lastDraping?.colorName || "",
-  lastDrapedHex: lastDraping?.colorHex || "",
-  drapingRecency: getDrapingRecencyBucket(lastDraping?.drapedDate || "")
-};
+          return {
+            customerId,
+            name,
+            firstName,
+            lastName,
+            email,
+            colorType: String(fields.ColorType || "").trim(),
+            joinedDate: fields.JoinedDate ? String(fields.JoinedDate).trim() : "",
+            membershipStatus: String(fields.MembershipStatus || "Inactive").trim(),
+            becameVIPAt: fields.BecameVIPAt || "",
+            lostVIPAt: fields.LostVIPAt || "",
+            isNewThisMonth: isOnOrAfterStartDate(fields.BecameVIPAt),
+            isLostThisMonth: isOnOrAfterStartDate(fields.LostVIPAt),
+            paletteTags,
+            hasPaletteAccess,
+            photos,
+            photoCount: photos.length,
+            photoUrl: photos[0]?.photoUrl || null,
+            hasPhoto: photos.length > 0,
+            drapingHistory,
+            drapedCount: drapingHistory.length,
+            lastDrapedDate: lastDraping?.drapedDate || "",
+            lastDrapedMonthYear: lastDraping?.drapedMonthYear || "",
+            lastDrapedColor: lastDraping?.colorName || "",
+            lastDrapedHex: lastDraping?.colorHex || "",
+            drapingRecency: getDrapingRecencyBucket(lastDraping?.drapedDate || "")
+          };
         })
         .filter(Boolean)
         .sort((a, b) => a.name.localeCompare(b.name));
-        
 
-const BASELINE_ACTIVE_MEMBER_COUNT = 114;
+      const BASELINE_ACTIVE_MEMBER_COUNT = 114;
 
-const stats = {
-  active: 0,
-  inactive: 0,
-  newLast30Days: 0,
-  lostLast30Days: 0,
-  netChangeLast30Days: 0,
-  totalNetChangeSinceTracking: 0
-};
+      const stats = {
+        active: 0,
+        inactive: 0,
+        newLast30Days: 0,
+        lostLast30Days: 0,
+        netChangeLast30Days: 0,
+        totalNetChangeSinceTracking: 0
+      };
 
-directoryRecords.forEach((record) => {
-  const fields = record.fields || {};
-  const status = String(fields.MembershipStatus || "").toLowerCase();
+      directoryRecords.forEach((record) => {
+        const fields = record.fields || {};
+        const status = String(fields.MembershipStatus || "").toLowerCase();
 
-  if (status === "active" || status === "legacy") {
-    stats.active += 1;
-  } else {
-    stats.inactive += 1;
-  }
+        if (status === "active" || status === "legacy") {
+          stats.active += 1;
+        } else {
+          stats.inactive += 1;
+        }
 
-  const joinedDate = fields.JoinedDate ? new Date(fields.JoinedDate) : null;
-  const lostVIPAt = fields.LostVIPAt ? new Date(fields.LostVIPAt) : null;
+        const joinedDate = fields.JoinedDate ? new Date(fields.JoinedDate) : null;
+        const lostVIPAt = fields.LostVIPAt ? new Date(fields.LostVIPAt) : null;
 
-  // New = actual membership joined date, NOT BecameVIPAt
-  if (
-    joinedDate &&
-    !Number.isNaN(joinedDate.getTime()) &&
-    joinedDate >= startDate
-  ) {
-    stats.newLast30Days += 1;
-  }
+        if (
+          joinedDate &&
+          !Number.isNaN(joinedDate.getTime()) &&
+          joinedDate >= startDate
+        ) {
+          stats.newLast30Days += 1;
+        }
 
-  if (
-    lostVIPAt &&
-    !Number.isNaN(lostVIPAt.getTime()) &&
-    lostVIPAt >= startDate
-  ) {
-    stats.lostLast30Days += 1;
-  }
-});
+        if (
+          lostVIPAt &&
+          !Number.isNaN(lostVIPAt.getTime()) &&
+          lostVIPAt >= startDate
+        ) {
+          stats.lostLast30Days += 1;
+        }
+      });
 
-stats.netChangeLast30Days = stats.newLast30Days - stats.lostLast30Days;
-stats.totalNetChangeSinceTracking = stats.active - BASELINE_ACTIVE_MEMBER_COUNT;
+      stats.netChangeLast30Days = stats.newLast30Days - stats.lostLast30Days;
+      stats.totalNetChangeSinceTracking = stats.active - BASELINE_ACTIVE_MEMBER_COUNT;
+
       return Response.json({ members, stats });
     } catch (error) {
       console.error("getAdminMembers failed:", error);
@@ -920,37 +920,28 @@ stats.totalNetChangeSinceTracking = stats.active - BASELINE_ACTIVE_MEMBER_COUNT;
           .filter(Boolean);
 
         const categories = normalizeList(f["CategoryNames"]).map((item) =>
-  String(item || "").trim()
-).filter(Boolean);
+          String(item || "").trim()
+        ).filter(Boolean);
 
-const category = normalizeField(f["CategoryNames"]);
+        const category = normalizeField(f["CategoryNames"]);
 
-return {
-  name: normalizeField(f["ColorName"]),
-  hex: normalizeField(f["Hex"]),
-  sortOrder: Number(normalizeField(f["SortOrder"])) || 999,
-
-  // Keep existing app behavior unchanged
-  category: category || categories[0] || "Other",
-
-  // New: full category list for Color Analysis Tool
-  categories: categories,
-
-  paletteCodes: normalizeField(f["PaletteCodes_Final_Manual"]),
-  chroma: normalizeField(f["Chroma"]),
-  temperature: normalizeField(f["Temperature"]),
-  depth: normalizeField(f["Depth"]),
-
+        return {
+          name: normalizeField(f["ColorName"]),
+          hex: normalizeField(f["Hex"]),
+          sortOrder: Number(normalizeField(f["SortOrder"])) || 999,
+          category: category || categories[0] || "Other",
+          categories: categories,
+          paletteCodes: normalizeField(f["PaletteCodes_Final_Manual"]),
+          chroma: normalizeField(f["Chroma"]),
+          temperature: normalizeField(f["Temperature"]),
+          depth: normalizeField(f["Depth"]),
           isBest: bestPalettes.includes(paletteCode),
-
           palettes: linkedPalettes,
           adminPalettes: adminPalettes,
-
           isNeutral:
             f["IsNeutral"] === true ||
             f["IsNeutral"] === 1 ||
             String(f["IsNeutral"]).toLowerCase() === "true",
-
           neutralDepth: normalizeField(f["NeutralDepth"]),
           neutralFamily: normalizeField(f["NeutralFamily"]),
         };
@@ -977,6 +968,7 @@ return {
     );
   }
 }
+
 async function fetchMemberDrapingHistoryMap({ baseId, token }) {
   const records = await fetchAllAirtableRecords({
     baseId,
