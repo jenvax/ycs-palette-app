@@ -131,11 +131,17 @@ async function fetchShopifyCustomers({ shop, accessToken }) {
     cursor = hasNextPage ? edges[edges.length - 1]?.cursor : null;
   }
 
-  return customers.map((customer) => {
+  return customers
+  .map((customer) => {
     const customerId = normalizeCustomerId(customer.id);
     const tags = Array.isArray(customer.tags) ? customer.tags : [];
     const normalizedTags = tags.map((tag) => String(tag).trim());
     const upperTags = normalizedTags.map((tag) => tag.toUpperCase());
+
+    // 🚫 EXCLUDE ADMINS
+    if (upperTags.includes("YCS_ADMIN")) {
+      return null;
+    }
 
     const paletteTags = normalizedTags.filter((tag) =>
       PALETTE_TAGS.has(String(tag).toUpperCase())
@@ -155,7 +161,8 @@ async function fetchShopifyCustomers({ shop, accessToken }) {
       isVIP: upperTags.includes("VIP"),
       joinedDate
     };
-  });
+  })
+  .filter(Boolean);
 }
 
 async function airtableRequest({ baseId, tableName, token, method = "GET", recordId, body }) {
