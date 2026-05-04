@@ -762,10 +762,10 @@ const stats = {
   inactive: 0,
   newLast30Days: 0,
   lostLast30Days: 0,
-  netGrowthLast30Days: 0,
-  totalBecameVIP: 0,
-  totalLostVIP: 0,
-  totalNetGrowth: 0
+  netChangeLast30Days: 0,
+  totalNewSinceTracking: 0,
+  totalLostSinceTracking: 0,
+  totalNetChangeSinceTracking: 0
 };
 
 directoryRecords.forEach((record) => {
@@ -782,24 +782,25 @@ directoryRecords.forEach((record) => {
   const lostVIPAt = fields.LostVIPAt ? new Date(fields.LostVIPAt) : null;
 
   if (becameVIPAt && !Number.isNaN(becameVIPAt.getTime())) {
-  stats.totalBecameVIP += 1;
+    stats.totalNewSinceTracking += 1;
 
-  if (becameVIPAt >= startDate) {
-    stats.newLast30Days += 1;
+    if (becameVIPAt >= startDate) {
+      stats.newLast30Days += 1;
+    }
   }
-}
 
-if (lostVIPAt && !Number.isNaN(lostVIPAt.getTime())) {
-  stats.totalLostVIP += 1;
+  if (lostVIPAt && !Number.isNaN(lostVIPAt.getTime())) {
+    stats.totalLostSinceTracking += 1;
 
-  if (lostVIPAt >= startDate) {
-    stats.lostLast30Days += 1;
+    if (lostVIPAt >= startDate) {
+      stats.lostLast30Days += 1;
+    }
   }
-}
 });
 
-stats.netGrowthLast30Days = stats.newLast30Days - stats.lostLast30Days;
-stats.totalNetGrowth = stats.totalBecameVIP - stats.totalLostVIP;
+stats.netChangeLast30Days = stats.newLast30Days - stats.lostLast30Days;
+stats.totalNetChangeSinceTracking =
+  stats.totalNewSinceTracking - stats.totalLostSinceTracking;
       return Response.json({ members, stats });
     } catch (error) {
       console.error("getAdminMembers failed:", error);
