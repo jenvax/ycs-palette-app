@@ -282,19 +282,17 @@ async function syncCustomerDirectory({ shop, accessToken, baseId, token }) {
     const currentIsVIP = Boolean(customer.isVIP);
 
     let membershipStatus = currentIsVIP ? "Active" : "Inactive";
-if (fields.MembershipStatus === "Legacy") {
-  fields.MembershipStatus = "Active";
-}
-    const fieldsToWrite = {
-      CustomerId: customer.customerId,
-      Email: customer.email,
-      FirstName: customer.firstName,
-      LastName: customer.lastName,
-      Tags: customer.tags.join(", "),
-      PaletteTags: customer.paletteTags.join(", "),
-      MembershipStatus: membershipStatus,
-      LastSyncedAt: nowIso
-    };
+
+const fieldsToWrite = {
+  CustomerId: customer.customerId,
+  Email: customer.email,
+  FirstName: customer.firstName,
+  LastName: customer.lastName,
+  Tags: customer.tags.join(", "),
+  PaletteTags: customer.paletteTags.join(", "),
+  MembershipStatus: membershipStatus,
+  LastSyncedAt: nowIso
+};
 
    if (customer.joinedDate) {
   const joinedDate = new Date(customer.joinedDate);
