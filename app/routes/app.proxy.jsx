@@ -711,19 +711,25 @@ export async function loader({ request }) {
       });
 
       customerPhotoRecords.forEach((record) => {
-        const f = record.fields || {};
-        const customerId = normalizeCustomerId(f.CustomerId);
+  const f = record.fields || {};
+  const customerId = normalizeCustomerId(f.CustomerId);
 
-        if (!photoMap[customerId] || photoMap[customerId].length === 0) {
-          addPhoto(customerId, {
-            photoId: record.id,
-            photoUrl: f.PhotoUrl || null,
-            originalPhotoUrl: f.OriginalPhotoUrl || null,
-            adjustedPhotoUrl: f.AdjustedPhotoUrl || null,
-            updatedAt: f.UpdatedAt || ""
-          });
-        }
-      });
+  const activePhotoUrl =
+    f.ActivePhotoUrl ||
+    f.AdjustedPhotoUrl ||
+    f.PhotoUrl ||
+    f.OriginalPhotoUrl ||
+    null;
+
+  addPhoto(customerId, {
+    photoId: record.id,
+    sourceTable: "CustomerPhotos",
+    photoUrl: activePhotoUrl,
+    originalPhotoUrl: f.OriginalPhotoUrl || null,
+    adjustedPhotoUrl: f.AdjustedPhotoUrl || null,
+    updatedAt: f.UpdatedAt || ""
+  });
+});
 
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - 30);
