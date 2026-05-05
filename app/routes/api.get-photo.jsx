@@ -16,6 +16,7 @@ function getCorsHeaders(origin) {
   };
 }
 
+
 function cleanString(value) {
   const stringValue = String(value || "").trim();
   return stringValue || null;
@@ -40,6 +41,7 @@ export async function loader({ request }) {
 
   try {
     const url = new URL(request.url);
+    const photoId = cleanString(url.searchParams.get("photoId"));
 
     const customerId = cleanString(url.searchParams.get("customerId"));
     const clientRecordId = cleanString(url.searchParams.get("clientRecordId"));
@@ -72,14 +74,25 @@ export async function loader({ request }) {
     }
 
     const isConsultantClient = !!clientRecordId;
+const isPersonalPhoto = !!photoId && !!customerId;
 
-    const tableName = isConsultantClient ? "ConsultantClients" : "CustomerPhotos";
-    const lookupField = isConsultantClient ? "ClientRecordId" : "CustomerId";
-    const lookupValue = isConsultantClient ? clientRecordId : customerId;
+let tableName;
+let filterFormula;
 
-    const airtableUrl =
-      `https://api.airtable.com/v0/${airtableBase}/${tableName}` +
-      `?filterByFormula=${encodeURIComponent(`{${lookupField}}="${lookupValue}"`)}`;
+if (isConsultantClient) {
+  tableName = "ConsultantClients";
+  filterFormula = `{ClientRecordId}="${clientRecordId}"`;
+} else if (isPersonalPhoto) {
+  tableName = "PersonalStudioPhotos";
+  filterFormula = `AND({PhotoId}="${photoId}", {CustomerId}="${customerId}")`;
+} else {
+  tableName = "CustomerPhotos";
+  filterFormula = `{CustomerId}="${customerId}"`;
+}
+
+const airtableUrl =
+  `https://api.airtable.com/v0/${airtableBase}/${tableName}` +
+  `?filterByFormula=${encodeURIComponent(filterFormula)}`;
 
     const res = await fetch(airtableUrl, {
       headers: {
@@ -135,6 +148,7 @@ const activePhotoSessionKey =
     activePhotoSessionKey,
       photoTransform,
       lipMask,
+      photoId: photoId || fields.PhotoId || null,
         customerId: customerId || null,
         clientRecordId: clientRecordId || null,
         firstName: fields.FirstName || null,

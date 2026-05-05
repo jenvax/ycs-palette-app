@@ -42,7 +42,7 @@ export async function action({ request }) {
   }
 
   try {
-    const { customerId, clientRecordId, photoTransform } = await request.json();
+    const { customerId, clientRecordId, photoId, photoTransform, lipMask } = await request.json();
 
     const safeCustomerId = cleanString(customerId);
     const safeClientRecordId = cleanString(clientRecordId);
@@ -54,13 +54,26 @@ export async function action({ request }) {
       );
     }
 
-    const isConsultantClient = !!safeClientRecordId;
-    const recordId = safeClientRecordId || safeCustomerId;
+    const safePhotoId = cleanString(photoId);
+const isConsultantClient = !!safeClientRecordId;
+const isPersonalStudioPhoto = !!safePhotoId && !!safeCustomerId;
+
+const recordId = safeClientRecordId || safePhotoId || safeCustomerId;
+
+const airtableTable = isConsultantClient
+  ? "ConsultantClients"
+  : isPersonalStudioPhoto
+    ? "PersonalStudioPhotos"
+    : "CustomerPhotos";
+
+const lookupFormula = isConsultantClient
+  ? `{ClientRecordId}="${safeClientRecordId}"`
+  : isPersonalStudioPhoto
+    ? `AND({PhotoId}="${safePhotoId}", {CustomerId}="${safeCustomerId}")`
+    : `{CustomerId}="${safeCustomerId}"`;
 
     const airtableBase = process.env.AIRTABLE_BASE_ID;
-    const airtableTable = isConsultantClient ? "ConsultantClients" : "CustomerPhotos";
     const airtableToken = process.env.AIRTABLE_TOKEN;
-    const lookupField = isConsultantClient ? "ClientRecordId" : "CustomerId";
 
     if (!airtableBase || !airtableToken) {
       return Response.json(
@@ -70,13 +83,13 @@ export async function action({ request }) {
     }
 
     const findRes = await fetch(
-      `https://api.airtable.com/v0/${airtableBase}/${airtableTable}?filterByFormula=${encodeURIComponent(`{${lookupField}}="${recordId}"`)}`,
-      {
-        headers: {
-          Authorization: `Bearer ${airtableToken}`
-        }
-      }
-    );
+  `https://api.airtable.com/v0/${airtableBase}/${airtableTable}?filterByFormula=${encodeURIComponent(lookupFormula)}`,
+  {
+    headers: {
+      Authorization: `Bearer ${airtableToken}`
+    }
+  }
+);
 
     const findData = await findRes.json();
     const existing = findData.records?.[0];
