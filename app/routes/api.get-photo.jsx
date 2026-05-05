@@ -84,7 +84,9 @@ if (isConsultantClient) {
   filterFormula = `{ClientRecordId}="${clientRecordId}"`;
 } else if (isPersonalPhoto) {
   tableName = "PersonalStudioPhotos";
-  filterFormula = `AND({PhotoId}="${photoId}", {CustomerId}="${customerId}")`;
+  filterFormula = photoId.startsWith("rec")
+  ? `AND(RECORD_ID()="${photoId}", {CustomerId}="${customerId}")`
+  : `AND({PhotoId}="${photoId}", {CustomerId}="${customerId}")`;
 } else {
   tableName = "CustomerPhotos";
   filterFormula = `{CustomerId}="${customerId}"`;

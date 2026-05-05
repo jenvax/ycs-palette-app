@@ -58,7 +58,6 @@ export async function action({ request }) {
 const isConsultantClient = !!safeClientRecordId;
 const isPersonalStudioPhoto = !!safePhotoId && !!safeCustomerId;
 
-const recordId = safeClientRecordId || safePhotoId || safeCustomerId;
 
 const airtableTable = isConsultantClient
   ? "ConsultantClients"
@@ -69,7 +68,11 @@ const airtableTable = isConsultantClient
 const lookupFormula = isConsultantClient
   ? `{ClientRecordId}="${safeClientRecordId}"`
   : isPersonalStudioPhoto
-    ? `AND({PhotoId}="${safePhotoId}", {CustomerId}="${safeCustomerId}")`
+    ? (
+    safePhotoId.startsWith("rec")
+      ? `AND(RECORD_ID()="${safePhotoId}", {CustomerId}="${safeCustomerId}")`
+      : `AND({PhotoId}="${safePhotoId}", {CustomerId}="${safeCustomerId}")`
+  )
     : `{CustomerId}="${safeCustomerId}"`;
 
     const airtableBase = process.env.AIRTABLE_BASE_ID;
