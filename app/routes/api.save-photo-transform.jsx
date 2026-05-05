@@ -89,14 +89,19 @@ export async function action({ request }) {
     }
 
     const payload = {
-      fields: {
-        PhotoTransform: JSON.stringify({
-          x: Number.isFinite(Number(photoTransform.x)) ? Number(photoTransform.x) : 0,
-          y: Number.isFinite(Number(photoTransform.y)) ? Number(photoTransform.y) : 0,
-          scale: Number.isFinite(Number(photoTransform.scale)) ? Number(photoTransform.scale) : 1
-        })
-      }
-    };
+  fields: {
+    PhotoTransform: JSON.stringify({
+      x: Number.isFinite(Number(photoTransform.x)) ? Number(photoTransform.x) : 0,
+      y: Number.isFinite(Number(photoTransform.y)) ? Number(photoTransform.y) : 0,
+      scale: Number.isFinite(Number(photoTransform.scale)) ? Number(photoTransform.scale) : 1
+    }),
+
+    LipMaskJson: JSON.stringify({
+      points: Array.isArray(lipMask?.points) ? lipMask.points : [],
+      closed: !!lipMask?.closed
+    })
+  }
+};
 
     const patchRes = await fetch(
       `https://api.airtable.com/v0/${airtableBase}/${airtableTable}/${existing.id}`,

@@ -20,7 +20,13 @@ function cleanString(value) {
   const stringValue = String(value || "").trim();
   return stringValue || null;
 }
-
+function parseJson(value) {
+  try {
+    return value ? JSON.parse(value) : null;
+  } catch (error) {
+    return null;
+  }
+}
 export async function loader({ request }) {
   const origin = request.headers.get("Origin") || "";
   const corsHeaders = getCorsHeaders(origin);
@@ -96,17 +102,14 @@ export async function loader({ request }) {
     const record = data.records?.[0] || null;
     const fields = record?.fields || {};
 
-    let photoTransform = null;
+    const photoTransform =
+  parseJson(fields.PhotoTransformJson) ||
+  parseJson(fields.PhotoTransform) ||
+  null;
 
-    try {
-      photoTransform = fields.PhotoTransformJson
-        ? JSON.parse(fields.PhotoTransformJson)
-        : fields.PhotoTransform
-          ? JSON.parse(fields.PhotoTransform)
-          : null;
-    } catch (error) {
-      photoTransform = null;
-    }
+const lipMask =
+  parseJson(fields.LipMaskJson) ||
+  null;
 
     const originalPhotoUrl = fields.OriginalPhotoUrl || null;
 const adjustedPhotoUrl = fields.AdjustedPhotoUrl || null;
@@ -130,7 +133,8 @@ const activePhotoSessionKey =
     adjustedPhotoUrl,
     activePhotoUrl,
     activePhotoSessionKey,
-    photoTransform,
+      photoTransform,
+      lipMask,
         customerId: customerId || null,
         clientRecordId: clientRecordId || null,
         firstName: fields.FirstName || null,
