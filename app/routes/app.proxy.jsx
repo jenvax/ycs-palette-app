@@ -271,22 +271,27 @@ async function ensurePersonalPhotoFromCustomerPhoto({
 
   if (!activePhotoUrl) return null;
 
-  const existingPersonalRecord = existingPersonalPhotos.find((record) => {
-  const pf = record.fields || {};
-  const personalCustomerId = normalizeCustomerId(pf.CustomerId);
+  const existingPersonalRecord =
+  existingPersonalPhotos.find((record) => {
+    const pf = record.fields || {};
+    const personalCustomerId = normalizeCustomerId(pf.CustomerId);
 
-  const personalUrl =
-    pf.ActivePhotoUrl ||
-    pf.AdjustedPhotoUrl ||
-    pf.PhotoUrl ||
-    pf.OriginalPhotoUrl ||
-    null;
+    const personalUrl =
+      pf.ActivePhotoUrl ||
+      pf.AdjustedPhotoUrl ||
+      pf.PhotoUrl ||
+      pf.OriginalPhotoUrl ||
+      null;
 
-  return (
-    personalCustomerId === customerId &&
-    String(personalUrl || "") === String(activePhotoUrl || "")
-  );
-});
+    return (
+      personalCustomerId === customerId &&
+      String(personalUrl || "") === String(activePhotoUrl || "")
+    );
+  }) ||
+  existingPersonalPhotos.find((record) => {
+    const pf = record.fields || {};
+    return normalizeCustomerId(pf.CustomerId) === customerId;
+  });
 
 if (existingPersonalRecord) {
   const pf = existingPersonalRecord.fields || {};
@@ -312,6 +317,8 @@ if (existingPersonalRecord) {
       recordId: existingPersonalRecord.id,
       fields: fieldsToPatch
     });
+
+    Object.assign(existingPersonalRecord.fields, fieldsToPatch);
   }
 
   return null;
