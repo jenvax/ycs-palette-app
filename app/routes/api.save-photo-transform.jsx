@@ -115,39 +115,40 @@ const lookupFormula = isConsultantClient
       );
     }
 
-    const payload = {
-  fields: {
-    PhotoTransform: JSON.stringify({
-      x: Number.isFinite(Number(photoTransform.x)) ? Number(photoTransform.x) : 0,
-      y: Number.isFinite(Number(photoTransform.y)) ? Number(photoTransform.y) : 0,
-      scale: Number.isFinite(Number(photoTransform.scale)) ? Number(photoTransform.scale) : 1
-    }),
-
-    LipMaskJson: JSON.stringify({
-  shapes: Array.isArray(lipMask?.shapes)
-    ? lipMask.shapes
-        .filter(function (shape) {
-          return Array.isArray(shape.points) && shape.points.length >= 3;
-        })
-        .slice(0, 2)
-        .map(function (shape) {
-          return {
-            points: shape.points,
-            closed: !!shape.closed
-          };
-        })
-    : Array.isArray(lipMask?.points)
-      ? [
-          {
-            points: lipMask.points,
-            closed: !!lipMask.closed
-          }
-        ]
-      : []
-})
-  }
+    const fields = {
+  PhotoTransform: JSON.stringify({
+    x: Number.isFinite(Number(photoTransform.x)) ? Number(photoTransform.x) : 0,
+    y: Number.isFinite(Number(photoTransform.y)) ? Number(photoTransform.y) : 0,
+    scale: Number.isFinite(Number(photoTransform.scale)) ? Number(photoTransform.scale) : 1
+  })
 };
 
+const shapes = Array.isArray(lipMask?.shapes)
+  ? lipMask.shapes
+      .filter(function (shape) {
+        return Array.isArray(shape.points) && shape.points.length >= 3;
+      })
+      .slice(0, 2)
+      .map(function (shape) {
+        return {
+          points: shape.points,
+          closed: !!shape.closed
+        };
+      })
+  : Array.isArray(lipMask?.points)
+    ? [
+        {
+          points: lipMask.points,
+          closed: !!lipMask.closed
+        }
+      ]
+    : [];
+
+if (shapes.length) {
+  fields.LipMaskJson = JSON.stringify({ shapes });
+}
+
+const payload = { fields };
     const patchRes = await fetch(
       `https://api.airtable.com/v0/${airtableBase}/${airtableTable}/${existing.id}`,
       {
