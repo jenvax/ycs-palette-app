@@ -819,6 +819,7 @@ for (const customerPhotoRecord of customerPhotoRecords) {
   photoId: f.PhotoId || record.id,
   airtableRecordId: record.id,
   sourceTable: "PersonalStudioPhotos",
+  photoSource: "PersonalStudioPhotos",
   photoUrl: activePhotoUrl,
   originalPhotoUrl: f.OriginalPhotoUrl || null,
   adjustedPhotoUrl: f.AdjustedPhotoUrl || null,

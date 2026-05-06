@@ -23,10 +23,10 @@ function cleanString(value) {
 
 function parsePhotoTransform(fields) {
   try {
-    return fields.PhotoTransformJson
-      ? JSON.parse(fields.PhotoTransformJson)
-      : fields.PhotoTransform
-        ? JSON.parse(fields.PhotoTransform)
+    return fields.PhotoTransform
+      ? JSON.parse(fields.PhotoTransform)
+      : fields.PhotoTransformJson
+        ? JSON.parse(fields.PhotoTransformJson)
         : null;
   } catch (error) {
     return null;

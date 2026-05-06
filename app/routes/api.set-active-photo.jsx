@@ -21,6 +21,31 @@ function cleanString(value) {
   return stringValue || null;
 }
 
+function getCustomerPhotoLookup({ photoId, photoSource, customerId }) {
+  if (photoId?.startsWith("rec") && !photoSource) {
+    return {
+      error: "Missing photoSource for Airtable record ID"
+    };
+  }
+
+  const tableName = photoSource === "CustomerPhotos"
+    ? "CustomerPhotos"
+    : photoId
+      ? "PersonalStudioPhotos"
+      : "CustomerPhotos";
+
+  const formula = photoId
+    ? photoId.startsWith("rec")
+      ? `RECORD_ID()="${photoId}"`
+      : `AND({PhotoId}="${photoId}", {CustomerId}="${customerId}")`
+    : `{CustomerId}="${customerId}"`;
+
+  return {
+    tableName,
+    formula
+  };
+}
+
 export async function loader({ request }) {
   const origin = request.headers.get("Origin") || "";
 
@@ -42,10 +67,20 @@ export async function action({ request }) {
   }
 
   try {
-    const { customerId, clientRecordId, photoType } = await request.json();
+    const {
+      customerId,
+      clientRecordId,
+      photoId,
+      photoSource,
+      sourceTable,
+      source,
+      photoType
+    } = await request.json();
 
     const safeCustomerId = cleanString(customerId);
     const safeClientRecordId = cleanString(clientRecordId);
+    const safePhotoId = cleanString(photoId);
+    const safePhotoSource = cleanString(photoSource || sourceTable || source);
     const safePhotoType = cleanString(photoType);
 
     if ((!safeCustomerId && !safeClientRecordId) || !safePhotoType) {
@@ -60,8 +95,6 @@ export async function action({ request }) {
 
     const airtableBase = process.env.AIRTABLE_BASE_ID;
     const airtableToken = process.env.AIRTABLE_TOKEN;
-    const airtableTable = isConsultantClient ? "ConsultantClients" : "CustomerPhotos";
-    const lookupField = isConsultantClient ? "ClientRecordId" : "CustomerId";
 
     if (!airtableBase || !airtableToken) {
       return Response.json(
@@ -70,8 +103,26 @@ export async function action({ request }) {
       );
     }
 
+    const lookup = isConsultantClient
+      ? {
+          tableName: "ConsultantClients",
+          formula: `{ClientRecordId}="${recordId}"`
+        }
+      : getCustomerPhotoLookup({
+          photoId: safePhotoId,
+          photoSource: safePhotoSource,
+          customerId: safeCustomerId
+        });
+
+    if (lookup.error) {
+      return Response.json(
+        { error: lookup.error },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
     const findRes = await fetch(
-      `https://api.airtable.com/v0/${airtableBase}/${airtableTable}?filterByFormula=${encodeURIComponent(`{${lookupField}}="${recordId}"`)}`,
+      `https://api.airtable.com/v0/${airtableBase}/${lookup.tableName}?filterByFormula=${encodeURIComponent(lookup.formula)}`,
       {
         headers: {
           Authorization: `Bearer ${airtableToken}`
@@ -118,7 +169,7 @@ export async function action({ request }) {
 };
 
     const patchRes = await fetch(
-      `https://api.airtable.com/v0/${airtableBase}/${airtableTable}/${existing.id}`,
+      `https://api.airtable.com/v0/${airtableBase}/${lookup.tableName}/${existing.id}`,
       {
         method: "PATCH",
         headers: {
@@ -146,6 +197,8 @@ export async function action({ request }) {
         activePhotoUrl: nextUrl,
         customerId: safeCustomerId,
         clientRecordId: safeClientRecordId,
+        photoId: safePhotoId,
+        photoSource: lookup.tableName,
         recordType: isConsultantClient ? "consultant_client" : "shopify_customer"
       },
       { status: 200, headers: corsHeaders }

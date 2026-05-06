@@ -47,6 +47,7 @@ export async function action({ request }) {
   clientRecordId,
   photoId,
   photoSource,
+  sourceTable,
   source,
   photoTransform,
   lipMask
@@ -62,11 +63,18 @@ export async function action({ request }) {
       );
     }
 
-    const safePhotoId = cleanString(photoId);
-const safePhotoSource = cleanString(photoSource || source);
+const safePhotoId = cleanString(photoId);
+const safePhotoSource = cleanString(photoSource || sourceTable || source);
 
 const isConsultantClient = !!safeClientRecordId;
 const isSpecificCustomerPhoto = !!safePhotoId && !!safeCustomerId;
+
+if (!isConsultantClient && safePhotoId?.startsWith("rec") && !safePhotoSource) {
+  return Response.json(
+    { error: "Missing photoSource for Airtable record ID" },
+    { status: 400, headers: corsHeaders }
+  );
+}
 
 const airtableTable = isConsultantClient
   ? "ConsultantClients"

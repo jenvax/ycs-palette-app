@@ -77,6 +77,7 @@ export async function loader({ request }) {
 const isSpecificPhoto = !!photoId && !!customerId;
 const photoSource =
   cleanString(url.searchParams.get("source")) ||
+  cleanString(url.searchParams.get("sourceTable")) ||
   cleanString(url.searchParams.get("photoSource"));
 
 let tableName;
@@ -86,6 +87,13 @@ if (isConsultantClient) {
   tableName = "ConsultantClients";
   filterFormula = `{ClientRecordId}="${clientRecordId}"`;
 } else if (isSpecificPhoto) {
+  if (photoId.startsWith("rec") && !photoSource) {
+    return Response.json(
+      { error: "Missing photoSource for Airtable record ID" },
+      { status: 400, headers: corsHeaders }
+    );
+  }
+
   tableName =
     photoSource === "CustomerPhotos"
       ? "CustomerPhotos"
@@ -143,8 +151,8 @@ const fields = record.fields || {};
 
 
     const photoTransform =
-  parseJson(fields.PhotoTransformJson) ||
   parseJson(fields.PhotoTransform) ||
+  parseJson(fields.PhotoTransformJson) ||
   null;
 
 const lipMask =
@@ -176,6 +184,7 @@ const activePhotoSessionKey =
       photoTransform,
       lipMask,
       photoId: photoId || fields.PhotoId || null,
+      photoSource: tableName,
         customerId: customerId || null,
         clientRecordId: clientRecordId || null,
         firstName: fields.FirstName || null,

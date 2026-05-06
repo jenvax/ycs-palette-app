@@ -64,8 +64,12 @@ export async function action({ request }) {
       );
     }
 
+    const lookupFormula = safePhotoId.startsWith("rec")
+      ? `RECORD_ID()="${safePhotoId}"`
+      : `{PhotoId}="${safePhotoId}"`;
+
     const findRes = await fetch(
-      `https://api.airtable.com/v0/${airtableBase}/${airtableTable}?filterByFormula=${encodeURIComponent(`{PhotoId}="${safePhotoId}"`)}`,
+      `https://api.airtable.com/v0/${airtableBase}/${airtableTable}?filterByFormula=${encodeURIComponent(lookupFormula)}`,
       {
         headers: {
           Authorization: `Bearer ${airtableToken}`

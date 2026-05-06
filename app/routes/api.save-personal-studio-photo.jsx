@@ -141,8 +141,12 @@ export async function action({ request }) {
 
     const imageUrl = uploadData.secure_url;
 
+    const lookupFormula = safePhotoId.startsWith("rec")
+      ? `RECORD_ID()="${safePhotoId}"`
+      : `AND({PhotoId}="${safePhotoId}", {CustomerId}="${safeCustomerId}")`;
+
     const findRes = await fetch(
-      `https://api.airtable.com/v0/${airtableBase}/${airtableTable}?filterByFormula=${encodeURIComponent(`{PhotoId}="${safePhotoId}"`)}`,
+      `https://api.airtable.com/v0/${airtableBase}/${airtableTable}?filterByFormula=${encodeURIComponent(lookupFormula)}`,
       {
         headers: {
           Authorization: `Bearer ${airtableToken}`
@@ -152,14 +156,25 @@ export async function action({ request }) {
 
     const findData = await findRes.json();
     const existing = findData.records?.[0] || null;
+
+    if (safePhotoId.startsWith("rec") && !existing) {
+      return Response.json(
+        { error: "PersonalStudioPhotos record not found" },
+        { status: 404, headers: corsHeaders }
+      );
+    }
+
     const existingFields = existing?.fields || {};
     const nowIso = new Date().toISOString();
 
     const fields = {
-      PhotoId: safePhotoId,
       CustomerId: safeCustomerId,
       UpdatedAt: nowIso
     };
+
+    if (!safePhotoId.startsWith("rec")) {
+      fields.PhotoId = safePhotoId;
+    }
 
     if (!existing) {
       fields.CreatedAt = nowIso;
@@ -246,7 +261,8 @@ export async function action({ request }) {
     return Response.json(
       {
         success: true,
-        photoId: safePhotoId,
+        photoId: existingFields.PhotoId || safePhotoId,
+        photoSource: "PersonalStudioPhotos",
         imageUrl,
         saveType: mode
       },

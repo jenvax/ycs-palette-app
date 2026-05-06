@@ -43,7 +43,9 @@ export async function loader({ request }) {
     const airtableBase = process.env.AIRTABLE_BASE_ID;
     const airtableToken = process.env.AIRTABLE_TOKEN;
 
-    const formula = `{PhotoId}="${photoId}"`;
+    const formula = photoId.startsWith("rec")
+      ? `RECORD_ID()="${photoId}"`
+      : `{PhotoId}="${photoId}"`;
 
     const airtableUrl =
       `https://api.airtable.com/v0/${airtableBase}/PersonalStudioPhotos` +
@@ -78,7 +80,8 @@ export async function loader({ request }) {
     return Response.json(
       {
         photo: {
-          photoId: f.PhotoId,
+          photoId: f.PhotoId || record.id,
+          photoSource: "PersonalStudioPhotos",
           customerId: f.CustomerId,
           originalPhotoUrl: f.OriginalPhotoUrl || null,
           adjustedPhotoUrl: f.AdjustedPhotoUrl || null,
