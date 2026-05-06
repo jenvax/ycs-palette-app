@@ -40,7 +40,11 @@ export async function action({ request }) {
     const body = await request.json();
     const customerId = String(body.customerId || "").trim();
     const field = String(body.field || "").trim();
-    const value = String(body.value || "").trim();
+    const rawValue = body.value;
+const value =
+  body.field === "PermissionToUse"
+    ? Boolean(rawValue)
+    : String(rawValue || "").trim();
 
     if (!customerId || !field) {
       return Response.json(
@@ -49,7 +53,7 @@ export async function action({ request }) {
       );
     }
 
-    const allowedFields = new Set(["ColorType"]);
+    const allowedFields = new Set(["ColorType", "PermissionToUse"]);
     if (!allowedFields.has(field)) {
       return Response.json(
         { error: "Field is not editable" },

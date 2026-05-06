@@ -786,6 +786,7 @@ export async function loader({ request }) {
             lastName,
             email,
             colorType: String(fields.ColorType || "").trim(),
+            permissionToUse: parseTruthy(fields.PermissionToUse),
             joinedDate: fields.JoinedDate ? String(fields.JoinedDate).trim() : "",
             membershipStatus: String(fields.MembershipStatus || "Inactive").trim(),
             becameVIPAt: fields.BecameVIPAt || "",
