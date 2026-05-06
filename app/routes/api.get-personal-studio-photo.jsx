@@ -21,6 +21,14 @@ function cleanString(value) {
   return stringValue || null;
 }
 
+function parseJson(value) {
+  try {
+    return value ? JSON.parse(value) : null;
+  } catch (error) {
+    return null;
+  }
+}
+
 export async function loader({ request }) {
   const origin = request.headers.get("Origin") || "";
   const corsHeaders = getCorsHeaders(origin);
@@ -76,6 +84,20 @@ export async function loader({ request }) {
     }
 
     const f = record.fields || {};
+    const photoTransform =
+      parseJson(f.PhotoTransform) ||
+      parseJson(f.PhotoTransformJson) ||
+      null;
+    const lipMask = parseJson(f.LipMaskJson) || null;
+    const originalPhotoUrl = f.OriginalPhotoUrl || null;
+    const adjustedPhotoUrl = f.AdjustedPhotoUrl || null;
+    const photoUrl = f.PhotoUrl || null;
+    const activePhotoUrl =
+      f.ActivePhotoUrl ||
+      adjustedPhotoUrl ||
+      photoUrl ||
+      originalPhotoUrl ||
+      null;
 
     return Response.json(
       {
@@ -83,13 +105,12 @@ export async function loader({ request }) {
           photoId: f.PhotoId || record.id,
           photoSource: "PersonalStudioPhotos",
           customerId: f.CustomerId,
-          originalPhotoUrl: f.OriginalPhotoUrl || null,
-          adjustedPhotoUrl: f.AdjustedPhotoUrl || null,
-          activePhotoUrl:
-            f.ActivePhotoUrl ||
-            f.AdjustedPhotoUrl ||
-            f.OriginalPhotoUrl ||
-            null
+          photoUrl,
+          originalPhotoUrl,
+          adjustedPhotoUrl,
+          activePhotoUrl,
+          photoTransform,
+          lipMask
         }
       },
       { status: 200, headers: corsHeaders }
