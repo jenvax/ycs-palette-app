@@ -702,12 +702,15 @@ export async function loader({ request }) {
           null;
 
         addPhoto(customerId, {
-          photoId: record.id,
-          photoUrl: activePhotoUrl,
-          originalPhotoUrl: f.OriginalPhotoUrl || null,
-          adjustedPhotoUrl: f.AdjustedPhotoUrl || null,
-          updatedAt: f.UpdatedAt || ""
-        });
+  photoId: f.PhotoId || record.id,
+  airtableRecordId: record.id,
+  sourceTable: "PersonalStudioPhotos",
+  photoUrl: activePhotoUrl,
+  originalPhotoUrl: f.OriginalPhotoUrl || null,
+  adjustedPhotoUrl: f.AdjustedPhotoUrl || null,
+  activePhotoUrl,
+  updatedAt: f.UpdatedAt || ""
+});
       });
 
       customerPhotoRecords.forEach((record) => {

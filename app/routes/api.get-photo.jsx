@@ -95,7 +95,7 @@ if (isConsultantClient) {
     ? `AND(RECORD_ID()="${photoId}", {CustomerId}="${customerId}")`
     : `AND({PhotoId}="${photoId}", {CustomerId}="${customerId}")`;
 } else {
-  tableName = "CustomerPhotos";
+  tableName = "PersonalStudioPhotos";
   filterFormula = `{CustomerId}="${customerId}"`;
 }
 
