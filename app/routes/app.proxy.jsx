@@ -271,24 +271,51 @@ async function ensurePersonalPhotoFromCustomerPhoto({
 
   if (!activePhotoUrl) return null;
 
-  const alreadyExists = existingPersonalPhotos.some((record) => {
-    const pf = record.fields || {};
-    const personalCustomerId = normalizeCustomerId(pf.CustomerId);
+  const existingPersonalRecord = existingPersonalPhotos.find((record) => {
+  const pf = record.fields || {};
+  const personalCustomerId = normalizeCustomerId(pf.CustomerId);
 
-    const personalUrl =
-      pf.ActivePhotoUrl ||
-      pf.AdjustedPhotoUrl ||
-      pf.PhotoUrl ||
-      pf.OriginalPhotoUrl ||
-      null;
+  const personalUrl =
+    pf.ActivePhotoUrl ||
+    pf.AdjustedPhotoUrl ||
+    pf.PhotoUrl ||
+    pf.OriginalPhotoUrl ||
+    null;
 
-    return (
-      personalCustomerId === customerId &&
-      String(personalUrl || "") === String(activePhotoUrl || "")
-    );
-  });
+  return (
+    personalCustomerId === customerId &&
+    String(personalUrl || "") === String(activePhotoUrl || "")
+  );
+});
 
-  if (alreadyExists) return null;
+if (existingPersonalRecord) {
+  const pf = existingPersonalRecord.fields || {};
+  const fieldsToPatch = {};
+
+  if (!pf.LipMaskJson && f.LipMaskJson) {
+    fieldsToPatch.LipMaskJson = f.LipMaskJson;
+  }
+
+  if (!pf.PhotoTransform && f.PhotoTransform) {
+    fieldsToPatch.PhotoTransform = f.PhotoTransform;
+  }
+
+  if (!pf.PhotoTransformJson && f.PhotoTransformJson) {
+    fieldsToPatch.PhotoTransformJson = f.PhotoTransformJson;
+  }
+
+  if (Object.keys(fieldsToPatch).length) {
+    await updateAirtableRecord({
+      baseId,
+      tableName: "PersonalStudioPhotos",
+      token,
+      recordId: existingPersonalRecord.id,
+      fields: fieldsToPatch
+    });
+  }
+
+  return null;
+}
 
   const photoId = `psp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
