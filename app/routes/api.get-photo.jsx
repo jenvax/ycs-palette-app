@@ -91,9 +91,11 @@ if (isConsultantClient) {
       ? "CustomerPhotos"
       : "PersonalStudioPhotos";
 
-  filterFormula = photoId.startsWith("rec")
-    ? `AND(RECORD_ID()="${photoId}", {CustomerId}="${customerId}")`
-    : `AND({PhotoId}="${photoId}", {CustomerId}="${customerId}")`;
+  if (photoId.startsWith("rec")) {
+  filterFormula = `RECORD_ID()="${photoId}"`;
+} else {
+  filterFormula = `AND({PhotoId}="${photoId}", {CustomerId}="${customerId}")`;
+}
 } else {
   tableName = "PersonalStudioPhotos";
   filterFormula = `{CustomerId}="${customerId}"`;
@@ -122,7 +124,23 @@ const airtableUrl =
     }
 
     const record = data.records?.[0] || null;
-    const fields = record?.fields || {};
+
+if (!record) {
+  return Response.json(
+    {
+      error: "Photo not found",
+      photoId,
+      customerId,
+      clientRecordId,
+      photoSource,
+      tableName
+    },
+    { status: 404, headers: corsHeaders }
+  );
+}
+
+const fields = record.fields || {};
+
 
     const photoTransform =
   parseJson(fields.PhotoTransformJson) ||
