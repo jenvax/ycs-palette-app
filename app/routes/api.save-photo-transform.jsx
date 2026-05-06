@@ -113,9 +113,27 @@ const lookupFormula = isConsultantClient
     }),
 
     LipMaskJson: JSON.stringify({
-      points: Array.isArray(lipMask?.points) ? lipMask.points : [],
-      closed: !!lipMask?.closed
-    })
+  shapes: Array.isArray(lipMask?.shapes)
+    ? lipMask.shapes
+        .filter(function (shape) {
+          return Array.isArray(shape.points) && shape.points.length >= 3;
+        })
+        .slice(0, 2)
+        .map(function (shape) {
+          return {
+            points: shape.points,
+            closed: !!shape.closed
+          };
+        })
+    : Array.isArray(lipMask?.points)
+      ? [
+          {
+            points: lipMask.points,
+            closed: !!lipMask.closed
+          }
+        ]
+      : []
+})
   }
 };
 
