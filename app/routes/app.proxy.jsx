@@ -298,9 +298,8 @@ async function ensurePersonalPhotoFromCustomerPhoto({
     OriginalPhotoUrl: f.OriginalPhotoUrl || f.PhotoUrl || activePhotoUrl,
     AdjustedPhotoUrl: f.AdjustedPhotoUrl || "",
     ActivePhotoUrl: activePhotoUrl,
-    PhotoUrl: f.PhotoUrl || activePhotoUrl,
-    Source: "MigratedFromCustomerPhotos",
-    LegacyCustomerPhotoRecordId: customerPhotoRecord.id
+    PhotoUrl: f.PhotoUrl || activePhotoUrl
+  
   };
 
   if (f.PhotoTransform) fields.PhotoTransform = f.PhotoTransform;
@@ -744,15 +743,19 @@ export async function loader({ request }) {
 const personalPhotoRecords = initialPersonalPhotoRecords.slice();
 
 for (const customerPhotoRecord of customerPhotoRecords) {
-  const created = await ensurePersonalPhotoFromCustomerPhoto({
-    baseId: AIRTABLE_BASE_ID,
-    token: AIRTABLE_TOKEN,
-    customerPhotoRecord,
-    existingPersonalPhotos: personalPhotoRecords
-  });
+  try {
+    const created = await ensurePersonalPhotoFromCustomerPhoto({
+      baseId: AIRTABLE_BASE_ID,
+      token: AIRTABLE_TOKEN,
+      customerPhotoRecord,
+      existingPersonalPhotos: personalPhotoRecords
+    });
 
-  if (created) {
-    personalPhotoRecords.push(created);
+    if (created) {
+      personalPhotoRecords.push(created);
+    }
+  } catch (migrationError) {
+    console.error("CustomerPhotos migration failed:", migrationError);
   }
 }
       const photoMap = {};
