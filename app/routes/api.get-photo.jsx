@@ -75,7 +75,9 @@ export async function loader({ request }) {
 
     const isConsultantClient = !!clientRecordId;
 const isSpecificPhoto = !!photoId && !!customerId;
-const photoSource = cleanString(url.searchParams.get("source"));
+const photoSource =
+  cleanString(url.searchParams.get("source")) ||
+  cleanString(url.searchParams.get("photoSource"));
 
 let tableName;
 let filterFormula;

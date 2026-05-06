@@ -42,7 +42,15 @@ export async function action({ request }) {
   }
 
   try {
-    const { customerId, clientRecordId, photoId, photoTransform, lipMask } = await request.json();
+    const {
+  customerId,
+  clientRecordId,
+  photoId,
+  photoSource,
+  source,
+  photoTransform,
+  lipMask
+} = await request.json();
 
     const safeCustomerId = cleanString(customerId);
     const safeClientRecordId = cleanString(clientRecordId);
@@ -55,14 +63,17 @@ export async function action({ request }) {
     }
 
     const safePhotoId = cleanString(photoId);
-const isConsultantClient = !!safeClientRecordId;
-const isPersonalStudioPhoto = !!safePhotoId && !!safeCustomerId;
+const safePhotoSource = cleanString(photoSource || source);
 
+const isConsultantClient = !!safeClientRecordId;
+const isSpecificCustomerPhoto = !!safePhotoId && !!safeCustomerId;
 
 const airtableTable = isConsultantClient
   ? "ConsultantClients"
-  : isPersonalStudioPhoto
-    ? "PersonalStudioPhotos"
+  : isSpecificCustomerPhoto
+    ? safePhotoSource === "CustomerPhotos"
+      ? "CustomerPhotos"
+      : "PersonalStudioPhotos"
     : "CustomerPhotos";
 
 const lookupFormula = isConsultantClient
