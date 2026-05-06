@@ -78,7 +78,7 @@ const airtableTable = isConsultantClient
 
 const lookupFormula = isConsultantClient
   ? `{ClientRecordId}="${safeClientRecordId}"`
-  : isPersonalStudioPhoto
+  : isSpecificCustomerPhoto
     ? (
     safePhotoId.startsWith("rec")
       ? `AND(RECORD_ID()="${safePhotoId}", {CustomerId}="${safeCustomerId}")`
