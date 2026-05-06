@@ -76,15 +76,21 @@ const airtableTable = isConsultantClient
       : "PersonalStudioPhotos"
     : "CustomerPhotos";
 
-const lookupFormula = isConsultantClient
-  ? `{ClientRecordId}="${safeClientRecordId}"`
-  : isSpecificCustomerPhoto
-    ? (
-    safePhotoId.startsWith("rec")
-      ? `AND(RECORD_ID()="${safePhotoId}", {CustomerId}="${safeCustomerId}")`
-      : `AND({PhotoId}="${safePhotoId}", {CustomerId}="${safeCustomerId}")`
-  )
-    : `{CustomerId}="${safeCustomerId}"`;
+let lookupFormula;
+
+if (isConsultantClient) {
+  lookupFormula = `{ClientRecordId}="${safeClientRecordId}"`;
+} else if (isSpecificCustomerPhoto) {
+  if (safePhotoId.startsWith("rec")) {
+    // Airtable record ID → ONLY use RECORD_ID()
+    lookupFormula = `RECORD_ID()="${safePhotoId}"`;
+  } else {
+    // PersonalStudioPhotos PhotoId
+    lookupFormula = `AND({PhotoId}="${safePhotoId}", {CustomerId}="${safeCustomerId}")`;
+  }
+} else {
+  lookupFormula = `{CustomerId}="${safeCustomerId}"`;
+}
 
     const airtableBase = process.env.AIRTABLE_BASE_ID;
     const airtableToken = process.env.AIRTABLE_TOKEN;
