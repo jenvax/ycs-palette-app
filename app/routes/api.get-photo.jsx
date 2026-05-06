@@ -74,7 +74,8 @@ export async function loader({ request }) {
     }
 
     const isConsultantClient = !!clientRecordId;
-const isPersonalPhoto = !!photoId && !!customerId;
+const isSpecificPhoto = !!photoId && !!customerId;
+const photoSource = cleanString(url.searchParams.get("source"));
 
 let tableName;
 let filterFormula;
@@ -82,11 +83,15 @@ let filterFormula;
 if (isConsultantClient) {
   tableName = "ConsultantClients";
   filterFormula = `{ClientRecordId}="${clientRecordId}"`;
-} else if (isPersonalPhoto) {
-  tableName = "PersonalStudioPhotos";
+} else if (isSpecificPhoto) {
+  tableName =
+    photoSource === "CustomerPhotos"
+      ? "CustomerPhotos"
+      : "PersonalStudioPhotos";
+
   filterFormula = photoId.startsWith("rec")
-  ? `AND(RECORD_ID()="${photoId}", {CustomerId}="${customerId}")`
-  : `AND({PhotoId}="${photoId}", {CustomerId}="${customerId}")`;
+    ? `AND(RECORD_ID()="${photoId}", {CustomerId}="${customerId}")`
+    : `AND({PhotoId}="${photoId}", {CustomerId}="${customerId}")`;
 } else {
   tableName = "CustomerPhotos";
   filterFormula = `{CustomerId}="${customerId}"`;
