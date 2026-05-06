@@ -251,7 +251,71 @@ async function fetchCustomerPhotoMap({ baseId, token }) {
 
   return photoMap;
 }
+async function ensurePersonalPhotoFromCustomerPhoto({
+  baseId,
+  token,
+  customerPhotoRecord,
+  existingPersonalPhotos
+}) {
+  const f = customerPhotoRecord.fields || {};
+  const customerId = normalizeCustomerId(f.CustomerId);
 
+  if (!customerId) return null;
+
+  const activePhotoUrl =
+    f.ActivePhotoUrl ||
+    f.AdjustedPhotoUrl ||
+    f.PhotoUrl ||
+    f.OriginalPhotoUrl ||
+    null;
+
+  if (!activePhotoUrl) return null;
+
+  const alreadyExists = existingPersonalPhotos.some((record) => {
+    const pf = record.fields || {};
+    const personalCustomerId = normalizeCustomerId(pf.CustomerId);
+
+    const personalUrl =
+      pf.ActivePhotoUrl ||
+      pf.AdjustedPhotoUrl ||
+      pf.PhotoUrl ||
+      pf.OriginalPhotoUrl ||
+      null;
+
+    return (
+      personalCustomerId === customerId &&
+      String(personalUrl || "") === String(activePhotoUrl || "")
+    );
+  });
+
+  if (alreadyExists) return null;
+
+  const photoId = `psp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+  const fields = {
+    CustomerId: customerId,
+    PhotoId: photoId,
+    OriginalPhotoUrl: f.OriginalPhotoUrl || f.PhotoUrl || activePhotoUrl,
+    AdjustedPhotoUrl: f.AdjustedPhotoUrl || "",
+    ActivePhotoUrl: activePhotoUrl,
+    PhotoUrl: f.PhotoUrl || activePhotoUrl,
+    Source: "MigratedFromCustomerPhotos",
+    LegacyCustomerPhotoRecordId: customerPhotoRecord.id
+  };
+
+  if (f.PhotoTransform) fields.PhotoTransform = f.PhotoTransform;
+  if (f.PhotoTransformJson) fields.PhotoTransformJson = f.PhotoTransformJson;
+  if (f.LipMaskJson) fields.LipMaskJson = f.LipMaskJson;
+
+  const created = await createAirtableRecord({
+    baseId,
+    tableName: "PersonalStudioPhotos",
+    token,
+    fields
+  });
+
+  return created;
+}
 async function shopifyAdminGraphQL({ shop, accessToken, query, variables = {} }) {
   const response = await fetch(`https://${shop}/admin/api/2026-01/graphql.json`, {
     method: "POST",
@@ -650,11 +714,11 @@ export async function loader({ request }) {
       }
 
       const [
-        directoryRecords,
-        customerPhotoRecords,
-        personalPhotoRecords,
-        drapingHistoryMap
-      ] = await Promise.all([
+  directoryRecords,
+  customerPhotoRecords,
+  initialPersonalPhotoRecords,
+  drapingHistoryMap
+] = await Promise.all([
         fetchAllAirtableRecords({
           baseId: AIRTABLE_BASE_ID,
           tableName: "CustomerDirectory",
@@ -677,7 +741,20 @@ export async function loader({ request }) {
           token: AIRTABLE_TOKEN
         })
       ]);
+const personalPhotoRecords = initialPersonalPhotoRecords.slice();
 
+for (const customerPhotoRecord of customerPhotoRecords) {
+  const created = await ensurePersonalPhotoFromCustomerPhoto({
+    baseId: AIRTABLE_BASE_ID,
+    token: AIRTABLE_TOKEN,
+    customerPhotoRecord,
+    existingPersonalPhotos: personalPhotoRecords
+  });
+
+  if (created) {
+    personalPhotoRecords.push(created);
+  }
+}
       const photoMap = {};
 
       function addPhoto(customerId, photo) {
@@ -713,26 +790,9 @@ export async function loader({ request }) {
 });
       });
 
-      customerPhotoRecords.forEach((record) => {
-  const f = record.fields || {};
-  const customerId = normalizeCustomerId(f.CustomerId);
-
-  const activePhotoUrl =
-    f.ActivePhotoUrl ||
-    f.AdjustedPhotoUrl ||
-    f.PhotoUrl ||
-    f.OriginalPhotoUrl ||
-    null;
-
-  addPhoto(customerId, {
-    photoId: record.id,
-    sourceTable: "CustomerPhotos",
-    photoUrl: activePhotoUrl,
-    originalPhotoUrl: f.OriginalPhotoUrl || null,
-    adjustedPhotoUrl: f.AdjustedPhotoUrl || null,
-    updatedAt: f.UpdatedAt || ""
-  });
-});
+      // Do not add CustomerPhotos directly.
+// They are migrated into PersonalStudioPhotos above.
+// PersonalStudioPhotos is now the source of truth for Member Photos.
 
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - 30);
