@@ -1,3 +1,5 @@
+/* global process */
+
 function getCorsHeaders(origin) {
   const allowedOrigins = [
     "https://yourcolorstyle.com",
@@ -82,6 +84,8 @@ const photoSource =
 
 let tableName;
 let filterFormula;
+const notArchivedFormula =
+  "OR({IsArchived}=BLANK(), {IsArchived}=0, {IsArchived}=FALSE())";
 
 if (isConsultantClient) {
   tableName = "ConsultantClients";
@@ -100,13 +104,17 @@ if (isConsultantClient) {
       : "PersonalStudioPhotos";
 
   if (photoId.startsWith("rec")) {
-  filterFormula = `RECORD_ID()="${photoId}"`;
+  filterFormula = tableName === "PersonalStudioPhotos"
+    ? `AND(RECORD_ID()="${photoId}", ${notArchivedFormula})`
+    : `RECORD_ID()="${photoId}"`;
 } else {
-  filterFormula = `AND({PhotoId}="${photoId}", {CustomerId}="${customerId}")`;
+  filterFormula = tableName === "PersonalStudioPhotos"
+    ? `AND({PhotoId}="${photoId}", {CustomerId}="${customerId}", ${notArchivedFormula})`
+    : `AND({PhotoId}="${photoId}", {CustomerId}="${customerId}")`;
 }
 } else {
   tableName = "PersonalStudioPhotos";
-  filterFormula = `{CustomerId}="${customerId}"`;
+  filterFormula = `AND({CustomerId}="${customerId}", ${notArchivedFormula})`;
 }
 
 const airtableUrl =

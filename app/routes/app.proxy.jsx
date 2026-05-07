@@ -287,10 +287,6 @@ async function ensurePersonalPhotoFromCustomerPhoto({
       personalCustomerId === customerId &&
       String(personalUrl || "") === String(activePhotoUrl || "")
     );
-  }) ||
-  existingPersonalPhotos.find((record) => {
-    const pf = record.fields || {};
-    return normalizeCustomerId(pf.CustomerId) === customerId;
   });
 
 if (existingPersonalRecord) {
@@ -331,8 +327,7 @@ if (existingPersonalRecord) {
     PhotoId: photoId,
     OriginalPhotoUrl: f.OriginalPhotoUrl || f.PhotoUrl || activePhotoUrl,
     AdjustedPhotoUrl: f.AdjustedPhotoUrl || "",
-    ActivePhotoUrl: activePhotoUrl,
-    PhotoUrl: f.PhotoUrl || activePhotoUrl
+    ActivePhotoUrl: activePhotoUrl
   
   };
 

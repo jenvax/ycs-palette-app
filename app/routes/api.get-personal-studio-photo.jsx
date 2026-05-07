@@ -1,3 +1,5 @@
+/* global process */
+
 function getCorsHeaders(origin) {
   const allowedOrigins = [
     "https://yourcolorstyle.com",
@@ -51,9 +53,12 @@ export async function loader({ request }) {
     const airtableBase = process.env.AIRTABLE_BASE_ID;
     const airtableToken = process.env.AIRTABLE_TOKEN;
 
+    const notArchivedFormula =
+      "OR({IsArchived}=BLANK(), {IsArchived}=0, {IsArchived}=FALSE())";
+
     const formula = photoId.startsWith("rec")
-      ? `RECORD_ID()="${photoId}"`
-      : `{PhotoId}="${photoId}"`;
+      ? `AND(RECORD_ID()="${photoId}", ${notArchivedFormula})`
+      : `AND({PhotoId}="${photoId}", ${notArchivedFormula})`;
 
     const airtableUrl =
       `https://api.airtable.com/v0/${airtableBase}/PersonalStudioPhotos` +
