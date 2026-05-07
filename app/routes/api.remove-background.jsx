@@ -59,6 +59,8 @@ export async function action({ request }) {
   isCatoolGrowth,
   isVip,
   hasDrapingStudio,
+  hasDrapingStudioStarter,
+  hasDrapingStudioFull,
   isSampleUser
 } = await request.json();
 
@@ -111,6 +113,8 @@ function getUsageConfig(params) {
     isCatoolGrowth,
     isVip,
     hasDrapingStudio,
+    hasDrapingStudioStarter,
+    hasDrapingStudioFull,
     isSampleUser,
     mode
   } = params;
@@ -144,7 +148,11 @@ function getUsageConfig(params) {
       return { allowed: true, scope: "monthly", limit: 5 };
     }
 
-    if (hasDrapingStudio) {
+    if (hasDrapingStudioFull) {
+      return { allowed: true, scope: "total", limit: 5 };
+    }
+
+    if (hasDrapingStudioStarter || hasDrapingStudio) {
       return { allowed: true, scope: "total", limit: 2 };
     }
 
@@ -176,7 +184,11 @@ function getUsageConfig(params) {
       return { allowed: true, scope: "monthly", limit: 5 };
     }
 
-    if (hasDrapingStudio) {
+    if (hasDrapingStudioFull) {
+      return { allowed: true, scope: "total", limit: 5 };
+    }
+
+    if (hasDrapingStudioStarter || hasDrapingStudio) {
       return { allowed: true, scope: "total", limit: 2 };
     }
 
@@ -199,6 +211,8 @@ const usageConfig = getUsageConfig({
   isCatoolGrowth,
   isVip,
   hasDrapingStudio,
+  hasDrapingStudioStarter,
+  hasDrapingStudioFull,
   isSampleUser
 });
 

@@ -47,6 +47,8 @@ function getUsageConfig(params) {
     isCatoolGrowth,
     isVip,
     hasDrapingStudio,
+    hasDrapingStudioStarter,
+    hasDrapingStudioFull,
     isSampleUser,
     mode
   } = params;
@@ -100,7 +102,15 @@ function getUsageConfig(params) {
       };
     }
 
-    if (hasDrapingStudio) {
+    if (hasDrapingStudioFull) {
+      return {
+        allowed: true,
+        scope: "total",
+        limit: 5
+      };
+    }
+
+    if (hasDrapingStudioStarter || hasDrapingStudio) {
       return {
         allowed: true,
         scope: "total",
@@ -145,7 +155,11 @@ function getUsageConfig(params) {
       return { allowed: true, scope: "monthly", limit: 5 };
     }
 
-    if (hasDrapingStudio) {
+    if (hasDrapingStudioFull) {
+      return { allowed: true, scope: "total", limit: 5 };
+    }
+
+    if (hasDrapingStudioStarter || hasDrapingStudio) {
       return { allowed: true, scope: "total", limit: 2 };
     }
 
@@ -186,6 +200,8 @@ export async function loader({ request }) {
     const isCatoolGrowth = toBool(url.searchParams.get("isCatoolGrowth"));
     const isVip = toBool(url.searchParams.get("isVip"));
     const hasDrapingStudio = toBool(url.searchParams.get("hasDrapingStudio"));
+    const hasDrapingStudioStarter = toBool(url.searchParams.get("hasDrapingStudioStarter"));
+    const hasDrapingStudioFull = toBool(url.searchParams.get("hasDrapingStudioFull"));
     const isSampleUser = toBool(url.searchParams.get("isSampleUser"));
     const mode = cleanString(url.searchParams.get("mode")) || "";
 
@@ -204,6 +220,8 @@ export async function loader({ request }) {
       isCatoolGrowth,
       isVip,
       hasDrapingStudio,
+      hasDrapingStudioStarter,
+      hasDrapingStudioFull,
       isSampleUser,
       mode
     });
