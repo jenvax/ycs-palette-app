@@ -21,6 +21,14 @@ function cleanString(value) {
   return stringValue || null;
 }
 
+function isUnknownAirtableFieldError(data, fieldName) {
+  const message = String(data?.error?.message || data?.error || "");
+  return (
+    message.toLowerCase().includes("unknown field") &&
+    message.includes(fieldName)
+  );
+}
+
 export async function loader({ request }) {
   const origin = request.headers.get("Origin") || "";
 
@@ -129,14 +137,6 @@ if (isConsultantClient) {
       );
     }
 
-    const fields = {
-  PhotoTransform: JSON.stringify({
-    x: Number.isFinite(Number(photoTransform.x)) ? Number(photoTransform.x) : 0,
-    y: Number.isFinite(Number(photoTransform.y)) ? Number(photoTransform.y) : 0,
-    scale: Number.isFinite(Number(photoTransform.scale)) ? Number(photoTransform.scale) : 1
-  })
-};
-
 const shapes = Array.isArray(lipMask?.shapes)
   ? lipMask.shapes
       .filter(function (shape) {
@@ -158,12 +158,26 @@ const shapes = Array.isArray(lipMask?.shapes)
       ]
     : [];
 
+    const transformToSave = {
+    x: Number.isFinite(Number(photoTransform.x)) ? Number(photoTransform.x) : 0,
+    y: Number.isFinite(Number(photoTransform.y)) ? Number(photoTransform.y) : 0,
+    scale: Number.isFinite(Number(photoTransform.scale)) ? Number(photoTransform.scale) : 1
+  };
+
+if (shapes.length) {
+  transformToSave.lipMask = { shapes };
+}
+
+    const fields = {
+  PhotoTransform: JSON.stringify(transformToSave)
+};
+
 if (shapes.length) {
   fields.LipMaskJson = JSON.stringify({ shapes });
 }
 
 const payload = { fields };
-    const patchRes = await fetch(
+    let patchRes = await fetch(
       `https://api.airtable.com/v0/${airtableBase}/${airtableTable}/${existing.id}`,
       {
         method: "PATCH",
@@ -175,7 +189,40 @@ const payload = { fields };
       }
     );
 
-    const patchData = await patchRes.json();
+    let patchData = await patchRes.json();
+
+    if (!patchRes.ok && shapes.length && isUnknownAirtableFieldError(patchData, "LipMaskJson")) {
+      const fallbackPayload = {
+        fields: {
+          PhotoTransform: fields.PhotoTransform
+        }
+      };
+
+      patchRes = await fetch(
+        `https://api.airtable.com/v0/${airtableBase}/${airtableTable}/${existing.id}`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${airtableToken}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(fallbackPayload)
+        }
+      );
+
+      patchData = await patchRes.json();
+
+      if (patchRes.ok) {
+        return Response.json(
+          {
+            success: true,
+            lipMaskSaved: true,
+            lipMaskStorage: "PhotoTransform"
+          },
+          { status: 200, headers: corsHeaders }
+        );
+      }
+    }
 
     if (!patchRes.ok) {
       console.error("Airtable patch error:", patchData);

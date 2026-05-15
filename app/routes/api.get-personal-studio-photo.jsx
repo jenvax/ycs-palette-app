@@ -93,7 +93,7 @@ export async function loader({ request }) {
       parseJson(f.PhotoTransform) ||
       parseJson(f.PhotoTransformJson) ||
       null;
-    const lipMask = parseJson(f.LipMaskJson) || null;
+    const lipMask = parseJson(f.LipMaskJson) || photoTransform?.lipMask || null;
     const originalPhotoUrl = f.OriginalPhotoUrl || null;
     const adjustedPhotoUrl = f.AdjustedPhotoUrl || null;
     const photoUrl = f.PhotoUrl || null;

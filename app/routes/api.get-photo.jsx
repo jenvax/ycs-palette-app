@@ -165,6 +165,7 @@ const fields = record.fields || {};
 
 const lipMask =
   parseJson(fields.LipMaskJson) ||
+  photoTransform?.lipMask ||
   null;
 
     const originalPhotoUrl = fields.OriginalPhotoUrl || null;
