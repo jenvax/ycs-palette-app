@@ -57,6 +57,7 @@ export async function action({ request }) {
   isTrade,
   isCatool,
   isCatoolGrowth,
+  isCatoolFree,
   isVip,
   hasDrapingStudio,
   hasDrapingStudioStarter,
@@ -111,6 +112,7 @@ function getUsageConfig(params) {
     isTrade,
     isCatool,
     isCatoolGrowth,
+    isCatoolFree,
     isVip,
     hasDrapingStudio,
     hasDrapingStudioStarter,
@@ -138,6 +140,10 @@ function getUsageConfig(params) {
 
     if (isCatool) {
       return { allowed: true, scope: "monthly", limit: 5 };
+    }
+
+    if (isCatoolFree) {
+      return { allowed: true, scope: "total", limit: 1 };
     }
 
     return { allowed: false, scope: "monthly", limit: 0 };
@@ -176,6 +182,10 @@ function getUsageConfig(params) {
       return { allowed: true, scope: "monthly", limit: 5 };
     }
 
+    if (isCatoolFree) {
+      return { allowed: true, scope: "total", limit: 1 };
+    }
+
     return { allowed: false, scope: "monthly", limit: 0 };
   }
 
@@ -209,6 +219,7 @@ const usageConfig = getUsageConfig({
   isTrade,
   isCatool,
   isCatoolGrowth,
+  isCatoolFree,
   isVip,
   hasDrapingStudio,
   hasDrapingStudioStarter,

@@ -45,6 +45,7 @@ function getUsageConfig(params) {
     isTrade,
     isCatool,
     isCatoolGrowth,
+    isCatoolFree,
     isVip,
     hasDrapingStudio,
     hasDrapingStudioStarter,
@@ -83,6 +84,14 @@ function getUsageConfig(params) {
         allowed: true,
         scope: "monthly",
         limit: 5
+      };
+    }
+
+    if (isCatoolFree) {
+      return {
+        allowed: true,
+        scope: "total",
+        limit: 1
       };
     }
 
@@ -147,6 +156,10 @@ function getUsageConfig(params) {
       return { allowed: true, scope: "monthly", limit: 5 };
     }
 
+    if (isCatoolFree) {
+      return { allowed: true, scope: "total", limit: 1 };
+    }
+
     return { allowed: false, scope: "monthly", limit: 0 };
   }
 
@@ -198,6 +211,7 @@ export async function loader({ request }) {
     const isTrade = toBool(url.searchParams.get("isTrade"));
     const isCatool = toBool(url.searchParams.get("isCatool"));
     const isCatoolGrowth = toBool(url.searchParams.get("isCatoolGrowth"));
+    const isCatoolFree = toBool(url.searchParams.get("isCatoolFree"));
     const isVip = toBool(url.searchParams.get("isVip"));
     const hasDrapingStudio = toBool(url.searchParams.get("hasDrapingStudio"));
     const hasDrapingStudioStarter = toBool(url.searchParams.get("hasDrapingStudioStarter"));
@@ -218,6 +232,7 @@ export async function loader({ request }) {
       isTrade,
       isCatool,
       isCatoolGrowth,
+      isCatoolFree,
       isVip,
       hasDrapingStudio,
       hasDrapingStudioStarter,
