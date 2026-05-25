@@ -87,14 +87,6 @@ function getUsageConfig(params) {
       };
     }
 
-    if (isCatoolFree) {
-      return {
-        allowed: true,
-        scope: "total",
-        limit: 1
-      };
-    }
-
     return {
       allowed: false,
       scope: "monthly",
@@ -154,10 +146,6 @@ function getUsageConfig(params) {
 
     if (isCatool) {
       return { allowed: true, scope: "monthly", limit: 5 };
-    }
-
-    if (isCatoolFree) {
-      return { allowed: true, scope: "total", limit: 1 };
     }
 
     return { allowed: false, scope: "monthly", limit: 0 };
