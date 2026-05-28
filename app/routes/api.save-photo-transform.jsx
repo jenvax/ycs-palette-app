@@ -21,6 +21,37 @@ function cleanString(value) {
   return stringValue || null;
 }
 
+function parseJson(value) {
+  try {
+    return value ? JSON.parse(value) : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function getValidLipShapes(lipMask) {
+  return Array.isArray(lipMask?.shapes)
+    ? lipMask.shapes
+        .filter(function (shape) {
+          return Array.isArray(shape.points) && shape.points.length >= 3;
+        })
+        .slice(0, 2)
+        .map(function (shape) {
+          return {
+            points: shape.points,
+            closed: !!shape.closed
+          };
+        })
+    : Array.isArray(lipMask?.points)
+      ? [
+          {
+            points: lipMask.points,
+            closed: !!lipMask.closed
+          }
+        ]
+      : [];
+}
+
 function isUnknownAirtableFieldError(data, fieldName) {
   const message = String(data?.error?.message || data?.error || "");
   return (
@@ -90,7 +121,7 @@ const airtableTable = isConsultantClient
     ? safePhotoSource === "CustomerPhotos"
       ? "CustomerPhotos"
       : "PersonalStudioPhotos"
-    : "CustomerPhotos";
+    : "PersonalStudioPhotos";
 
 let lookupFormula;
 
@@ -137,26 +168,19 @@ if (isConsultantClient) {
       );
     }
 
-const shapes = Array.isArray(lipMask?.shapes)
-  ? lipMask.shapes
-      .filter(function (shape) {
-        return Array.isArray(shape.points) && shape.points.length >= 3;
-      })
-      .slice(0, 2)
-      .map(function (shape) {
-        return {
-          points: shape.points,
-          closed: !!shape.closed
-        };
-      })
-  : Array.isArray(lipMask?.points)
-    ? [
-        {
-          points: lipMask.points,
-          closed: !!lipMask.closed
-        }
-      ]
-    : [];
+const existingFields = existing.fields || {};
+const existingTransform =
+  parseJson(existingFields.PhotoTransform) ||
+  parseJson(existingFields.PhotoTransformJson) ||
+  null;
+const existingLipMask =
+  parseJson(existingFields.LipMaskJson) ||
+  existingTransform?.lipMask ||
+  null;
+
+const incomingShapes = getValidLipShapes(lipMask);
+const existingShapes = getValidLipShapes(existingLipMask);
+const shapes = incomingShapes.length ? incomingShapes : existingShapes;
 
     const transformToSave = {
     x: Number.isFinite(Number(photoTransform.x)) ? Number(photoTransform.x) : 0,
