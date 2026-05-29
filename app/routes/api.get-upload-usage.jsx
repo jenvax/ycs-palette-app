@@ -46,6 +46,7 @@ function getUsageConfig(params) {
     isCatool,
     isCatoolGrowth,
     isCatoolFree,
+    isDiyCatool,
     isVip,
     hasDrapingStudio,
     hasDrapingStudioStarter,
@@ -55,6 +56,14 @@ function getUsageConfig(params) {
   } = params;
 
   if (isAdmin) {
+    return {
+      allowed: true,
+      scope: "unlimited",
+      limit: null
+    };
+  }
+
+  if (mode === "diy" && isDiyCatool) {
     return {
       allowed: true,
       scope: "unlimited",
@@ -200,6 +209,7 @@ export async function loader({ request }) {
     const isCatool = toBool(url.searchParams.get("isCatool"));
     const isCatoolGrowth = toBool(url.searchParams.get("isCatoolGrowth"));
     const isCatoolFree = toBool(url.searchParams.get("isCatoolFree"));
+    const isDiyCatool = toBool(url.searchParams.get("isDiyCatool"));
     const isVip = toBool(url.searchParams.get("isVip"));
     const hasDrapingStudio = toBool(url.searchParams.get("hasDrapingStudio"));
     const hasDrapingStudioStarter = toBool(url.searchParams.get("hasDrapingStudioStarter"));
@@ -221,6 +231,7 @@ export async function loader({ request }) {
       isCatool,
       isCatoolGrowth,
       isCatoolFree,
+      isDiyCatool,
       isVip,
       hasDrapingStudio,
       hasDrapingStudioStarter,
@@ -234,7 +245,7 @@ export async function loader({ request }) {
         {
           tool,
           allowed: true,
-          isAdmin: true,
+          isAdmin,
           used: 0,
           remaining: null,
           limit: null,

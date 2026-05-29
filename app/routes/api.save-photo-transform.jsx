@@ -89,6 +89,7 @@ export async function action({ request }) {
   sourceTable,
   source,
   photoTransform,
+  analysisState,
   lipMask
 } = await request.json();
 
@@ -183,10 +184,26 @@ const existingShapes = getValidLipShapes(existingLipMask);
 const shapes = incomingShapes.length ? incomingShapes : existingShapes;
 
     const transformToSave = {
+    ...(existingTransform && typeof existingTransform === "object" ? existingTransform : {}),
     x: Number.isFinite(Number(photoTransform.x)) ? Number(photoTransform.x) : 0,
     y: Number.isFinite(Number(photoTransform.y)) ? Number(photoTransform.y) : 0,
     scale: Number.isFinite(Number(photoTransform.scale)) ? Number(photoTransform.scale) : 1
   };
+
+const safeAnalysisState =
+  analysisState && typeof analysisState === "object" ? analysisState : {};
+
+[
+  "analysisDepthDecision",
+  "analysisUndertoneDecision",
+  "analysisChromaDecision",
+  "analysisCompletedAt",
+  "analysisCurrentStep"
+].forEach((fieldName) => {
+  if (Object.prototype.hasOwnProperty.call(safeAnalysisState, fieldName)) {
+    transformToSave[fieldName] = cleanString(safeAnalysisState[fieldName]) || "";
+  }
+});
 
 if (shapes.length) {
   transformToSave.lipMask = { shapes };

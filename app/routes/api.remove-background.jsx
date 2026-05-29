@@ -58,6 +58,7 @@ export async function action({ request }) {
   isCatool,
   isCatoolGrowth,
   isCatoolFree,
+  isDiyCatool,
   isVip,
   hasDrapingStudio,
   hasDrapingStudioStarter,
@@ -113,6 +114,7 @@ function getUsageConfig(params) {
     isCatool,
     isCatoolGrowth,
     isCatoolFree,
+    isDiyCatool,
     isVip,
     hasDrapingStudio,
     hasDrapingStudioStarter,
@@ -127,6 +129,10 @@ function getUsageConfig(params) {
       scope: "unlimited",
       limit: null
     };
+  }
+
+  if (mode === "diy" && isDiyCatool) {
+    return { allowed: true, scope: "unlimited", limit: null };
   }
 
   if (mode === "trade") {
@@ -212,6 +218,7 @@ const usageConfig = getUsageConfig({
   isCatool,
   isCatoolGrowth,
   isCatoolFree,
+  isDiyCatool,
   isVip,
   hasDrapingStudio,
   hasDrapingStudioStarter,
