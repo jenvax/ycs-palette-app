@@ -1,5 +1,7 @@
 import crypto from "node:crypto";
-import db from "../db.server.js";
+
+const EVALUATIONS_TABLE = "PhotoQualityEvaluations";
+const REVIEWS_TABLE = "PhotoQualityReviews";
 
 export const PHOTO_QUALITY_FEEDBACK_VALUES = [
   "correct",
@@ -86,6 +88,179 @@ function makeReviewId() {
   return `pqr_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
 }
 
+function getAirtableConfig() {
+  const baseId = process.env.AIRTABLE_BASE_ID;
+  const token = process.env.AIRTABLE_TOKEN;
+
+  if (!baseId || !token) {
+    throw new Error("Missing Airtable configuration");
+  }
+
+  return { baseId, token };
+}
+
+function airtableUrl(tableName, searchParams) {
+  const { baseId } = getAirtableConfig();
+  const tablePath = String(tableName)
+    .split("/")
+    .map((part) => encodeURIComponent(part))
+    .join("/");
+  const url = new URL(`https://api.airtable.com/v0/${baseId}/${tablePath}`);
+
+  if (searchParams) {
+    Object.entries(searchParams).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") {
+        url.searchParams.set(key, value);
+      }
+    });
+  }
+
+  return url;
+}
+
+async function airtableFetchJson(tableName, options = {}) {
+  const { token } = getAirtableConfig();
+  const url = airtableUrl(tableName, options.searchParams);
+  const response = await fetch(url, {
+    method: options.method || "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      ...(options.headers || {})
+    },
+    body: options.body ? JSON.stringify(options.body) : undefined
+  });
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const message = data?.error?.message || data?.error?.type || JSON.stringify(data);
+    throw new Error(`${response.status} ${message}`);
+  }
+
+  return data;
+}
+
+async function fetchAllRecords(tableName, searchParams = {}) {
+  const records = [];
+  let offset;
+
+  do {
+    const data = await airtableFetchJson(tableName, {
+      searchParams: {
+        pageSize: "100",
+        ...searchParams,
+        ...(offset ? { offset } : {})
+      }
+    });
+
+    records.push(...(data.records || []));
+    offset = data.offset;
+  } while (offset);
+
+  return records;
+}
+
+function cleanDate(value) {
+  const date = value instanceof Date ? value : new Date(value || Date.now());
+  return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
+}
+
+function cleanNumber(value) {
+  return Number.isFinite(Number(value)) ? Number(value) : null;
+}
+
+function cleanBoolean(value) {
+  return typeof value === "boolean" ? value : null;
+}
+
+function normalizeColorCast(value) {
+  const colorCast = cleanString(value) || "none";
+  return ["none", "warm", "cool", "green"].includes(colorCast) ? colorCast : "none";
+}
+
+function compactFields(fields) {
+  return Object.fromEntries(
+    Object.entries(fields).filter(([, value]) => value !== undefined && value !== null)
+  );
+}
+
+function parseListText(value) {
+  const parsed = parseJson(value, null);
+  if (Array.isArray(parsed)) return parsed;
+
+  return String(value || "")
+    .split("\n")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function parseEvaluationRecord(record, reviewRecord = null) {
+  const fields = record.fields || {};
+  const reviewFields = reviewRecord?.fields || null;
+  const checks = parseJson(fields.RawChecks, {});
+  const issues = parseListText(fields.DetectedIssues);
+  const review = reviewFields
+    ? {
+        evaluation_id: reviewFields.EvaluationId,
+        photo_id: reviewFields.PhotoId,
+        ai_status: reviewFields.AiStatus,
+        human_status: reviewFields.HumanStatus || null,
+        admin_feedback: reviewFields.AdminFeedback,
+        ai_issue_tags: parseListText(reviewFields.AiIssueTags),
+        human_issue_tags: parseListText(reviewFields.HumanIssueTags),
+        admin_notes: reviewFields.AdminNotes || "",
+        reviewed_by: reviewFields.ReviewedBy,
+        reviewed_at: reviewFields.ReviewedAt
+      }
+    : null;
+
+  return {
+    evaluation_id: fields.EvaluationId || record.id,
+    photo_id: fields.PhotoId || null,
+    customer_id: fields.CustomerId || null,
+    order_reference: fields.OrderReference || null,
+    uploaded_at: fields.CreatedAt || record.createdTime || new Date().toISOString(),
+    image_url: fields.ImageUrl || null,
+    secure_file_reference: fields.SecureFileReference || null,
+    ai_status: fields.AiStatus,
+    ai_score: cleanNumber(fields.AiScore),
+    detected_issues: issues,
+    ai_recommendations: parseListText(fields.Recommendations),
+    raw_checks: checks,
+    brightness_score: cleanNumber(fields.BrightnessScore),
+    color_cast: fields.ColorCast || null,
+    shadow_score: cleanNumber(fields.ShadowScore),
+    face_detected: cleanBoolean(fields.FaceDetected),
+    face_centered: cleanBoolean(fields.FaceCentered),
+    face_size_percent: cleanNumber(fields.FaceSizePercent),
+    glare_detected: cleanBoolean(fields.GlareDetected),
+    background_score: cleanNumber(fields.BackgroundScore),
+    ai_issue_tags: mapAiIssuesToTags({ issues, checks }),
+    human_status: review?.human_status || null,
+    admin_feedback: review?.admin_feedback || null,
+    human_issue_tags: review?.human_issue_tags || [],
+    admin_notes: review?.admin_notes || "",
+    reviewed_by: review?.reviewed_by || null,
+    reviewed_at: review?.reviewed_at || null,
+    reviewed: Boolean(review),
+    review
+  };
+}
+
+async function findRecordByEvaluationId(tableName, evaluationId) {
+  const safeEvaluationId = cleanString(evaluationId);
+  if (!safeEvaluationId) return null;
+
+  const data = await airtableFetchJson(tableName, {
+    searchParams: {
+      maxRecords: "1",
+      filterByFormula: `{EvaluationId}="${safeEvaluationId.replace(/"/g, '\\"')}"`
+    }
+  });
+
+  return data.records?.[0] || null;
+}
+
 export function mapAiIssuesToTags({ issues = [], checks = {} }) {
   const tags = new Set();
   const issueText = issues.join(" ").toLowerCase();
@@ -118,129 +293,94 @@ export async function savePhotoQualityEvaluation({
   uploadedAt = new Date()
 }) {
   const checks = result.checks || {};
-  const evaluation = await db.photoQualityEvaluation.create({
-    data: {
-      id: makeEvaluationId(),
-      photoId: cleanString(photoId),
-      customerId: cleanString(customerId),
-      orderReference: cleanString(orderReference),
-      imageUrl: cleanString(imageUrl),
-      secureFileReference: cleanString(secureFileReference),
-      uploadedAt,
-      aiStatus: result.status,
-      aiScore: result.score,
-      detectedIssuesJson: stringifyJson(result.issues, []),
-      recommendationsJson: stringifyJson(result.recommendations, []),
-      rawChecksJson: stringifyJson(checks, {}),
-      brightnessScore: Number.isInteger(checks.brightness) ? checks.brightness : null,
-      colorCast: cleanString(checks.color_cast),
-      shadowScore: Number.isInteger(checks.shadow_score) ? checks.shadow_score : null,
-      faceDetected: typeof checks.face_detected === "boolean" ? checks.face_detected : null,
-      faceCentered: typeof checks.face_centered === "boolean" ? checks.face_centered : null,
-      faceSizePercent:
-        typeof checks.face_height_ratio === "number"
-          ? Number((checks.face_height_ratio * 100).toFixed(1))
-          : null,
-      glareDetected: typeof checks.glasses_glare === "boolean" ? checks.glasses_glare : null,
-      backgroundScore: Number.isInteger(checks.background_score) ? checks.background_score : null
-    },
-    include: { review: true }
+  const evaluationId = makeEvaluationId();
+  const fields = compactFields({
+    EvaluationId: evaluationId,
+    PhotoId: cleanString(photoId),
+    CustomerId: cleanString(customerId),
+    OrderReference: cleanString(orderReference),
+    ImageUrl: cleanString(imageUrl),
+    SecureFileReference: cleanString(secureFileReference),
+    AiStatus: result.status,
+    AiScore: result.score,
+    DetectedIssues: stringifyJson(result.issues, []),
+    Recommendations: stringifyJson(result.recommendations, []),
+    RawChecks: stringifyJson(checks, {}),
+    BrightnessScore: Number.isInteger(checks.brightness) ? checks.brightness : null,
+    ColorCast: normalizeColorCast(checks.color_cast),
+    ShadowScore: Number.isInteger(checks.shadow_score) ? checks.shadow_score : null,
+    FaceDetected: typeof checks.face_detected === "boolean" ? checks.face_detected : null,
+    FaceCentered: typeof checks.face_centered === "boolean" ? checks.face_centered : null,
+    FaceSizePercent:
+      typeof checks.face_height_ratio === "number"
+        ? Number((checks.face_height_ratio * 100).toFixed(1))
+        : null,
+    GlareDetected: typeof checks.glasses_glare === "boolean" ? checks.glasses_glare : null,
+    BackgroundScore: Number.isInteger(checks.background_score) ? checks.background_score : null,
+    CreatedAt: cleanDate(uploadedAt)
   });
 
-  return serializeEvaluation(evaluation);
+  const data = await airtableFetchJson(EVALUATIONS_TABLE, {
+    method: "POST",
+    body: { fields }
+  });
+
+  return parseEvaluationRecord(data);
 }
 
 export function serializeEvaluation(record) {
-  const review = record.review
-    ? {
-        evaluation_id: record.review.evaluationId,
-        photo_id: record.review.photoId,
-        ai_status: record.review.aiStatus,
-        human_status: record.review.humanStatus,
-        admin_feedback: record.review.adminFeedback,
-        ai_issue_tags: parseJson(record.review.aiIssueTagsJson, []),
-        human_issue_tags: parseJson(record.review.humanIssueTagsJson, []),
-        admin_notes: record.review.adminNotes || "",
-        reviewed_by: record.review.reviewedBy,
-        reviewed_at: record.review.reviewedAt.toISOString()
-      }
-    : null;
-
-  const checks = parseJson(record.rawChecksJson, {});
-  const issues = parseJson(record.detectedIssuesJson, []);
-
-  return {
-    evaluation_id: record.id,
-    photo_id: record.photoId,
-    customer_id: record.customerId,
-    order_reference: record.orderReference,
-    uploaded_at: record.uploadedAt.toISOString(),
-    image_url: record.imageUrl,
-    secure_file_reference: record.secureFileReference,
-    ai_status: record.aiStatus,
-    ai_score: record.aiScore,
-    detected_issues: issues,
-    ai_recommendations: parseJson(record.recommendationsJson, []),
-    raw_checks: checks,
-    brightness_score: record.brightnessScore,
-    color_cast: record.colorCast,
-    shadow_score: record.shadowScore,
-    face_detected: record.faceDetected,
-    face_centered: record.faceCentered,
-    face_size_percent: record.faceSizePercent,
-    glare_detected: record.glareDetected,
-    background_score: record.backgroundScore,
-    ai_issue_tags: mapAiIssuesToTags({ issues, checks }),
-    human_status: review?.human_status || null,
-    admin_feedback: review?.admin_feedback || null,
-    human_issue_tags: review?.human_issue_tags || [],
-    admin_notes: review?.admin_notes || "",
-    reviewed_by: review?.reviewed_by || null,
-    reviewed_at: review?.reviewed_at || null,
-    reviewed: Boolean(review),
-    review
-  };
+  return parseEvaluationRecord(record);
 }
 
 export async function listPhotoQualityEvaluations(filters = {}) {
-  const where = {};
+  const [evaluationRecords, reviewRecords] = await Promise.all([
+    fetchAllRecords(EVALUATIONS_TABLE),
+    fetchAllRecords(REVIEWS_TABLE)
+  ]);
+
+  const reviewsByEvaluationId = new Map(
+    reviewRecords
+      .filter((record) => record.fields?.EvaluationId)
+      .map((record) => [record.fields.EvaluationId, record])
+  );
+
+  let serialized = evaluationRecords.map((record) => {
+    const evaluationId = record.fields?.EvaluationId || record.id;
+    return parseEvaluationRecord(record, reviewsByEvaluationId.get(evaluationId));
+  });
 
   if (filters.reviewState === "reviewed") {
-    where.review = { isNot: null };
+    serialized = serialized.filter((item) => item.reviewed);
   } else if (filters.reviewState === "unreviewed") {
-    where.review = null;
+    serialized = serialized.filter((item) => !item.reviewed);
   }
 
-  if (filters.aiStatus) where.aiStatus = filters.aiStatus;
-  if (filters.customerOrOrder) {
-    where.OR = [
-      { customerId: { contains: filters.customerOrOrder } },
-      { orderReference: { contains: filters.customerOrOrder } },
-      { photoId: { contains: filters.customerOrOrder } }
-    ];
-  }
-
-  if (filters.dateFrom || filters.dateTo) {
-    where.uploadedAt = {};
-    if (filters.dateFrom) where.uploadedAt.gte = new Date(filters.dateFrom);
-    if (filters.dateTo) where.uploadedAt.lte = new Date(`${filters.dateTo}T23:59:59.999Z`);
+  if (filters.aiStatus) {
+    serialized = serialized.filter((item) => item.ai_status === filters.aiStatus);
   }
 
   if (filters.humanStatus) {
-    where.review = {
-      ...(where.review && typeof where.review === "object" ? where.review : {}),
-      is: { humanStatus: filters.humanStatus }
-    };
+    serialized = serialized.filter((item) => item.human_status === filters.humanStatus);
   }
 
-  const records = await db.photoQualityEvaluation.findMany({
-    where,
-    include: { review: true },
-    orderBy: { uploadedAt: "desc" },
-    take: 100
-  });
+  if (filters.customerOrOrder) {
+    const needle = String(filters.customerOrOrder || "").trim().toLowerCase();
+    serialized = serialized.filter((item) =>
+      [item.customer_id, item.order_reference, item.photo_id, item.evaluation_id]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(needle))
+    );
+  }
 
-  let serialized = records.map(serializeEvaluation);
+  if (filters.dateFrom) {
+    const from = new Date(`${filters.dateFrom}T00:00:00.000`);
+    serialized = serialized.filter((item) => new Date(item.uploaded_at) >= from);
+  }
+
+  if (filters.dateTo) {
+    const to = new Date(`${filters.dateTo}T23:59:59.999`);
+    serialized = serialized.filter((item) => new Date(item.uploaded_at) <= to);
+  }
 
   if (filters.issueTag) {
     serialized = serialized.filter((item) => {
@@ -249,7 +389,9 @@ export async function listPhotoQualityEvaluations(filters = {}) {
     });
   }
 
-  return serialized;
+  serialized.sort((a, b) => new Date(b.uploaded_at) - new Date(a.uploaded_at));
+
+  return serialized.slice(0, 100);
 }
 
 export async function savePhotoQualityReview({
@@ -260,10 +402,7 @@ export async function savePhotoQualityReview({
   adminNotes,
   reviewedBy
 }) {
-  const evaluation = await db.photoQualityEvaluation.findUnique({
-    where: { id: evaluationId },
-    include: { review: true }
-  });
+  const evaluation = await findRecordByEvaluationId(EVALUATIONS_TABLE, evaluationId);
 
   if (!evaluation) {
     throw new Error("Photo quality evaluation not found");
@@ -275,46 +414,49 @@ export async function savePhotoQualityReview({
   }
 
   const normalizedHumanStatus = normalizeHumanStatus(humanStatus);
-  const checks = parseJson(evaluation.rawChecksJson, {});
-  const issues = parseJson(evaluation.detectedIssuesJson, []);
+  const evaluationFields = evaluation.fields || {};
+  const checks = parseJson(evaluationFields.RawChecks, {});
+  const issues = parseListText(evaluationFields.DetectedIssues);
   const aiIssueTags = mapAiIssuesToTags({ issues, checks });
-
-  const review = await db.photoQualityReview.upsert({
-    where: { evaluationId },
-    create: {
-      id: makeReviewId(),
-      evaluationId,
-      photoId: evaluation.photoId,
-      aiStatus: evaluation.aiStatus,
-      humanStatus: normalizedHumanStatus,
-      adminFeedback: normalizedFeedback,
-      aiIssueTagsJson: stringifyJson(aiIssueTags, []),
-      humanIssueTagsJson: stringifyJson(normalizeIssueTags(humanIssueTags), []),
-      adminNotes: cleanNotes(adminNotes),
-      reviewedBy: cleanString(reviewedBy) || "shopify_admin",
-      reviewedAt: new Date()
-    },
-    update: {
-      humanStatus: normalizedHumanStatus,
-      adminFeedback: normalizedFeedback,
-      aiIssueTagsJson: stringifyJson(aiIssueTags, []),
-      humanIssueTagsJson: stringifyJson(normalizeIssueTags(humanIssueTags), []),
-      adminNotes: cleanNotes(adminNotes),
-      reviewedBy: cleanString(reviewedBy) || "shopify_admin",
-      reviewedAt: new Date()
-    }
+  const reviewFields = compactFields({
+    EvaluationId: evaluationFields.EvaluationId || evaluationId,
+    PhotoId: evaluationFields.PhotoId || null,
+    AiStatus: evaluationFields.AiStatus,
+    AdminFeedback: normalizedFeedback,
+    AiIssueTags: stringifyJson(aiIssueTags, []),
+    HumanIssueTags: stringifyJson(normalizeIssueTags(humanIssueTags), []),
+    AdminNotes: cleanNotes(adminNotes),
+    ReviewedBy: cleanString(reviewedBy) || "shopify_admin",
+    ReviewedAt: new Date().toISOString()
   });
+  const existingReview = await findRecordByEvaluationId(REVIEWS_TABLE, evaluationId);
+
+  if (existingReview || normalizedHumanStatus) {
+    reviewFields.HumanStatus = normalizedHumanStatus;
+  }
+
+  const review = existingReview
+    ? await airtableFetchJson(`${REVIEWS_TABLE}/${existingReview.id}`, {
+        method: "PATCH",
+        body: { fields: reviewFields }
+      })
+    : await airtableFetchJson(REVIEWS_TABLE, {
+        method: "POST",
+        body: { fields: { ...reviewFields, CreatedAt: new Date().toISOString() } }
+      });
+
+  const fields = review.fields || {};
 
   return {
-    evaluation_id: review.evaluationId,
-    photo_id: review.photoId,
-    ai_status: review.aiStatus,
-    human_status: review.humanStatus,
-    admin_feedback: review.adminFeedback,
-    ai_issue_tags: parseJson(review.aiIssueTagsJson, []),
-    human_issue_tags: parseJson(review.humanIssueTagsJson, []),
-    admin_notes: review.adminNotes,
-    reviewed_by: review.reviewedBy,
-    reviewed_at: review.reviewedAt.toISOString()
+    evaluation_id: fields.EvaluationId,
+    photo_id: fields.PhotoId,
+    ai_status: fields.AiStatus,
+    human_status: fields.HumanStatus || null,
+    admin_feedback: fields.AdminFeedback,
+    ai_issue_tags: parseListText(fields.AiIssueTags),
+    human_issue_tags: parseListText(fields.HumanIssueTags),
+    admin_notes: fields.AdminNotes || "",
+    reviewed_by: fields.ReviewedBy,
+    reviewed_at: fields.ReviewedAt
   };
 }
