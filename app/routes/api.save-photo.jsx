@@ -1,4 +1,6 @@
 import crypto from "node:crypto";
+import { evaluatePhotoQuality } from "../services/photo-quality.server.js";
+import { savePhotoQualityEvaluation } from "../services/photo-quality-feedback.server.js";
 
 function getCorsHeaders(origin) {
   const allowedOrigins = [
@@ -35,6 +37,54 @@ function cleanString(value) {
   return stringValue || null;
 }
 
+function toBool(value) {
+  return value === true || String(value || "").trim().toLowerCase() === "true";
+}
+
+async function evaluateAdminPhotoQuality({
+  isAdmin,
+  isAdjusted,
+  imageBase64,
+  photoId,
+  customerId,
+  imageUrl
+}) {
+  if (!isAdmin || isAdjusted || !imageBase64) return null;
+
+  try {
+    const result = await evaluatePhotoQuality({ imageBase64 });
+    const evaluation = await savePhotoQualityEvaluation({
+      photoId,
+      customerId,
+      imageUrl,
+      result
+    });
+
+    console.info(
+      "YCS_ADMIN upload photo quality evaluated",
+      JSON.stringify({
+        evaluationId: evaluation.evaluation_id,
+        photoId,
+        customerId,
+        status: result.status,
+        score: result.score,
+        checkedAt: new Date().toISOString()
+      })
+    );
+
+    return {
+      ...result,
+      evaluation_id: evaluation.evaluation_id
+    };
+  } catch (error) {
+    console.error("Upload photo quality evaluation failed:", error);
+    return {
+      error: "Photo quality evaluation failed",
+      details: error.message || "Unknown error"
+    };
+  }
+}
+
 export async function loader({ request }) {
   const origin = request.headers.get("Origin") || "";
 
@@ -56,7 +106,9 @@ export async function action({ request }) {
       saveType,
       firstName,
       lastName,
-      email
+      email,
+      isAdmin,
+      qualityImageBase64
     } = await request.json();
 
     const safeCustomerId = cleanString(customerId);
@@ -74,6 +126,7 @@ export async function action({ request }) {
 
     const mode = String(saveType || "original").trim().toLowerCase();
     const isAdjusted = mode === "adjusted";
+    const shouldEvaluatePhotoQuality = toBool(isAdmin);
 
     const safeFirstName = cleanString(firstName);
     const safeLastName = cleanString(lastName);
@@ -240,6 +293,15 @@ export async function action({ request }) {
       }
     }
 
+    const photoQuality = await evaluateAdminPhotoQuality({
+      isAdmin: shouldEvaluatePhotoQuality,
+      isAdjusted,
+      imageBase64: qualityImageBase64 || imageBase64,
+      photoId: recordId,
+      customerId: safeCustomerId,
+      imageUrl
+    });
+
     return Response.json(
       {
         success: true,
@@ -250,7 +312,8 @@ export async function action({ request }) {
         recordType: isConsultantClient ? "consultant_client" : "shopify_customer",
         firstName: fields.FirstName || null,
         lastName: fields.LastName || null,
-        email: fields.Email || null
+        email: fields.Email || null,
+        photoQuality
       },
       { status: 200, headers: corsHeaders }
     );

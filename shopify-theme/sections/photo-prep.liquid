@@ -1,0 +1,4026 @@
+{% assign palette_access_string = '' %}
+
+{% if customer %}
+  {% assign palette_access_string = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
+{% endif %}
+
+{% capture ycs_header_content %}{{ content_for_header }}{% endcapture %}
+{% assign ycs_page_url = ycs_header_content
+  | split: '"pageurl":"'
+  | last
+  | split: '"'
+  | first
+  | replace: '\/', '/'
+  | replace: '\\u0026', '&'
+  | replace: '%3F', '?'
+  | replace: '%3D', '='
+%}
+
+{% assign is_personal_mode_request = false %}
+{% if ycs_page_url contains 'mode=personal' %}
+  {% assign is_personal_mode_request = true %}
+{% endif %}
+
+{% assign is_member_mode_request = false %}
+{% if ycs_page_url contains 'mode=member' %}
+  {% assign is_member_mode_request = true %}
+{% endif %}
+
+{% assign is_trade_mode_request = false %}
+{% if ycs_page_url contains 'mode=trade' %}
+  {% assign is_trade_mode_request = true %}
+{% endif %}
+
+{% assign is_sample_trial_request = false %}
+{% if ycs_page_url contains 'trial=sample' %}
+  {% assign is_sample_trial_request = true %}
+{% endif %}
+
+{% assign is_admin = false %}
+{% if palette_access_string contains ',YCS_ADMIN,' %}
+  {% assign is_admin = true %}
+{% endif %}
+
+{% assign is_trade = false %}
+{% if palette_access_string contains ',TRADE,' %}
+  {% assign is_trade = true %}
+{% endif %}
+
+{% assign is_catool = false %}
+{% if palette_access_string contains ',CATOOL,' %}
+  {% assign is_catool = true %}
+{% endif %}
+
+{% assign is_catool_growth = false %}
+{% if palette_access_string contains ',CATOOLGROWTH,' %}
+  {% assign is_catool_growth = true %}
+{% endif %}
+
+{% assign is_catool_free = false %}
+{% if palette_access_string contains ',CATOOLFREE,' %}
+  {% assign is_catool_free = true %}
+{% endif %}
+
+{% assign is_diy_catool = false %}
+{% if palette_access_string contains ',DIYCATOOL,' %}
+  {% assign is_diy_catool = true %}
+{% endif %}
+
+{% assign is_vip = false %}
+{% if palette_access_string contains ',VIP,' %}
+  {% assign is_vip = true %}
+{% endif %}
+
+{% assign has_draping_studio_starter = false %}
+{% if palette_access_string contains ',DRAPINGSTUDIOSTARTER,' %}
+  {% assign has_draping_studio_starter = true %}
+{% endif %}
+
+{% assign has_draping_studio = false %}
+{% if palette_access_string contains ',DRAPINGSTUDIO,' %}
+  {% assign has_draping_studio = true %}
+{% endif %}
+
+{% assign has_draping_studio_access = false %}
+{% if has_draping_studio_starter or has_draping_studio %}
+  {% assign has_draping_studio_access = true %}
+{% endif %}
+
+{% assign is_sample_user = false %}
+{% if palette_access_string contains ',SAMPLE,' %}
+  {% assign is_sample_user = true %}
+{% endif %}
+
+{% assign can_use_personal_photo_prep = false %}
+{% if is_admin or is_vip or has_draping_studio_access or is_sample_user or is_sample_trial_request %}
+  {% assign can_use_personal_photo_prep = true %}
+{% endif %}
+
+{% assign is_simple_analyst = false %}
+{% if is_catool or is_catool_growth or is_catool_free %}
+  {% assign is_simple_analyst = true %}
+{% endif %}
+
+{% assign can_use_client_management = false %}
+{% if is_admin or is_trade or is_simple_analyst %}
+  {% assign can_use_client_management = true %}
+{% endif %}
+
+{% assign can_use_photo_prep = false %}
+{% if is_admin or is_trade or is_simple_analyst or is_diy_catool or can_use_personal_photo_prep %}
+  {% assign can_use_photo_prep = true %}
+{% endif %}
+
+<div
+  class="ycs-photo-prep-app"
+  data-is-sample-trial-request="{% if is_sample_trial_request %}true{% else %}false{% endif %}"
+  data-is-admin="{% if is_admin %}true{% else %}false{% endif %}"
+  data-is-trade="{% if is_trade %}true{% else %}false{% endif %}"
+  data-is-catool="{% if is_catool %}true{% else %}false{% endif %}"
+  data-is-catool-growth="{% if is_catool_growth %}true{% else %}false{% endif %}"
+  data-is-catool-free="{% if is_catool_free %}true{% else %}false{% endif %}"
+  data-is-diy-catool="{% if is_diy_catool %}true{% else %}false{% endif %}"
+  data-is-simple-analyst="{% if is_simple_analyst %}true{% else %}false{% endif %}"
+  data-can-use-photo-prep="{% if can_use_photo_prep %}true{% else %}false{% endif %}"
+  data-is-vip="{% if is_vip %}true{% else %}false{% endif %}"
+data-has-draping-studio="{% if has_draping_studio_access %}true{% else %}false{% endif %}"
+data-has-draping-studio-starter="{% if has_draping_studio_starter %}true{% else %}false{% endif %}"
+data-has-draping-studio-full="{% if has_draping_studio %}true{% else %}false{% endif %}"
+data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
+  data-customer-id="{{ customer.id }}"
+  data-app-base-url="https://ycs-palette-app.vercel.app"
+>
+  {% if customer == nil %}
+    <div class="ycs-photo-prep-card ycs-photo-prep-card--center">
+      <h1>Sign in to access Photo Prep</h1>
+      <a href="{{ routes.account_login_url }}" class="ycs-photo-prep-btn">Sign In</a>
+    </div>
+
+  {% elsif can_use_photo_prep != true %}
+  <div class="ycs-photo-prep-card ycs-photo-prep-card--center">
+    <h1>Photo Prep</h1>
+    <p>This tool is not available for your account.</p>
+  </div>
+
+  {% else %}
+    
+    <div class="ycs-photo-prep-topbar">
+      <a id="ycs-photo-prep-back-link" href="/pages/my-palettes" class="ycs-photo-prep-back">← Back</a>
+    </div>
+
+    <div class="ycs-photo-prep-header">
+  <p class="ycs-photo-prep-kicker">Your Color Style</p>
+  <h1 class="ycs-photo-prep-title">Photo Prep</h1>
+  <p class="ycs-photo-prep-subtitle">
+  {% if is_personal_mode_request %}
+    Upload a photo, make adjustments, then continue to Draping Studio.
+  {% else %}
+    Load or upload a customer photo, make color adjustments, then continue to the Color Analysis Tool.
+  {% endif %}
+</p>
+  <p id="ycs-photo-prep-usage-message" class="ycs-photo-prep-usage-message" hidden></p>
+</div>
+
+    <div id="ycs-prep-customer-meta" class="ycs-photo-prep-meta" hidden>
+      <div class="ycs-photo-prep-meta-head">
+        <div class="ycs-photo-prep-meta-copy">
+          <p><strong>Customer:</strong> <span id="ycs-prep-customer-name">—</span></p>
+          <p><strong>Email:</strong> <span id="ycs-prep-customer-email">—</span></p>
+        </div>
+
+        <div class="ycs-photo-prep-meta-actions">
+          <button type="button" id="ycs-prep-show-client-list-btn" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary">
+  Manage Clients
+</button>
+
+          <button type="button" id="ycs-prep-edit-client-btn" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary">
+            Edit Client Info
+          </button>
+        </div>
+      </div>
+
+      <div id="ycs-prep-edit-client-panel" class="ycs-photo-prep-edit-panel" hidden>
+        <div class="ycs-photo-prep-customer-details">
+          <input type="text" id="ycs-prep-edit-first-name" class="ycs-photo-prep-input" placeholder="First name" />
+          <input type="text" id="ycs-prep-edit-last-name" class="ycs-photo-prep-input" placeholder="Last name" />
+          <input type="email" id="ycs-prep-edit-email" class="ycs-photo-prep-input" placeholder="Email (optional)" />
+        </div>
+
+        <div class="ycs-photo-prep-actions">
+          <button type="button" id="ycs-prep-save-client-btn" class="ycs-photo-prep-btn">
+            Save Changes
+          </button>
+          <button type="button" id="ycs-prep-cancel-client-btn" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="ycs-photo-prep-customer" id="ycs-prep-create-client-panel" {% if is_personal_mode_request or is_member_mode_request %}hidden{% endif %}>
+      {% if can_use_client_management and is_personal_mode_request != true %}
+        <label class="ycs-photo-prep-label">{% if is_catool_free %}Free Trial Clients{% else %}Create Client{% endif %}</label>
+
+        {% unless is_catool_free %}
+        <div class="ycs-photo-prep-customer-details">
+          <input type="text" id="ycs-prep-first-name" class="ycs-photo-prep-input" placeholder="First name" />
+          <input type="text" id="ycs-prep-last-name" class="ycs-photo-prep-input" placeholder="Last name" />
+          <input type="email" id="ycs-prep-email" class="ycs-photo-prep-input" placeholder="Email (optional)" />
+        </div>
+
+        <div class="ycs-photo-prep-customer-row" style="margin-top: 10px;">
+          <button type="button" id="ycs-prep-create-client" class="ycs-photo-prep-btn">
+            Create Client
+          </button>
+        </div>
+
+        <p class="ycs-photo-prep-help">
+          Create, save, edit, and reopen client analyses from your client list.
+        </p>
+        {% else %}
+        <p class="ycs-photo-prep-help">
+          Choose one of the preloaded trial clients to explore Photo Prep and the Color Analysis Tool.
+        </p>
+        {% endunless %}
+
+        <div id="ycs-prep-recent-clients-panel" class="ycs-photo-prep-recent-clients">
+          <div class="ycs-photo-prep-recent-head">
+            <label class="ycs-photo-prep-label" style="margin-bottom: 0;">{% if is_catool_free %}Trial Clients{% else %}Recent Clients{% endif %}</label>
+            {% unless is_catool_free %}
+            <button type="button" id="ycs-prep-refresh-clients" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary">
+              Refresh
+            </button>
+            {% endunless %}
+          </div>
+
+          <div id="ycs-prep-recent-clients-list" class="ycs-photo-prep-recent-list">
+            <p class="ycs-photo-prep-help" style="margin-top: 0;">No recent clients yet.</p>
+          </div>
+        </div>
+             {% endif %}
+      
+    </div>
+
+    <div id="ycs-prep-client-created-note" class="ycs-photo-prep-help" hidden>
+      Client saved and ready for photo upload.
+    </div>
+    <div id="ycs-prep-personal-library" class="ycs-photo-prep-panel" hidden>
+  <div class="ycs-photo-prep-personal-head">
+    <div>
+      <h2 class="ycs-photo-prep-panel-title" style="margin-bottom: 4px;">My Photos</h2>
+      <p id="ycs-prep-personal-library-help" class="ycs-photo-prep-help" style="margin-top: 0;">
+  Upload a photo to begin.
+</p>
+    </div>
+
+    <button type="button" id="ycs-prep-personal-upload-btn" class="ycs-photo-prep-btn">
+      Upload New Photo
+    </button>
+  </div>
+
+  <div id="ycs-prep-personal-library-empty" class="ycs-photo-prep-empty" hidden>
+    <p>No saved photos yet.</p>
+  </div>
+
+  <div id="ycs-prep-personal-library-grid" class="ycs-photo-prep-personal-grid"></div>
+</div>
+<div id="ycs-photo-prep-loading-view" class="ycs-photo-prep-loading-view" hidden>
+  <div class="ycs-photo-prep-loading-view__inner">
+    <p class="ycs-photo-prep-kicker">Your Color Style</p>
+    <h2 class="ycs-photo-prep-loading-view__title">Loading photo…</h2>
+    <p id="ycs-photo-prep-loading-view-text" class="ycs-photo-prep-loading-view__text">
+      Getting everything ready.
+    </p>
+
+    <div class="ycs-photo-prep-loading-view__grid">
+      <div class="ycs-photo-prep-skeleton-stage"></div>
+      <div class="ycs-photo-prep-skeleton-stage"></div>
+    </div>
+  </div>
+</div>
+    <div class="ycs-photo-prep-workspace" id="ycs-photo-prep-workspace" hidden>
+      <div class="ycs-photo-prep-layout">
+        <div class="ycs-photo-prep-panel">
+          <div class="ycs-photo-prep-compare">
+            <div class="ycs-photo-prep-pane">
+              <div class="ycs-photo-prep-pane-head">
+                <h3>Original</h3>
+              </div>
+              <div class="ycs-photo-prep-stage">
+                <div id="ycs-prep-original-empty" class="ycs-photo-prep-empty">
+                  <p>No original photo loaded yet.</p>
+                </div>
+
+                <div id="ycs-prep-original-wrap" class="ycs-photo-prep-preview-wrap" hidden>
+                  <img id="ycs-prep-original-img" class="ycs-photo-prep-preview-img" alt="Original photo preview" />
+                </div>
+              </div>
+            </div>
+
+            <div class="ycs-photo-prep-pane">
+              <div class="ycs-photo-prep-pane-head">
+                <h3>Working</h3>
+              </div>
+              <div class="ycs-photo-prep-stage">
+                <input type="file" id="ycs-prep-file-input" accept="image/*" hidden />
+
+                <div id="ycs-prep-working-empty" class="ycs-photo-prep-empty">
+                  <p>No working photo loaded yet.</p>
+                  <button type="button" id="ycs-prep-upload-btn" class="ycs-photo-prep-btn">
+                    Upload Photo
+                  </button>
+                </div>
+
+                <div id="ycs-prep-working-wrap" class="ycs-photo-prep-preview-wrap" hidden>
+                  <img id="ycs-prep-working-img" class="ycs-photo-prep-preview-img" alt="Working photo preview" />
+                </div>
+
+                <div id="ycs-prep-loading" class="ycs-photo-prep-loading" hidden>
+                  <div class="ycs-photo-prep-loading-dots"><span></span><span></span><span></span></div>
+                  <p id="ycs-prep-loading-text">Loading…</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="ycs-photo-prep-photo-actions">
+            {% unless is_simple_analyst or is_personal_mode_request or is_member_mode_request %}
+<button type="button" id="ycs-prep-replace-btn" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary">
+  Replace Photo
+</button>
+
+{% endunless %}
+
+{% if is_admin and is_member_mode_request %}
+<button type="button" id="ycs-prep-add-member-photo-btn" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary">
+  Upload New Member Photo
+</button>
+{% endif %}
+          </div>
+
+          <div class="ycs-photo-prep-status">
+            <p><strong>Original:</strong> <span id="ycs-prep-original-status">—</span></p>
+            <p><strong>Adjusted:</strong> <span id="ycs-prep-adjusted-status">—</span></p>
+            <p><strong>Active:</strong> <span id="ycs-prep-active-status">—</span></p>
+          </div>
+
+          {% if is_admin %}
+            <div id="ycs-prep-photo-quality-result" class="ycs-photo-prep-quality" hidden></div>
+          {% endif %}
+        </div>
+
+        <div class="ycs-photo-prep-panel">
+          <h2 class="ycs-photo-prep-panel-title">Adjustments</h2>
+
+          <div class="ycs-photo-prep-control">
+            <div class="ycs-photo-prep-control-head">
+              <label for="ycs-prep-zoom">Zoom</label>
+              <span id="ycs-prep-zoom-value">100%</span>
+            </div>
+            <input type="range" id="ycs-prep-zoom" min="70" max="260" step="1" value="100" />
+          </div>
+
+          <div class="ycs-photo-prep-control">
+            <div class="ycs-photo-prep-control-head">
+              <label for="ycs-prep-temperature">Temperature</label>
+              <span id="ycs-prep-temperature-value" class="ycs-photo-prep-temp-value">Neutral</span>
+            </div>
+            <input type="range" id="ycs-prep-temperature" min="-80" max="80" step="1" value="0" />
+          </div>
+
+          <div class="ycs-photo-prep-control">
+            <div class="ycs-photo-prep-control-head">
+              <label for="ycs-prep-brightness">Brightness</label>
+              <span id="ycs-prep-brightness-value">100%</span>
+            </div>
+            <input type="range" id="ycs-prep-brightness" min="50" max="150" step="1" value="100" />
+          </div>
+
+          <div class="ycs-photo-prep-control">
+            <div class="ycs-photo-prep-control-head">
+              <label for="ycs-prep-contrast">Contrast</label>
+              <span id="ycs-prep-contrast-value">100%</span>
+            </div>
+            <input type="range" id="ycs-prep-contrast" min="50" max="150" step="1" value="100" />
+          </div>
+
+          <div class="ycs-photo-prep-actions">
+            <button type="button" id="ycs-prep-reset-btn" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary">
+              Reset Controls
+            </button>
+
+            <button type="button" id="ycs-prep-use-original-btn" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary">
+              Use Original Photo
+            </button>
+
+            <button type="button" id="ycs-prep-save-btn" class="ycs-photo-prep-btn">
+              Save Adjusted Photo
+            </button>
+
+            <a id="ycs-prep-start-analysis-btn" href="/pages/color-analysis-tool" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary">
+  Continue
+</a>
+{% if is_admin %}
+  <a
+    id="ycs-prep-start-signature-analysis-btn"
+    href="/pages/signature-color-analysis"
+    class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary"
+  >
+    Signature Color Analysis
+  </a>
+{% endif %}
+          </div>
+
+          <p class="ycs-photo-prep-help">
+            Use this page to color-correct the photo only. Zoom here is temporary and is not saved. Face positioning happens in the Color Analysis Tool.
+          </p>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+<style>
+  .ycs-photo-prep-app {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 18px;
+  }
+
+  .ycs-photo-prep-topbar {
+    margin-bottom: 10px;
+  }
+
+  .ycs-photo-prep-back {
+    text-decoration: none;
+    color: #444;
+    font-weight: 600;
+    font-size: 14px;
+  }
+
+  .ycs-photo-prep-header {
+    margin-bottom: 14px;
+  }
+
+  .ycs-photo-prep-kicker {
+    margin: 0 0 6px;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #8b7d6b;
+  }
+
+  .ycs-photo-prep-title {
+    margin: 0 0 6px;
+    font-size: 28px;
+    line-height: 1.08;
+  }
+
+  .ycs-photo-prep-subtitle {
+    margin: 0;
+    font-size: 14px;
+    color: #5f5a54;
+  }
+
+  .ycs-photo-prep-card,
+  .ycs-photo-prep-panel,
+  .ycs-photo-prep-customer {
+    background: #fff;
+    border: 1px solid #ece7df;
+    border-radius: 20px;
+    padding: 16px;
+  }
+
+  .ycs-photo-prep-card--center {
+    max-width: 560px;
+    margin: 60px auto;
+    text-align: center;
+  }
+
+  .ycs-photo-prep-meta {
+    margin-bottom: 14px;
+    background: #fff;
+    border: 1px solid #ece7df;
+    border-radius: 16px;
+    padding: 12px 14px;
+    display: grid;
+    gap: 4px;
+  }
+
+  .ycs-photo-prep-meta[hidden] {
+    display: none !important;
+  }
+
+  .ycs-photo-prep-meta p {
+    margin: 0;
+    font-size: 14px;
+    color: #4f4942;
+  }
+
+  .ycs-photo-prep-customer {
+    margin-bottom: 14px;
+  }
+
+  .ycs-photo-prep-customer-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .ycs-photo-prep-customer-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1.2fr;
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  .ycs-photo-prep-input {
+    flex: 1 1 280px;
+    min-height: 44px;
+    border: 1px solid #d8cfc3;
+    border-radius: 12px;
+    padding: 0 14px;
+    font-size: 14px;
+  }
+
+  .ycs-photo-prep-workspace[hidden] {
+    display: none !important;
+  }
+.ycs-photo-prep-usage-message[hidden] {
+  display: none !important;
+}
+
+.ycs-photo-prep-usage-message {
+  display: inline-flex;
+  align-items: center;
+  margin: 10px 0 0;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #fff4d6;
+  color: #8a5a00;
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 700;
+  width: fit-content;
+}
+  .ycs-photo-prep-meta-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .ycs-photo-prep-meta-copy {
+    display: grid;
+    gap: 4px;
+  }
+
+  .ycs-photo-prep-meta-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .ycs-photo-prep-edit-panel {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid #ece7df;
+  }
+
+  .ycs-photo-prep-edit-panel[hidden] {
+    display: none !important;
+  }
+
+  .ycs-photo-prep-recent-clients {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid #ece7df;
+  }
+
+  .ycs-photo-prep-recent-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+
+  .ycs-photo-prep-recent-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .ycs-photo-prep-recent-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 12px 14px;
+    border: 1px solid #ece7df;
+    border-radius: 14px;
+    background: #faf7f2;
+  }
+
+  .ycs-photo-prep-recent-copy {
+    min-width: 0;
+  }
+
+  .ycs-photo-prep-recent-name {
+    margin: 0 0 3px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #2f2a25;
+  }
+
+  .ycs-photo-prep-recent-meta {
+    margin: 0;
+    font-size: 12px;
+    color: #6b645c;
+  }
+
+  .ycs-photo-prep-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 16px;
+    align-items: start;
+  }
+
+  .ycs-photo-prep-compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .ycs-photo-prep-pane {
+    min-width: 0;
+  }
+
+  .ycs-photo-prep-pane-head {
+    margin-bottom: 8px;
+  }
+
+  .ycs-photo-prep-pane-head h3 {
+    margin: 0;
+    font-size: 15px;
+    color: #4f4942;
+  }
+
+  .ycs-photo-prep-stage {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 0.86 / 1;
+    max-height: 560px;
+    border-radius: 18px;
+    border: 1px dashed #d8cfc3;
+    background: #f6f1ea;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ycs-photo-prep-stage,
+.ycs-photo-prep-preview-wrap,
+.ycs-photo-prep-preview-img {
+  touch-action: none;
+  overscroll-behavior: contain;
+}
+
+  .ycs-photo-prep-empty {
+    display: grid;
+    gap: 12px;
+    justify-items: center;
+    text-align: center;
+    color: #6b645c;
+    padding: 20px;
+  }
+
+  .ycs-photo-prep-empty[hidden] {
+  display: none !important;
+}
+
+  .ycs-photo-prep-preview-wrap {
+    position: absolute;
+    inset: 14px;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #fff;
+  }
+
+  .ycs-photo-prep-preview-img {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    max-width: 80%;
+    max-height: 90%;
+    width: auto;
+    height: auto;
+    transform: translate(-50%, -50%);
+    transform-origin: center center;
+    display: block;
+    z-index: 1;
+    user-select: none;
+    -webkit-user-drag: none;
+    cursor: default;
+  }
+
+  .ycs-photo-prep-loading {
+    position: absolute;
+    inset: 14px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.84);
+    display: grid;
+    place-items: center;
+    justify-items: center;
+    text-align: center;
+    z-index: 5;
+  }
+
+  .ycs-photo-prep-loading[hidden] {
+    display: none !important;
+  }
+
+  .ycs-photo-prep-loading-dots {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .ycs-photo-prep-loading-dots span {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: #cfc5b8;
+    animation: ycsPrepBounce 1s infinite ease-in-out;
+  }
+
+  .ycs-photo-prep-loading-dots span:nth-child(2) { animation-delay: 0.15s; }
+  .ycs-photo-prep-loading-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+  .ycs-photo-prep-loading-view[hidden] {
+  display: none !important;
+}
+
+.ycs-photo-prep-loading-view {
+  margin-bottom: 14px;
+  background: #fff;
+  border: 1px solid #ece7df;
+  border-radius: 20px;
+  padding: 18px;
+}
+
+.ycs-photo-prep-loading-view__inner {
+  display: grid;
+  gap: 10px;
+}
+
+.ycs-photo-prep-loading-view__title {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.08;
+}
+
+.ycs-photo-prep-loading-view__text {
+  margin: 0;
+  font-size: 14px;
+  color: #5f5a54;
+}
+
+.ycs-photo-prep-loading-view__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 6px;
+}
+
+.ycs-photo-prep-skeleton-stage {
+  aspect-ratio: 0.86 / 1;
+  border-radius: 18px;
+  background: linear-gradient(
+    90deg,
+    #f5f1eb 0%,
+    #ece4d8 50%,
+    #f5f1eb 100%
+  );
+  background-size: 200% 100%;
+  animation: ycs-photo-prep-skeleton 1.2s infinite linear;
+  border: 1px solid #ece7df;
+}
+
+@keyframes ycs-photo-prep-skeleton {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media screen and (max-width: 900px) {
+  .ycs-photo-prep-loading-view__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+  @keyframes ycsPrepBounce {
+    0%, 80%, 100% { opacity: 0.35; transform: scale(0.8); }
+    40% { opacity: 1; transform: scale(1); }
+  }
+
+  .ycs-photo-prep-photo-actions,
+  .ycs-photo-prep-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+  }
+
+  .ycs-photo-prep-status {
+    margin-top: 14px;
+    font-size: 13px;
+    color: #5f5a54;
+    display: grid;
+    gap: 6px;
+  }
+
+  .ycs-photo-prep-status p {
+    margin: 0;
+  }
+
+  .ycs-photo-prep-quality {
+    margin-top: 14px;
+    padding: 12px;
+    border: 1px solid #ece7df;
+    border-radius: 14px;
+    background: #faf7f2;
+    color: #4f4942;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .ycs-photo-prep-quality[hidden] {
+    display: none !important;
+  }
+
+  .ycs-photo-prep-quality__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+
+  .ycs-photo-prep-quality__title,
+  .ycs-photo-prep-quality__score,
+  .ycs-photo-prep-quality__meta {
+    margin: 0;
+  }
+
+  .ycs-photo-prep-quality__title {
+    font-weight: 700;
+    color: #2f2a25;
+  }
+
+  .ycs-photo-prep-quality__score {
+    font-weight: 700;
+    text-transform: capitalize;
+  }
+
+  .ycs-photo-prep-quality ul {
+    margin: 8px 0 0 18px;
+    padding: 0;
+  }
+
+  .ycs-photo-prep-quality li {
+    list-style: disc;
+    margin: 2px 0;
+  }
+
+  .ycs-photo-prep-panel-title {
+    margin: 0 0 10px;
+    font-size: 18px;
+  }
+
+  .ycs-photo-prep-control {
+    display: grid;
+    gap: 4px;
+    margin-bottom: 10px;
+  }
+
+  .ycs-photo-prep-control-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: -5px;
+    padding-bottom: 0;
+  }
+
+  .ycs-photo-prep-control label,
+  .ycs-photo-prep-label,
+  .ycs-photo-prep-toggle label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #4f4942;
+  }
+
+  .ycs-photo-prep-control input[type="range"] {
+    width: 100%;
+    margin-top: 0;
+  }
+
+  .ycs-photo-prep-control span {
+    font-size: 13px;
+    color: #6b645c;
+    line-height: 1.1;
+  }
+
+  .ycs-photo-prep-toggle {
+    margin-top: 6px;
+    margin-bottom: 16px;
+  }
+
+  .ycs-photo-prep-help {
+    margin: 10px 0 0;
+    font-size: 13px;
+    color: #6b645c;
+    line-height: 1.45;
+  }
+
+  .ycs-photo-prep-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 12px 18px;
+    border-radius: 999px;
+    border: none;
+    background: #111;
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  .ycs-photo-prep-btn--secondary {
+    background: #e9e1d6;
+    color: #2f2a25;
+  }
+
+  @media screen and (max-width: 900px) {
+    .ycs-photo-prep-customer-details {
+      grid-template-columns: 1fr;
+    }
+
+    .ycs-photo-prep-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .ycs-photo-prep-compare {
+      grid-template-columns: 1fr;
+    }
+
+    .ycs-photo-prep-stage {
+      max-height: none;
+    }
+
+    .ycs-photo-prep-preview-img {
+      max-width: 64%;
+      max-height: 74%;
+    }
+  }
+
+  .ycs-photo-prep-personal-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.ycs-photo-prep-personal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.ycs-photo-prep-personal-card {
+  border: 1px solid #ece7df;
+  border-radius: 16px;
+  background: #faf7f2;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+}
+
+.ycs-photo-prep-personal-thumb {
+  aspect-ratio: 0.9 / 1;
+  background: #f6f1ea;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.ycs-photo-prep-personal-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  background: #fff;
+}
+
+.ycs-photo-prep-personal-body {
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.ycs-photo-prep-personal-meta {
+  font-size: 12px;
+  color: #6b645c;
+  line-height: 1.35;
+}
+
+.ycs-photo-prep-personal-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.ycs-photo-prep-btn--outline {
+  background: #fff;
+  color: #2f2a25;
+  border: 1px solid #d8cfc3;
+}
+
+.ycs-photo-prep-btn--danger {
+  background: #fff;
+  border-color: #d7b8ad;
+  color: #8c2f1f;
+}
+</style>
+
+<script>
+(function () {
+  const appEl = document.querySelector('.ycs-photo-prep-app');
+  if (!appEl) return;
+
+  const IS_ADMIN = appEl.dataset.isAdmin === 'true';
+const IS_TRADE = appEl.dataset.isTrade === 'true';
+const IS_CATOOL = appEl.dataset.isCatool === 'true';
+const IS_CATOOL_GROWTH = appEl.dataset.isCatoolGrowth === 'true';
+const IS_CATOOL_FREE = appEl.dataset.isCatoolFree === 'true';
+const IS_DIY_CATOOL = appEl.dataset.isDiyCatool === 'true';
+const IS_SIMPLE_ANALYST = appEl.dataset.isSimpleAnalyst === 'true';
+const CAN_USE_CLIENT_MANAGEMENT = IS_ADMIN || IS_TRADE || IS_SIMPLE_ANALYST;
+const CAN_USE_PHOTO_PREP = appEl.dataset.canUsePhotoPrep === 'true';
+const VIEWER_CUSTOMER_ID = (appEl.dataset.customerId || '').trim();
+const APP_BASE_URL = appEl.dataset.appBaseUrl || '';
+
+
+  
+  if (!CAN_USE_PHOTO_PREP) {
+    console.warn('Photo Prep blocked for non consultant/admin');
+    return;
+  }
+const IS_VIP = appEl.dataset.isVip === 'true';
+const HAS_DRAPING_STUDIO_STARTER = appEl.dataset.hasDrapingStudioStarter === 'true';
+const HAS_DRAPING_STUDIO_FULL = appEl.dataset.hasDrapingStudioFull === 'true';
+const HAS_DRAPING_STUDIO_ACCESS = appEl.dataset.hasDrapingStudio === 'true';
+const IS_SAMPLE_USER = appEl.dataset.isSampleUser === 'true';
+const IS_SAMPLE_TRIAL_REQUEST = appEl.dataset.isSampleTrialRequest === 'true';
+
+
+
+const params = new URLSearchParams(window.location.search);
+const returnUrl = params.get('returnUrl') || '/pages/my-palettes';
+const WORKFLOW = (params.get('workflow') || '').trim().toLowerCase() || '';
+
+const requestedMode = (params.get('mode') || '').trim().toLowerCase();
+
+const MODE =
+  IS_DIY_CATOOL &&
+  !CAN_USE_CLIENT_MANAGEMENT &&
+  requestedMode !== 'personal' &&
+  requestedMode !== 'member'
+    ? 'diy'
+    : (requestedMode || 'trade');
+
+const IS_PERSONAL_MODE = MODE === 'personal';
+const IS_TRADE_MODE = MODE === 'trade';
+const IS_MEMBER_PHOTO_MODE = MODE === 'member';
+const IS_DIY_MODE = MODE === 'diy';
+const IS_SIMPLE_ANALYST_MODE = MODE === 'simple';
+const IS_CATOOL_FREE_TRIAL_FLOW =
+  IS_CATOOL_FREE &&
+  IS_TRADE_MODE &&
+  WORKFLOW === 'color-analysis';
+const FREE_TRIAL_CLIENTS = [
+  {
+    id: 'bwd',
+    firstName: 'Trial',
+    lastName: 'Deep',
+    email: 'preloaded-client@yourcolorstyle.com',
+    photoUrl: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/BWD.png?v=1779737095'
+  },
+  {
+    id: 'scd',
+    firstName: 'Trial',
+    lastName: 'Soft',
+    email: 'preloaded-client@yourcolorstyle.com',
+    photoUrl: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/SCD.png?v=1779737094'
+  },
+  {
+    id: 'cwl',
+    firstName: 'Trial',
+    lastName: 'Light',
+    email: 'preloaded-client@yourcolorstyle.com',
+    photoUrl: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/CWL.png?v=1779737094'
+  }
+];
+const FREE_TRIAL_STORAGE_PREFIX = 'ycs-catool-free-demo:';
+
+ const rawAdminCustomerId = (params.get('adminCustomerId') || '').trim();
+const rawCustomerId = (params.get('customerId') || '').trim();
+const rawClientRecordId = (params.get('clientRecordId') || '').trim();
+const initialPhotoId = (params.get('photoId') || '').trim();
+const initialPhotoSource = (params.get('photoSource') || 'PersonalStudioPhotos').trim();
+
+const initialCustomerId =
+  MODE === 'member'
+    ? (rawAdminCustomerId || rawCustomerId || rawClientRecordId)
+    : (rawAdminCustomerId || rawCustomerId);
+
+const initialClientRecordId =
+  MODE === 'member'
+    ? ''
+    : rawClientRecordId;
+const initialFirstName = (params.get('firstName') || '').trim();
+const initialLastName = (params.get('lastName') || '').trim();
+const initialEmail = (params.get('email') || '').trim();
+
+  const customerInput = document.getElementById('ycs-prep-customer-id');
+  const saveAdminClientBtn = document.getElementById('ycs-prep-save-admin-client');
+const uploadBtn = document.getElementById('ycs-prep-upload-btn');
+const replaceBtn = document.getElementById('ycs-prep-replace-btn');
+const addMemberPhotoBtn = document.getElementById('ycs-prep-add-member-photo-btn');
+const photoQualityResultEl = document.getElementById('ycs-prep-photo-quality-result');
+  const fileInput = document.getElementById('ycs-prep-file-input');
+  const createClientBtn = document.getElementById('ycs-prep-create-client');
+  const clientCreatedNote = document.getElementById('ycs-prep-client-created-note');
+const createClientPanel = document.getElementById('ycs-prep-create-client-panel');
+const personalLibraryEl = document.getElementById('ycs-prep-personal-library');
+const personalLibraryHelpEl = document.getElementById('ycs-prep-personal-library-help');
+const personalLibraryGridEl = document.getElementById('ycs-prep-personal-library-grid');
+const personalLibraryEmptyEl = document.getElementById('ycs-prep-personal-library-empty');
+const personalUploadBtn = document.getElementById('ycs-prep-personal-upload-btn');
+const photoPrepWorkspace = document.getElementById('ycs-photo-prep-workspace');
+
+const photoPrepLoadingView = document.getElementById('ycs-photo-prep-loading-view');
+const photoPrepLoadingViewText = document.getElementById('ycs-photo-prep-loading-view-text');
+
+  const firstNameInput = document.getElementById('ycs-prep-first-name');
+  const lastNameInput = document.getElementById('ycs-prep-last-name');
+  const emailInput = document.getElementById('ycs-prep-email');
+
+  const photoPrepUsageMessageEl = document.getElementById('ycs-photo-prep-usage-message');
+
+  const editClientBtn = document.getElementById('ycs-prep-edit-client-btn');
+  const editClientPanel = document.getElementById('ycs-prep-edit-client-panel');
+  const editFirstNameInput = document.getElementById('ycs-prep-edit-first-name');
+  const editLastNameInput = document.getElementById('ycs-prep-edit-last-name');
+  const editEmailInput = document.getElementById('ycs-prep-edit-email');
+  const saveClientBtn = document.getElementById('ycs-prep-save-client-btn');
+  const cancelClientBtn = document.getElementById('ycs-prep-cancel-client-btn');
+
+  const recentClientsList = document.getElementById('ycs-prep-recent-clients-list');
+  const refreshClientsBtn = document.getElementById('ycs-prep-refresh-clients');
+  const showClientListBtn = document.getElementById('ycs-prep-show-client-list-btn');
+
+  const originalEmptyEl = document.getElementById('ycs-prep-original-empty');
+  const originalWrap = document.getElementById('ycs-prep-original-wrap');
+  const originalImg = document.getElementById('ycs-prep-original-img');
+
+  const workingEmptyEl = document.getElementById('ycs-prep-working-empty');
+const workingWrap = document.getElementById('ycs-prep-working-wrap');
+const workingImg = document.getElementById('ycs-prep-working-img');
+
+  const loadingEl = document.getElementById('ycs-prep-loading');
+  const loadingTextEl = document.getElementById('ycs-prep-loading-text');
+
+  const brightnessEl = document.getElementById('ycs-prep-brightness');
+  const contrastEl = document.getElementById('ycs-prep-contrast');
+  const temperatureEl = document.getElementById('ycs-prep-temperature');
+  const zoomEl = document.getElementById('ycs-prep-zoom');
+
+  const brightnessValueEl = document.getElementById('ycs-prep-brightness-value');
+  const contrastValueEl = document.getElementById('ycs-prep-contrast-value');
+  const temperatureValueEl = document.getElementById('ycs-prep-temperature-value');
+  const zoomValueEl = document.getElementById('ycs-prep-zoom-value');
+
+  const resetBtn = document.getElementById('ycs-prep-reset-btn');
+  const useOriginalBtn = document.getElementById('ycs-prep-use-original-btn');
+  const saveBtn = document.getElementById('ycs-prep-save-btn');
+  const startAnalysisBtn = document.getElementById('ycs-prep-start-analysis-btn');
+  const startSignatureAnalysisBtn = document.getElementById('ycs-prep-start-signature-analysis-btn');
+
+  const originalStatusEl = document.getElementById('ycs-prep-original-status');
+  const adjustedStatusEl = document.getElementById('ycs-prep-adjusted-status');
+  const activeStatusEl = document.getElementById('ycs-prep-active-status');
+
+  const backLink = document.getElementById('ycs-photo-prep-back-link');
+
+  const customerMetaEl = document.getElementById('ycs-prep-customer-meta');
+  const customerNameEl = document.getElementById('ycs-prep-customer-name');
+  const customerEmailEl = document.getElementById('ycs-prep-customer-email');
+
+  
+
+const state = {
+  customerId: initialCustomerId || null,
+  clientRecordId: initialClientRecordId || null,
+
+  originalPhotoUrl: null,
+  adjustedPhotoUrl: null,
+  activePhotoUrl: null,
+  currentBasePhotoUrl: null,
+
+  justUploadedNewPhoto: false,
+
+  selectedPersonalPhotoId: initialPhotoId || null,
+  selectedPhotoSource: initialPhotoSource || 'PersonalStudioPhotos',
+  demoClientId: (params.get('demoClient') || '').trim().toLowerCase() || null,
+
+  firstName: null,
+  lastName: null,
+  email: null,
+
+  hasLoadedPhoto: false,
+  workspaceOpen: false,
+
+  previewZoom: 100,
+  previewOffsetX: 0,
+  previewOffsetY: 0,
+
+  uploadsRemaining: null,
+  canUploadPhoto: true,
+
+  controls: {
+    brightness: 100,
+    contrast: 100,
+    temperature: 0
+  }
+};//State
+
+  if (customerInput && initialCustomerId) {
+  customerInput.value = initialCustomerId;
+}
+
+if (initialCustomerId && IS_ADMIN) {
+  state.customerId = initialCustomerId;
+  state.clientRecordId = null;
+  state.firstName = initialFirstName || null;
+  state.lastName = initialLastName || null;
+  state.email = initialEmail || null;
+
+  if (firstNameInput) firstNameInput.value = initialFirstName;
+  if (lastNameInput) lastNameInput.value = initialLastName;
+  if (emailInput) emailInput.value = initialEmail;
+}
+
+  function showLoading(message) {
+    if (!loadingEl) return;
+    loadingEl.hidden = false;
+    if (loadingTextEl) loadingTextEl.textContent = message || 'Loading…';
+  }
+
+  function hideLoading() {
+    if (!loadingEl) return;
+    loadingEl.hidden = true;
+    if (loadingTextEl) loadingTextEl.textContent = 'Loading…';
+  }
+
+  function showLoadingView(message) {
+  if (photoPrepLoadingView) {
+    photoPrepLoadingView.hidden = false;
+  }
+  if (photoPrepLoadingViewText) {
+    photoPrepLoadingViewText.textContent = message || 'Getting everything ready.';
+  }
+  if (photoPrepWorkspace) {
+    photoPrepWorkspace.hidden = true;
+  }
+}
+
+function hideLoadingView() {
+  if (photoPrepLoadingView) {
+    photoPrepLoadingView.hidden = true;
+  }
+
+  syncVisibility();
+}
+
+  function getActiveRecordId() {
+    return String(state.clientRecordId || state.customerId || '').trim();
+  }
+
+  function escapeHtml(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function getFreeTrialClient(clientId) {
+    const normalized = String(clientId || '').trim().toLowerCase();
+    return FREE_TRIAL_CLIENTS.find(function (client) {
+      return client.id === normalized;
+    }) || null;
+  }
+
+  function getFreeTrialStorageKey(clientId, suffix) {
+    return FREE_TRIAL_STORAGE_PREFIX + VIEWER_CUSTOMER_ID + ':' + clientId + ':' + suffix;
+  }
+
+  function getStoredFreeTrialAdjustedPhoto(clientId) {
+    try {
+      return localStorage.getItem(getFreeTrialStorageKey(clientId, 'adjusted')) || '';
+    } catch (error) {
+      console.warn('Could not read free trial adjusted photo', error);
+      return '';
+    }
+  }
+
+  function setStoredFreeTrialAdjustedPhoto(clientId, dataUrl) {
+    try {
+      localStorage.setItem(getFreeTrialStorageKey(clientId, 'adjusted'), dataUrl);
+    } catch (error) {
+      console.warn('Could not save free trial adjusted photo', error);
+      throw new Error('Your browser could not save the adjusted trial photo.');
+    }
+  }
+
+  async function loadPhotoPrepUsage() {
+  if (IS_CATOOL_FREE_TRIAL_FLOW) {
+    if (photoPrepUsageMessageEl) photoPrepUsageMessageEl.hidden = true;
+    state.canUploadPhoto = false;
+    if (uploadBtn) uploadBtn.hidden = true;
+    if (replaceBtn) replaceBtn.hidden = true;
+    if (personalUploadBtn) personalUploadBtn.hidden = true;
+    return;
+  }
+
+  if (!photoPrepUsageMessageEl || !VIEWER_CUSTOMER_ID || !APP_BASE_URL) return;
+
+  photoPrepUsageMessageEl.hidden = true;
+  photoPrepUsageMessageEl.textContent = '';
+
+  try {
+    const response = await fetch(
+  APP_BASE_URL +
+    '/api/get-upload-usage?' +
+    new URLSearchParams({
+      customerId: VIEWER_CUSTOMER_ID,
+      tool: IS_PERSONAL_MODE ? 'photo-draping' : 'photo-prep',
+      mode: IS_PERSONAL_MODE ? 'personal' : (IS_DIY_MODE ? 'diy' : 'trade'),
+      isAdmin: IS_ADMIN ? 'true' : 'false',
+      isTrade: IS_TRADE ? 'true' : 'false',
+      isCatool: IS_CATOOL ? 'true' : 'false',
+      isCatoolGrowth: IS_CATOOL_GROWTH ? 'true' : 'false',
+      isCatoolFree: IS_CATOOL_FREE ? 'true' : 'false',
+      isDiyCatool: IS_DIY_CATOOL ? 'true' : 'false',
+      isVip: IS_VIP ? 'true' : 'false',
+      hasDrapingStudio: HAS_DRAPING_STUDIO_ACCESS ? 'true' : 'false',
+      hasDrapingStudioStarter: HAS_DRAPING_STUDIO_STARTER ? 'true' : 'false',
+      hasDrapingStudioFull: HAS_DRAPING_STUDIO_FULL ? 'true' : 'false',
+      isSampleUser: (IS_SAMPLE_USER || IS_SAMPLE_TRIAL_REQUEST) ? 'true' : 'false'
+    }).toString()
+);
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Could not load upload usage');
+    }
+
+
+    const used = Number(data.used || 0);
+    const limit = Number(data.limit || 0);
+    const remaining = Number(data.remaining || 0);
+
+    state.uploadsRemaining = remaining;
+state.canUploadPhoto = data.isAdmin || data.scope === 'unlimited' || remaining > 0;
+
+if (uploadBtn) uploadBtn.disabled = !state.canUploadPhoto;
+if (replaceBtn && !IS_SIMPLE_ANALYST && !IS_PERSONAL_MODE && !IS_MEMBER_PHOTO_MODE && !IS_DIY_MODE) {
+  replaceBtn.disabled = !state.canUploadPhoto;
+}
+
+    if (data.isAdmin || data.scope === 'unlimited' || data.limit === null) {
+  photoPrepUsageMessageEl.textContent = 'Unlimited uploads';
+} else if (data.scope === 'monthly') {
+  photoPrepUsageMessageEl.textContent =
+    `${used} of ${limit} uploads used this month • ${remaining} remaining this month`;
+} else {
+  photoPrepUsageMessageEl.textContent =
+    `${used} of ${limit} uploads used • ${remaining} remaining`;
+}
+
+
+    photoPrepUsageMessageEl.hidden = false;
+  } catch (error) {
+    console.error('Failed to load Photo Prep usage', error);
+    photoPrepUsageMessageEl.hidden = true;
+  }
+}
+
+  function updateBackLink() {
+  if (!backLink) return;
+
+  backLink.dataset.backAction = '';
+
+  if (IS_PERSONAL_MODE) {
+    backLink.textContent = '← Back to My Palettes';
+    backLink.setAttribute('href', '/pages/my-palettes');
+    return;
+  }
+
+  if (IS_DIY_MODE) {
+    backLink.textContent = '← Back to My Palettes';
+    backLink.setAttribute('href', '/pages/my-palettes');
+    return;
+  }
+
+  if (IS_MEMBER_PHOTO_MODE) {
+    backLink.textContent = '← Back to Member Photos';
+    backLink.setAttribute('href', '/pages/member-photos');
+    return;
+  }
+
+  if (state.workspaceOpen && (state.clientRecordId || state.customerId)) {
+    backLink.textContent = '← Back to Client List';
+    backLink.setAttribute('href', '/pages/photo-prep?mode=trade&workflow=color-analysis');
+    backLink.dataset.backAction = 'client-list';
+    return;
+  }
+
+  backLink.textContent = '← Back to My Palettes';
+  backLink.setAttribute('href', '/pages/my-palettes');
+}
+
+function updateStartAnalysisLink() {
+  if (!startAnalysisBtn) return;
+
+  const query = new URLSearchParams();
+
+  if (IS_PERSONAL_MODE) {
+    let href = '/pages/photo-draping';
+
+    if (state.selectedPersonalPhotoId) {
+      query.set('photoId', state.selectedPersonalPhotoId);
+      query.set('photoSource', state.selectedPhotoSource || 'PersonalStudioPhotos');
+    }
+
+    query.set('mode', 'personal');
+
+    if (IS_SAMPLE_TRIAL_REQUEST || IS_SAMPLE_USER) {
+      query.set('trial', 'sample');
+    }
+
+    const queryString = query.toString();
+    if (queryString) {
+      href += '?' + queryString;
+    }
+
+    startAnalysisBtn.textContent = 'Open Draping Studio';
+    startAnalysisBtn.setAttribute('href', href);
+    return;
+  }
+
+  if (IS_MEMBER_PHOTO_MODE) {
+    const memberCustomerId = state.customerId || initialCustomerId;
+    const originalSignatureUrl = returnUrl || '';
+
+    let href = originalSignatureUrl && originalSignatureUrl.includes('/pages/signature-color-analysis')
+      ? originalSignatureUrl
+      : '/pages/signature-color-analysis?' +
+        new URLSearchParams({
+          adminCustomerId: memberCustomerId,
+          mode: 'member',
+          returnUrl: '/pages/member-photos'
+        }).toString();
+
+    const signatureUrl = new URL(href, window.location.origin);
+
+    signatureUrl.searchParams.delete('clientRecordId');
+    signatureUrl.searchParams.set('adminCustomerId', memberCustomerId);
+    signatureUrl.searchParams.set('mode', 'member');
+    signatureUrl.searchParams.set('returnUrl', '/pages/member-photos');
+
+    if (state.justUploadedNewPhoto) {
+      signatureUrl.searchParams.set('newPhoto', '1');
+    }
+
+    if (state.selectedPersonalPhotoId) {
+      signatureUrl.searchParams.set('photoId', state.selectedPersonalPhotoId);
+      signatureUrl.searchParams.set(
+        'photoSource',
+        state.selectedPhotoSource || initialPhotoSource || 'PersonalStudioPhotos'
+      );
+    }
+
+    startAnalysisBtn.textContent = 'Back to Signature Color Analysis';
+    startAnalysisBtn.setAttribute('href', signatureUrl.pathname + signatureUrl.search);
+
+    if (startSignatureAnalysisBtn) {
+      startSignatureAnalysisBtn.hidden = true;
+    }
+
+    return;
+  }
+
+  let href = '/pages/color-analysis-tool';
+
+  if (IS_DIY_MODE) {
+    state.customerId = VIEWER_CUSTOMER_ID;
+    state.clientRecordId = null;
+
+    if (state.selectedPersonalPhotoId) {
+      query.set('photoId', state.selectedPersonalPhotoId);
+      query.set('photoSource', state.selectedPhotoSource || 'PersonalStudioPhotos');
+    }
+
+    query.set('customerId', VIEWER_CUSTOMER_ID);
+    query.set('mode', 'diy');
+
+    const queryString = query.toString();
+    startAnalysisBtn.textContent = 'Start Color Analysis';
+    startAnalysisBtn.setAttribute('href', href + (queryString ? '?' + queryString : ''));
+
+    if (startSignatureAnalysisBtn) {
+      startSignatureAnalysisBtn.hidden = true;
+    }
+    return;
+  }
+
+  if (IS_CATOOL_FREE_TRIAL_FLOW && state.demoClientId) {
+    query.set('demoClient', state.demoClientId);
+    query.set('mode', 'trade');
+
+    const queryString = query.toString();
+    if (queryString) {
+      href += '?' + queryString;
+    }
+
+    startAnalysisBtn.textContent = 'Start Color Analysis';
+    startAnalysisBtn.setAttribute('href', href);
+    return;
+  }
+
+  if (state.clientRecordId) {
+    query.set('clientRecordId', state.clientRecordId);
+  } else if (IS_ADMIN && state.customerId) {
+    query.set('adminCustomerId', state.customerId);
+  } else if (IS_SIMPLE_ANALYST) {
+    query.set('customerId', VIEWER_CUSTOMER_ID);
+  }
+
+  if (state.justUploadedNewPhoto) {
+    query.set('newPhoto', '1');
+  }
+
+  query.set('mode', 'trade');
+
+  const queryString = query.toString();
+  if (queryString) {
+    href += '?' + queryString;
+  }
+
+  startAnalysisBtn.textContent = 'Start Color Analysis';
+  startAnalysisBtn.setAttribute('href', href);
+
+  if (startSignatureAnalysisBtn && IS_ADMIN) {
+    let signatureHref = '/pages/signature-color-analysis';
+    const signatureQuery = new URLSearchParams();
+
+    signatureQuery.set('returnUrl', window.location.pathname + window.location.search);
+
+   if (state.clientRecordId) {
+  signatureQuery.set('clientRecordId', state.clientRecordId);
+} else if (state.customerId) {
+  signatureQuery.set('adminCustomerId', state.customerId);
+}
+
+if (state.firstName) {
+  signatureQuery.set('firstName', state.firstName);
+}
+
+    if (state.justUploadedNewPhoto) {
+      signatureQuery.set('newPhoto', '1');
+    }
+
+    signatureQuery.set('mode', 'trade');
+
+    const signatureQueryString = signatureQuery.toString();
+    if (signatureQueryString) {
+      signatureHref += '?' + signatureQueryString;
+    }
+
+    startSignatureAnalysisBtn.textContent = 'Signature Color Analysis';
+    startSignatureAnalysisBtn.setAttribute('href', signatureHref);
+  }
+} //updateStartAnalysisLink
+
+  
+
+  function updateClientStatusNote() {
+  if (!clientCreatedNote) return;
+
+  if (!state.clientRecordId && !state.customerId) {
+    clientCreatedNote.hidden = true;
+    return;
+  }
+
+  clientCreatedNote.hidden = false;
+
+  if (IS_PERSONAL_MODE) {
+    if (state.adjustedPhotoUrl) {
+      clientCreatedNote.textContent = 'Photo ready. Adjusted photo saved.';
+    } else if (state.originalPhotoUrl) {
+      clientCreatedNote.textContent = 'Your photo is ready for Draping Studio.';
+    } else {
+      clientCreatedNote.textContent = 'Upload a photo to begin.';
+    }
+    return;
+  }
+
+  if (IS_DIY_MODE) {
+    if (state.adjustedPhotoUrl) {
+      clientCreatedNote.textContent = 'Photo ready. Adjusted photo saved.';
+    } else if (state.originalPhotoUrl) {
+      clientCreatedNote.textContent = 'Your photo is ready for the Color Analysis Tool.';
+    } else {
+      clientCreatedNote.textContent = 'Upload a photo to begin your color analysis.';
+    }
+    return;
+  }
+
+  if (IS_SIMPLE_ANALYST) {
+    if (IS_CATOOL_FREE_TRIAL_FLOW) {
+      if (state.demoClientId) {
+        clientCreatedNote.textContent = state.adjustedPhotoUrl
+          ? 'Trial client ready. Adjusted photo saved in this browser.'
+          : 'Trial client ready. Adjust the photo or continue to the Color Analysis Tool.';
+      } else {
+        clientCreatedNote.textContent = 'Choose a preloaded trial client to begin.';
+      }
+      return;
+    }
+
+    if (state.adjustedPhotoUrl || state.originalPhotoUrl) {
+      clientCreatedNote.textContent = 'Working photo loaded. Click Start New Client to upload a new photo.';
+    } else {
+      clientCreatedNote.textContent = 'Upload a photo to start a new client.';
+    }
+    return;
+  }
+
+  if (state.adjustedPhotoUrl) {
+    clientCreatedNote.textContent = 'Client ready. Adjusted photo saved.';
+  } else if (state.originalPhotoUrl) {
+    clientCreatedNote.textContent = 'Client ready. Photo uploaded.';
+  } else {
+    clientCreatedNote.textContent = 'Client saved and ready for photo upload.';
+  }
+}
+async function loadSelectedPersonalStudioPhoto(photoId) {
+  if (!photoId || !APP_BASE_URL) return null;
+
+  try {
+    showLoadingView('Loading selected photo…');
+
+    const response = await fetch(
+      APP_BASE_URL +
+        '/api/get-personal-studio-photo?' +
+        new URLSearchParams({
+          photoId: photoId
+        }).toString()
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Could not load selected photo');
+    }
+
+    const photo = data.photo || null;
+    if (!photo) {
+      throw new Error('Selected photo was not found');
+    }
+
+    state.selectedPersonalPhotoId = photo.photoId || photoId;
+    state.customerId = photo.customerId || state.customerId || initialCustomerId;
+    state.clientRecordId = null;
+
+    state.originalPhotoUrl = photo.originalPhotoUrl || null;
+    state.adjustedPhotoUrl = photo.adjustedPhotoUrl || null;
+    state.activePhotoUrl =
+      photo.activePhotoUrl ||
+      photo.adjustedPhotoUrl ||
+      photo.originalPhotoUrl ||
+      null;
+
+    state.currentBasePhotoUrl = state.activePhotoUrl;
+    state.justUploadedNewPhoto = false;
+    state.hasLoadedPhoto = true;
+    state.workspaceOpen = true;
+
+    updateCustomerMeta();
+    updateStatus();
+    updateStartAnalysisLink();
+    syncVisibility();
+
+    showOriginalPhoto(state.originalPhotoUrl || state.activePhotoUrl);
+    resetControls();
+    showWorkingPhoto(state.activePhotoUrl);
+
+    hideLoadingView();
+
+    return photo;
+  } catch (error) {
+    console.error('Failed to load selected personal studio photo', error);
+    hideLoadingView();
+    alert(error.message || 'Could not load selected photo.');
+    return null;
+  }
+}
+async function loadPersonalStudioPhotos() {
+  if (!(IS_PERSONAL_MODE || IS_DIY_MODE) || !VIEWER_CUSTOMER_ID || !APP_BASE_URL) return [];
+
+  try {
+    const response = await fetch(
+      APP_BASE_URL +
+        '/api/get-personal-studio-photos?' +
+        new URLSearchParams({
+          customerId: VIEWER_CUSTOMER_ID
+        }).toString()
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Could not load personal studio photos');
+    }
+
+    return Array.isArray(data.photos) ? data.photos : [];
+  } catch (error) {
+    console.error('Failed to load personal studio photos', error);
+    return [];
+  }
+}
+
+function openPersonalPhotoInPrep(buttonEl) {
+  const photoId = String(buttonEl.dataset.photoId || '').trim();
+  const photoUrl = String(buttonEl.dataset.photoUrl || '').trim();
+  const originalUrl = String(buttonEl.dataset.originalUrl || '').trim();
+  const adjustedUrl = String(buttonEl.dataset.adjustedUrl || '').trim();
+
+  state.customerId = VIEWER_CUSTOMER_ID;
+  state.clientRecordId = null;
+  state.selectedPersonalPhotoId = photoId || null;
+  state.originalPhotoUrl = originalUrl || photoUrl || null;
+  state.adjustedPhotoUrl = adjustedUrl || null;
+  state.activePhotoUrl = photoUrl || null;
+  state.currentBasePhotoUrl = photoUrl || originalUrl || null;
+  state.justUploadedNewPhoto = false;
+
+  updateStatus();
+  updateStartAnalysisLink();
+  syncVisibility();
+  showOriginalPhoto(state.originalPhotoUrl);
+  resetControls();
+
+  if (state.activePhotoUrl) {
+    showWorkingPhoto(state.activePhotoUrl);
+  } else {
+    showWorkingPhoto(null);
+  }
+}
+
+function clearSelectedPersonalPhoto(photoId) {
+  if (String(state.selectedPersonalPhotoId || '').trim() !== String(photoId || '').trim()) {
+    return;
+  }
+
+  state.selectedPersonalPhotoId = null;
+  state.originalPhotoUrl = null;
+  state.adjustedPhotoUrl = null;
+  state.activePhotoUrl = null;
+  state.currentBasePhotoUrl = null;
+  state.hasLoadedPhoto = false;
+
+  const nextUrl = new URL(window.location.href);
+  nextUrl.searchParams.delete('photoId');
+  nextUrl.searchParams.delete('photoSource');
+  window.history.replaceState({}, '', nextUrl.toString());
+
+  updateStatus();
+  updateStartAnalysisLink();
+  syncVisibility();
+  showOriginalPhoto(null);
+  showWorkingPhoto(null);
+}
+
+async function archivePersonalStudioPhoto(photoId) {
+  if (!IS_PERSONAL_MODE || !photoId || !VIEWER_CUSTOMER_ID || !APP_BASE_URL) return;
+
+  if (!confirm('Delete this photo from your gallery?')) {
+    return;
+  }
+
+  try {
+    showLoading('Deleting photo…');
+
+    const response = await fetch(APP_BASE_URL + '/api/archive-personal-studio-photo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        customerId: VIEWER_CUSTOMER_ID,
+        photoId: photoId
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Could not delete photo');
+    }
+
+    clearSelectedPersonalPhoto(photoId);
+
+    const photos = await loadPersonalStudioPhotos();
+    renderPersonalStudioPhotos(photos);
+
+    hideLoading();
+  } catch (error) {
+    hideLoading();
+    console.error('Failed to delete personal studio photo', error);
+    alert(error.message || 'Could not delete photo.');
+  }
+}
+
+function renderPersonalStudioPhotos(photos) {
+  if (!personalLibraryGridEl || !personalLibraryEmptyEl) return;
+
+  personalLibraryGridEl.innerHTML = '';
+  personalLibraryEmptyEl.hidden = true;
+
+  if (!Array.isArray(photos) || !photos.length) {
+    if (personalLibraryHelpEl) {
+      personalLibraryHelpEl.textContent = 'Upload a photo to begin.';
+    }
+    personalLibraryEmptyEl.hidden = false;
+    return;
+  }
+
+  if (personalLibraryHelpEl) {
+    personalLibraryHelpEl.textContent = 'Choose a photo for Draping Studio or upload a new one.';
+  }
+
+personalLibraryEmptyEl.hidden = true;
+
+  personalLibraryGridEl.innerHTML = photos.map(function (photo) {
+    const thumb = photo.activePhotoUrl || photo.adjustedPhotoUrl || photo.originalPhotoUrl || '';
+    const photoId = String(photo.photoId || '').trim();
+    const updatedAt = photo.updatedAt
+      ? new Date(photo.updatedAt).toLocaleDateString()
+      : '';
+    const drapeQuery = new URLSearchParams({
+      mode: 'personal',
+      photoId: photoId,
+      photoSource: 'PersonalStudioPhotos'
+    });
+
+    if (IS_SAMPLE_TRIAL_REQUEST || IS_SAMPLE_USER) {
+      drapeQuery.set('trial', 'sample');
+    }
+
+    return `
+      <div
+        class="ycs-photo-prep-personal-card ycs-prep-open-personal-photo-btn"
+        data-photo-id="${escapeHtml(photoId)}"
+        data-photo-url="${escapeHtml(thumb)}"
+        data-original-url="${escapeHtml(photo.originalPhotoUrl || '')}"
+        data-adjusted-url="${escapeHtml(photo.adjustedPhotoUrl || '')}"
+        role="button"
+        tabindex="0"
+      >
+        <div class="ycs-photo-prep-personal-thumb">
+          ${thumb ? `<img src="${escapeHtml(thumb)}" alt="Saved photo" />` : `<div class="ycs-photo-prep-empty"><p>No image</p></div>`}
+        </div>
+
+        <div class="ycs-photo-prep-personal-body">
+          <div class="ycs-photo-prep-personal-meta">
+            ${updatedAt ? `Updated ${escapeHtml(updatedAt)}` : 'Saved photo'}
+          </div>
+
+          <div class="ycs-photo-prep-personal-actions">
+            <a
+  class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary"
+  href="/pages/photo-draping?${drapeQuery.toString()}"
+>
+  Open Draping Studio
+</a>
+            <button
+              type="button"
+              class="ycs-photo-prep-btn ycs-photo-prep-btn--danger ycs-prep-delete-personal-photo-btn"
+              data-photo-id="${escapeHtml(photoId)}"
+            >
+              Delete Photo
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function openFreeTrialClient(clientId) {
+  const client = getFreeTrialClient(clientId);
+  if (!client) return;
+
+  const adjustedUrl = getStoredFreeTrialAdjustedPhoto(client.id);
+  const activeUrl = adjustedUrl || client.photoUrl;
+
+  state.demoClientId = client.id;
+  state.customerId = VIEWER_CUSTOMER_ID;
+  state.clientRecordId = null;
+  state.selectedPersonalPhotoId = null;
+  state.selectedPhotoSource = 'DemoClient';
+  state.originalPhotoUrl = client.photoUrl;
+  state.adjustedPhotoUrl = adjustedUrl || null;
+  state.activePhotoUrl = activeUrl;
+  state.currentBasePhotoUrl = activeUrl;
+  state.justUploadedNewPhoto = false;
+  state.firstName = client.firstName;
+  state.lastName = client.lastName;
+  state.email = client.email;
+  state.workspaceOpen = true;
+
+  const nextUrl = new URL(window.location.href);
+  nextUrl.searchParams.set('mode', 'trade');
+  nextUrl.searchParams.set('workflow', 'color-analysis');
+  nextUrl.searchParams.set('demoClient', client.id);
+  nextUrl.searchParams.delete('clientRecordId');
+  nextUrl.searchParams.delete('customerId');
+  nextUrl.searchParams.delete('adminCustomerId');
+  nextUrl.searchParams.delete('photoId');
+  nextUrl.searchParams.delete('photoSource');
+  window.history.replaceState({}, '', nextUrl.toString());
+
+  if (firstNameInput) firstNameInput.value = client.firstName;
+  if (lastNameInput) lastNameInput.value = client.lastName;
+  if (emailInput) emailInput.value = client.email;
+
+  updateStatus();
+  updateCustomerMeta();
+  updateStartAnalysisLink();
+  updateBackLink();
+  syncVisibility();
+  showOriginalPhoto(client.photoUrl);
+  resetControls();
+  showWorkingPhoto(activeUrl);
+}
+
+
+
+  function updateCustomerMeta() {
+    if (!customerMetaEl) return;
+
+    const firstName = (state.firstName || '').trim();
+    const lastName = (state.lastName || '').trim();
+    const fullName = [firstName, lastName].filter(Boolean).join(' ');
+
+    customerNameEl.textContent = fullName || 'Name not available';
+    customerEmailEl.textContent = state.email || 'Email not available';
+  }
+
+  function syncClientMetaFromCreateInputs() {
+    const firstName = firstNameInput ? String(firstNameInput.value || '').trim() : '';
+    const lastName = lastNameInput ? String(lastNameInput.value || '').trim() : '';
+    const email = emailInput ? String(emailInput.value || '').trim() : '';
+
+    state.firstName = firstName || state.firstName || null;
+    state.lastName = lastName || state.lastName || null;
+    state.email = email || state.email || null;
+  }
+
+  function getClientMetaForSave() {
+    const firstName = firstNameInput ? String(firstNameInput.value || '').trim() : '';
+    const lastName = lastNameInput ? String(lastNameInput.value || '').trim() : '';
+    const email = emailInput ? String(emailInput.value || '').trim() : '';
+
+    return {
+      firstName: firstName || state.firstName || '',
+      lastName: lastName || state.lastName || '',
+      email: email || state.email || ''
+    };
+  }
+
+  function syncClientMetaFromSaveResponse(saveData) {
+    state.firstName = saveData.firstName || state.firstName || null;
+    state.lastName = saveData.lastName || state.lastName || null;
+    state.email = saveData.email || state.email || null;
+  }
+
+  function syncTradePhotoPrepVisibility() {
+  if (!IS_TRADE) return;
+
+  const hasClient = !!state.clientRecordId;
+
+  if (createClientPanel) createClientPanel.hidden = hasClient || state.workspaceOpen;
+  if (customerMetaEl) customerMetaEl.hidden = !hasClient;
+  if (photoPrepWorkspace) photoPrepWorkspace.hidden = !(hasClient && state.workspaceOpen);
+
+  updateClientStatusNote();
+}
+
+function syncAdminPhotoPrepVisibility() {
+  if (!IS_ADMIN) return;
+  if (addMemberPhotoBtn) {
+  addMemberPhotoBtn.hidden = !IS_MEMBER_PHOTO_MODE;
+}
+
+  const hasClient = !!(state.clientRecordId || state.customerId);
+
+  if (IS_MEMBER_PHOTO_MODE) {
+    if (createClientPanel) createClientPanel.hidden = true;
+    if (customerMetaEl) customerMetaEl.hidden = false;
+    if (photoPrepWorkspace) photoPrepWorkspace.hidden = !(hasClient && state.workspaceOpen);
+    updateClientStatusNote();
+    return;
+  }
+
+  if (createClientPanel) createClientPanel.hidden = !!state.workspaceOpen;
+  if (customerMetaEl) customerMetaEl.hidden = !hasClient;
+  if (photoPrepWorkspace) photoPrepWorkspace.hidden = !(hasClient && state.workspaceOpen);
+
+  updateClientStatusNote();
+}
+function syncSimpleAnalystPhotoPrepVisibility() {
+  if (!IS_SIMPLE_ANALYST) return;
+
+  if (IS_CATOOL_FREE_TRIAL_FLOW) {
+    const hasDemoClient = !!state.demoClientId;
+    if (createClientPanel) createClientPanel.hidden = hasDemoClient && state.workspaceOpen;
+    if (customerMetaEl) customerMetaEl.hidden = !hasDemoClient;
+    if (photoPrepWorkspace) photoPrepWorkspace.hidden = !(hasDemoClient && state.workspaceOpen);
+    if (uploadBtn) uploadBtn.hidden = true;
+    if (replaceBtn) replaceBtn.hidden = true;
+    if (editClientBtn) editClientBtn.hidden = true;
+    updateClientStatusNote();
+    return;
+  }
+
+  const hasClient = !!state.clientRecordId || !!state.customerId;
+
+  if (createClientPanel) createClientPanel.hidden = hasClient || state.workspaceOpen;
+  if (customerMetaEl) customerMetaEl.hidden = !hasClient;
+  if (photoPrepWorkspace) photoPrepWorkspace.hidden = !(hasClient && state.workspaceOpen);
+
+  updateClientStatusNote();
+}
+
+function syncPersonalPhotoPrepVisibility() {
+  if (!IS_PERSONAL_MODE) return;
+
+  if (createClientPanel) createClientPanel.hidden = true;
+  if (customerMetaEl) customerMetaEl.hidden = true;
+  if (clientCreatedNote) clientCreatedNote.hidden = true;
+  if (personalLibraryEl) personalLibraryEl.hidden = false;
+
+  if (photoPrepWorkspace) {
+    photoPrepWorkspace.hidden = !state.activePhotoUrl;
+  }
+
+  if (workingEmptyEl) {
+    workingEmptyEl.hidden = true;
+  }
+
+  updateClientStatusNote();
+}
+
+function syncDiyPhotoPrepVisibility() {
+  if (!IS_DIY_MODE) return;
+
+  if (createClientPanel) createClientPanel.hidden = true;
+  if (customerMetaEl) customerMetaEl.hidden = true;
+  if (personalLibraryEl) personalLibraryEl.hidden = true;
+  if (editClientBtn) editClientBtn.hidden = true;
+  if (addMemberPhotoBtn) addMemberPhotoBtn.hidden = true;
+
+  if (photoPrepWorkspace) {
+    photoPrepWorkspace.hidden = false;
+  }
+
+  if (workingEmptyEl) {
+    workingEmptyEl.hidden = !!state.activePhotoUrl;
+  }
+
+  updateClientStatusNote();
+}
+
+function syncVisibility() {
+  syncTradePhotoPrepVisibility();
+  syncAdminPhotoPrepVisibility();
+  syncSimpleAnalystPhotoPrepVisibility();
+  syncPersonalPhotoPrepVisibility();
+  syncDiyPhotoPrepVisibility();
+}
+
+function updateStatus() {
+    if (originalStatusEl) originalStatusEl.textContent = state.originalPhotoUrl ? 'Saved' : 'Not saved';
+    if (adjustedStatusEl) adjustedStatusEl.textContent = state.adjustedPhotoUrl ? 'Saved' : 'Not saved';
+
+    if (!activeStatusEl) return;
+
+    if (state.activePhotoUrl && state.adjustedPhotoUrl && state.activePhotoUrl === state.adjustedPhotoUrl) {
+      activeStatusEl.textContent = 'Adjusted photo';
+    } else if (state.activePhotoUrl && state.originalPhotoUrl && state.activePhotoUrl === state.originalPhotoUrl) {
+      activeStatusEl.textContent = 'Original photo';
+    } else if (state.activePhotoUrl) {
+      activeStatusEl.textContent = 'Saved';
+    } else {
+      activeStatusEl.textContent = 'None';
+    }
+  }
+
+  function applyPreviewZoom() {
+  const zoom = state.previewZoom / 100;
+  const transform =
+    'translate(calc(-50% + ' + state.previewOffsetX + 'px), calc(-50% + ' + state.previewOffsetY + 'px)) scale(' + zoom + ')';
+
+  if (workingImg) workingImg.style.transform = transform;
+  if (originalImg) originalImg.style.transform = transform;
+}
+
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function renderPhotoQualityResult(photoQuality) {
+  if (!IS_ADMIN || !photoQualityResultEl) return;
+
+  if (!photoQuality) {
+    photoQualityResultEl.hidden = true;
+    photoQualityResultEl.innerHTML = '';
+    return;
+  }
+
+  if (photoQuality.error) {
+    photoQualityResultEl.innerHTML =
+      '<div class="ycs-photo-prep-quality__head">' +
+        '<p class="ycs-photo-prep-quality__title">Photo quality check</p>' +
+        '<p class="ycs-photo-prep-quality__score">Not completed</p>' +
+      '</div>' +
+      '<p class="ycs-photo-prep-quality__meta">' + escapeHtml(photoQuality.details || photoQuality.error) + '</p>';
+    photoQualityResultEl.hidden = false;
+    return;
+  }
+
+  const issues = Array.isArray(photoQuality.issues) ? photoQuality.issues : [];
+  const recommendations = Array.isArray(photoQuality.recommendations) ? photoQuality.recommendations : [];
+  const issueItems = issues.length
+    ? issues.map(function (issue) { return '<li>' + escapeHtml(issue) + '</li>'; }).join('')
+    : '<li>No major issues detected.</li>';
+  const recommendationItems = recommendations.length
+    ? recommendations.map(function (item) { return '<li>' + escapeHtml(item) + '</li>'; }).join('')
+    : '';
+
+  photoQualityResultEl.innerHTML =
+    '<div class="ycs-photo-prep-quality__head">' +
+      '<p class="ycs-photo-prep-quality__title">Photo quality check</p>' +
+      '<p class="ycs-photo-prep-quality__score">' +
+        escapeHtml(photoQuality.status) + ' • ' + escapeHtml(photoQuality.score) + '/100' +
+      '</p>' +
+    '</div>' +
+    '<p class="ycs-photo-prep-quality__meta">Evaluation ID: ' + escapeHtml(photoQuality.evaluation_id || '—') + '</p>' +
+    '<ul>' + issueItems + '</ul>' +
+    (recommendationItems ? '<ul>' + recommendationItems + '</ul>' : '');
+
+  photoQualityResultEl.hidden = false;
+}
+
+  function showOriginalPhoto(url) {
+    if (!originalImg || !originalWrap || !originalEmptyEl) return;
+
+    if (!url) {
+      originalWrap.hidden = true;
+      originalEmptyEl.hidden = false;
+      originalImg.removeAttribute('src');
+      return;
+    }
+
+    originalImg.onload = function () {
+      originalWrap.hidden = false;
+      originalEmptyEl.hidden = true;
+    };
+
+    originalImg.onerror = function () {
+      originalWrap.hidden = true;
+      originalEmptyEl.hidden = false;
+    };
+
+    originalImg.src = url;
+
+    if (originalImg.complete && originalImg.naturalWidth > 0) {
+      originalWrap.hidden = false;
+      originalEmptyEl.hidden = true;
+    }
+  }
+
+  function showWorkingPhoto(url) {
+    if (!workingImg || !workingWrap || !workingEmptyEl) return;
+
+    if (!url) {
+      state.hasLoadedPhoto = false;
+      workingWrap.hidden = true;
+      workingEmptyEl.hidden = false;
+      workingImg.removeAttribute('src');
+      updateStatus();
+      hideLoading();
+      return;
+    }
+
+    state.hasLoadedPhoto = false;
+
+    workingImg.onload = function () {
+      state.hasLoadedPhoto = true;
+      workingWrap.hidden = false;
+      workingEmptyEl.hidden = true;
+      hideLoading();
+    };
+
+    workingImg.onerror = function () {
+      hideLoading();
+      alert('The photo could not be displayed.');
+    };
+
+    workingImg.src = url;
+
+    if (workingImg.complete && workingImg.naturalWidth > 0) {
+      state.hasLoadedPhoto = true;
+      workingWrap.hidden = false;
+      workingEmptyEl.hidden = true;
+      hideLoading();
+    }
+  }
+
+  function resetPreviewOnly() {
+    state.originalPhotoUrl = null;
+    state.adjustedPhotoUrl = null;
+    state.activePhotoUrl = null;
+    state.currentBasePhotoUrl = null;
+    state.hasLoadedPhoto = false;
+
+    showOriginalPhoto(null);
+    showWorkingPhoto(null);
+    updateStatus();
+    updateClientStatusNote();
+  }
+
+  function resetControls() {
+    state.controls.brightness = 100;
+    state.controls.contrast = 100;
+    state.controls.temperature = 0;
+    state.previewZoom = 100;
+state.previewOffsetX = 0;
+state.previewOffsetY = 0;
+
+    if (zoomEl) zoomEl.value = '100';
+    if (zoomValueEl) zoomValueEl.textContent = '100%';
+
+    if (brightnessEl) brightnessEl.value = '100';
+    if (contrastEl) contrastEl.value = '100';
+    if (temperatureEl) temperatureEl.value = '0';
+
+    if (brightnessValueEl) brightnessValueEl.textContent = '100%';
+    if (contrastValueEl) contrastValueEl.textContent = '100%';
+    if (temperatureValueEl) temperatureValueEl.textContent = 'Neutral';
+
+    applyPreviewZoom();
+    applyPreviewFilters();
+  }
+
+  function populateEditClientFields() {
+    if (editFirstNameInput) editFirstNameInput.value = state.firstName || '';
+    if (editLastNameInput) editLastNameInput.value = state.lastName || '';
+    if (editEmailInput) editEmailInput.value = state.email || '';
+  }
+
+  function closeEditClientPanel() {
+    if (editClientPanel) editClientPanel.hidden = true;
+  }
+
+  function openEditClientPanel() {
+    populateEditClientFields();
+    if (editClientPanel) editClientPanel.hidden = false;
+  }
+
+  function clearSelectedClient() {
+    state.customerId = null;
+    state.clientRecordId = null;
+    state.firstName = null;
+    state.lastName = null;
+    state.email = null;
+    state.workspaceOpen = false;
+
+    if (customerInput) customerInput.value = '';
+    if (firstNameInput) firstNameInput.value = '';
+    if (lastNameInput) lastNameInput.value = '';
+    if (emailInput) emailInput.value = '';
+
+    closeEditClientPanel();
+    resetPreviewOnly();
+    resetControls();
+    updateCustomerMeta();
+    updateStartAnalysisLink();
+    updateBackLink();
+    syncVisibility();
+
+    const nextUrl = new URL(window.location.href);
+    nextUrl.searchParams.delete('clientRecordId');
+    nextUrl.searchParams.delete('adminCustomerId');
+    nextUrl.searchParams.delete('returnUrl');
+    window.history.replaceState({}, '', nextUrl.pathname);
+
+    if (CAN_USE_CLIENT_MANAGEMENT && !IS_MEMBER_PHOTO_MODE) {
+  loadRecentClients();
+}
+  }
+
+  function setAdminClientStateFromForm() {
+    const customerId = customerInput ? String(customerInput.value || '').trim() : '';
+    const firstName = firstNameInput ? String(firstNameInput.value || '').trim() : '';
+    const lastName = lastNameInput ? String(lastNameInput.value || '').trim() : '';
+    const email = emailInput ? String(emailInput.value || '').trim() : '';
+
+    if (!customerId) {
+      alert('Please enter a customer ID.');
+      return null;
+    }
+
+    if (!firstName || !lastName) {
+      alert('Please enter first name and last name.');
+      return null;
+    }
+
+    return {
+      customerId: customerId,
+      firstName: firstName,
+      lastName: lastName,
+      email: email || null
+    };
+  }
+
+  function renderRecentClients(clients) {
+    if (!recentClientsList) return;
+
+    if (IS_CATOOL_FREE_TRIAL_FLOW) {
+      const trialClientCards = FREE_TRIAL_CLIENTS.map(function (client) {
+        const adjustedUrl = getStoredFreeTrialAdjustedPhoto(client.id);
+        const thumb = adjustedUrl || client.photoUrl;
+
+        return `
+          <div class="ycs-photo-prep-recent-item">
+            <div class="ycs-photo-prep-recent-copy">
+              <p class="ycs-photo-prep-recent-name">${escapeHtml(client.firstName + ' ' + client.lastName)}</p>
+              <p class="ycs-photo-prep-recent-meta">Preloaded trial client${adjustedUrl ? ' · Adjusted photo saved' : ''}</p>
+            </div>
+            <img src="${escapeHtml(thumb)}" alt="" style="width: 54px; height: 64px; object-fit: cover; border-radius: 8px; border: 1px solid #ece7df;" />
+            <button
+              type="button"
+              class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary ycs-prep-open-demo-client-btn"
+              data-demo-client-id="${escapeHtml(client.id)}"
+            >
+              Open
+            </button>
+          </div>
+        `;
+      }).join('');
+
+      recentClientsList.innerHTML =
+        trialClientCards +
+        `
+          <div class="ycs-photo-prep-recent-item">
+            <div class="ycs-photo-prep-recent-copy">
+              <p class="ycs-photo-prep-recent-name">Upload Your Own Client</p>
+              <p class="ycs-photo-prep-recent-meta">Unlock the full Color Analysis Tool to create your own clients and upload photos.</p>
+            </div>
+            <a
+              href="https://yourcolorstyle.com/products/color-analysis-tool"
+              class="ycs-photo-prep-btn"
+            >
+              Unlock
+            </a>
+          </div>
+        `;
+      return;
+    }
+
+    if (!Array.isArray(clients) || !clients.length) {
+      recentClientsList.innerHTML = '<p class="ycs-photo-prep-help" style="margin-top: 0;">No recent clients yet.</p>';
+      return;
+    }
+
+    recentClientsList.innerHTML = clients.map(function (client) {
+      const fullName = [client.firstName || '', client.lastName || ''].filter(Boolean).join(' ').trim() || 'Unnamed client';
+      const email = client.email || 'No email';
+      const clientRecordId = client.clientRecordId || '';
+
+      return `
+        <div class="ycs-photo-prep-recent-item">
+          <div class="ycs-photo-prep-recent-copy">
+            <p class="ycs-photo-prep-recent-name">${escapeHtml(fullName)}</p>
+            <p class="ycs-photo-prep-recent-meta">${escapeHtml(email)}</p>
+          </div>
+          <button
+            type="button"
+            class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary ycs-prep-open-client-btn"
+            data-client-record-id="${escapeHtml(clientRecordId)}"
+            data-first-name="${escapeHtml(client.firstName || '')}"
+            data-last-name="${escapeHtml(client.lastName || '')}"
+            data-email="${escapeHtml(client.email || '')}"
+          >
+            Open
+          </button>
+        </div>
+      `;
+    }).join('');
+  }
+
+  async function initSimpleAnalystFlow() {
+  if (!IS_SIMPLE_ANALYST || !VIEWER_CUSTOMER_ID) return;
+
+  if (IS_CATOOL_FREE_TRIAL_FLOW) {
+    state.customerId = VIEWER_CUSTOMER_ID;
+    state.clientRecordId = null;
+    updateStartAnalysisLink();
+    updateBackLink();
+    syncVisibility();
+    renderRecentClients([]);
+
+    if (state.demoClientId) {
+      openFreeTrialClient(state.demoClientId);
+    }
+    return;
+  }
+
+  state.customerId = VIEWER_CUSTOMER_ID;
+  state.clientRecordId = null;
+
+  updateStartAnalysisLink();
+  updateBackLink();
+  syncVisibility();
+
+  showLoadingView('Loading saved photo…');
+await fetchPhoto(VIEWER_CUSTOMER_ID, { silentIfMissing: true });
+hideLoadingView();
+}
+
+  async function loadRecentClients() {
+    if (!CAN_USE_CLIENT_MANAGEMENT || !VIEWER_CUSTOMER_ID || !recentClientsList) return;
+
+    if (IS_CATOOL_FREE_TRIAL_FLOW) {
+      renderRecentClients([]);
+      return;
+    }
+
+    try {
+      recentClientsList.innerHTML = '<p class="ycs-photo-prep-help" style="margin-top: 0;">Loading recent clients…</p>';
+
+      const response = await fetch(
+        APP_BASE_URL + '/api/get-consultant-clients?consultantId=' + encodeURIComponent(VIEWER_CUSTOMER_ID)
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Could not load recent clients');
+      }
+
+      renderRecentClients(data.clients || []);
+    } catch (error) {
+      console.error(error);
+      recentClientsList.innerHTML = '<p class="ycs-photo-prep-help" style="margin-top: 0;">Could not load recent clients.</p>';
+    }
+  }
+
+  async function saveAdminClient() {
+  if (!IS_ADMIN) return;
+
+  if (!VIEWER_CUSTOMER_ID) {
+    alert('Missing admin customer ID. Please refresh and try again.');
+    return;
+  }
+
+  const firstName = firstNameInput ? String(firstNameInput.value || '').trim() : '';
+  const lastName = lastNameInput ? String(lastNameInput.value || '').trim() : '';
+  const email = emailInput ? String(emailInput.value || '').trim() : '';
+
+  if (!firstName || !lastName) {
+    alert('Please enter first name and last name.');
+    return;
+  }
+
+  try {
+    showLoading('Creating client…');
+
+    const response = await fetch(APP_BASE_URL + '/api/create-consultant-client', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        consultantId: VIEWER_CUSTOMER_ID,
+        firstName: firstName,
+        lastName: lastName,
+        email: email
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.clientRecordId) {
+      console.error('create admin client response', data);
+      throw new Error(
+        data.details?.error?.message ||
+        data.details?.error ||
+        data.error ||
+        'Could not create client'
+      );
+    }
+
+    state.clientRecordId = data.clientRecordId;
+    state.customerId = null;
+    state.firstName = firstName;
+    state.lastName = lastName;
+    state.email = email || null;
+    state.workspaceOpen = true;
+
+    const nextUrl = new URL(window.location.href);
+    nextUrl.searchParams.set('clientRecordId', data.clientRecordId);
+    nextUrl.searchParams.delete('adminCustomerId');
+    nextUrl.searchParams.set('returnUrl', returnUrl);
+    window.history.replaceState({}, '', nextUrl.toString());
+
+    updateCustomerMeta();
+    updateStartAnalysisLink();
+    updateBackLink();
+    syncVisibility();
+    closeEditClientPanel();
+
+    if (customerInput) customerInput.value = '';
+    if (firstNameInput) firstNameInput.value = '';
+    if (lastNameInput) lastNameInput.value = '';
+    if (emailInput) emailInput.value = '';
+
+    await loadRecentClients();
+
+    hideLoading();
+    alert('Client created.');
+  } catch (error) {
+    hideLoading();
+    console.error(error);
+    alert(error.message || 'Could not create client.');
+  }
+}
+
+  async function saveAdminClientInfo() {
+    if (state.clientRecordId) {
+      await saveConsultantClientInfo();
+      return;
+    }
+
+    if (!state.customerId) {
+      alert('No client selected.');
+      return;
+    }
+
+    const firstName = editFirstNameInput ? String(editFirstNameInput.value || '').trim() : '';
+    const lastName = editLastNameInput ? String(editLastNameInput.value || '').trim() : '';
+    const email = editEmailInput ? String(editEmailInput.value || '').trim() : '';
+
+    if (!firstName || !lastName) {
+      alert('Please enter first name and last name.');
+      return;
+    }
+
+    state.firstName = firstName;
+    state.lastName = lastName;
+    state.email = email || null;
+
+    if (firstNameInput) firstNameInput.value = firstName;
+    if (lastNameInput) lastNameInput.value = lastName;
+    if (emailInput) emailInput.value = email;
+
+    updateCustomerMeta();
+    closeEditClientPanel();
+    alert('Client info saved.');
+  }
+
+  async function createConsultantClient() {
+    if (!CAN_USE_CLIENT_MANAGEMENT) return;
+    if (IS_CATOOL_FREE_TRIAL_FLOW) return;
+
+    if (!VIEWER_CUSTOMER_ID) {
+      alert('Missing consultant ID. Please refresh and try again.');
+      return;
+    }
+
+    const firstName = firstNameInput ? String(firstNameInput.value || '').trim() : '';
+    const lastName = lastNameInput ? String(lastNameInput.value || '').trim() : '';
+    const email = emailInput ? String(emailInput.value || '').trim() : '';
+
+    if (!firstName || !lastName) {
+      alert('Please enter first name and last name.');
+      return;
+    }
+
+    try {
+      showLoading('Creating client…');
+
+      const response = await fetch(APP_BASE_URL + '/api/create-consultant-client', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          consultantId: VIEWER_CUSTOMER_ID,
+          firstName: firstName,
+          lastName: lastName,
+          email: email
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.clientRecordId) {
+        console.error('create consultant client response', data);
+        throw new Error(
+          data.details?.error?.message ||
+          data.details?.error ||
+          data.error ||
+          'Could not create client'
+        );
+      }
+
+      state.clientRecordId = data.clientRecordId;
+      state.customerId = null;
+      state.firstName = firstName;
+      state.lastName = lastName;
+      state.email = email || null;
+      state.workspaceOpen = true;
+
+      const nextUrl = new URL(window.location.href);
+      nextUrl.searchParams.set('clientRecordId', data.clientRecordId);
+      nextUrl.searchParams.delete('adminCustomerId');
+      nextUrl.searchParams.set('returnUrl', returnUrl);
+      window.history.replaceState({}, '', nextUrl.toString());
+
+      updateCustomerMeta();
+      updateStartAnalysisLink();
+      updateBackLink();
+      syncVisibility();
+      closeEditClientPanel();
+
+      if (firstNameInput) firstNameInput.value = '';
+      if (lastNameInput) lastNameInput.value = '';
+      if (emailInput) emailInput.value = '';
+
+      await loadRecentClients();
+
+      hideLoading();
+      alert('Client created.');
+    } catch (error) {
+      hideLoading();
+      console.error(error);
+      alert(error.message || 'Could not create client.');
+    }
+  }
+
+  async function saveConsultantClientInfo() {
+    if (!state.clientRecordId) {
+      alert('No client selected.');
+      return;
+    }
+
+    const firstName = editFirstNameInput ? String(editFirstNameInput.value || '').trim() : '';
+    const lastName = editLastNameInput ? String(editLastNameInput.value || '').trim() : '';
+    const email = editEmailInput ? String(editEmailInput.value || '').trim() : '';
+
+    if (!firstName || !lastName) {
+      alert('Please enter first name and last name.');
+      return;
+    }
+
+    try {
+      showLoading('Saving client info…');
+
+      const response = await fetch(APP_BASE_URL + '/api/update-consultant-client', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientRecordId: state.clientRecordId,
+          firstName: firstName,
+          lastName: lastName,
+          email: email
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        console.error('update consultant client response', data);
+        throw new Error(
+          data.details?.error?.message ||
+          data.details?.error ||
+          data.error ||
+          'Could not save client info'
+        );
+      }
+
+      state.firstName = firstName;
+      state.lastName = lastName;
+      state.email = email || null;
+
+      if (firstNameInput) firstNameInput.value = firstName;
+      if (lastNameInput) lastNameInput.value = lastName;
+      if (emailInput) emailInput.value = email;
+
+      updateCustomerMeta();
+      closeEditClientPanel();
+      await loadRecentClients();
+
+      hideLoading();
+      alert('Client info saved.');
+    } catch (error) {
+      hideLoading();
+      console.error(error);
+      alert(error.message || 'Could not save client info.');
+    }
+  }
+
+  async function fetchPhoto(recordId, options) {
+  options = options || {};
+
+  const silentIfMissing = !!options.silentIfMissing;
+  const optionPhotoId = String(options.photoId || '').trim();
+  const optionPhotoSource = String(options.photoSource || '').trim();
+  const forceCustomerRecord = !!options.forceCustomerRecord;
+
+  if (optionPhotoId) {
+    state.selectedPersonalPhotoId = optionPhotoId;
+  }
+
+  if (optionPhotoSource) {
+    state.selectedPhotoSource = optionPhotoSource;
+  }
+
+  if (!recordId) {
+    if (!silentIfMissing) alert('Missing record ID.');
+    return;
+  }
+
+  const shouldLoadAsClientRecord =
+    !forceCustomerRecord &&
+    !IS_MEMBER_PHOTO_MODE &&
+    CAN_USE_CLIENT_MANAGEMENT &&
+    String(recordId) !== String(VIEWER_CUSTOMER_ID);
+
+  if (shouldLoadAsClientRecord) {
+    state.clientRecordId = recordId;
+    state.customerId = null;
+  } else {
+    state.customerId = recordId;
+    state.clientRecordId = null;
+  }
+
+  state.workspaceOpen = true;
+
+  if (createClientPanel) {
+    createClientPanel.hidden = true;
+  }
+
+  closeEditClientPanel();
+  showLoadingView('Loading saved photo…');
+  showLoading('Loading saved photo…');
+
+  try {
+    const lookupParams = new URLSearchParams();
+
+    if (shouldLoadAsClientRecord) {
+      lookupParams.set('clientRecordId', recordId);
+    } else {
+      lookupParams.set('customerId', recordId);
+    }
+
+    if (optionPhotoId) {
+      lookupParams.set('photoId', optionPhotoId);
+    }
+
+    if (optionPhotoSource) {
+      lookupParams.set('photoSource', optionPhotoSource);
+    }
+
+    const lookupUrl = APP_BASE_URL + '/api/get-photo?' + lookupParams.toString();
+
+    const res = await fetch(lookupUrl);
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.error || 'Could not load photo');
+    }
+
+    state.originalPhotoUrl = data.originalPhotoUrl || null;
+    state.adjustedPhotoUrl = data.adjustedPhotoUrl || null;
+    state.activePhotoUrl = data.activePhotoUrl || data.photoUrl || null;
+    state.currentBasePhotoUrl = state.activePhotoUrl || state.originalPhotoUrl || null;
+
+    state.justUploadedNewPhoto = false;
+
+    state.firstName = data.firstName || state.firstName || null;
+    state.lastName = data.lastName || state.lastName || null;
+    state.email = data.email || state.email || null;
+
+    if (firstNameInput) firstNameInput.value = state.firstName || '';
+    if (lastNameInput) lastNameInput.value = state.lastName || '';
+    if (emailInput) emailInput.value = state.email || '';
+
+    const nextUrl = new URL(window.location.href);
+
+    if (shouldLoadAsClientRecord) {
+      nextUrl.searchParams.set('clientRecordId', state.clientRecordId);
+      nextUrl.searchParams.delete('adminCustomerId');
+      nextUrl.searchParams.delete('customerId');
+    } else {
+      nextUrl.searchParams.set('customerId', state.customerId);
+      nextUrl.searchParams.delete('clientRecordId');
+      nextUrl.searchParams.delete('adminCustomerId');
+    }
+
+    if (state.selectedPersonalPhotoId) {
+      nextUrl.searchParams.set('photoId', state.selectedPersonalPhotoId);
+    }
+
+    if (state.selectedPhotoSource) {
+      nextUrl.searchParams.set('photoSource', state.selectedPhotoSource);
+    }
+
+    nextUrl.searchParams.set('returnUrl', returnUrl);
+    window.history.replaceState({}, '', nextUrl.toString());
+
+    updateStatus();
+    updateCustomerMeta();
+    updateStartAnalysisLink();
+    updateBackLink();
+    syncVisibility();
+
+    hideLoadingView();
+
+    showOriginalPhoto(state.originalPhotoUrl);
+    resetControls();
+
+    if (state.activePhotoUrl) {
+      showWorkingPhoto(state.activePhotoUrl);
+
+      setTimeout(function () {
+        if (workingImg && workingImg.complete && workingImg.naturalWidth > 0) {
+          workingWrap.hidden = false;
+          workingEmptyEl.hidden = true;
+          state.hasLoadedPhoto = true;
+          hideLoading();
+        }
+      }, 800);
+    } else {
+      showWorkingPhoto(null);
+    }
+  } catch (error) {
+    hideLoading();
+    resetPreviewOnly();
+    updateCustomerMeta();
+    updateStartAnalysisLink();
+    updateBackLink();
+    syncVisibility();
+    hideLoadingView();
+
+    if (!silentIfMissing) {
+      console.error(error);
+      alert(error.message || 'Could not load photo');
+    }
+  }
+}// fetchPhoto
+
+  function readFileAsDataUrl(file) {
+    return new Promise(function (resolve, reject) {
+      const reader = new FileReader();
+      reader.onload = function () { resolve(reader.result); };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  async function resizeImageFile(file, maxWidth, quality) {
+    maxWidth = maxWidth || 900;
+    quality = quality || 0.72;
+
+    const dataUrl = await readFileAsDataUrl(file);
+
+    const img = await new Promise(function (resolve, reject) {
+      const image = new Image();
+      image.onload = function () { resolve(image); };
+      image.onerror = reject;
+      image.src = dataUrl;
+    });
+
+    const scale = Math.min(1, maxWidth / img.width);
+    const width = Math.round(img.width * scale);
+    const height = Math.round(img.height * scale);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, width, height);
+
+    return canvas.toDataURL('image/jpeg', quality);
+  }
+
+  async function compressDataUrlForUpload(dataUrl, maxWidth, quality) {
+    maxWidth = maxWidth || 1200;
+    quality = quality || 0.86;
+
+    const img = await new Promise(function (resolve, reject) {
+      const image = new Image();
+      image.onload = function () { resolve(image); };
+      image.onerror = reject;
+      image.src = dataUrl;
+    });
+
+    const scale = Math.min(1, maxWidth / img.width);
+    const width = Math.round(img.width * scale);
+    const height = Math.round(img.height * scale);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, width, height);
+
+    return canvas.toDataURL('image/webp', quality);
+  }
+
+  async function removeBackgroundFromFile(file) {
+  const imageBase64 = await resizeImageFile(file, 900, 0.72);
+
+  const response = await fetch(APP_BASE_URL + '/api/remove-background', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      imageBase64,
+      customerId: VIEWER_CUSTOMER_ID,
+      tool: IS_PERSONAL_MODE ? 'photo-draping' : 'photo-prep',
+      mode: IS_PERSONAL_MODE ? 'personal' : (IS_DIY_MODE ? 'diy' : 'trade'),
+      isAdmin: IS_ADMIN,
+      isTrade: IS_TRADE,
+      isCatool: IS_CATOOL,
+      isCatoolGrowth: IS_CATOOL_GROWTH,
+      isCatoolFree: IS_CATOOL_FREE,
+      isDiyCatool: IS_DIY_CATOOL,
+      isVip: IS_VIP,
+      hasDrapingStudio: HAS_DRAPING_STUDIO_ACCESS,
+      hasDrapingStudioStarter: HAS_DRAPING_STUDIO_STARTER,
+      hasDrapingStudioFull: HAS_DRAPING_STUDIO_FULL,
+      isSampleUser: (IS_SAMPLE_USER || IS_SAMPLE_TRIAL_REQUEST)
+    })
+  });
+
+  const rawText = await response.text();
+  let data = {};
+
+  try {
+    data = rawText ? JSON.parse(rawText) : {};
+  } catch (parseError) {
+    console.error('removeBackground returned non-JSON:', rawText);
+    throw new Error('Server returned an invalid response');
+  }
+
+  if (!response.ok) {
+    throw new Error(data.details || data.error || 'Background removal failed');
+  }
+
+  if (!data.image) {
+    throw new Error('No processed image was returned');
+  }
+
+  return data.image;
+}
+
+  async function buildAdjustedImageDataUrl() {
+    if (!state.currentBasePhotoUrl) {
+      throw new Error('No photo loaded');
+    }
+
+    const img = await new Promise(function (resolve, reject) {
+      const image = new Image();
+      image.crossOrigin = 'anonymous';
+      image.onload = function () { resolve(image); };
+      image.onerror = reject;
+      image.src = state.currentBasePhotoUrl;
+    });
+
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+
+    const ctx = canvas.getContext('2d');
+    const brightness = state.controls.brightness / 100;
+    const contrast = state.controls.contrast / 100;
+    const temperature = state.controls.temperature;
+
+    ctx.filter = 'brightness(' + brightness + ') contrast(' + contrast + ')';
+    ctx.drawImage(img, 0, 0);
+
+    if (temperature !== 0) {
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
+
+      for (let i = 0; i < data.length; i += 4) {
+        let r = data[i];
+        let g = data[i + 1];
+        let b = data[i + 2];
+
+        if (temperature > 0) {
+          const t = temperature;
+          r = clamp(r + t * 0.45, 0, 255);
+          g = clamp(g + t * 0.25, 0, 255);
+          b = clamp(b - t * 0.75, 0, 255);
+        } else {
+          const cool = Math.abs(temperature);
+          r = clamp(r - cool * 0.35, 0, 255);
+          g = clamp(g - cool * 0.45, 0, 255);
+          b = clamp(b + cool * 0.9, 0, 255);
+        }
+
+        data[i] = r;
+        data[i + 1] = g;
+        data[i + 2] = b;
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+    }
+
+    return canvas.toDataURL('image/webp', 0.9);
+  }
+
+  async function applyPreviewFilters() {
+    if (!workingImg) return;
+
+    const isNeutral =
+      state.controls.brightness === 100 &&
+      state.controls.contrast === 100 &&
+      state.controls.temperature === 0;
+
+    if (isNeutral) {
+      const baseUrl = state.activePhotoUrl || state.currentBasePhotoUrl || state.originalPhotoUrl || '';
+      if (baseUrl && workingImg.src !== baseUrl) {
+        workingImg.src = baseUrl;
+      }
+      return;
+    }
+
+    try {
+      const previewDataUrl = await buildAdjustedImageDataUrl();
+      if (previewDataUrl) {
+        workingImg.src = previewDataUrl;
+      }
+    } catch (error) {
+      console.error('Preview render failed:', error);
+    }
+  }
+
+  const prepPointers = new Map();
+let prepPinchStartDistance = 0;
+let prepPinchStartZoom = 100;
+let prepDragStartX = 0;
+let prepDragStartY = 0;
+let prepDragOffsetX = 0;
+let prepDragOffsetY = 0;
+let prepIsDragging = false;
+
+function getPointerDistance(a, b) {
+  const dx = b.clientX - a.clientX;
+  const dy = b.clientY - a.clientY;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function bindPrepPinch(el) {
+  if (!el) return;
+
+  el.addEventListener('pointerdown', function (e) {
+  prepPointers.set(e.pointerId, e);
+  try { el.setPointerCapture(e.pointerId); } catch (_) {}
+
+  if (prepPointers.size === 1) {
+    prepIsDragging = true;
+    prepDragStartX = e.clientX;
+    prepDragStartY = e.clientY;
+    prepDragOffsetX = state.previewOffsetX;
+    prepDragOffsetY = state.previewOffsetY;
+  }
+});
+
+  el.addEventListener('pointermove', function (e) {
+    if (!prepPointers.has(e.pointerId)) return;
+    prepPointers.set(e.pointerId, e);
+    if (prepPointers.size === 1 && prepIsDragging) {
+  e.preventDefault();
+
+  state.previewOffsetX = prepDragOffsetX + (e.clientX - prepDragStartX);
+  state.previewOffsetY = prepDragOffsetY + (e.clientY - prepDragStartY);
+
+  applyPreviewZoom();
+  return;
+}
+    if (prepPointers.size === 2) {
+      e.preventDefault();
+      const pts = Array.from(prepPointers.values());
+      const distance = getPointerDistance(pts[0], pts[1]);
+
+      if (!prepPinchStartDistance) {
+        prepPinchStartDistance = distance;
+        prepPinchStartZoom = state.previewZoom;
+        return;
+      }
+
+      const nextZoom = Math.max(70, Math.min(260, Math.round(
+        prepPinchStartZoom * (distance / prepPinchStartDistance)
+      )));
+
+      state.previewZoom = nextZoom;
+      if (zoomEl) zoomEl.value = String(nextZoom);
+      if (zoomValueEl) zoomValueEl.textContent = nextZoom + '%';
+      applyPreviewZoom();
+    }
+  }, { passive: false });
+
+  function clearPointer(e) {
+  prepPointers.delete(e.pointerId);
+
+  if (prepPointers.size < 2) {
+    prepPinchStartDistance = 0;
+  }
+
+  if (prepPointers.size === 0) {
+    prepIsDragging = false;
+  }
+}
+
+  el.addEventListener('pointerup', clearPointer);
+  el.addEventListener('pointercancel', clearPointer);
+}
+
+bindPrepPinch(originalWrap);
+bindPrepPinch(workingWrap);
+
+async function uploadOriginalPhoto(file) {
+    if (IS_PERSONAL_MODE) {
+  state.customerId = VIEWER_CUSTOMER_ID;
+  state.clientRecordId = null;
+}
+
+if (IS_MEMBER_PHOTO_MODE) {
+  state.customerId = initialCustomerId || state.customerId;
+  state.clientRecordId = null;
+}
+
+  if (IS_TRADE_MODE && !IS_SIMPLE_ANALYST && !state.clientRecordId) {
+  alert('Create a client first.');
+  return;
+}
+
+if (!IS_TRADE_MODE && !VIEWER_CUSTOMER_ID) {
+  alert('Missing account. Please refresh.');
+  return;
+}
+
+    try {
+      renderPhotoQualityResult(null);
+      showLoading('Removing background…');
+
+      const qualityImageForCheck = IS_ADMIN
+        ? await resizeImageFile(file, 1600, 0.9)
+        : null;
+      const cleanedImage = await removeBackgroundFromFile(file);
+      const cleanedForSave = await compressDataUrlForUpload(cleanedImage, 1200, 0.86);
+
+      showLoading('Saving original photo…');
+
+      const isLegacyMemberPhoto =
+  IS_MEMBER_PHOTO_MODE && state.selectedPhotoSource === 'CustomerPhotos';
+
+const saveUrl = (IS_PERSONAL_MODE || IS_DIY_MODE || (IS_MEMBER_PHOTO_MODE && !isLegacyMemberPhoto))
+  ? APP_BASE_URL + '/api/save-personal-studio-photo'
+  : APP_BASE_URL + '/api/save-photo';
+
+  const clientMetaForSave = getClientMetaForSave();
+
+  const saveBody = (IS_PERSONAL_MODE || IS_DIY_MODE || IS_MEMBER_PHOTO_MODE)
+  ? {
+      imageBase64: cleanedForSave,
+      qualityImageBase64: qualityImageForCheck,
+      isAdmin: IS_ADMIN,
+      customerId: IS_MEMBER_PHOTO_MODE ? state.customerId : VIEWER_CUSTOMER_ID,
+      photoId: state.selectedPersonalPhotoId,
+      photoSource: state.selectedPhotoSource,
+      saveType: 'original'
+    }
+  : {
+      imageBase64: cleanedForSave,
+	      qualityImageBase64: qualityImageForCheck,
+	      isAdmin: IS_ADMIN,
+	      customerId: state.customerId,
+	      clientRecordId: state.clientRecordId,
+	      saveType: 'original',
+	      firstName: clientMetaForSave.firstName,
+	      lastName: clientMetaForSave.lastName,
+	      email: clientMetaForSave.email
+	    };
+
+    const saveResponse = await fetch(saveUrl, {
+    method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(saveBody)
+  });
+
+      const saveData = await saveResponse.json();
+
+      if (!saveResponse.ok || !saveData.imageUrl) {
+        console.error('save photo response', saveData);
+        throw new Error(
+          saveData.details?.error?.message ||
+          saveData.details?.error ||
+          saveData.error ||
+          'Could not save original photo'
+        );
+      }
+
+      state.selectedPersonalPhotoId =
+  (IS_PERSONAL_MODE || IS_DIY_MODE || IS_MEMBER_PHOTO_MODE)
+    ? (saveData.photoId || state.selectedPersonalPhotoId || null)
+    : null;
+
+state.selectedPhotoSource =
+  IS_MEMBER_PHOTO_MODE && state.selectedPhotoSource === 'CustomerPhotos'
+    ? 'CustomerPhotos'
+    : 'PersonalStudioPhotos';
+state.originalPhotoUrl = saveData.imageUrl;
+state.activePhotoUrl = saveData.imageUrl;
+state.adjustedPhotoUrl = null;
+state.currentBasePhotoUrl = saveData.imageUrl;
+state.justUploadedNewPhoto = true;
+      syncClientMetaFromCreateInputs();
+      syncClientMetaFromSaveResponse(saveData);
+
+      updateClientStatusNote();
+      updateCustomerMeta();
+      updateStartAnalysisLink();
+      updateBackLink();
+      syncVisibility();
+      updateStatus();
+      showOriginalPhoto(saveData.imageUrl);
+      resetControls();
+      showWorkingPhoto(saveData.imageUrl);
+      renderPhotoQualityResult(saveData.photoQuality);
+loadPhotoPrepUsage();
+
+if (IS_PERSONAL_MODE) {
+  showLoadingView('Loading your photos...');
+
+  loadPersonalStudioPhotos()
+    .then(function (photos) {
+      renderPersonalStudioPhotos(photos);
+      syncVisibility();
+      hideLoadingView();
+    })
+    .catch(function (error) {
+      console.error(error);
+      syncVisibility();
+      hideLoadingView();
+    });
+}
+    } catch (error) {
+      hideLoading();
+      console.error(error);
+      hideLoadingView();
+      alert(error.message || 'Could not upload photo');
+    }
+  }
+
+  async function saveAdjustedPhoto() {
+  if (IS_PERSONAL_MODE) {
+    state.customerId = VIEWER_CUSTOMER_ID;
+    state.clientRecordId = null;
+  }
+
+  if (IS_DIY_MODE) {
+    state.customerId = VIEWER_CUSTOMER_ID;
+    state.clientRecordId = null;
+  }
+
+  if (IS_MEMBER_PHOTO_MODE) {
+    state.customerId = initialCustomerId || state.customerId;
+    state.clientRecordId = null;
+  }
+
+  if (IS_TRADE_MODE && !IS_SIMPLE_ANALYST && !state.clientRecordId) {
+    alert('Create a client first.');
+    return;
+  }
+
+  if (IS_CATOOL_FREE_TRIAL_FLOW && !state.demoClientId) {
+    alert('Choose a trial client first.');
+    return;
+  }
+
+  if (!IS_TRADE_MODE && !VIEWER_CUSTOMER_ID) {
+    alert('Missing account. Please refresh.');
+    return;
+  }
+
+  if (!state.hasLoadedPhoto || !state.currentBasePhotoUrl) {
+    alert('No photo loaded.');
+    return;
+  }
+
+  try {
+    showLoading('Rendering adjusted photo…');
+
+    const adjustedDataUrl = await buildAdjustedImageDataUrl();
+
+    showLoading('Saving adjusted photo…');
+
+    if (IS_CATOOL_FREE_TRIAL_FLOW) {
+      setStoredFreeTrialAdjustedPhoto(state.demoClientId, adjustedDataUrl);
+
+      state.adjustedPhotoUrl = adjustedDataUrl;
+      state.activePhotoUrl = adjustedDataUrl;
+      state.currentBasePhotoUrl = adjustedDataUrl;
+
+      updateClientStatusNote();
+      updateCustomerMeta();
+      updateStartAnalysisLink();
+      updateBackLink();
+      syncVisibility();
+      updateStatus();
+      renderRecentClients([]);
+
+      showWorkingPhoto(adjustedDataUrl);
+      resetControls();
+      hideLoading();
+      alert('Adjusted trial photo saved.');
+      return;
+    }
+
+    const isLegacyMemberPhoto =
+      IS_MEMBER_PHOTO_MODE && state.selectedPhotoSource === 'CustomerPhotos';
+
+    const saveUrl =
+      (IS_PERSONAL_MODE || (IS_MEMBER_PHOTO_MODE && !isLegacyMemberPhoto))
+      || IS_DIY_MODE
+        ? APP_BASE_URL + '/api/save-personal-studio-photo'
+        : APP_BASE_URL + '/api/save-photo';
+
+    const clientMetaForSave = getClientMetaForSave();
+
+    const saveBody = (IS_PERSONAL_MODE || IS_DIY_MODE || IS_MEMBER_PHOTO_MODE)
+      ? {
+          imageBase64: adjustedDataUrl,
+          customerId: IS_MEMBER_PHOTO_MODE ? state.customerId : VIEWER_CUSTOMER_ID,
+          photoId: state.selectedPersonalPhotoId,
+          photoSource: state.selectedPhotoSource,
+          saveType: 'adjusted'
+        }
+      : {
+          imageBase64: adjustedDataUrl,
+	          customerId: state.customerId,
+	          clientRecordId: state.clientRecordId,
+	          saveType: 'adjusted',
+	          firstName: clientMetaForSave.firstName,
+	          lastName: clientMetaForSave.lastName,
+	          email: clientMetaForSave.email
+	        };
+
+    const saveResponse = await fetch(saveUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(saveBody)
+    });
+
+    const saveData = await saveResponse.json();
+
+    if (!saveResponse.ok || !saveData.imageUrl) {
+      console.error('save adjusted photo response', saveData);
+      throw new Error(
+        saveData.details?.error?.message ||
+        saveData.details?.error ||
+        saveData.error ||
+        'Could not save adjusted photo'
+      );
+    }
+
+    state.selectedPersonalPhotoId =
+      saveData.photoId || state.selectedPersonalPhotoId;
+
+    if (isLegacyMemberPhoto) {
+      state.selectedPhotoSource = 'CustomerPhotos';
+    } else {
+      state.selectedPhotoSource = 'PersonalStudioPhotos';
+    }
+
+    state.adjustedPhotoUrl = saveData.imageUrl;
+    state.activePhotoUrl = saveData.imageUrl;
+    state.currentBasePhotoUrl = saveData.imageUrl;
+
+    syncClientMetaFromCreateInputs();
+    syncClientMetaFromSaveResponse(saveData);
+
+    updateClientStatusNote();
+    updateCustomerMeta();
+    updateStartAnalysisLink();
+    updateBackLink();
+    syncVisibility();
+    updateStatus();
+
+    showWorkingPhoto(saveData.imageUrl);
+    resetControls();
+
+    if (IS_PERSONAL_MODE) {
+      loadPersonalStudioPhotos().then(function (photos) {
+        renderPersonalStudioPhotos(photos);
+      });
+    }
+
+    hideLoading();
+    alert('Adjusted photo saved.');
+  } catch (error) {
+    hideLoading();
+    console.error(error);
+    alert(error.message || 'Could not save adjusted photo');
+  }
+} //saveAdjustedPhoto
+
+async function useOriginalPhoto() {
+  if (!state.originalPhotoUrl) {
+    alert('No original photo is available.');
+    return;
+  }
+
+  if (IS_CATOOL_FREE_TRIAL_FLOW) {
+    state.activePhotoUrl = state.originalPhotoUrl;
+    state.currentBasePhotoUrl = state.originalPhotoUrl;
+
+    updateClientStatusNote();
+    updateStatus();
+    updateStartAnalysisLink();
+    updateBackLink();
+    syncVisibility();
+    showWorkingPhoto(state.originalPhotoUrl);
+    resetControls();
+    return;
+  }
+
+  if (IS_PERSONAL_MODE || IS_DIY_MODE) {
+    state.activePhotoUrl = state.originalPhotoUrl;
+    state.currentBasePhotoUrl = state.originalPhotoUrl;
+
+    updateClientStatusNote();
+    updateStatus();
+    updateStartAnalysisLink();
+    updateBackLink();
+    syncVisibility();
+    showWorkingPhoto(state.originalPhotoUrl);
+    resetControls();
+    return;
+  }
+
+  if (!getActiveRecordId()) {
+    alert(IS_TRADE ? 'Create a client first.' : 'Save the client first.');
+    return;
+  }
+
+  try {
+    showLoading('Switching to original photo…');
+
+    const response = await fetch(APP_BASE_URL + '/api/set-active-photo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+  customerId: state.customerId,
+  clientRecordId: state.clientRecordId,
+  photoType: 'original'
+})
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      console.error('set active photo response', data);
+      throw new Error(
+        data.details?.error?.message ||
+        data.details?.error ||
+        data.error ||
+        'Could not switch to original photo'
+      );
+    }
+
+    state.activePhotoUrl = state.originalPhotoUrl;
+    state.currentBasePhotoUrl = state.originalPhotoUrl;
+
+    updateClientStatusNote();
+    updateStatus();
+    updateStartAnalysisLink();
+    updateBackLink();
+    syncVisibility();
+    showWorkingPhoto(state.originalPhotoUrl);
+    resetControls();
+  } catch (error) {
+    hideLoading();
+    console.error(error);
+    alert(error.message || 'Could not switch to original photo');
+  }
+}
+
+  if (showClientListBtn) {
+    showClientListBtn.addEventListener('click', function () {
+      clearSelectedClient();
+    });
+  }
+
+  if (backLink) {
+    backLink.addEventListener('click', function (event) {
+      if (backLink.dataset.backAction !== 'client-list') return;
+
+      event.preventDefault();
+      clearSelectedClient();
+    });
+  }
+
+  if (brightnessEl) {
+    brightnessEl.addEventListener('input', function () {
+      state.controls.brightness = Number(this.value);
+      if (brightnessValueEl) brightnessValueEl.textContent = this.value + '%';
+      applyPreviewFilters();
+    });
+  }
+
+  if (zoomEl) {
+    zoomEl.addEventListener('input', function () {
+      state.previewZoom = Number(this.value);
+      if (zoomValueEl) zoomValueEl.textContent = this.value + '%';
+      applyPreviewZoom();
+    });
+  }
+
+  if (contrastEl) {
+    contrastEl.addEventListener('input', function () {
+      state.controls.contrast = Number(this.value);
+      if (contrastValueEl) contrastValueEl.textContent = this.value + '%';
+      applyPreviewFilters();
+    });
+  }
+
+  if (temperatureEl) {
+    temperatureEl.addEventListener('input', function () {
+      state.controls.temperature = Number(this.value);
+
+      if (temperatureValueEl) {
+        if (state.controls.temperature < 0) {
+          temperatureValueEl.textContent = 'Cool ' + Math.abs(state.controls.temperature);
+        } else if (state.controls.temperature > 0) {
+          temperatureValueEl.textContent = 'Warm ' + state.controls.temperature;
+        } else {
+          temperatureValueEl.textContent = 'Neutral';
+        }
+      }
+
+      applyPreviewFilters();
+    });
+  }
+
+  if (resetBtn) {
+    resetBtn.addEventListener('click', function () {
+      resetControls();
+    });
+  }
+
+  if (useOriginalBtn) {
+    useOriginalBtn.addEventListener('click', function () {
+      useOriginalPhoto();
+    });
+  }
+
+  if (saveBtn) {
+    saveBtn.addEventListener('click', function () {
+      saveAdjustedPhoto();
+    });
+  }
+
+  if (saveAdminClientBtn) {
+    saveAdminClientBtn.addEventListener('click', function () {
+      saveAdminClient();
+    });
+  }
+// upload handler
+if (uploadBtn) {
+  uploadBtn.addEventListener('click', function () {
+    if (state.canUploadPhoto === false) {
+      alert('You have used all uploads for this month.');
+      return;
+    }
+
+
+
+    if (IS_ADMIN && IS_MEMBER_PHOTO_MODE) {
+  state.customerId = initialCustomerId;
+  state.clientRecordId = null;
+  state.firstName = initialFirstName || state.firstName;
+  state.lastName = initialLastName || state.lastName;
+  state.email = initialEmail || state.email;
+	} else if (IS_DIY_MODE) {
+	  state.customerId = VIEWER_CUSTOMER_ID;
+	  state.clientRecordId = null;
+	} else if (IS_ADMIN && state.clientRecordId) {
+	  // Existing admin/consultant client already selected. Keep using clientRecordId.
+	} else if (IS_ADMIN) {
+	  alert('Create or open a client first.');
+	  return;
+	} else if (IS_TRADE_MODE && !IS_SIMPLE_ANALYST && !state.clientRecordId) {
+	  alert('Create a client first.');
+	  return;
+}
+
+    updateCustomerMeta();
+    updateStartAnalysisLink();
+    updateBackLink();
+    syncVisibility();
+
+    fileInput.value = '';
+    fileInput.click();
+  });
+}
+
+if (personalUploadBtn) {
+  personalUploadBtn.addEventListener('click', function () {
+    if (state.canUploadPhoto === false) {
+      alert('You have used all uploads for this month.');
+      return;
+    }
+
+    state.customerId = VIEWER_CUSTOMER_ID;
+    state.clientRecordId = null;
+    state.selectedPersonalPhotoId = null;
+
+    updateCustomerMeta();
+    updateStartAnalysisLink();
+    updateBackLink();
+    syncVisibility();
+
+    fileInput.value = '';
+    fileInput.click();
+  });
+}
+if (addMemberPhotoBtn) {
+  addMemberPhotoBtn.addEventListener('click', function () {
+    if (!IS_MEMBER_PHOTO_MODE) return;
+
+    state.customerId = initialCustomerId || state.customerId;
+    state.clientRecordId = null;
+    state.selectedPersonalPhotoId = null;
+    state.originalPhotoUrl = null;
+    state.adjustedPhotoUrl = null;
+    state.activePhotoUrl = null;
+    state.currentBasePhotoUrl = null;
+    state.justUploadedNewPhoto = true;
+    state.workspaceOpen = true;
+
+    resetPreviewOnly();
+    resetControls();
+    updateCustomerMeta();
+    updateStartAnalysisLink();
+    updateBackLink();
+    syncVisibility();
+
+    fileInput.value = '';
+    fileInput.click();
+  });
+}
+// replaceBtn handler
+
+  if (replaceBtn) {
+  replaceBtn.addEventListener('click', function () {
+    if (IS_PERSONAL_MODE || IS_MEMBER_PHOTO_MODE) {
+      return;
+    }
+
+    if (IS_DIY_MODE) {
+      if (state.canUploadPhoto === false) {
+        alert('You have used all uploads for this month.');
+        return;
+      }
+
+      resetPreviewOnly();
+      resetControls();
+      state.customerId = VIEWER_CUSTOMER_ID;
+      state.clientRecordId = null;
+      updateStartAnalysisLink();
+      updateBackLink();
+      syncVisibility();
+      fileInput.value = '';
+      fileInput.click();
+      return;
+    }
+
+    if (IS_SIMPLE_ANALYST) {
+      resetPreviewOnly();
+      resetControls();
+
+      state.customerId = VIEWER_CUSTOMER_ID;
+      state.clientRecordId = null;
+      state.firstName = null;
+      state.lastName = null;
+      state.email = null;
+
+      updateCustomerMeta();
+      updateStartAnalysisLink();
+      updateBackLink();
+      syncVisibility();
+
+      fileInput.value = '';
+      fileInput.click();
+      return;
+    }
+
+    if (IS_ADMIN && IS_MEMBER_PHOTO_MODE) {
+  state.customerId = initialCustomerId;
+  state.clientRecordId = null;
+  state.firstName = initialFirstName || state.firstName;
+  state.lastName = initialLastName || state.lastName;
+  state.email = initialEmail || state.email;
+	} else if (IS_ADMIN && state.clientRecordId) {
+	  // Existing admin/consultant client already selected. Keep using clientRecordId.
+	} else if (IS_ADMIN) {
+	  alert('Create or open a client first.');
+	  return;
+	} else if (IS_TRADE_MODE && !IS_SIMPLE_ANALYST && !state.clientRecordId) {
+	  alert('Create a client first.');
+	  return;
+}
+
+    updateCustomerMeta();
+    updateStartAnalysisLink();
+    updateBackLink();
+    syncVisibility();
+
+    fileInput.value = '';
+    fileInput.click();
+  });
+}
+
+  if (createClientBtn) {
+    createClientBtn.addEventListener('click', function () {
+      createConsultantClient();
+    });
+  }
+
+  if (editClientBtn) {
+    editClientBtn.addEventListener('click', function () {
+      openEditClientPanel();
+    });
+  }
+
+  if (saveClientBtn) {
+    saveClientBtn.addEventListener('click', function () {
+      if (state.clientRecordId) {
+        saveConsultantClientInfo();
+      } else if (IS_ADMIN) {
+        saveAdminClientInfo();
+      } else {
+        saveConsultantClientInfo();
+      }
+    });
+  }
+
+  if (cancelClientBtn) {
+    cancelClientBtn.addEventListener('click', function () {
+      closeEditClientPanel();
+    });
+  }
+
+  if (refreshClientsBtn) {
+    refreshClientsBtn.addEventListener('click', function () {
+      loadRecentClients();
+    });
+  }
+
+  document.addEventListener('click', function (event) {
+  const deletePersonalBtn = event.target.closest('.ycs-prep-delete-personal-photo-btn');
+  if (deletePersonalBtn) {
+    event.preventDefault();
+    event.stopPropagation();
+    archivePersonalStudioPhoto(String(deletePersonalBtn.dataset.photoId || '').trim());
+    return;
+  }
+
+  const drapingLink = event.target.closest('a');
+  if (drapingLink && drapingLink.closest('.ycs-prep-open-personal-photo-btn')) {
+    return;
+  }
+
+  const personalBtn = event.target.closest('.ycs-prep-open-personal-photo-btn');
+  if (personalBtn) {
+    openPersonalPhotoInPrep(personalBtn);
+    return;
+  }
+
+  const openBtn = event.target.closest('.ycs-prep-open-client-btn');
+  const demoBtn = event.target.closest('.ycs-prep-open-demo-client-btn');
+  if (demoBtn) {
+    const demoClientId = String(demoBtn.dataset.demoClientId || '').trim();
+    if (demoClientId) openFreeTrialClient(demoClientId);
+    return;
+  }
+
+  if (!openBtn) return;
+
+  const clientRecordId = String(openBtn.dataset.clientRecordId || '').trim();
+  if (!clientRecordId) return;
+
+  state.firstName = String(openBtn.dataset.firstName || '').trim() || state.firstName;
+  state.lastName = String(openBtn.dataset.lastName || '').trim() || state.lastName;
+  state.email = String(openBtn.dataset.email || '').trim() || state.email;
+
+  if (firstNameInput) firstNameInput.value = state.firstName || '';
+  if (lastNameInput) lastNameInput.value = state.lastName || '';
+  if (emailInput) emailInput.value = state.email || '';
+
+  updateCustomerMeta();
+  fetchPhoto(clientRecordId);
+});
+
+document.addEventListener('keydown', function (event) {
+  if (event.target.closest('a, button')) return;
+
+  const personalBtn = event.target.closest('.ycs-prep-open-personal-photo-btn');
+  if (!personalBtn) return;
+
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    openPersonalPhotoInPrep(personalBtn);
+  }
+});
+
+  if (fileInput) {
+    fileInput.addEventListener('change', function (e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (!file.type.startsWith('image/')) {
+        alert('Please upload a valid image.');
+        fileInput.value = '';
+        return;
+      }
+
+      uploadOriginalPhoto(file);
+    });
+  }
+
+  if (CAN_USE_CLIENT_MANAGEMENT && !IS_MEMBER_PHOTO_MODE && !IS_CATOOL_FREE_TRIAL_FLOW) {
+  loadRecentClients();
+}
+
+  updateStatus();
+updateCustomerMeta();
+updateStartAnalysisLink();
+updateBackLink();
+resetControls();
+syncVisibility();
+loadPhotoPrepUsage();
+
+
+if (IS_CATOOL_FREE_TRIAL_FLOW) {
+  initSimpleAnalystFlow();
+  return;
+}
+
+if (IS_PERSONAL_MODE || IS_DIY_MODE) {
+  state.customerId = VIEWER_CUSTOMER_ID;
+  state.clientRecordId = null;
+
+  showLoadingView(IS_DIY_MODE ? 'Loading your photo...' : 'Loading your photos...');
+
+  loadPersonalStudioPhotos()
+    .then(function (photos) {
+      if (IS_PERSONAL_MODE) {
+        renderPersonalStudioPhotos(photos);
+      }
+
+      if (photos.length) {
+        const selectedPhoto = initialPhotoId
+          ? photos.find(function (photo) {
+              return String(photo.photoId || '').trim() === initialPhotoId;
+            }) || photos[0]
+          : photos[0];
+        state.selectedPersonalPhotoId = selectedPhoto.photoId || null;
+        state.selectedPhotoSource = 'PersonalStudioPhotos';
+        state.originalPhotoUrl = selectedPhoto.originalPhotoUrl || selectedPhoto.activePhotoUrl || null;
+        state.adjustedPhotoUrl = selectedPhoto.adjustedPhotoUrl || null;
+        state.activePhotoUrl = selectedPhoto.activePhotoUrl || selectedPhoto.adjustedPhotoUrl || selectedPhoto.originalPhotoUrl || null;
+        state.currentBasePhotoUrl = state.activePhotoUrl || state.originalPhotoUrl || null;
+
+        updateStatus();
+        updateStartAnalysisLink();
+        syncVisibility();
+        showOriginalPhoto(state.originalPhotoUrl);
+
+        if (state.activePhotoUrl) {
+          showWorkingPhoto(state.activePhotoUrl);
+        }
+      } else {
+        state.selectedPersonalPhotoId = null;
+        state.originalPhotoUrl = null;
+        state.adjustedPhotoUrl = null;
+        state.activePhotoUrl = null;
+        state.currentBasePhotoUrl = null;
+
+        updateStatus();
+        updateStartAnalysisLink();
+        syncVisibility();
+      }
+
+      hideLoadingView();
+    })
+    .catch(function (error) {
+      console.error(error);
+      hideLoadingView();
+      syncVisibility();
+    });
+
+  return;
+}
+  if (IS_MEMBER_PHOTO_MODE && initialPhotoId) {
+  state.customerId = initialCustomerId;
+  state.clientRecordId = null;
+  state.workspaceOpen = true;
+
+  if (initialPhotoSource === 'CustomerPhotos') {
+    fetchPhoto(initialCustomerId, {
+      silentIfMissing: false,
+      photoId: initialPhotoId,
+      photoSource: 'CustomerPhotos'
+    });
+  } else {
+    loadSelectedPersonalStudioPhoto(initialPhotoId);
+  }
+
+  return;
+}
+
+if (IS_MEMBER_PHOTO_MODE && initialCustomerId) {
+  state.customerId = initialCustomerId;
+  state.clientRecordId = null;
+  state.workspaceOpen = true;
+
+  showLoadingView('Loading saved photo…');
+  fetchPhoto(initialCustomerId, { silentIfMissing: true }).then(function () {
+    hideLoadingView();
+  });
+  return;
+}
+
+if (initialClientRecordId) {
+  state.clientRecordId = initialClientRecordId;
+  state.customerId = null;
+  state.workspaceOpen = true;
+
+  fetchPhoto(initialClientRecordId, { silentIfMissing: false });
+  return;
+}
+
+if (initialCustomerId && !IS_PERSONAL_MODE && !IS_MEMBER_PHOTO_MODE) {
+  state.customerId = initialCustomerId;
+  state.clientRecordId = null;
+  state.workspaceOpen = true;
+
+  fetchPhoto(initialCustomerId, {
+    silentIfMissing: true,
+    forceCustomerRecord: true
+  });
+}
+})();
+</script>
