@@ -880,6 +880,104 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
     margin: 2px 0;
   }
 
+  .ycs-photo-prep-quality__review {
+    display: grid;
+    gap: 10px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #e7ddd1;
+  }
+
+  .ycs-photo-prep-quality__review-title {
+    margin: 0;
+    font-weight: 700;
+    color: #2f2a25;
+  }
+
+  .ycs-photo-prep-quality__review-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .ycs-photo-prep-quality__field {
+    display: grid;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #6b645c;
+  }
+
+  .ycs-photo-prep-quality__field select,
+  .ycs-photo-prep-quality__field textarea {
+    width: 100%;
+    border: 1px solid #d8cfc3;
+    border-radius: 10px;
+    background: #fff;
+    color: #2f2a25;
+    font: inherit;
+    font-weight: 500;
+    padding: 9px 10px;
+  }
+
+  .ycs-photo-prep-quality__field textarea {
+    min-height: 72px;
+    resize: vertical;
+  }
+
+  .ycs-photo-prep-quality__tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .ycs-photo-prep-quality__tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 8px;
+    border: 1px solid #d8cfc3;
+    border-radius: 999px;
+    background: #fff;
+    color: #4f4942;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .ycs-photo-prep-quality__actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .ycs-photo-prep-quality__submit {
+    border: 0;
+    border-radius: 999px;
+    background: #111;
+    color: #fff;
+    cursor: pointer;
+    font-weight: 700;
+    padding: 10px 16px;
+  }
+
+  .ycs-photo-prep-quality__submit:disabled {
+    cursor: wait;
+    opacity: 0.65;
+  }
+
+  .ycs-photo-prep-quality__review-status {
+    margin: 0;
+    color: #6b645c;
+    font-size: 12px;
+  }
+
+  @media screen and (max-width: 700px) {
+    .ycs-photo-prep-quality__review-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
   .ycs-photo-prep-panel-title {
     margin: 0 0 10px;
     font-size: 18px;
@@ -2161,6 +2259,90 @@ function escapeHtml(value) {
     .replace(/'/g, '&#039;');
 }
 
+const PHOTO_QUALITY_FEEDBACK_OPTIONS = [
+  ['correct', 'AI was correct'],
+  ['too_strict', 'AI was too strict'],
+  ['too_lenient', 'AI was too lenient'],
+  ['missed_issue', 'AI missed an issue'],
+  ['wrong_issue', 'AI flagged the wrong issue'],
+  ['unsure', 'Unsure / needs review']
+];
+
+const PHOTO_QUALITY_ISSUE_TAG_OPTIONS = [
+  ['good_photo', 'Good photo'],
+  ['too_dark', 'Too dark'],
+  ['too_bright', 'Too bright'],
+  ['warm_color_cast', 'Warm color cast'],
+  ['cool_color_cast', 'Cool color cast'],
+  ['green_color_cast', 'Green color cast'],
+  ['heavy_shadow', 'Heavy shadow'],
+  ['uneven_lighting', 'Uneven lighting'],
+  ['face_too_small', 'Face too small'],
+  ['face_not_centered', 'Face not centered'],
+  ['face_rotated', 'Face rotated'],
+  ['glasses_glare', 'Glasses glare'],
+  ['heavy_makeup', 'Heavy makeup'],
+  ['filter_detected', 'Filter detected'],
+  ['saturated_background', 'Saturated background'],
+  ['colored_light_reflection', 'Colored light reflection'],
+  ['hair_obstruction', 'Hair obstruction'],
+  ['other', 'Other']
+];
+
+function renderPhotoQualityReviewForm(photoQuality) {
+  if (!photoQuality || !photoQuality.evaluation_id) {
+    return '<p class="ycs-photo-prep-quality__meta">Feedback can be saved after the evaluation is logged.</p>';
+  }
+
+  const feedbackOptions = PHOTO_QUALITY_FEEDBACK_OPTIONS.map(function (option) {
+    return '<option value="' + escapeHtml(option[0]) + '">' + escapeHtml(option[1]) + '</option>';
+  }).join('');
+  const issueTags = PHOTO_QUALITY_ISSUE_TAG_OPTIONS.map(function (option) {
+    return (
+      '<label class="ycs-photo-prep-quality__tag">' +
+        '<input type="checkbox" name="human_issue_tags" value="' + escapeHtml(option[0]) + '">' +
+        '<span>' + escapeHtml(option[1]) + '</span>' +
+      '</label>'
+    );
+  }).join('');
+
+  return (
+    '<form class="ycs-photo-prep-quality__review" data-photo-quality-review-form data-evaluation-id="' + escapeHtml(photoQuality.evaluation_id) + '">' +
+      '<p class="ycs-photo-prep-quality__review-title">Admin feedback</p>' +
+      '<div class="ycs-photo-prep-quality__review-grid">' +
+        '<label class="ycs-photo-prep-quality__field">' +
+          '<span>Manual rating</span>' +
+          '<select name="human_status" required>' +
+            '<option value="">Select rating</option>' +
+            '<option value="pass">Pass</option>' +
+            '<option value="warning">Warning</option>' +
+            '<option value="reject">Reject</option>' +
+          '</select>' +
+        '</label>' +
+        '<label class="ycs-photo-prep-quality__field">' +
+          '<span>AI feedback</span>' +
+          '<select name="admin_feedback" required>' +
+            '<option value="">Select feedback</option>' +
+            feedbackOptions +
+          '</select>' +
+        '</label>' +
+      '</div>' +
+      '<label class="ycs-photo-prep-quality__field">' +
+        '<span>Issue tags</span>' +
+        '<div class="ycs-photo-prep-quality__tags">' + issueTags + '</div>' +
+      '</label>' +
+      '<label class="ycs-photo-prep-quality__field">' +
+        '<span>Notes</span>' +
+        '<textarea name="admin_notes" maxlength="1000" placeholder="Add your notes about this photo quality result."></textarea>' +
+      '</label>' +
+      '<div class="ycs-photo-prep-quality__actions">' +
+        '<button class="ycs-photo-prep-quality__submit" type="submit">Save Feedback</button>' +
+        '<p class="ycs-photo-prep-quality__review-status" data-photo-quality-review-status></p>' +
+      '</div>' +
+    '</form>'
+  );
+}
+
 function renderPhotoQualityResult(photoQuality) {
   if (!IS_ADMIN || !photoQualityResultEl) return;
 
@@ -2203,9 +2385,57 @@ function renderPhotoQualityResult(photoQuality) {
     '<p class="ycs-photo-prep-quality__meta">Evaluation ID: ' + escapeHtml(photoQuality.evaluation_id || 'not saved') + '</p>' +
     saveWarning +
     '<ul>' + issueItems + '</ul>' +
-    (recommendationItems ? '<ul>' + recommendationItems + '</ul>' : '');
+    (recommendationItems ? '<ul>' + recommendationItems + '</ul>' : '') +
+    renderPhotoQualityReviewForm(photoQuality);
 
   photoQualityResultEl.hidden = false;
+}
+
+async function submitPhotoQualityFeedback(event) {
+  const form = event.target.closest('[data-photo-quality-review-form]');
+  if (!form || !IS_ADMIN || !APP_BASE_URL) return;
+
+  event.preventDefault();
+
+  const statusEl = form.querySelector('[data-photo-quality-review-status]');
+  const submitBtn = form.querySelector('button[type="submit"]');
+  const formData = new FormData(form);
+  const issueTags = formData.getAll('human_issue_tags');
+
+  if (statusEl) statusEl.textContent = 'Saving...';
+  if (submitBtn) submitBtn.disabled = true;
+
+  try {
+    const response = await fetch(APP_BASE_URL + '/api/photo-quality-feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        isAdmin: IS_ADMIN,
+        evaluation_id: form.dataset.evaluationId,
+        human_status: formData.get('human_status'),
+        admin_feedback: formData.get('admin_feedback'),
+        human_issue_tags: issueTags,
+        admin_notes: formData.get('admin_notes'),
+        reviewed_by: VIEWER_CUSTOMER_ID || 'shopify_storefront_admin'
+      })
+    });
+    const data = await response.json().catch(function () { return {}; });
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.details || data.error || 'Could not save feedback.');
+    }
+
+    if (statusEl) statusEl.textContent = 'Feedback saved.';
+  } catch (error) {
+    console.error(error);
+    if (statusEl) statusEl.textContent = error.message || 'Could not save feedback.';
+  } finally {
+    if (submitBtn) submitBtn.disabled = false;
+  }
+}
+
+if (photoQualityResultEl) {
+  photoQualityResultEl.addEventListener('submit', submitPhotoQualityFeedback);
 }
 
   function showOriginalPhoto(url) {
