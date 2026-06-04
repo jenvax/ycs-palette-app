@@ -53,28 +53,41 @@ async function evaluateAdminPhotoQuality({
 
   try {
     const result = await evaluatePhotoQuality({ imageBase64 });
-    const evaluation = await savePhotoQualityEvaluation({
-      photoId,
-      customerId,
-      imageUrl,
-      result
-    });
+    let evaluation = null;
+    let evaluationSaveError = null;
+
+    try {
+      evaluation = await savePhotoQualityEvaluation({
+        photoId,
+        customerId,
+        imageUrl,
+        result
+      });
+    } catch (error) {
+      evaluationSaveError = error;
+      console.error("Upload photo quality result was not saved:", error);
+    }
 
     console.info(
       "YCS_ADMIN upload photo quality evaluated",
       JSON.stringify({
-        evaluationId: evaluation.evaluation_id,
+        evaluationId: evaluation?.evaluation_id || null,
         photoId,
         customerId,
         status: result.status,
         score: result.score,
+        saved: Boolean(evaluation),
         checkedAt: new Date().toISOString()
       })
     );
 
     return {
       ...result,
-      evaluation_id: evaluation.evaluation_id
+      evaluation_id: evaluation?.evaluation_id || null,
+      evaluation_saved: Boolean(evaluation),
+      evaluation_save_error: evaluationSaveError
+        ? "Photo quality result was evaluated but could not be saved."
+        : null
     };
   } catch (error) {
     console.error("Upload photo quality evaluation failed:", error);

@@ -2189,6 +2189,9 @@ function renderPhotoQualityResult(photoQuality) {
   const recommendationItems = recommendations.length
     ? recommendations.map(function (item) { return '<li>' + escapeHtml(item) + '</li>'; }).join('')
     : '';
+  const saveWarning = photoQuality.evaluation_save_error
+    ? '<p class="ycs-photo-prep-quality__meta">' + escapeHtml(photoQuality.evaluation_save_error) + '</p>'
+    : '';
 
   photoQualityResultEl.innerHTML =
     '<div class="ycs-photo-prep-quality__head">' +
@@ -2197,7 +2200,8 @@ function renderPhotoQualityResult(photoQuality) {
         escapeHtml(photoQuality.status) + ' • ' + escapeHtml(photoQuality.score) + '/100' +
       '</p>' +
     '</div>' +
-    '<p class="ycs-photo-prep-quality__meta">Evaluation ID: ' + escapeHtml(photoQuality.evaluation_id || '—') + '</p>' +
+    '<p class="ycs-photo-prep-quality__meta">Evaluation ID: ' + escapeHtml(photoQuality.evaluation_id || 'not saved') + '</p>' +
+    saveWarning +
     '<ul>' + issueItems + '</ul>' +
     (recommendationItems ? '<ul>' + recommendationItems + '</ul>' : '');
 
