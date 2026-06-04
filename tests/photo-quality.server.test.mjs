@@ -80,3 +80,25 @@ test("flags a highly saturated background", async () => {
   assert.ok(result.checks.background_score < 80);
   assert.ok(result.issues.some((issue) => issue.toLowerCase().includes("background")));
 });
+
+test("does not call bright natural light overexposed without face clipping", async () => {
+  const imageBase64 = await createTestImage({
+    background: "#ffffff",
+    face: "#efc8b0"
+  });
+  const result = await evaluatePhotoQuality({ imageBase64 });
+
+  assert.equal(result.status, "pass");
+  assert.ok(!result.issues.some((issue) => issue.toLowerCase().includes("overexposed")));
+});
+
+test("downgrades severe uneven lighting on the face", async () => {
+  const imageBase64 = await createTestImage({
+    extras: '<rect x="120" y="40" width="80" height="230" fill="#20140f" opacity="0.72"/>'
+  });
+  const result = await evaluatePhotoQuality({ imageBase64 });
+
+  assert.ok(["warning", "reject"].includes(result.status));
+  assert.ok(result.checks.shadow_score < 50);
+  assert.ok(result.issues.some((issue) => issue.toLowerCase().includes("shadows")));
+});
