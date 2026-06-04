@@ -63,12 +63,23 @@ export async function loader({ request }) {
     dateTo: cleanFilter(url.searchParams.get("dateTo")),
     customerOrOrder: cleanFilter(url.searchParams.get("customerOrOrder"))
   };
+  const reviewError = cleanFilter(url.searchParams.get("reviewError"));
 
-  const evaluations = await listPhotoQualityEvaluations(filters);
+  let evaluations = [];
+  let loadError = "";
+
+  try {
+    evaluations = await listPhotoQualityEvaluations(filters);
+  } catch (error) {
+    console.error("Photo quality review evaluations failed to load:", error);
+    loadError = error.message || "Could not load photo quality evaluations.";
+  }
 
   return {
     evaluations,
     filters,
+    loadError,
+    reviewError,
     feedbackValues: PHOTO_QUALITY_FEEDBACK_VALUES,
     humanStatuses: PHOTO_QUALITY_HUMAN_STATUSES,
     issueTags: PHOTO_QUALITY_ISSUE_TAGS,
@@ -80,17 +91,27 @@ export async function loader({ request }) {
 export async function action({ request }) {
   const { session } = await authenticate.admin(request);
   const formData = await request.formData();
-
-  await savePhotoQualityReview({
-    evaluationId: formData.get("evaluation_id"),
-    humanStatus: formData.get("human_status"),
-    adminFeedback: formData.get("admin_feedback"),
-    humanIssueTags: formData.getAll("human_issue_tags"),
-    adminNotes: formData.get("admin_notes"),
-    reviewedBy: getReviewedBy(session)
-  });
-
   const returnTo = String(formData.get("return_to") || "/app/photo-quality-reviews");
+
+  try {
+    await savePhotoQualityReview({
+      evaluationId: formData.get("evaluation_id"),
+      humanStatus: formData.get("human_status"),
+      adminFeedback: formData.get("admin_feedback"),
+      humanIssueTags: formData.getAll("human_issue_tags"),
+      adminNotes: formData.get("admin_notes"),
+      reviewedBy: getReviewedBy(session)
+    });
+  } catch (error) {
+    console.error("Photo quality review save failed:", error);
+    const url = new URL(returnTo, "https://app.local");
+    url.searchParams.set(
+      "reviewError",
+      error.message || "Could not save photo quality review."
+    );
+    return redirect(url.pathname + url.search);
+  }
+
   return redirect(returnTo);
 }
 
@@ -126,6 +147,8 @@ export default function PhotoQualityReviews() {
   const {
     evaluations,
     filters,
+    loadError,
+    reviewError,
     feedbackValues,
     humanStatuses,
     issueTags,
@@ -141,6 +164,21 @@ export default function PhotoQualityReviews() {
 
   return (
     <s-page heading="Photo Quality Reviews">
+      {loadError || reviewError ? (
+        <s-section>
+          {loadError ? (
+            <s-paragraph>
+              Could not load Airtable photo quality records: {loadError}
+            </s-paragraph>
+          ) : null}
+          {reviewError ? (
+            <s-paragraph>
+              Could not save admin feedback: {reviewError}
+            </s-paragraph>
+          ) : null}
+        </s-section>
+      ) : null}
+
       <s-section>
         <Form method="get" className="pq-filters">
           <label>
