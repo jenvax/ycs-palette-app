@@ -32,3 +32,55 @@ model Session {
   refreshToken        String?
   refreshTokenExpires DateTime?
 }
+
+model PhotoQualityEvaluation {
+  id                 String               @id
+  photoId            String?
+  customerId         String?
+  orderReference     String?
+  imageUrl           String?
+  secureFileReference String?
+  uploadedAt         DateTime             @default(now())
+  aiStatus           String
+  aiScore            Int
+  detectedIssuesJson String               @default("[]")
+  recommendationsJson String              @default("[]")
+  rawChecksJson      String               @default("{}")
+  brightnessScore    Int?
+  colorCast          String?
+  shadowScore        Int?
+  faceDetected       Boolean?
+  faceCentered       Boolean?
+  faceSizePercent    Float?
+  glareDetected      Boolean?
+  backgroundScore    Int?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  review             PhotoQualityReview?
+
+  @@index([customerId])
+  @@index([photoId])
+  @@index([aiStatus])
+  @@index([uploadedAt])
+}
+
+model PhotoQualityReview {
+  id                 String                 @id
+  evaluationId       String                 @unique
+  photoId            String?
+  aiStatus           String
+  humanStatus        String?
+  adminFeedback      String
+  aiIssueTagsJson    String                 @default("[]")
+  humanIssueTagsJson String                 @default("[]")
+  adminNotes         String                 @default("")
+  reviewedBy         String
+  reviewedAt         DateTime               @default(now())
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  evaluation         PhotoQualityEvaluation @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+
+  @@index([humanStatus])
+  @@index([adminFeedback])
+  @@index([reviewedAt])
+}

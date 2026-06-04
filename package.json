@@ -13,6 +13,7 @@
     "docker-start": "npm run setup && npm run start",
     "setup": "prisma generate && prisma migrate deploy",
     "lint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint .",
+    "test:photo-quality": "node --test tests/photo-quality.server.test.mjs tests/photo-quality-feedback.server.test.mjs",
     "shopify": "shopify",
     "prisma": "prisma",
     "graphql-codegen": "graphql-codegen",
@@ -37,6 +38,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router": "^7.12.0",
+    "sharp": "^0.34.5",
     "vite-tsconfig-paths": "^5.1.4"
   },
   "devDependencies": {
