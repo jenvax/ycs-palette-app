@@ -1,3 +1,5 @@
+/* global process */
+
 function getCorsHeaders(origin) {
   const allowedOrigins = [
     "https://yourcolorstyle.com",
@@ -54,7 +56,7 @@ export async function loader({ request }) {
       );
     }
 
-    const formula = `{ConsultantId}="${consultantId}"`;
+    const formula = `AND({ConsultantId}="${consultantId}", OR({IsArchived}=BLANK(), {IsArchived}=0, {IsArchived}=FALSE()))`;
 
     const airtableUrl =
       `https://api.airtable.com/v0/${airtableBase}/${airtableTable}` +

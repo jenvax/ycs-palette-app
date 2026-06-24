@@ -41,8 +41,18 @@
   {% assign is_admin = true %}
 {% endif %}
 
+{% assign is_trade_july_cohort = false %}
+{% assign trade_july_cohort_expires_at = '2026-08-25 00:00:00 -0400' | date: '%s' %}
+{% assign current_timestamp = 'now' | date: '%s' %}
+{% if palette_access_string contains ',TRADEJULYCOHORT,' and current_timestamp < trade_july_cohort_expires_at %}
+  {% assign is_trade_july_cohort = true %}
+{% endif %}
+
 {% assign is_trade = false %}
 {% if palette_access_string contains ',TRADE,' %}
+  {% assign is_trade = true %}
+{% endif %}
+{% if is_trade_july_cohort %}
   {% assign is_trade = true %}
 {% endif %}
 
@@ -59,6 +69,11 @@
 {% assign is_catool_free = false %}
 {% if palette_access_string contains ',CATOOLFREE,' %}
   {% assign is_catool_free = true %}
+{% endif %}
+
+{% assign is_free_diy_catool = false %}
+{% if palette_access_string contains ',FREEDIYCATOOL,' %}
+  {% assign is_free_diy_catool = true %}
 {% endif %}
 
 {% assign is_diy_catool = false %}
@@ -86,8 +101,12 @@
   {% assign has_draping_studio_access = true %}
 {% endif %}
 
+{% if has_draping_studio_access %}
+  {% assign is_sample_trial_request = false %}
+{% endif %}
+
 {% assign is_sample_user = false %}
-{% if palette_access_string contains ',SAMPLE,' %}
+{% if has_draping_studio_access == false and palette_access_string contains ',SAMPLE,' %}
   {% assign is_sample_user = true %}
 {% endif %}
 
@@ -101,13 +120,18 @@
   {% assign is_simple_analyst = true %}
 {% endif %}
 
+{% assign is_free_analysis_demo = false %}
+{% if is_catool_free or is_free_diy_catool %}
+  {% assign is_free_analysis_demo = true %}
+{% endif %}
+
 {% assign can_use_client_management = false %}
 {% if is_admin or is_trade or is_simple_analyst %}
   {% assign can_use_client_management = true %}
 {% endif %}
 
 {% assign can_use_photo_prep = false %}
-{% if is_admin or is_trade or is_simple_analyst or is_diy_catool or can_use_personal_photo_prep %}
+{% if is_admin or is_trade or is_simple_analyst or is_diy_catool or is_free_diy_catool or can_use_personal_photo_prep %}
   {% assign can_use_photo_prep = true %}
 {% endif %}
 
@@ -119,6 +143,7 @@
   data-is-catool="{% if is_catool %}true{% else %}false{% endif %}"
   data-is-catool-growth="{% if is_catool_growth %}true{% else %}false{% endif %}"
   data-is-catool-free="{% if is_catool_free %}true{% else %}false{% endif %}"
+  data-is-free-diy-catool="{% if is_free_diy_catool %}true{% else %}false{% endif %}"
   data-is-diy-catool="{% if is_diy_catool %}true{% else %}false{% endif %}"
   data-is-simple-analyst="{% if is_simple_analyst %}true{% else %}false{% endif %}"
   data-can-use-photo-prep="{% if can_use_photo_prep %}true{% else %}false{% endif %}"
@@ -149,17 +174,38 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
     </div>
 
     <div class="ycs-photo-prep-header">
-  <p class="ycs-photo-prep-kicker">Your Color Style</p>
-  <h1 class="ycs-photo-prep-title">Photo Prep</h1>
-  <p class="ycs-photo-prep-subtitle">
-  {% if is_personal_mode_request %}
-    Upload a photo, make adjustments, then continue to Draping Studio.
-  {% else %}
-    Load or upload a customer photo, make color adjustments, then continue to the Color Analysis Tool.
-  {% endif %}
-</p>
-  <p id="ycs-photo-prep-usage-message" class="ycs-photo-prep-usage-message" hidden></p>
-</div>
+      <div class="ycs-photo-prep-header-copy">
+        <p class="ycs-photo-prep-kicker">Your Color Style</p>
+        <h1 class="ycs-photo-prep-title">Photo Prep</h1>
+        <p class="ycs-photo-prep-subtitle">
+          {% if is_personal_mode_request %}
+            Upload a photo, make adjustments, then continue to Draping Studio.
+          {% elsif is_free_diy_catool %}
+            Try Photo Prep with a preloaded photo, then continue to the DIY Color Analysis Tool.
+          {% elsif is_catool_free %}
+            Try Photo Prep with preloaded clients, then continue to the Color Analysis Tool.
+          {% else %}
+            Load or upload a customer photo, make color adjustments, then continue to the Color Analysis Tool.
+          {% endif %}
+        </p>
+        <p id="ycs-photo-prep-usage-message" class="ycs-photo-prep-usage-message" hidden></p>
+      </div>
+
+      {% if is_free_analysis_demo %}
+        <div class="ycs-photo-prep-unlock-callout">
+          <p>
+            {% if is_free_diy_catool %}
+              Unlock the DIY Draping Tool to upload your own photo.
+            {% else %}
+              Unlock the Professional Tool to upload client photos.
+            {% endif %}
+          </p>
+          <a href="{% if is_free_diy_catool %}https://yourcolorstyle.com/products/virtual-color-draping#order{% else %}https://yourcolorstyle.com/products/color-analysis-tool#order{% endif %}">
+            Unlock
+          </a>
+        </div>
+      {% endif %}
+    </div>
 
     <div id="ycs-prep-customer-meta" class="ycs-photo-prep-meta" hidden>
       <div class="ycs-photo-prep-meta-head">
@@ -198,10 +244,10 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
     </div>
 
     <div class="ycs-photo-prep-customer" id="ycs-prep-create-client-panel" {% if is_personal_mode_request or is_member_mode_request %}hidden{% endif %}>
-      {% if can_use_client_management and is_personal_mode_request != true %}
-        <label class="ycs-photo-prep-label">{% if is_catool_free %}Free Trial Clients{% else %}Create Client{% endif %}</label>
+      {% if can_use_client_management or is_free_diy_catool %}
+        <label class="ycs-photo-prep-label">{% if is_free_diy_catool %}Free DIY Demo Photos{% elsif is_catool_free %}Free Trial Clients{% else %}Create Client{% endif %}</label>
 
-        {% unless is_catool_free %}
+        {% unless is_free_analysis_demo %}
         <div class="ycs-photo-prep-customer-details">
           <input type="text" id="ycs-prep-first-name" class="ycs-photo-prep-input" placeholder="First name" />
           <input type="text" id="ycs-prep-last-name" class="ycs-photo-prep-input" placeholder="Last name" />
@@ -219,14 +265,18 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
         </p>
         {% else %}
         <p class="ycs-photo-prep-help">
-          Choose one of the preloaded trial clients to explore Photo Prep and the Color Analysis Tool.
+          {% if is_free_diy_catool %}
+            Choose a preloaded photo to explore Photo Prep and the DIY Color Analysis Tool.
+          {% else %}
+            Choose one of the preloaded trial clients to explore Photo Prep and the Color Analysis Tool.
+          {% endif %}
         </p>
         {% endunless %}
 
         <div id="ycs-prep-recent-clients-panel" class="ycs-photo-prep-recent-clients">
           <div class="ycs-photo-prep-recent-head">
-            <label class="ycs-photo-prep-label" style="margin-bottom: 0;">{% if is_catool_free %}Trial Clients{% else %}Recent Clients{% endif %}</label>
-            {% unless is_catool_free %}
+            <label class="ycs-photo-prep-label" style="margin-bottom: 0;">{% if is_free_diy_catool %}Demo Photos{% elsif is_catool_free %}Trial Clients{% else %}Recent Clients{% endif %}</label>
+            {% unless is_free_analysis_demo %}
             <button type="button" id="ycs-prep-refresh-clients" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary">
               Refresh
             </button>
@@ -439,7 +489,15 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
   }
 
   .ycs-photo-prep-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+    align-items: end;
+    column-gap: 24px;
     margin-bottom: 14px;
+  }
+
+  .ycs-photo-prep-header-copy {
+    min-width: 0;
   }
 
   .ycs-photo-prep-kicker {
@@ -592,6 +650,11 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
     gap: 10px;
   }
 
+  .ycs-photo-prep-recent-list--demo {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    align-items: stretch;
+  }
+
   .ycs-photo-prep-recent-item {
     display: flex;
     align-items: center;
@@ -602,6 +665,50 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
     border: 1px solid #ece7df;
     border-radius: 14px;
     background: #faf7f2;
+  }
+
+  .ycs-photo-prep-recent-item--demo {
+    display: grid;
+    gap: 10px;
+    justify-items: stretch;
+    text-align: left;
+    align-content: start;
+    padding: 12px;
+  }
+
+  .ycs-photo-prep-recent-thumb {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    object-position: center top;
+    border-radius: 12px;
+    border: 1px solid #ece7df;
+    background: #fff;
+  }
+
+  .ycs-photo-prep-recent-item--unlock {
+    display: grid;
+    align-content: center;
+    justify-items: start;
+    background: #111;
+    color: #fff;
+    border-color: #111;
+    padding: 18px;
+    min-height: 100%;
+  }
+
+  .ycs-photo-prep-recent-item--unlock .ycs-photo-prep-recent-name,
+  .ycs-photo-prep-recent-item--unlock .ycs-photo-prep-recent-meta {
+    color: #fff;
+  }
+
+  .ycs-photo-prep-recent-item--unlock .ycs-photo-prep-recent-meta {
+    opacity: 0.82;
+  }
+
+  .ycs-photo-prep-recent-item--unlock .ycs-photo-prep-btn {
+    background: #fff;
+    color: #111;
   }
 
   .ycs-photo-prep-recent-copy {
@@ -619,6 +726,35 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
     margin: 0;
     font-size: 12px;
     color: #6b645c;
+  }
+
+  .ycs-photo-prep-recent-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  @media screen and (max-width: 900px) {
+    .ycs-photo-prep-header {
+      grid-template-columns: 1fr;
+      row-gap: 12px;
+    }
+
+    .ycs-photo-prep-unlock-callout {
+      justify-self: stretch;
+      max-width: none;
+    }
+
+    .ycs-photo-prep-recent-list--demo {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media screen and (max-width: 560px) {
+    .ycs-photo-prep-recent-list--demo {
+      grid-template-columns: 1fr;
+    }
   }
 
   .ycs-photo-prep-layout {
@@ -983,6 +1119,40 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
     font-size: 18px;
   }
 
+  .ycs-photo-prep-panel-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .ycs-photo-prep-unlock-callout {
+    justify-self: end;
+    max-width: 360px;
+    padding: 12px 14px;
+    border: 1px solid #eadfd2;
+    border-radius: 14px;
+    background: #fffaf2;
+    color: #4f4942;
+    display: grid;
+    gap: 8px;
+  }
+
+  .ycs-photo-prep-unlock-callout p {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.35;
+    color: #4f4942;
+  }
+
+  .ycs-photo-prep-unlock-callout a {
+    color: #2f2a25;
+    font-size: 12px;
+    font-weight: 800;
+    text-decoration: underline;
+  }
+
   .ycs-photo-prep-control {
     display: grid;
     gap: 4px;
@@ -1154,9 +1324,11 @@ const IS_TRADE = appEl.dataset.isTrade === 'true';
 const IS_CATOOL = appEl.dataset.isCatool === 'true';
 const IS_CATOOL_GROWTH = appEl.dataset.isCatoolGrowth === 'true';
 const IS_CATOOL_FREE = appEl.dataset.isCatoolFree === 'true';
+const IS_FREE_DIY_CATOOL = appEl.dataset.isFreeDiyCatool === 'true';
 const IS_DIY_CATOOL = appEl.dataset.isDiyCatool === 'true';
 const IS_SIMPLE_ANALYST = appEl.dataset.isSimpleAnalyst === 'true';
 const CAN_USE_CLIENT_MANAGEMENT = IS_ADMIN || IS_TRADE || IS_SIMPLE_ANALYST;
+const CAN_DELETE_CLIENTS = IS_ADMIN || IS_TRADE || IS_CATOOL || IS_CATOOL_GROWTH;
 const CAN_USE_PHOTO_PREP = appEl.dataset.canUsePhotoPrep === 'true';
 const VIEWER_CUSTOMER_ID = (appEl.dataset.customerId || '').trim();
 const APP_BASE_URL = appEl.dataset.appBaseUrl || '';
@@ -1183,7 +1355,7 @@ const WORKFLOW = (params.get('workflow') || '').trim().toLowerCase() || '';
 const requestedMode = (params.get('mode') || '').trim().toLowerCase();
 
 const MODE =
-  IS_DIY_CATOOL &&
+  (IS_DIY_CATOOL || IS_FREE_DIY_CATOOL) &&
   !CAN_USE_CLIENT_MANAGEMENT &&
   requestedMode !== 'personal' &&
   requestedMode !== 'member'
@@ -1194,11 +1366,50 @@ const IS_PERSONAL_MODE = MODE === 'personal';
 const IS_TRADE_MODE = MODE === 'trade';
 const IS_MEMBER_PHOTO_MODE = MODE === 'member';
 const IS_DIY_MODE = MODE === 'diy';
+const CAN_DELETE_PERSONAL_PHOTOS =
+  (
+    (IS_PERSONAL_MODE && (IS_ADMIN || IS_VIP || HAS_DRAPING_STUDIO_ACCESS)) ||
+    (IS_DIY_MODE && IS_DIY_CATOOL)
+  ) &&
+  !IS_SAMPLE_USER && !IS_SAMPLE_TRIAL_REQUEST;
 const IS_SIMPLE_ANALYST_MODE = MODE === 'simple';
 const IS_CATOOL_FREE_TRIAL_FLOW =
   IS_CATOOL_FREE &&
   IS_TRADE_MODE &&
   WORKFLOW === 'color-analysis';
+const IS_FREE_DIY_CATOOL_FLOW =
+  IS_FREE_DIY_CATOOL &&
+  IS_DIY_MODE &&
+  WORKFLOW === 'color-analysis';
+const IS_FREE_ANALYSIS_DEMO_FLOW =
+  IS_CATOOL_FREE_TRIAL_FLOW ||
+  IS_FREE_DIY_CATOOL_FLOW;
+const FREE_ANALYSIS_UNLOCK_URL = IS_FREE_DIY_CATOOL_FLOW
+  ? 'https://yourcolorstyle.com/products/virtual-color-draping#order'
+  : 'https://yourcolorstyle.com/products/color-analysis-tool#order';
+const FREE_ANALYSIS_LABELS = IS_FREE_DIY_CATOOL_FLOW
+  ? {
+      listTitle: 'Demo Photos',
+      itemMeta: 'Preloaded demo photo',
+      choosePrompt: 'Choose a preloaded photo to begin.',
+      ready: 'Demo photo ready. Adjust the photo or continue to the DIY Color Analysis Tool.',
+      saved: 'Demo photo ready. Adjusted photo saved in this browser.',
+      unlockTitle: 'Your Photo Here',
+      unlockCopy: 'Unlock the DIY Draping Tool to upload your own photo.',
+      unlockButton: 'Unlock DIY Tool',
+      missingDemo: 'Choose a demo photo first.'
+    }
+  : {
+      listTitle: 'Trial Clients',
+      itemMeta: 'Preloaded trial client',
+      choosePrompt: 'Choose a preloaded trial client to begin.',
+      ready: 'Trial client ready. Adjust the photo or continue to the Color Analysis Tool.',
+      saved: 'Trial client ready. Adjusted photo saved in this browser.',
+      unlockTitle: 'Your Client Photo Here',
+      unlockCopy: 'Unlock the Professional Tool to upload client photos.',
+      unlockButton: 'Unlock Professional Tool',
+      missingDemo: 'Choose a trial client first.'
+    };
 const FREE_TRIAL_CLIENTS = [
   {
     id: 'bwd',
@@ -1447,7 +1658,7 @@ function hideLoadingView() {
   }
 
   async function loadPhotoPrepUsage() {
-  if (IS_CATOOL_FREE_TRIAL_FLOW) {
+  if (IS_FREE_ANALYSIS_DEMO_FLOW) {
     if (photoPrepUsageMessageEl) photoPrepUsageMessageEl.hidden = true;
     state.canUploadPhoto = false;
     if (uploadBtn) uploadBtn.hidden = true;
@@ -1627,6 +1838,20 @@ function updateStartAnalysisLink() {
 
   let href = '/pages/color-analysis-tool';
 
+  if (IS_FREE_ANALYSIS_DEMO_FLOW && state.demoClientId) {
+    query.set('demoClient', state.demoClientId);
+    query.set('mode', IS_FREE_DIY_CATOOL_FLOW ? 'diy' : 'trade');
+
+    const queryString = query.toString();
+    if (queryString) {
+      href += '?' + queryString;
+    }
+
+    startAnalysisBtn.textContent = 'Start Color Analysis';
+    startAnalysisBtn.setAttribute('href', href);
+    return;
+  }
+
   if (IS_DIY_MODE) {
     state.customerId = VIEWER_CUSTOMER_ID;
     state.clientRecordId = null;
@@ -1646,20 +1871,6 @@ function updateStartAnalysisLink() {
     if (startSignatureAnalysisBtn) {
       startSignatureAnalysisBtn.hidden = true;
     }
-    return;
-  }
-
-  if (IS_CATOOL_FREE_TRIAL_FLOW && state.demoClientId) {
-    query.set('demoClient', state.demoClientId);
-    query.set('mode', 'trade');
-
-    const queryString = query.toString();
-    if (queryString) {
-      href += '?' + queryString;
-    }
-
-    startAnalysisBtn.textContent = 'Start Color Analysis';
-    startAnalysisBtn.setAttribute('href', href);
     return;
   }
 
@@ -1740,6 +1951,17 @@ if (state.firstName) {
     return;
   }
 
+  if (IS_FREE_ANALYSIS_DEMO_FLOW) {
+    if (state.demoClientId) {
+      clientCreatedNote.textContent = state.adjustedPhotoUrl
+        ? FREE_ANALYSIS_LABELS.saved
+        : FREE_ANALYSIS_LABELS.ready;
+    } else {
+      clientCreatedNote.textContent = FREE_ANALYSIS_LABELS.choosePrompt;
+    }
+    return;
+  }
+
   if (IS_DIY_MODE) {
     if (state.adjustedPhotoUrl) {
       clientCreatedNote.textContent = 'Photo ready. Adjusted photo saved.';
@@ -1752,17 +1974,6 @@ if (state.firstName) {
   }
 
   if (IS_SIMPLE_ANALYST) {
-    if (IS_CATOOL_FREE_TRIAL_FLOW) {
-      if (state.demoClientId) {
-        clientCreatedNote.textContent = state.adjustedPhotoUrl
-          ? 'Trial client ready. Adjusted photo saved in this browser.'
-          : 'Trial client ready. Adjust the photo or continue to the Color Analysis Tool.';
-      } else {
-        clientCreatedNote.textContent = 'Choose a preloaded trial client to begin.';
-      }
-      return;
-    }
-
     if (state.adjustedPhotoUrl || state.originalPhotoUrl) {
       clientCreatedNote.textContent = 'Working photo loaded. Click Start New Client to upload a new photo.';
     } else {
@@ -1918,7 +2129,7 @@ function clearSelectedPersonalPhoto(photoId) {
 }
 
 async function archivePersonalStudioPhoto(photoId) {
-  if (!IS_PERSONAL_MODE || !photoId || !VIEWER_CUSTOMER_ID || !APP_BASE_URL) return;
+  if (!CAN_DELETE_PERSONAL_PHOTOS || !(IS_PERSONAL_MODE || IS_DIY_MODE) || !photoId || !VIEWER_CUSTOMER_ID || !APP_BASE_URL) return;
 
   if (!confirm('Delete this photo from your gallery?')) {
     return;
@@ -1987,6 +2198,17 @@ personalLibraryEmptyEl.hidden = true;
       photoSource: 'PersonalStudioPhotos'
     });
 
+    const deleteButton = CAN_DELETE_PERSONAL_PHOTOS
+      ? `
+            <button
+              type="button"
+              class="ycs-photo-prep-btn ycs-photo-prep-btn--danger ycs-prep-delete-personal-photo-btn"
+              data-photo-id="${escapeHtml(photoId)}"
+            >
+              Delete Photo
+            </button>`
+      : '';
+
     if (IS_SAMPLE_TRIAL_REQUEST || IS_SAMPLE_USER) {
       drapeQuery.set('trial', 'sample');
     }
@@ -2017,13 +2239,7 @@ personalLibraryEmptyEl.hidden = true;
 >
   Open Draping Studio
 </a>
-            <button
-              type="button"
-              class="ycs-photo-prep-btn ycs-photo-prep-btn--danger ycs-prep-delete-personal-photo-btn"
-              data-photo-id="${escapeHtml(photoId)}"
-            >
-              Delete Photo
-            </button>
+            ${deleteButton}
           </div>
         </div>
       </div>
@@ -2054,7 +2270,7 @@ function openFreeTrialClient(clientId) {
   state.workspaceOpen = true;
 
   const nextUrl = new URL(window.location.href);
-  nextUrl.searchParams.set('mode', 'trade');
+  nextUrl.searchParams.set('mode', IS_FREE_DIY_CATOOL_FLOW ? 'diy' : 'trade');
   nextUrl.searchParams.set('workflow', 'color-analysis');
   nextUrl.searchParams.set('demoClient', client.id);
   nextUrl.searchParams.delete('clientRecordId');
@@ -2156,24 +2372,29 @@ function syncAdminPhotoPrepVisibility() {
 function syncSimpleAnalystPhotoPrepVisibility() {
   if (!IS_SIMPLE_ANALYST) return;
 
-  if (IS_CATOOL_FREE_TRIAL_FLOW) {
-    const hasDemoClient = !!state.demoClientId;
-    if (createClientPanel) createClientPanel.hidden = hasDemoClient && state.workspaceOpen;
-    if (customerMetaEl) customerMetaEl.hidden = !hasDemoClient;
-    if (photoPrepWorkspace) photoPrepWorkspace.hidden = !(hasDemoClient && state.workspaceOpen);
-    if (uploadBtn) uploadBtn.hidden = true;
-    if (replaceBtn) replaceBtn.hidden = true;
-    if (editClientBtn) editClientBtn.hidden = true;
-    updateClientStatusNote();
-    return;
-  }
-
   const hasClient = !!state.clientRecordId || !!state.customerId;
 
   if (createClientPanel) createClientPanel.hidden = hasClient || state.workspaceOpen;
   if (customerMetaEl) customerMetaEl.hidden = !hasClient;
   if (photoPrepWorkspace) photoPrepWorkspace.hidden = !(hasClient && state.workspaceOpen);
 
+  updateClientStatusNote();
+}
+
+function syncFreeAnalysisDemoVisibility() {
+  if (!IS_FREE_ANALYSIS_DEMO_FLOW) return;
+
+  const hasDemoClient = !!state.demoClientId;
+  if (createClientPanel) createClientPanel.hidden = hasDemoClient && state.workspaceOpen;
+  if (customerMetaEl) customerMetaEl.hidden = IS_FREE_DIY_CATOOL_FLOW ? true : !hasDemoClient;
+  if (photoPrepWorkspace) photoPrepWorkspace.hidden = !(hasDemoClient && state.workspaceOpen);
+  if (personalLibraryEl) personalLibraryEl.hidden = true;
+  if (uploadBtn) uploadBtn.hidden = true;
+  if (replaceBtn) replaceBtn.hidden = true;
+  if (personalUploadBtn) personalUploadBtn.hidden = true;
+  if (editClientBtn) editClientBtn.hidden = true;
+  if (showClientListBtn) showClientListBtn.hidden = IS_FREE_DIY_CATOOL_FLOW;
+  if (addMemberPhotoBtn) addMemberPhotoBtn.hidden = true;
   updateClientStatusNote();
 }
 
@@ -2198,6 +2419,7 @@ function syncPersonalPhotoPrepVisibility() {
 
 function syncDiyPhotoPrepVisibility() {
   if (!IS_DIY_MODE) return;
+  if (IS_FREE_ANALYSIS_DEMO_FLOW) return;
 
   if (createClientPanel) createClientPanel.hidden = true;
   if (customerMetaEl) customerMetaEl.hidden = true;
@@ -2220,6 +2442,7 @@ function syncVisibility() {
   syncTradePhotoPrepVisibility();
   syncAdminPhotoPrepVisibility();
   syncSimpleAnalystPhotoPrepVisibility();
+  syncFreeAnalysisDemoVisibility();
   syncPersonalPhotoPrepVisibility();
   syncDiyPhotoPrepVisibility();
 }
@@ -2613,18 +2836,21 @@ state.previewOffsetY = 0;
   function renderRecentClients(clients) {
     if (!recentClientsList) return;
 
-    if (IS_CATOOL_FREE_TRIAL_FLOW) {
+    if (IS_FREE_ANALYSIS_DEMO_FLOW) {
       const trialClientCards = FREE_TRIAL_CLIENTS.map(function (client) {
         const adjustedUrl = getStoredFreeTrialAdjustedPhoto(client.id);
         const thumb = adjustedUrl || client.photoUrl;
+        const title = IS_FREE_DIY_CATOOL_FLOW
+          ? [client.lastName, 'Demo'].filter(Boolean).join(' ')
+          : client.firstName + ' ' + client.lastName;
 
         return `
-          <div class="ycs-photo-prep-recent-item">
+          <div class="ycs-photo-prep-recent-item ycs-photo-prep-recent-item--demo">
+            <img src="${escapeHtml(thumb)}" alt="" class="ycs-photo-prep-recent-thumb" />
             <div class="ycs-photo-prep-recent-copy">
-              <p class="ycs-photo-prep-recent-name">${escapeHtml(client.firstName + ' ' + client.lastName)}</p>
-              <p class="ycs-photo-prep-recent-meta">Preloaded trial client${adjustedUrl ? ' · Adjusted photo saved' : ''}</p>
+              <p class="ycs-photo-prep-recent-name">${escapeHtml(title)}</p>
+              <p class="ycs-photo-prep-recent-meta">${escapeHtml(FREE_ANALYSIS_LABELS.itemMeta)}${adjustedUrl ? ' · Adjusted photo saved' : ''}</p>
             </div>
-            <img src="${escapeHtml(thumb)}" alt="" style="width: 54px; height: 64px; object-fit: cover; border-radius: 8px; border: 1px solid #ece7df;" />
             <button
               type="button"
               class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary ycs-prep-open-demo-client-btn"
@@ -2636,25 +2862,27 @@ state.previewOffsetY = 0;
         `;
       }).join('');
 
+      recentClientsList.classList.add('ycs-photo-prep-recent-list--demo');
       recentClientsList.innerHTML =
         trialClientCards +
         `
-          <div class="ycs-photo-prep-recent-item">
+          <div class="ycs-photo-prep-recent-item ycs-photo-prep-recent-item--unlock">
             <div class="ycs-photo-prep-recent-copy">
-              <p class="ycs-photo-prep-recent-name">Upload Your Own Client</p>
-              <p class="ycs-photo-prep-recent-meta">Unlock the full Color Analysis Tool to create your own clients and upload photos.</p>
+              <p class="ycs-photo-prep-recent-name">${escapeHtml(FREE_ANALYSIS_LABELS.unlockTitle)}</p>
+              <p class="ycs-photo-prep-recent-meta">${escapeHtml(FREE_ANALYSIS_LABELS.unlockCopy)}</p>
             </div>
             <a
-              href="https://yourcolorstyle.com/products/color-analysis-tool"
+              href="${escapeHtml(FREE_ANALYSIS_UNLOCK_URL)}"
               class="ycs-photo-prep-btn"
             >
-              Unlock
+              ${escapeHtml(FREE_ANALYSIS_LABELS.unlockButton)}
             </a>
           </div>
         `;
       return;
     }
 
+    recentClientsList.classList.remove('ycs-photo-prep-recent-list--demo');
     if (!Array.isArray(clients) || !clients.length) {
       recentClientsList.innerHTML = '<p class="ycs-photo-prep-help" style="margin-top: 0;">No recent clients yet.</p>';
       return;
@@ -2664,6 +2892,17 @@ state.previewOffsetY = 0;
       const fullName = [client.firstName || '', client.lastName || ''].filter(Boolean).join(' ').trim() || 'Unnamed client';
       const email = client.email || 'No email';
       const clientRecordId = client.clientRecordId || '';
+      const deleteButton = CAN_DELETE_CLIENTS
+        ? `
+          <button
+            type="button"
+            class="ycs-photo-prep-btn ycs-photo-prep-btn--danger ycs-prep-delete-client-btn"
+            data-client-record-id="${escapeHtml(clientRecordId)}"
+            data-client-name="${escapeHtml(fullName)}"
+          >
+            Delete
+          </button>`
+        : '';
 
       return `
         <div class="ycs-photo-prep-recent-item">
@@ -2671,6 +2910,7 @@ state.previewOffsetY = 0;
             <p class="ycs-photo-prep-recent-name">${escapeHtml(fullName)}</p>
             <p class="ycs-photo-prep-recent-meta">${escapeHtml(email)}</p>
           </div>
+          <div class="ycs-photo-prep-recent-actions">
           <button
             type="button"
             class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary ycs-prep-open-client-btn"
@@ -2681,15 +2921,15 @@ state.previewOffsetY = 0;
           >
             Open
           </button>
+          ${deleteButton}
+          </div>
         </div>
       `;
     }).join('');
   }
 
   async function initSimpleAnalystFlow() {
-  if (!IS_SIMPLE_ANALYST || !VIEWER_CUSTOMER_ID) return;
-
-  if (IS_CATOOL_FREE_TRIAL_FLOW) {
+  if (IS_FREE_ANALYSIS_DEMO_FLOW) {
     state.customerId = VIEWER_CUSTOMER_ID;
     state.clientRecordId = null;
     updateStartAnalysisLink();
@@ -2702,6 +2942,8 @@ state.previewOffsetY = 0;
     }
     return;
   }
+
+  if (!IS_SIMPLE_ANALYST || !VIEWER_CUSTOMER_ID) return;
 
   state.customerId = VIEWER_CUSTOMER_ID;
   state.clientRecordId = null;
@@ -2718,7 +2960,7 @@ hideLoadingView();
   async function loadRecentClients() {
     if (!CAN_USE_CLIENT_MANAGEMENT || !VIEWER_CUSTOMER_ID || !recentClientsList) return;
 
-    if (IS_CATOOL_FREE_TRIAL_FLOW) {
+    if (IS_FREE_ANALYSIS_DEMO_FLOW) {
       renderRecentClients([]);
       return;
     }
@@ -2856,7 +3098,7 @@ hideLoadingView();
 
   async function createConsultantClient() {
     if (!CAN_USE_CLIENT_MANAGEMENT) return;
-    if (IS_CATOOL_FREE_TRIAL_FLOW) return;
+    if (IS_FREE_ANALYSIS_DEMO_FLOW) return;
 
     if (!VIEWER_CUSTOMER_ID) {
       alert('Missing consultant ID. Please refresh and try again.');
@@ -2993,6 +3235,59 @@ hideLoadingView();
       alert(error.message || 'Could not save client info.');
     }
   }
+
+  async function archiveConsultantClient(clientRecordId, clientName) {
+    if (!CAN_DELETE_CLIENTS || !clientRecordId || !VIEWER_CUSTOMER_ID || !APP_BASE_URL) return;
+
+    const label = clientName || 'this client';
+    if (!confirm('Delete ' + label + '? This will remove the client from your list.')) {
+      return;
+    }
+
+    try {
+      showLoading('Deleting client...');
+
+      const response = await fetch(APP_BASE_URL + '/api/archive-consultant-client', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          consultantId: VIEWER_CUSTOMER_ID,
+          clientRecordId: clientRecordId
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Could not delete client');
+      }
+
+      if (String(state.clientRecordId || '').trim() === clientRecordId) {
+        state.clientRecordId = null;
+        state.customerId = IS_SIMPLE_ANALYST ? VIEWER_CUSTOMER_ID : null;
+        state.originalPhotoUrl = null;
+        state.adjustedPhotoUrl = null;
+        state.activePhotoUrl = null;
+        state.currentBasePhotoUrl = null;
+        state.hasLoadedPhoto = false;
+        state.workspaceOpen = false;
+        closeEditClientPanel();
+        showOriginalPhoto(null);
+        showWorkingPhoto(null);
+        updateStatus();
+        updateCustomerMeta();
+        syncVisibility();
+      }
+
+      await loadRecentClients();
+      hideLoading();
+    } catch (error) {
+      hideLoading();
+      console.error('Failed to delete consultant client', error);
+      alert(error.message || 'Could not delete client.');
+    }
+  }
+
 
   async function fetchPhoto(recordId, options) {
   options = options || {};
@@ -3577,8 +3872,8 @@ if (IS_PERSONAL_MODE) {
     return;
   }
 
-  if (IS_CATOOL_FREE_TRIAL_FLOW && !state.demoClientId) {
-    alert('Choose a trial client first.');
+  if (IS_FREE_ANALYSIS_DEMO_FLOW && !state.demoClientId) {
+    alert(FREE_ANALYSIS_LABELS.missingDemo);
     return;
   }
 
@@ -3599,7 +3894,7 @@ if (IS_PERSONAL_MODE) {
 
     showLoading('Saving adjusted photo…');
 
-    if (IS_CATOOL_FREE_TRIAL_FLOW) {
+    if (IS_FREE_ANALYSIS_DEMO_FLOW) {
       setStoredFreeTrialAdjustedPhoto(state.demoClientId, adjustedDataUrl);
 
       state.adjustedPhotoUrl = adjustedDataUrl;
@@ -3680,6 +3975,7 @@ if (IS_PERSONAL_MODE) {
     state.adjustedPhotoUrl = saveData.imageUrl;
     state.activePhotoUrl = saveData.imageUrl;
     state.currentBasePhotoUrl = saveData.imageUrl;
+    state.justUploadedNewPhoto = true;
 
     syncClientMetaFromCreateInputs();
     syncClientMetaFromSaveResponse(saveData);
@@ -3715,7 +4011,7 @@ async function useOriginalPhoto() {
     return;
   }
 
-  if (IS_CATOOL_FREE_TRIAL_FLOW) {
+  if (IS_FREE_ANALYSIS_DEMO_FLOW) {
     state.activePhotoUrl = state.originalPhotoUrl;
     state.currentBasePhotoUrl = state.originalPhotoUrl;
 
@@ -4071,6 +4367,17 @@ if (addMemberPhotoBtn) {
     return;
   }
 
+  const deleteClientBtn = event.target.closest('.ycs-prep-delete-client-btn');
+  if (deleteClientBtn) {
+    event.preventDefault();
+    event.stopPropagation();
+    archiveConsultantClient(
+      String(deleteClientBtn.dataset.clientRecordId || '').trim(),
+      String(deleteClientBtn.dataset.clientName || '').trim()
+    );
+    return;
+  }
+
   const drapingLink = event.target.closest('a');
   if (drapingLink && drapingLink.closest('.ycs-prep-open-personal-photo-btn')) {
     return;
@@ -4134,7 +4441,7 @@ document.addEventListener('keydown', function (event) {
     });
   }
 
-  if (CAN_USE_CLIENT_MANAGEMENT && !IS_MEMBER_PHOTO_MODE && !IS_CATOOL_FREE_TRIAL_FLOW) {
+  if (CAN_USE_CLIENT_MANAGEMENT && !IS_MEMBER_PHOTO_MODE && !IS_FREE_ANALYSIS_DEMO_FLOW) {
   loadRecentClients();
 }
 
@@ -4147,7 +4454,7 @@ syncVisibility();
 loadPhotoPrepUsage();
 
 
-if (IS_CATOOL_FREE_TRIAL_FLOW) {
+if (IS_FREE_ANALYSIS_DEMO_FLOW) {
   initSimpleAnalystFlow();
   return;
 }

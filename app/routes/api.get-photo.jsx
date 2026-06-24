@@ -89,7 +89,7 @@ const notArchivedFormula =
 
 if (isConsultantClient) {
   tableName = "ConsultantClients";
-  filterFormula = `{ClientRecordId}="${clientRecordId}"`;
+  filterFormula = `AND({ClientRecordId}="${clientRecordId}", ${notArchivedFormula})`;
 } else if (isSpecificPhoto) {
   if (photoId.startsWith("rec") && !photoSource) {
     return Response.json(
