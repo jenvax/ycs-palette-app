@@ -55,3 +55,20 @@ export function getDrapingRecencyBuckets(history, now = new Date()) {
 
   return [...buckets];
 }
+
+export function isDueForDraping(
+  { membershipStatus, hasPhoto, lastDrapedDate },
+  now = new Date()
+) {
+  const status = String(membershipStatus || "").trim().toLowerCase();
+  if ((status !== "active" && status !== "legacy") || !hasPhoto) return false;
+
+  const bucket = getDrapingRecencyBucket(lastDrapedDate, now);
+  return [
+    "fourMonthsAgo",
+    "fiveMonthsAgo",
+    "sixMonthsAgo",
+    "older",
+    "never"
+  ].includes(bucket);
+}

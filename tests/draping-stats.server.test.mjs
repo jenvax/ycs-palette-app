@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   getDrapingRecencyBucket,
   getDrapingRecencyBuckets,
+  isDueForDraping,
   parseDrapingDate
 } from "../app/services/draping-stats.server.js";
 
@@ -50,4 +51,34 @@ test("a member is included in every month where they were draped", () => {
     getDrapingRecencyBuckets(history, now),
     ["lastMonth", "fourMonthsAgo"]
   );
+});
+
+test("due for draping requires active status, a photo, and four months elapsed", () => {
+  const now = new Date(2026, 6, 6, 12);
+
+  assert.equal(isDueForDraping({
+    membershipStatus: "Active",
+    hasPhoto: true,
+    lastDrapedDate: "2026-03-31"
+  }, now), true);
+  assert.equal(isDueForDraping({
+    membershipStatus: "Legacy",
+    hasPhoto: true,
+    lastDrapedDate: ""
+  }, now), true);
+  assert.equal(isDueForDraping({
+    membershipStatus: "Active",
+    hasPhoto: true,
+    lastDrapedDate: "2026-04-01"
+  }, now), false);
+  assert.equal(isDueForDraping({
+    membershipStatus: "Inactive",
+    hasPhoto: true,
+    lastDrapedDate: "2026-01-01"
+  }, now), false);
+  assert.equal(isDueForDraping({
+    membershipStatus: "Active",
+    hasPhoto: false,
+    lastDrapedDate: "2026-01-01"
+  }, now), false);
 });

@@ -1,6 +1,7 @@
 import {
   getDrapingRecencyBucket,
-  getDrapingRecencyBuckets
+  getDrapingRecencyBuckets,
+  isDueForDraping
 } from "../services/draping-stats.server.js";
 
 function normalizeField(value) {
@@ -853,6 +854,7 @@ for (const customerPhotoRecord of customerPhotoRecords) {
           const email = String(fields.Email || "").trim();
           const firstName = String(fields.FirstName || "").trim();
           const lastName = String(fields.LastName || "").trim();
+          const membershipStatus = String(fields.MembershipStatus || "Inactive").trim();
 
           const tags = String(fields.ShopifyTags || "")
             .split(",")
@@ -889,7 +891,7 @@ for (const customerPhotoRecord of customerPhotoRecords) {
             colorType: String(fields.ColorType || "").trim(),
             permissionToUse: parseTruthy(fields.PermissionToUse),
             joinedDate: fields.JoinedDate ? String(fields.JoinedDate).trim() : "",
-            membershipStatus: String(fields.MembershipStatus || "Inactive").trim(),
+            membershipStatus,
             becameVIPAt: fields.BecameVIPAt || "",
             lostVIPAt: fields.LostVIPAt || "",
             isNewThisMonth: isOnOrAfterStartDate(fields.BecameVIPAt),
@@ -907,7 +909,12 @@ for (const customerPhotoRecord of customerPhotoRecords) {
             lastDrapedColor: lastDraping?.colorName || "",
             lastDrapedHex: lastDraping?.colorHex || "",
             drapingRecency: getDrapingRecencyBucket(lastDraping?.drapedDate || ""),
-            drapingRecencyBuckets: getDrapingRecencyBuckets(drapingHistory)
+            drapingRecencyBuckets: getDrapingRecencyBuckets(drapingHistory),
+            isDueForDraping: isDueForDraping({
+              membershipStatus,
+              hasPhoto: photos.length > 0,
+              lastDrapedDate: lastDraping?.drapedDate || ""
+            })
           };
         })
         .filter(Boolean)
