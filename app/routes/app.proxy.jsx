@@ -1,4 +1,7 @@
-import { getDrapingRecencyBucket } from "../services/draping-stats.server.js";
+import {
+  getDrapingRecencyBucket,
+  getDrapingRecencyBuckets
+} from "../services/draping-stats.server.js";
 
 function normalizeField(value) {
   if (Array.isArray(value)) return value[0] || "";
@@ -903,7 +906,8 @@ for (const customerPhotoRecord of customerPhotoRecords) {
             lastDrapedMonthYear: lastDraping?.drapedMonthYear || "",
             lastDrapedColor: lastDraping?.colorName || "",
             lastDrapedHex: lastDraping?.colorHex || "",
-            drapingRecency: getDrapingRecencyBucket(lastDraping?.drapedDate || "")
+            drapingRecency: getDrapingRecencyBucket(lastDraping?.drapedDate || ""),
+            drapingRecencyBuckets: getDrapingRecencyBuckets(drapingHistory)
           };
         })
         .filter(Boolean)

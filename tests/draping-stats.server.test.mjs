@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   getDrapingRecencyBucket,
+  getDrapingRecencyBuckets,
   parseDrapingDate
 } from "../app/services/draping-stats.server.js";
 
@@ -35,4 +36,18 @@ test("missing and invalid draping dates are never-draped", () => {
   assert.equal(getDrapingRecencyBucket("", now), "never");
   assert.equal(getDrapingRecencyBucket("2026-02-31", now), "never");
   assert.equal(getDrapingRecencyBucket("not-a-date", now), "never");
+});
+
+test("a member is included in every month where they were draped", () => {
+  const now = new Date(2026, 6, 6, 12);
+  const history = [
+    { drapedDate: "2026-06-10" },
+    { drapedDate: "2026-03-22" },
+    { drapedDate: "2026-03-08" }
+  ];
+
+  assert.deepEqual(
+    getDrapingRecencyBuckets(history, now),
+    ["lastMonth", "fourMonthsAgo"]
+  );
 });

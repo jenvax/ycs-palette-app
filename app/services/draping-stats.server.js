@@ -44,3 +44,14 @@ export function getDrapingRecencyBucket(dateValue, now = new Date()) {
 
   return buckets[diffMonths] || "older";
 }
+
+export function getDrapingRecencyBuckets(history, now = new Date()) {
+  const buckets = new Set();
+
+  for (const entry of Array.isArray(history) ? history : []) {
+    const bucket = getDrapingRecencyBucket(entry?.drapedDate, now);
+    if (bucket !== "never") buckets.add(bucket);
+  }
+
+  return [...buckets];
+}
