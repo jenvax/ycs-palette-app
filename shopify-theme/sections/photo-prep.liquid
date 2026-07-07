@@ -406,7 +406,7 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
     href="/pages/signature-color-analysis"
     class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary"
   >
-    Signature Color Analysis
+    Lip & Draping Studio
   </a>
 {% endif %}
           </div>
@@ -1615,7 +1615,7 @@ function updateStartAnalysisLink() {
       );
     }
 
-    startAnalysisBtn.textContent = 'Back to Signature Color Analysis';
+    startAnalysisBtn.textContent = 'Continue to Lip & Draping Studio';
     startAnalysisBtn.setAttribute('href', signatureUrl.pathname + signatureUrl.search);
 
     if (startSignatureAnalysisBtn) {
@@ -1712,7 +1712,7 @@ if (state.firstName) {
       signatureHref += '?' + signatureQueryString;
     }
 
-    startSignatureAnalysisBtn.textContent = 'Signature Color Analysis';
+    startSignatureAnalysisBtn.textContent = 'Lip & Draping Studio';
     startSignatureAnalysisBtn.setAttribute('href', signatureHref);
   }
 } //updateStartAnalysisLink
@@ -3129,6 +3129,17 @@ hideLoadingView();
       showWorkingPhoto(null);
     }
   } catch (error) {
+    if (optionPhotoId && options.fallbackToLatestOnMissing) {
+      console.warn('Selected photo was not available; falling back to latest member photo.', error);
+      state.selectedPersonalPhotoId = null;
+      state.selectedPhotoSource = initialPhotoSource || 'PersonalStudioPhotos';
+      return fetchPhoto(recordId, {
+        silentIfMissing,
+        forceCustomerRecord,
+        fallbackToLatestOnMissing: false
+      });
+    }
+
     hideLoading();
     resetPreviewOnly();
     updateCustomerMeta();
@@ -4212,15 +4223,13 @@ if (IS_PERSONAL_MODE || IS_DIY_MODE) {
   state.clientRecordId = null;
   state.workspaceOpen = true;
 
-  if (initialPhotoSource === 'CustomerPhotos') {
-    fetchPhoto(initialCustomerId, {
-      silentIfMissing: false,
-      photoId: initialPhotoId,
-      photoSource: 'CustomerPhotos'
-    });
-  } else {
-    loadSelectedPersonalStudioPhoto(initialPhotoId);
-  }
+  fetchPhoto(initialCustomerId, {
+    silentIfMissing: false,
+    photoId: initialPhotoId,
+    photoSource: initialPhotoSource || 'PersonalStudioPhotos',
+    forceCustomerRecord: true,
+    fallbackToLatestOnMissing: true
+  });
 
   return;
 }

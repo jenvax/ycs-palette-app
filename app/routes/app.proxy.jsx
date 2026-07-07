@@ -768,7 +768,8 @@ export async function loader({ request }) {
           baseId: AIRTABLE_BASE_ID,
           tableName: "PersonalStudioPhotos",
           token: AIRTABLE_TOKEN,
-          sortField: "UpdatedAt"
+          sortField: "UpdatedAt",
+          formula: "OR({IsArchived}=BLANK(), {IsArchived}=0, {IsArchived}=FALSE())"
         }),
         fetchMemberDrapingHistoryMap({
           baseId: AIRTABLE_BASE_ID,
@@ -827,6 +828,14 @@ for (const customerPhotoRecord of customerPhotoRecords) {
   activePhotoUrl,
   updatedAt: f.UpdatedAt || ""
 });
+      });
+
+      Object.keys(photoMap).forEach((customerId) => {
+        photoMap[customerId].sort((a, b) => {
+          const aTime = Date.parse(a.updatedAt || "") || 0;
+          const bTime = Date.parse(b.updatedAt || "") || 0;
+          return bTime - aTime;
+        });
       });
 
       // Do not add CustomerPhotos directly.
