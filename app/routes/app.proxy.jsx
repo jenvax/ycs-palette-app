@@ -598,7 +598,7 @@ async function syncCustomerDirectoryFromShopify({ shop, accessToken, baseId, tok
         token,
         recordId: record.id,
         fields: {
-          membershipStatus: String(fields.MembershipStatus || "").trim(),
+          MembershipStatus: String(fields.MembershipStatus || "").trim() || "Inactive",
           LastSyncedAt: nowIso
         }
       });
