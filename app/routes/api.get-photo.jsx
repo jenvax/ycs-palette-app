@@ -89,7 +89,7 @@ const notArchivedFormula =
 
 if (isConsultantClient) {
   tableName = "ConsultantClients";
-  filterFormula = `{ClientRecordId}="${clientRecordId}"`;
+  filterFormula = `AND({ClientRecordId}="${clientRecordId}", ${notArchivedFormula})`;
 } else if (isSpecificPhoto) {
   if (photoId.startsWith("rec") && !photoSource) {
     return Response.json(
@@ -139,7 +139,37 @@ const airtableUrl =
       );
     }
 
-    const record = data.records?.[0] || null;
+    let record = data.records?.[0] || null;
+
+if (!record && tableName === "PersonalStudioPhotos" && customerId && !clientRecordId) {
+  const customerPhotosFormula = `AND({CustomerId}="${customerId}")`;
+  const customerPhotosUrl =
+    `https://api.airtable.com/v0/${airtableBase}/CustomerPhotos` +
+    `?filterByFormula=${encodeURIComponent(customerPhotosFormula)}`;
+
+  const customerPhotosRes = await fetch(customerPhotosUrl, {
+    headers: {
+      Authorization: `Bearer ${airtableToken}`
+    }
+  });
+
+  const customerPhotosData = await customerPhotosRes.json();
+
+  if (!customerPhotosRes.ok) {
+    return Response.json(
+      {
+        error: "Airtable fallback lookup failed",
+        details: customerPhotosData
+      },
+      { status: 500, headers: corsHeaders }
+    );
+  }
+
+  record = customerPhotosData.records?.[0] || null;
+  if (record) {
+    tableName = "CustomerPhotos";
+  }
+}
 
 if (!record) {
   return Response.json(
