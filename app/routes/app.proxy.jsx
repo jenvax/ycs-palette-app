@@ -940,9 +940,8 @@ for (const customerPhotoRecord of customerPhotoRecords) {
         totalNetChangeSinceTracking: 0
       };
 
-      directoryRecords.forEach((record) => {
-        const fields = record.fields || {};
-        const status = String(fields.MembershipStatus || "").toLowerCase();
+      members.forEach((member) => {
+        const status = String(member.membershipStatus || "").toLowerCase();
 
         if (status === "active" || status === "legacy") {
           stats.active += 1;
@@ -950,22 +949,11 @@ for (const customerPhotoRecord of customerPhotoRecords) {
           stats.inactive += 1;
         }
 
-        const joinedDate = fields.JoinedDate ? new Date(fields.JoinedDate) : null;
-        const lostVIPAt = fields.LostVIPAt ? new Date(fields.LostVIPAt) : null;
-
-        if (
-          joinedDate &&
-          !Number.isNaN(joinedDate.getTime()) &&
-          joinedDate >= startDate
-        ) {
+        if (member.isNewThisMonth) {
           stats.newLast30Days += 1;
         }
 
-        if (
-          lostVIPAt &&
-          !Number.isNaN(lostVIPAt.getTime()) &&
-          lostVIPAt >= startDate
-        ) {
+        if (member.isLostThisMonth) {
           stats.lostLast30Days += 1;
         }
       });
