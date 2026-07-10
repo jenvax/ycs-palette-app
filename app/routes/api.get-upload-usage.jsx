@@ -76,7 +76,7 @@ function getUsageConfig(params) {
       return {
         allowed: true,
         scope: "monthly",
-        limit: 10
+        limit: 15
       };
     }
 
@@ -146,7 +146,7 @@ function getUsageConfig(params) {
   // fallback to old behavior if mode is missing
   if (tool === "photo-prep") {
     if (isTrade) {
-      return { allowed: true, scope: "monthly", limit: 10 };
+      return { allowed: true, scope: "monthly", limit: 15 };
     }
 
     if (isCatoolGrowth) {
