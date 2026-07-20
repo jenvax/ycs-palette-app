@@ -1,3 +1,9 @@
+import {
+  getDrapingRecencyBucket,
+  getDrapingRecencyBuckets,
+  isDueForDraping
+} from "../services/draping-stats.server.js";
+
 function normalizeField(value) {
   if (Array.isArray(value)) return value[0] || "";
   return value || "";
@@ -592,7 +598,7 @@ async function syncCustomerDirectoryFromShopify({ shop, accessToken, baseId, tok
         token,
         recordId: record.id,
         fields: {
-          membershipStatus: String(fields.MembershipStatus || "").trim(),
+          MembershipStatus: String(fields.MembershipStatus || "").trim() || "Inactive",
           LastSyncedAt: nowIso
         }
       });
@@ -762,7 +768,8 @@ export async function loader({ request }) {
           baseId: AIRTABLE_BASE_ID,
           tableName: "PersonalStudioPhotos",
           token: AIRTABLE_TOKEN,
-          sortField: "UpdatedAt"
+          sortField: "UpdatedAt",
+          formula: "OR({IsArchived}=BLANK(), {IsArchived}=0, {IsArchived}=FALSE())"
         }),
         fetchMemberDrapingHistoryMap({
           baseId: AIRTABLE_BASE_ID,
@@ -823,6 +830,14 @@ for (const customerPhotoRecord of customerPhotoRecords) {
 });
       });
 
+      Object.keys(photoMap).forEach((customerId) => {
+        photoMap[customerId].sort((a, b) => {
+          const aTime = Date.parse(a.updatedAt || "") || 0;
+          const bTime = Date.parse(b.updatedAt || "") || 0;
+          return bTime - aTime;
+        });
+      });
+
       // Do not add CustomerPhotos directly.
 // They are migrated into PersonalStudioPhotos above.
 // PersonalStudioPhotos is now the source of truth for Member Photos.
@@ -848,6 +863,7 @@ for (const customerPhotoRecord of customerPhotoRecords) {
           const email = String(fields.Email || "").trim();
           const firstName = String(fields.FirstName || "").trim();
           const lastName = String(fields.LastName || "").trim();
+          const membershipStatus = String(fields.MembershipStatus || "Inactive").trim();
 
           const tags = String(fields.ShopifyTags || "")
             .split(",")
@@ -884,7 +900,7 @@ for (const customerPhotoRecord of customerPhotoRecords) {
             colorType: String(fields.ColorType || "").trim(),
             permissionToUse: parseTruthy(fields.PermissionToUse),
             joinedDate: fields.JoinedDate ? String(fields.JoinedDate).trim() : "",
-            membershipStatus: String(fields.MembershipStatus || "Inactive").trim(),
+            membershipStatus,
             becameVIPAt: fields.BecameVIPAt || "",
             lostVIPAt: fields.LostVIPAt || "",
             isNewThisMonth: isOnOrAfterStartDate(fields.BecameVIPAt),
@@ -901,7 +917,13 @@ for (const customerPhotoRecord of customerPhotoRecords) {
             lastDrapedMonthYear: lastDraping?.drapedMonthYear || "",
             lastDrapedColor: lastDraping?.colorName || "",
             lastDrapedHex: lastDraping?.colorHex || "",
-            drapingRecency: getDrapingRecencyBucket(lastDraping?.drapedDate || "")
+            drapingRecency: getDrapingRecencyBucket(lastDraping?.drapedDate || ""),
+            drapingRecencyBuckets: getDrapingRecencyBuckets(drapingHistory),
+            isDueForDraping: isDueForDraping({
+              membershipStatus,
+              hasPhoto: photos.length > 0,
+              lastDrapedDate: lastDraping?.drapedDate || ""
+            })
           };
         })
         .filter(Boolean)
@@ -918,9 +940,8 @@ for (const customerPhotoRecord of customerPhotoRecords) {
         totalNetChangeSinceTracking: 0
       };
 
-      directoryRecords.forEach((record) => {
-        const fields = record.fields || {};
-        const status = String(fields.MembershipStatus || "").toLowerCase();
+      members.forEach((member) => {
+        const status = String(member.membershipStatus || "").toLowerCase();
 
         if (status === "active" || status === "legacy") {
           stats.active += 1;
@@ -928,22 +949,11 @@ for (const customerPhotoRecord of customerPhotoRecords) {
           stats.inactive += 1;
         }
 
-        const joinedDate = fields.JoinedDate ? new Date(fields.JoinedDate) : null;
-        const lostVIPAt = fields.LostVIPAt ? new Date(fields.LostVIPAt) : null;
-
-        if (
-          joinedDate &&
-          !Number.isNaN(joinedDate.getTime()) &&
-          joinedDate >= startDate
-        ) {
+        if (member.isNewThisMonth) {
           stats.newLast30Days += 1;
         }
 
-        if (
-          lostVIPAt &&
-          !Number.isNaN(lostVIPAt.getTime()) &&
-          lostVIPAt >= startDate
-        ) {
+        if (member.isLostThisMonth) {
           stats.lostLast30Days += 1;
         }
       });
@@ -1107,29 +1117,6 @@ async function fetchMemberDrapingHistoryMap({ baseId, token }) {
   });
 
   return historyMap;
-}
-
-function getDrapingRecencyBucket(dateValue) {
-  if (!dateValue) return "never";
-
-  const now = new Date();
-  const date = new Date(dateValue);
-
-  if (Number.isNaN(date.getTime())) return "never";
-
-  const diffMonths =
-    (now.getFullYear() - date.getFullYear()) * 12 +
-    (now.getMonth() - date.getMonth());
-
-  if (diffMonths === 0) return "thisMonth";
-  if (diffMonths === 1) return "lastMonth";
-  if (diffMonths === 2) return "twoMonthsAgo";
-  if (diffMonths === 3) return "threeMonthsAgo";
-  if (diffMonths === 4) return "fourMonthsAgo";
-  if (diffMonths === 5) return "fiveMonthsAgo";
-  if (diffMonths === 6) return "sixMonthsAgo";
-
-  return "older";
 }
 
 export async function action({ request }) {

@@ -29,6 +29,11 @@ async function createTestImage({
   return `data:image/png;base64,${buffer.toString("base64")}`;
 }
 
+async function evaluateTestImage(options) {
+  const imageBase64 = await createTestImage(options);
+  return evaluatePhotoQuality({ imageBase64 });
+}
+
 test("photo quality schema describes the public JSON contract", () => {
   assert.equal(PHOTO_QUALITY_SCHEMA.type, "object");
   assert.ok(PHOTO_QUALITY_SCHEMA.required.includes("status"));
@@ -72,13 +77,52 @@ test("rejects an image with no clear face", async () => {
 });
 
 test("flags a highly saturated background", async () => {
-  const imageBase64 = await createTestImage({
+  const result = await evaluateTestImage({
     background: "#ff00cc"
   });
-  const result = await evaluatePhotoQuality({ imageBase64 });
 
   assert.ok(result.checks.background_score < 80);
   assert.ok(result.issues.some((issue) => issue.toLowerCase().includes("background")));
+});
+
+test("does not reject saturated background when face lighting is usable", async () => {
+  const result = await evaluateTestImage({
+    background: "#ff00cc",
+    face: "#d79a7c"
+  });
+
+  assert.notEqual(result.status, "reject");
+  assert.ok(result.issues.some((issue) => issue.toLowerCase().includes("background")));
+});
+
+test("treats mild uneven face lighting as a small warning note", async () => {
+  const result = await evaluateTestImage({
+    extras: '<rect x="120" y="40" width="80" height="230" fill="#3a261f" opacity="0.42"/>'
+  });
+
+  assert.equal(result.status, "pass");
+  assert.ok(result.checks.shadow_score >= 54);
+  assert.ok(result.issues.some((issue) => issue.toLowerCase().includes("mild uneven lighting")));
+});
+
+test("softens borderline darkness without treating it as unusable", async () => {
+  const result = await evaluateTestImage({
+    background: "#777777",
+    face: "#9b6d58"
+  });
+
+  assert.notEqual(result.status, "reject");
+  assert.ok(result.score >= 70);
+});
+
+test("downgrades strong warm artificial-looking face color", async () => {
+  const result = await evaluateTestImage({
+    face: "#d98e55"
+  });
+
+  assert.equal(result.status, "warning");
+  assert.ok(result.checks.color_cast === "warm");
+  assert.ok(result.issues.some((issue) => issue.toLowerCase().includes("warm cast")));
 });
 
 test("does not call bright natural light overexposed without face clipping", async () => {

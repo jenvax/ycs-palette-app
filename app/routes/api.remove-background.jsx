@@ -137,7 +137,7 @@ function getUsageConfig(params) {
 
   if (mode === "trade") {
     if (isTrade) {
-      return { allowed: true, scope: "monthly", limit: 10 };
+      return { allowed: true, scope: "monthly", limit: 15 };
     }
 
     if (isCatoolGrowth) {
@@ -173,7 +173,7 @@ function getUsageConfig(params) {
 
   if (tool === "photo-prep") {
     if (isTrade) {
-      return { allowed: true, scope: "monthly", limit: 10 };
+      return { allowed: true, scope: "monthly", limit: 15 };
     }
 
     if (isCatoolGrowth) {

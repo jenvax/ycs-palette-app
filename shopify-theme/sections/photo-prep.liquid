@@ -12,8 +12,10 @@
   | first
   | replace: '\/', '/'
   | replace: '\\u0026', '&'
+  | replace: '%26', '&'
   | replace: '%3F', '?'
   | replace: '%3D', '='
+  | append: '&'
 %}
 
 {% assign is_personal_mode_request = false %}
@@ -40,6 +42,7 @@
 {% if palette_access_string contains ',YCS_ADMIN,' %}
   {% assign is_admin = true %}
 {% endif %}
+{% assign actual_is_admin = is_admin %}
 
 {% assign is_trade_july_cohort = false %}
 {% assign trade_july_cohort_expires_at = '2026-08-25 00:00:00 -0400' | date: '%s' %}
@@ -79,6 +82,47 @@
 {% assign is_diy_catool = false %}
 {% if palette_access_string contains ',DIYCATOOL,' %}
   {% assign is_diy_catool = true %}
+{% endif %}
+
+{% assign admin_view_as = '' %}
+{% if actual_is_admin %}
+  {% if ycs_page_url contains 'viewAs=trade&' %}
+    {% assign admin_view_as = 'trade' %}
+  {% elsif ycs_page_url contains 'viewAs=catoolgrowth&' %}
+    {% assign admin_view_as = 'catoolgrowth' %}
+  {% elsif ycs_page_url contains 'viewAs=catoolfree&' %}
+    {% assign admin_view_as = 'catoolfree' %}
+  {% elsif ycs_page_url contains 'viewAs=freediycatool&' %}
+    {% assign admin_view_as = 'freediycatool' %}
+  {% elsif ycs_page_url contains 'viewAs=diycatool&' %}
+    {% assign admin_view_as = 'diycatool' %}
+  {% elsif ycs_page_url contains 'viewAs=catool&' %}
+    {% assign admin_view_as = 'catool' %}
+  {% endif %}
+{% endif %}
+
+{% if admin_view_as != '' %}
+  {% assign is_admin = false %}
+  {% assign is_trade = false %}
+  {% assign is_catool = false %}
+  {% assign is_catool_growth = false %}
+  {% assign is_catool_free = false %}
+  {% assign is_free_diy_catool = false %}
+  {% assign is_diy_catool = false %}
+
+  {% if admin_view_as == 'trade' %}
+    {% assign is_trade = true %}
+  {% elsif admin_view_as == 'catoolgrowth' %}
+    {% assign is_catool_growth = true %}
+  {% elsif admin_view_as == 'catoolfree' %}
+    {% assign is_catool_free = true %}
+  {% elsif admin_view_as == 'freediycatool' %}
+    {% assign is_free_diy_catool = true %}
+  {% elsif admin_view_as == 'diycatool' %}
+    {% assign is_diy_catool = true %}
+  {% elsif admin_view_as == 'catool' %}
+    {% assign is_catool = true %}
+  {% endif %}
 {% endif %}
 
 {% assign is_vip = false %}
@@ -147,6 +191,8 @@
   data-is-diy-catool="{% if is_diy_catool %}true{% else %}false{% endif %}"
   data-is-simple-analyst="{% if is_simple_analyst %}true{% else %}false{% endif %}"
   data-can-use-photo-prep="{% if can_use_photo_prep %}true{% else %}false{% endif %}"
+  data-actual-is-admin="{% if actual_is_admin %}true{% else %}false{% endif %}"
+  data-admin-preview-role="{{ admin_view_as }}"
   data-is-vip="{% if is_vip %}true{% else %}false{% endif %}"
 data-has-draping-studio="{% if has_draping_studio_access %}true{% else %}false{% endif %}"
 data-has-draping-studio-starter="{% if has_draping_studio_starter %}true{% else %}false{% endif %}"
@@ -374,7 +420,7 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
           </div>
 
           <div class="ycs-photo-prep-photo-actions">
-            {% unless is_simple_analyst or is_personal_mode_request or is_member_mode_request %}
+            {% unless is_personal_mode_request or is_member_mode_request %}
 <button type="button" id="ycs-prep-replace-btn" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary">
   Replace Photo
 </button>
@@ -447,18 +493,9 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
               Save Adjusted Photo
             </button>
 
-            <a id="ycs-prep-start-analysis-btn" href="/pages/color-analysis-tool" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary">
+<a id="ycs-prep-start-analysis-btn" href="/pages/color-analysis-tool" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary">
   Continue
 </a>
-{% if is_admin %}
-  <a
-    id="ycs-prep-start-signature-analysis-btn"
-    href="/pages/signature-color-analysis"
-    class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary"
-  >
-    Signature Color Analysis
-  </a>
-{% endif %}
           </div>
 
           <p class="ycs-photo-prep-help">
@@ -1327,7 +1364,7 @@ const IS_CATOOL_FREE = appEl.dataset.isCatoolFree === 'true';
 const IS_FREE_DIY_CATOOL = appEl.dataset.isFreeDiyCatool === 'true';
 const IS_DIY_CATOOL = appEl.dataset.isDiyCatool === 'true';
 const IS_SIMPLE_ANALYST = appEl.dataset.isSimpleAnalyst === 'true';
-const CAN_USE_CLIENT_MANAGEMENT = IS_ADMIN || IS_TRADE || IS_SIMPLE_ANALYST;
+const CAN_USE_CLIENT_MANAGEMENT = IS_ADMIN || IS_TRADE || IS_CATOOL || IS_CATOOL_GROWTH || IS_SIMPLE_ANALYST;
 const CAN_DELETE_CLIENTS = IS_ADMIN || IS_TRADE || IS_CATOOL || IS_CATOOL_GROWTH;
 const CAN_USE_PHOTO_PREP = appEl.dataset.canUsePhotoPrep === 'true';
 const VIEWER_CUSTOMER_ID = (appEl.dataset.customerId || '').trim();
@@ -1349,6 +1386,7 @@ const IS_SAMPLE_TRIAL_REQUEST = appEl.dataset.isSampleTrialRequest === 'true';
 
 
 const params = new URLSearchParams(window.location.search);
+const ADMIN_VIEW_AS = (params.get('viewAs') || '').trim().toLowerCase();
 const returnUrl = params.get('returnUrl') || '/pages/my-palettes';
 const WORKFLOW = (params.get('workflow') || '').trim().toLowerCase() || '';
 
@@ -1387,6 +1425,20 @@ const IS_FREE_ANALYSIS_DEMO_FLOW =
 const FREE_ANALYSIS_UNLOCK_URL = IS_FREE_DIY_CATOOL_FLOW
   ? 'https://yourcolorstyle.com/products/virtual-color-draping#order'
   : 'https://yourcolorstyle.com/products/color-analysis-tool#order';
+
+function addAdminPreviewParam(query) {
+  if (ADMIN_VIEW_AS && query && typeof query.set === 'function') {
+    query.set('viewAs', ADMIN_VIEW_AS);
+  }
+  return query;
+}
+
+function appendAdminPreviewToHref(href) {
+  if (!ADMIN_VIEW_AS || !href) return href;
+  const nextUrl = new URL(href, window.location.origin);
+  nextUrl.searchParams.set('viewAs', ADMIN_VIEW_AS);
+  return nextUrl.pathname + nextUrl.search;
+}
 const FREE_ANALYSIS_LABELS = IS_FREE_DIY_CATOOL_FLOW
   ? {
       listTitle: 'Demo Photos',
@@ -1453,6 +1505,7 @@ const initialClientRecordId =
 const initialFirstName = (params.get('firstName') || '').trim();
 const initialLastName = (params.get('lastName') || '').trim();
 const initialEmail = (params.get('email') || '').trim();
+const initialCustomerPaletteCode = (params.get('customerPaletteCode') || '').trim();
 
   const customerInput = document.getElementById('ycs-prep-customer-id');
   const saveAdminClientBtn = document.getElementById('ycs-prep-save-admin-client');
@@ -1709,7 +1762,7 @@ function hideLoadingView() {
 state.canUploadPhoto = data.isAdmin || data.scope === 'unlimited' || remaining > 0;
 
 if (uploadBtn) uploadBtn.disabled = !state.canUploadPhoto;
-if (replaceBtn && !IS_SIMPLE_ANALYST && !IS_PERSONAL_MODE && !IS_MEMBER_PHOTO_MODE && !IS_DIY_MODE) {
+if (replaceBtn && !IS_PERSONAL_MODE && !IS_MEMBER_PHOTO_MODE) {
   replaceBtn.disabled = !state.canUploadPhoto;
 }
 
@@ -1756,13 +1809,13 @@ if (replaceBtn && !IS_SIMPLE_ANALYST && !IS_PERSONAL_MODE && !IS_MEMBER_PHOTO_MO
 
   if (state.workspaceOpen && (state.clientRecordId || state.customerId)) {
     backLink.textContent = '← Back to Client List';
-    backLink.setAttribute('href', '/pages/photo-prep?mode=trade&workflow=color-analysis');
+    backLink.setAttribute('href', appendAdminPreviewToHref('/pages/photo-prep?mode=trade&workflow=color-analysis'));
     backLink.dataset.backAction = 'client-list';
     return;
   }
 
   backLink.textContent = '← Back to My Palettes';
-  backLink.setAttribute('href', '/pages/my-palettes');
+  backLink.setAttribute('href', appendAdminPreviewToHref('/pages/my-palettes'));
 }
 
 function updateStartAnalysisLink() {
@@ -1784,6 +1837,7 @@ function updateStartAnalysisLink() {
       query.set('trial', 'sample');
     }
 
+    addAdminPreviewParam(query);
     const queryString = query.toString();
     if (queryString) {
       href += '?' + queryString;
@@ -1814,6 +1868,14 @@ function updateStartAnalysisLink() {
     signatureUrl.searchParams.set('mode', 'member');
     signatureUrl.searchParams.set('returnUrl', '/pages/member-photos');
 
+    if (state.firstName || initialFirstName) {
+      signatureUrl.searchParams.set('firstName', state.firstName || initialFirstName);
+    }
+
+    if (initialCustomerPaletteCode) {
+      signatureUrl.searchParams.set('customerPaletteCode', initialCustomerPaletteCode);
+    }
+
     if (state.justUploadedNewPhoto) {
       signatureUrl.searchParams.set('newPhoto', '1');
     }
@@ -1826,7 +1888,9 @@ function updateStartAnalysisLink() {
       );
     }
 
-    startAnalysisBtn.textContent = 'Back to Signature Color Analysis';
+    addAdminPreviewParam(signatureUrl.searchParams);
+
+    startAnalysisBtn.textContent = 'Continue to Lip & Draping Studio';
     startAnalysisBtn.setAttribute('href', signatureUrl.pathname + signatureUrl.search);
 
     if (startSignatureAnalysisBtn) {
@@ -1842,6 +1906,7 @@ function updateStartAnalysisLink() {
     query.set('demoClient', state.demoClientId);
     query.set('mode', IS_FREE_DIY_CATOOL_FLOW ? 'diy' : 'trade');
 
+    addAdminPreviewParam(query);
     const queryString = query.toString();
     if (queryString) {
       href += '?' + queryString;
@@ -1864,6 +1929,7 @@ function updateStartAnalysisLink() {
     query.set('customerId', VIEWER_CUSTOMER_ID);
     query.set('mode', 'diy');
 
+    addAdminPreviewParam(query);
     const queryString = query.toString();
     startAnalysisBtn.textContent = 'Start Color Analysis';
     startAnalysisBtn.setAttribute('href', href + (queryString ? '?' + queryString : ''));
@@ -1888,6 +1954,7 @@ function updateStartAnalysisLink() {
 
   query.set('mode', 'trade');
 
+  addAdminPreviewParam(query);
   const queryString = query.toString();
   if (queryString) {
     href += '?' + queryString;
@@ -1896,7 +1963,7 @@ function updateStartAnalysisLink() {
   startAnalysisBtn.textContent = 'Start Color Analysis';
   startAnalysisBtn.setAttribute('href', href);
 
-  if (startSignatureAnalysisBtn && IS_ADMIN) {
+  if (startSignatureAnalysisBtn && (IS_ADMIN || IS_TRADE || IS_CATOOL || IS_CATOOL_GROWTH)) {
     let signatureHref = '/pages/signature-color-analysis';
     const signatureQuery = new URLSearchParams();
 
@@ -1918,12 +1985,13 @@ if (state.firstName) {
 
     signatureQuery.set('mode', 'trade');
 
+    addAdminPreviewParam(signatureQuery);
     const signatureQueryString = signatureQuery.toString();
     if (signatureQueryString) {
       signatureHref += '?' + signatureQueryString;
     }
 
-    startSignatureAnalysisBtn.textContent = 'Signature Color Analysis';
+    startSignatureAnalysisBtn.textContent = 'Lip & Draping Studio';
     startSignatureAnalysisBtn.setAttribute('href', signatureHref);
   }
 } //updateStartAnalysisLink
@@ -3424,6 +3492,17 @@ hideLoadingView();
       showWorkingPhoto(null);
     }
   } catch (error) {
+    if (optionPhotoId && options.fallbackToLatestOnMissing) {
+      console.warn('Selected photo was not available; falling back to latest member photo.', error);
+      state.selectedPersonalPhotoId = null;
+      state.selectedPhotoSource = initialPhotoSource || 'PersonalStudioPhotos';
+      return fetchPhoto(recordId, {
+        silentIfMissing,
+        forceCustomerRecord,
+        fallbackToLatestOnMissing: false
+      });
+    }
+
     hideLoading();
     resetPreviewOnly();
     updateCustomerMeta();
@@ -4519,15 +4598,13 @@ if (IS_PERSONAL_MODE || IS_DIY_MODE) {
   state.clientRecordId = null;
   state.workspaceOpen = true;
 
-  if (initialPhotoSource === 'CustomerPhotos') {
-    fetchPhoto(initialCustomerId, {
-      silentIfMissing: false,
-      photoId: initialPhotoId,
-      photoSource: 'CustomerPhotos'
-    });
-  } else {
-    loadSelectedPersonalStudioPhoto(initialPhotoId);
-  }
+  fetchPhoto(initialCustomerId, {
+    silentIfMissing: false,
+    photoId: initialPhotoId,
+    photoSource: initialPhotoSource || 'PersonalStudioPhotos',
+    forceCustomerRecord: true,
+    fallbackToLatestOnMissing: true
+  });
 
   return;
 }

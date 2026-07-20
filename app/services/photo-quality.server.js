@@ -4,7 +4,7 @@ import { getPhotoQualityStatus } from "../schemas/photo-quality.js";
 const MAX_ANALYSIS_SIZE = 384;
 const FACE_MIN_HEIGHT_RATIO = 0.25;
 const FACE_CENTER_TOLERANCE = 0.2;
-const FACE_ROTATION_WARNING_DEGREES = 30;
+const FACE_ROTATION_WARNING_DEGREES = 34;
 const FACE_ROTATION_REJECT_DEGREES = 45;
 
 function clamp(value, min, max) {
@@ -328,18 +328,18 @@ function getFacePredicate(raw, face) {
 
 function scoreBrightness(stats) {
   const target = 170;
-  const distancePenalty = Math.abs(stats.luminance - target) * 0.28;
+  const distancePenalty = Math.abs(stats.luminance - target) * 0.24;
   const clippingPenalty =
-    (stats.luminance < 105 ? stats.darkRatio * 55 : 0) +
-    (stats.luminance > 190 ? stats.brightRatio * 55 : 0);
+    (stats.luminance < 98 ? stats.darkRatio * 48 : 0) +
+    (stats.luminance > 196 ? stats.brightRatio * 55 : 0);
 
   return roundScore(100 - distancePenalty - clippingPenalty);
 }
 
 function analyzeExposure(stats) {
   return {
-    underexposed: stats.luminance < 95 || stats.darkRatio > 0.18,
-    lowLight: stats.luminance < 125 || stats.darkRatio > 0.08,
+    underexposed: stats.luminance < 88 || stats.darkRatio > 0.24,
+    lowLight: stats.luminance < 118 || stats.darkRatio > 0.11,
     overexposed:
       stats.luminance > 245 ||
       stats.brightRatio > 0.65 ||
@@ -354,11 +354,21 @@ function analyzeShadow(raw, facePredicate) {
   const rightStats = collectRegionStats(raw, (x, y) => facePredicate(x, y) && x >= raw.width / 2);
   const faceStats = collectRegionStats(raw, facePredicate);
   const sideDifference = Math.abs(leftStats.luminance - rightStats.luminance);
-  const score = 100 - sideDifference * 1.4 - faceStats.darkRatio * 130;
+  const score = roundScore(100 - sideDifference * 1.25 - faceStats.darkRatio * 112);
+  let severity = "none";
+
+  if (score < 34) {
+    severity = "heavy";
+  } else if (score < 54) {
+    severity = "moderate";
+  } else if (score < 72) {
+    severity = "mild";
+  }
 
   return {
-    score: roundScore(score),
-    sideDifference
+    score,
+    sideDifference,
+    severity
   };
 }
 
@@ -371,8 +381,25 @@ function analyzeColorCast(stats) {
   if (stats.b - Math.max(stats.r, stats.g) > 22) return "cool";
   if (rb > 45 && gb > 24) return "warm";
   if (rg > 36 && rb > 36) return "warm";
+  if (stats.luminance > 105 && rb > 34 && gb > 18 && stats.saturatedRatio > 0.1) return "warm";
 
   return "none";
+}
+
+function analyzeFaceColorRisk(stats, colorCast) {
+  const redDominance = stats.r - Math.max(stats.g, stats.b);
+  const yellowWarmth = Math.min(stats.r - stats.b, stats.g - stats.b);
+
+  return {
+    possibleHeavyMakeup:
+      stats.saturatedRatio > 0.18 &&
+      redDominance > 24 &&
+      stats.luminance > 80,
+    possibleColoredLight:
+      colorCast !== "none" &&
+      stats.saturatedRatio > 0.12 &&
+      Math.abs(yellowWarmth) > 18
+  };
 }
 
 function analyzeGlare(raw, face) {
@@ -412,13 +439,20 @@ function addIssue(issues, recommendations, issue, recommendation) {
   if (recommendation) recommendations.push(recommendation);
 }
 
-function buildScoreAndGuidance({ face, exposure, shadow, colorCast, glare, background }) {
+function addPenalty(penalties, amount, severity = "mild") {
+  penalties.push({
+    amount,
+    severity
+  });
+}
+
+function buildScoreAndGuidance({ face, exposure, shadow, colorCast, faceColorRisk, glare, background }) {
   const issues = [];
   const recommendations = [];
-  let score = 100;
+  const penalties = [];
 
   if (!face.faceDetected) {
-    score -= 45;
+    addPenalty(penalties, 45, "severe");
     addIssue(
       issues,
       recommendations,
@@ -427,7 +461,7 @@ function buildScoreAndGuidance({ face, exposure, shadow, colorCast, glare, backg
     );
   } else {
     if (!face.faceCentered) {
-      score -= 12;
+      addPenalty(penalties, 12, "moderate");
       addIssue(
         issues,
         recommendations,
@@ -437,7 +471,7 @@ function buildScoreAndGuidance({ face, exposure, shadow, colorCast, glare, backg
     }
 
     if (face.faceHeightRatio < FACE_MIN_HEIGHT_RATIO) {
-      score -= 18;
+      addPenalty(penalties, 18, "moderate");
       addIssue(
         issues,
         recommendations,
@@ -447,7 +481,7 @@ function buildScoreAndGuidance({ face, exposure, shadow, colorCast, glare, backg
     }
 
     if (face.rotationDegrees > FACE_ROTATION_REJECT_DEGREES) {
-      score -= 24;
+      addPenalty(penalties, 26, "severe");
       addIssue(
         issues,
         recommendations,
@@ -455,7 +489,7 @@ function buildScoreAndGuidance({ face, exposure, shadow, colorCast, glare, backg
         "Use a straight-on photo with the head upright."
       );
     } else if (face.rotationDegrees > FACE_ROTATION_WARNING_DEGREES) {
-      score -= 12;
+      addPenalty(penalties, 8, "mild");
       addIssue(
         issues,
         recommendations,
@@ -466,7 +500,7 @@ function buildScoreAndGuidance({ face, exposure, shadow, colorCast, glare, backg
   }
 
   if (exposure.underexposed) {
-    score -= 18;
+    addPenalty(penalties, exposure.luminance < 78 || exposure.clippedHighlightRatio > 0.3 ? 18 : 14, "moderate");
     addIssue(
       issues,
       recommendations,
@@ -474,7 +508,7 @@ function buildScoreAndGuidance({ face, exposure, shadow, colorCast, glare, backg
       "Retake the photo in brighter, even natural light."
     );
   } else if (exposure.lowLight) {
-    score -= 8;
+    addPenalty(penalties, exposure.luminance < 108 ? 8 : 6, "mild");
     addIssue(
       issues,
       recommendations,
@@ -484,7 +518,7 @@ function buildScoreAndGuidance({ face, exposure, shadow, colorCast, glare, backg
   }
 
   if (exposure.overexposed) {
-    score -= exposure.clippedHighlightRatio > 0.2 ? 18 : 10;
+    addPenalty(penalties, exposure.clippedHighlightRatio > 0.2 ? 18 : 10, "moderate");
     addIssue(
       issues,
       recommendations,
@@ -493,34 +527,34 @@ function buildScoreAndGuidance({ face, exposure, shadow, colorCast, glare, backg
     );
   }
 
-  if (shadow.score < 35) {
-    score -= 30;
+  if (shadow.severity === "heavy") {
+    addPenalty(penalties, 26, "severe");
     addIssue(
       issues,
       recommendations,
       "There are heavy or uneven shadows on the face.",
       "Face a window or soft light source so both sides of the face are evenly lit."
     );
-  } else if (shadow.score < 50) {
-    score -= 22;
+  } else if (shadow.severity === "moderate") {
+    addPenalty(penalties, 14, "moderate");
     addIssue(
       issues,
       recommendations,
-      "There are heavy or uneven shadows on the face.",
+      "There is uneven lighting on the face.",
       "Face a window or soft light source so both sides of the face are evenly lit."
     );
-  } else if (shadow.score < 65) {
-    score -= 12;
+  } else if (shadow.severity === "mild") {
+    addPenalty(penalties, 4, "mild");
     addIssue(
       issues,
       recommendations,
-      "There are heavy or uneven shadows on the face.",
-      "Face a window or soft light source so both sides of the face are evenly lit."
+      "There is mild uneven lighting on the face.",
+      "If possible, use softer light so both sides of the face are evenly lit."
     );
   }
 
   if (colorCast !== "none") {
-    score -= 10;
+    addPenalty(penalties, faceColorRisk.possibleColoredLight ? 14 : 10, "moderate");
     const castCopy = {
       warm: "The photo has a strong yellow/warm cast.",
       cool: "The photo has a strong blue/cool cast.",
@@ -534,8 +568,18 @@ function buildScoreAndGuidance({ face, exposure, shadow, colorCast, glare, backg
     );
   }
 
+  if (faceColorRisk.possibleHeavyMakeup) {
+    addPenalty(penalties, 12, "moderate");
+    addIssue(
+      issues,
+      recommendations,
+      "The face appears to have strong makeup or saturated color on the skin.",
+      "Use a photo without heavy makeup so the natural skin coloring is easier to evaluate."
+    );
+  }
+
   if (glare) {
-    score -= 12;
+    addPenalty(penalties, 12, "moderate");
     addIssue(
       issues,
       recommendations,
@@ -544,8 +588,10 @@ function buildScoreAndGuidance({ face, exposure, shadow, colorCast, glare, backg
     );
   }
 
+  const faceLightingAcceptable = !exposure.underexposed && !exposure.overexposed && shadow.score >= 65;
+
   if (background.score < 45) {
-    score -= 12;
+    addPenalty(penalties, faceLightingAcceptable ? 4 : 10, faceLightingAcceptable ? "mild" : "moderate");
     addIssue(
       issues,
       recommendations,
@@ -553,7 +599,7 @@ function buildScoreAndGuidance({ face, exposure, shadow, colorCast, glare, backg
       "Use a plain neutral background to avoid color contamination."
     );
   } else if (background.score < 60) {
-    score -= 6;
+    addPenalty(penalties, faceLightingAcceptable ? 2 : 5, "mild");
     addIssue(
       issues,
       recommendations,
@@ -562,7 +608,17 @@ function buildScoreAndGuidance({ face, exposure, shadow, colorCast, glare, backg
     );
   }
 
-  const finalScore = roundScore(score);
+  let penaltyTotal = penalties.reduce((sum, penalty) => sum + penalty.amount, 0);
+  const severePenaltyCount = penalties.filter((penalty) => penalty.severity === "severe").length;
+  const moderateOrSeverePenaltyCount = penalties.filter((penalty) => penalty.severity !== "mild").length;
+
+  if (penalties.length === 1 && severePenaltyCount === 0) {
+    penaltyTotal = Math.min(penaltyTotal, 24);
+  } else if (moderateOrSeverePenaltyCount <= 1 && severePenaltyCount === 0) {
+    penaltyTotal = Math.min(penaltyTotal, 38);
+  }
+
+  const finalScore = roundScore(100 - penaltyTotal);
 
   if (!recommendations.length) {
     recommendations.push("This photo looks suitable for color analysis.");
@@ -587,6 +643,7 @@ export async function evaluatePhotoQuality({ imageBase64 }) {
   const exposure = analyzeExposure(face.faceDetected ? faceStats : wholeImageStats);
   const shadow = analyzeShadow(raw, facePredicate);
   const colorCast = analyzeColorCast(face.faceDetected ? faceStats : wholeImageStats);
+  const faceColorRisk = analyzeFaceColorRisk(face.faceDetected ? faceStats : wholeImageStats, colorCast);
   const glare = analyzeGlare(raw, face);
   const background = analyzeBackground(raw, face);
   const summary = buildScoreAndGuidance({
@@ -594,6 +651,7 @@ export async function evaluatePhotoQuality({ imageBase64 }) {
     exposure,
     shadow,
     colorCast,
+    faceColorRisk,
     glare,
     background
   });
