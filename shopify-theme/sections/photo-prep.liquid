@@ -2615,7 +2615,7 @@ function slugifyFilePart(value, fallback) {
 function buildPrepDownloadFileName(label) {
   const firstName = slugifyFilePart(state.firstName || initialFirstName, 'client');
   const lastName = slugifyFilePart(state.lastName || initialLastName, 'photo');
-  return [slugifyFilePart(label, 'photo'), firstName, lastName].join('-') + '.webp';
+  return [slugifyFilePart(label, 'photo'), firstName, lastName].join('-') + '.png';
 }
 
 function loadCorsImage(src) {
@@ -2637,7 +2637,7 @@ async function buildPhotoDataUrl(src) {
   const ctx = canvas.getContext('2d');
   ctx.drawImage(img, 0, 0);
 
-  return canvas.toDataURL('image/webp', 0.9);
+  return canvas.toDataURL('image/png');
 }
 
 function downloadDataUrl(dataUrl, fileName) {
@@ -3780,7 +3780,7 @@ hideLoadingView();
       ctx.putImageData(imageData, 0, 0);
     }
 
-    return canvas.toDataURL('image/webp', 0.9);
+    return canvas.toDataURL('image/png');
   }
 
   async function applyPreviewFilters() {
