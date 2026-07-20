@@ -219,7 +219,7 @@
   }
 
   const MIN_SCALE = 0.6;
-  const MAX_SCALE = 3;
+  const MAX_SCALE = 6;
   const DRAPING_PALETTE_CODE = 'DRAPINGCOLORS';
   const DRAPING_LIP_PALETTE_CODE = 'DRAPINGLIPCOLORS';
 
@@ -951,6 +951,13 @@ function updateSignatureAnalysisLink() {
   function syncZoomSliders(value) {
     zoomSliders.forEach(function (slider) {
       slider.value = String(value);
+    });
+  }
+
+  function syncZoomSliderBounds() {
+    zoomSliders.forEach(function (slider) {
+      slider.min = String(MIN_SCALE);
+      slider.max = String(MAX_SCALE);
     });
   }
 
@@ -4463,6 +4470,7 @@ window.addEventListener('pointercancel', endGesturePointer);
   (async function initAnalysisTool() {
   updateLipActionButtons();
   updateDrapeShape();
+  syncZoomSliderBounds();
   populatePaletteSelect();
   populateComparisonPaletteSelects();
 

@@ -391,6 +391,11 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
                   <img id="ycs-prep-original-img" class="ycs-photo-prep-preview-img" alt="Original photo preview" />
                 </div>
               </div>
+              <div class="ycs-photo-prep-pane-actions">
+                <button type="button" id="ycs-prep-save-left-btn" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary">
+                  Save Left Photo
+                </button>
+              </div>
             </div>
 
             <div class="ycs-photo-prep-pane">
@@ -415,6 +420,11 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
                   <div class="ycs-photo-prep-loading-dots"><span></span><span></span><span></span></div>
                   <p id="ycs-prep-loading-text">Loading…</p>
                 </div>
+              </div>
+              <div class="ycs-photo-prep-pane-actions">
+                <button type="button" id="ycs-prep-save-right-btn" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary">
+                  Save Right Photo
+                </button>
               </div>
             </div>
           </div>
@@ -453,7 +463,7 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
               <label for="ycs-prep-zoom">Zoom</label>
               <span id="ycs-prep-zoom-value">100%</span>
             </div>
-            <input type="range" id="ycs-prep-zoom" min="70" max="260" step="1" value="100" />
+            <input type="range" id="ycs-prep-zoom" min="70" max="500" step="1" value="100" />
           </div>
 
           <div class="ycs-photo-prep-control">
@@ -833,6 +843,12 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  .ycs-photo-prep-pane-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 10px;
   }
 
   .ycs-photo-prep-stage,
@@ -1569,6 +1585,8 @@ const workingImg = document.getElementById('ycs-prep-working-img');
   const resetBtn = document.getElementById('ycs-prep-reset-btn');
   const useOriginalBtn = document.getElementById('ycs-prep-use-original-btn');
   const saveBtn = document.getElementById('ycs-prep-save-btn');
+  const saveLeftPhotoBtn = document.getElementById('ycs-prep-save-left-btn');
+  const saveRightPhotoBtn = document.getElementById('ycs-prep-save-right-btn');
   const startAnalysisBtn = document.getElementById('ycs-prep-start-analysis-btn');
   const startSignatureAnalysisBtn = document.getElementById('ycs-prep-start-signature-analysis-btn');
 
@@ -2579,6 +2597,85 @@ const PHOTO_QUALITY_ISSUE_TAG_OPTIONS = [
   ['hair_obstruction', 'Hair obstruction'],
   ['other', 'Other']
 ];
+
+const PREP_MIN_ZOOM = 70;
+const PREP_MAX_ZOOM = 500;
+
+function slugifyFilePart(value, fallback) {
+  const slug = String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  return slug || fallback;
+}
+
+function buildPrepDownloadFileName(label) {
+  const firstName = slugifyFilePart(state.firstName || initialFirstName, 'client');
+  const lastName = slugifyFilePart(state.lastName || initialLastName, 'photo');
+  return [slugifyFilePart(label, 'photo'), firstName, lastName].join('-') + '.webp';
+}
+
+function loadCorsImage(src) {
+  return new Promise(function (resolve, reject) {
+    const image = new Image();
+    image.crossOrigin = 'anonymous';
+    image.onload = function () { resolve(image); };
+    image.onerror = function () { reject(new Error('Could not load photo for download.')); };
+    image.src = src;
+  });
+}
+
+async function buildPhotoDataUrl(src) {
+  const img = await loadCorsImage(src);
+  const canvas = document.createElement('canvas');
+  canvas.width = img.naturalWidth;
+  canvas.height = img.naturalHeight;
+
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0);
+
+  return canvas.toDataURL('image/webp', 0.9);
+}
+
+function downloadDataUrl(dataUrl, fileName) {
+  const link = document.createElement('a');
+  link.href = dataUrl;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+async function downloadPrepPhoto(side) {
+  try {
+    if (side === 'left') {
+      const src = state.originalPhotoUrl || (originalImg && originalImg.src) || '';
+      if (!src) {
+        alert('No left photo is available to save.');
+        return;
+      }
+
+      downloadDataUrl(await buildPhotoDataUrl(src), buildPrepDownloadFileName('left-original'));
+      return;
+    }
+
+    if (!state.currentBasePhotoUrl && !(workingImg && workingImg.src)) {
+      alert('No right photo is available to save.');
+      return;
+    }
+
+    const rightDataUrl = state.currentBasePhotoUrl
+      ? await buildAdjustedImageDataUrl()
+      : await buildPhotoDataUrl(workingImg.src);
+    downloadDataUrl(rightDataUrl, buildPrepDownloadFileName('right-working'));
+  } catch (error) {
+    console.error('Could not save photo prep photo', error);
+    alert(error.message || 'Could not save this photo.');
+  }
+}
 
 function renderPhotoQualityReviewForm(photoQuality) {
   if (!photoQuality || !photoQuality.evaluation_id) {
@@ -3766,7 +3863,7 @@ function bindPrepPinch(el) {
         return;
       }
 
-      const nextZoom = Math.max(70, Math.min(260, Math.round(
+      const nextZoom = Math.max(PREP_MIN_ZOOM, Math.min(PREP_MAX_ZOOM, Math.round(
         prepPinchStartZoom * (distance / prepPinchStartDistance)
       )));
 
@@ -4237,6 +4334,18 @@ async function useOriginalPhoto() {
   if (saveBtn) {
     saveBtn.addEventListener('click', function () {
       saveAdjustedPhoto();
+    });
+  }
+
+  if (saveLeftPhotoBtn) {
+    saveLeftPhotoBtn.addEventListener('click', function () {
+      downloadPrepPhoto('left');
+    });
+  }
+
+  if (saveRightPhotoBtn) {
+    saveRightPhotoBtn.addEventListener('click', function () {
+      downloadPrepPhoto('right');
     });
   }
 

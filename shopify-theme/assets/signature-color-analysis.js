@@ -215,7 +215,7 @@ const lipEditShape2Btn = document.getElementById('ycs-lip-edit-shape-2');
   }
 
   const MIN_SCALE = 0.6;
-  const MAX_SCALE = 3;
+  const MAX_SCALE = 6;
   const REALISTIC_DRAPE_OVERLAY_URL =
     'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/fabric-drape-overlay-550.png?v=1778252521';
   const REALISTIC_DRAPE_OVERLAY_OPACITY = '0.78';
@@ -811,6 +811,13 @@ async function drawRealisticDrapeTexture(ctx, options) {
   function syncZoomSliders(value) {
     zoomSliders.forEach(function (slider) {
       slider.value = String(value);
+    });
+  }
+
+  function syncZoomSliderBounds() {
+    zoomSliders.forEach(function (slider) {
+      slider.min = String(MIN_SCALE);
+      slider.max = String(MAX_SCALE);
     });
   }
 
@@ -4446,6 +4453,7 @@ window.addEventListener('pointercancel', endGesturePointer);
   (async function initAnalysisTool() {
     updateLipActionButtons();
     updateDrapeShape();
+    syncZoomSliderBounds();
     syncDrapeLayers();
     populatePaletteSelect();
     populateSignatureSidePaletteSelects();
