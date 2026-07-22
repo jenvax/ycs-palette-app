@@ -31,6 +31,11 @@ function normalizeCustomerId(value) {
     .trim();
 }
 
+function cleanString(value) {
+  const stringValue = String(value || "").trim();
+  return stringValue || null;
+}
+
 function parseTruthy(value) {
   return (
     value === true ||
@@ -235,6 +240,98 @@ async function toggleFavorite({
   });
 
   return { success: true, isFavorite: true };
+}
+
+async function archivePersonalStudioPhoto({
+  photoId,
+  customerId,
+  baseId,
+  token
+}) {
+  const safePhotoId = cleanString(photoId);
+  const safeCustomerId = cleanString(customerId);
+
+  if (!safePhotoId || !safeCustomerId) {
+    throw new Error("Missing photoId or customerId");
+  }
+
+  const lookupFormula = safePhotoId.startsWith("rec")
+    ? `AND(RECORD_ID()="${escapeFormulaValue(safePhotoId)}", {CustomerId}="${escapeFormulaValue(safeCustomerId)}")`
+    : `AND({PhotoId}="${escapeFormulaValue(safePhotoId)}", {CustomerId}="${escapeFormulaValue(safeCustomerId)}")`;
+
+  const existing = await fetchAllAirtableRecords({
+    baseId,
+    tableName: "PersonalStudioPhotos",
+    token,
+    formula: lookupFormula
+  });
+
+  const record = existing[0];
+  if (!record) {
+    throw new Error("PersonalStudioPhotos record not found");
+  }
+
+  const patchData = await updateAirtableRecord({
+    baseId,
+    tableName: "PersonalStudioPhotos",
+    token,
+    recordId: record.id,
+    fields: {
+      IsArchived: true,
+      UpdatedAt: new Date().toISOString()
+    }
+  });
+
+  return {
+    success: true,
+    photoId: patchData.fields?.PhotoId || record.fields?.PhotoId || record.id,
+    photoSource: "PersonalStudioPhotos"
+  };
+}
+
+async function archiveConsultantClient({
+  clientRecordId,
+  consultantId,
+  baseId,
+  token
+}) {
+  const safeClientRecordId = cleanString(clientRecordId);
+  const safeConsultantId = cleanString(consultantId);
+
+  if (!safeClientRecordId || !safeConsultantId) {
+    throw new Error("Missing clientRecordId or consultantId");
+  }
+
+  const formula = `AND({ClientRecordId}="${escapeFormulaValue(
+    safeClientRecordId
+  )}", {ConsultantId}="${escapeFormulaValue(safeConsultantId)}")`;
+
+  const existing = await fetchAllAirtableRecords({
+    baseId,
+    tableName: "ConsultantClients",
+    token,
+    formula
+  });
+
+  const record = existing[0];
+  if (!record) {
+    throw new Error("Client record not found");
+  }
+
+  await updateAirtableRecord({
+    baseId,
+    tableName: "ConsultantClients",
+    token,
+    recordId: record.id,
+    fields: {
+      IsArchived: true
+    }
+  });
+
+  return {
+    success: true,
+    clientRecordId: safeClientRecordId
+  };
 }
 
 async function fetchCustomerPhotoMap({ baseId, token }) {
@@ -1257,6 +1354,46 @@ export async function action({ request }) {
     );
   }
 }
+  if (actionName === "archivePersonalStudioPhoto") {
+    try {
+      const body = await request.json();
+      const result = await archivePersonalStudioPhoto({
+        photoId: body.photoId,
+        customerId: body.customerId,
+        baseId: AIRTABLE_BASE_ID,
+        token: AIRTABLE_TOKEN
+      });
+
+      return Response.json(result);
+    } catch (error) {
+      console.error("archivePersonalStudioPhoto failed:", error);
+      return Response.json(
+        { error: error.message || "Failed to delete photo" },
+        { status: error.message?.includes("not found") ? 404 : 500 }
+      );
+    }
+  }
+
+  if (actionName === "archiveConsultantClient") {
+    try {
+      const body = await request.json();
+      const result = await archiveConsultantClient({
+        clientRecordId: body.clientRecordId,
+        consultantId: body.consultantId,
+        baseId: AIRTABLE_BASE_ID,
+        token: AIRTABLE_TOKEN
+      });
+
+      return Response.json(result);
+    } catch (error) {
+      console.error("archiveConsultantClient failed:", error);
+      return Response.json(
+        { error: error.message || "Failed to delete client" },
+        { status: error.message?.includes("not found") ? 404 : 500 }
+      );
+    }
+  }
+
   if (actionName !== "toggleFavorite") {
     return Response.json({ error: "Unknown action" }, { status: 400 });
   }
