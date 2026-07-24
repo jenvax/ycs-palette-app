@@ -1,8 +1,4 @@
 import prisma from "../db.server.js";
-import { unauthenticated } from "../shopify.server.js";
-
-const GROWTH_TAG = "CATOOLGROWTH";
-const ADMIN_TAG = "YCS_ADMIN";
 
 function getCorsHeaders(origin) {
   const allowedOrigins = [
@@ -39,74 +35,19 @@ function normalizeHex(value) {
   return `#${raw.toUpperCase()}`;
 }
 
-async function shopifyAdminGraphQL({ query, variables = {} }) {
-  const shop = String(process.env.SHOPIFY_SHOP || "")
-    .replace(/^https?:\/\//, "")
-    .replace(/\/.*$/, "")
-    .trim() || "yourcolorstyle.myshopify.com";
-
-  const { admin } = await unauthenticated.admin(shop);
-
-  const response = await admin.graphql(query, { variables });
-
-  const json = await response.json();
-
-  if (!response.ok || json.errors) {
-    const errorMessage = Array.isArray(json.errors)
-      ? json.errors.map((error) => error.message || String(error)).join("; ")
-      : typeof json.errors === "string"
-        ? json.errors
-        : json.errors
-          ? JSON.stringify(json.errors)
-          : "Shopify Admin GraphQL request failed";
-
-    throw new Error(errorMessage);
-  }
-
-  return json.data;
+function toBool(value) {
+  return value === true || String(value || "").trim().toLowerCase() === "true";
 }
 
-async function fetchCustomerTags(customerId) {
-  const safeCustomerId = normalizeCustomerId(customerId);
-  if (!safeCustomerId) return [];
-
-  const data = await shopifyAdminGraphQL({
-    query: `
-      query getCustomerTags($id: ID!) {
-        customer(id: $id) {
-          tags
-        }
-      }
-    `,
-    variables: { id: `gid://shopify/Customer/${safeCustomerId}` }
-  });
-
-  return Array.isArray(data.customer?.tags)
-    ? data.customer.tags.map((tag) => String(tag).trim().toUpperCase())
-    : [];
-}
-
-async function authorizeGrowthAccess({ customerId, previewCustomerId, viewAs }) {
+function authorizeGrowthAccess({ customerId, hasGrowthAccess }) {
   const ownerCustomerId = normalizeCustomerId(customerId);
-  const safePreviewCustomerId = normalizeCustomerId(previewCustomerId || customerId);
 
   if (!ownerCustomerId) {
     return { ok: false, status: 401, error: "You must be signed in to use My Custom Palettes" };
   }
 
-  const tags = await fetchCustomerTags(safePreviewCustomerId);
-  const tagSet = new Set(tags);
-
-  if (tagSet.has(GROWTH_TAG)) {
+  if (toBool(hasGrowthAccess)) {
     return { ok: true, ownerCustomerId };
-  }
-
-  const isGrowthPreview =
-    tagSet.has(ADMIN_TAG) &&
-    String(viewAs || "").trim().toLowerCase() === "catoolgrowth";
-
-  if (isGrowthPreview) {
-    return { ok: true, ownerCustomerId: safePreviewCustomerId };
   }
 
   return { ok: false, status: 403, error: "CATOOLGROWTH access required" };
@@ -243,8 +184,7 @@ export async function loader({ request }) {
     const url = new URL(request.url);
     const auth = await authorizeGrowthAccess({
       customerId: url.searchParams.get("customerId"),
-      previewCustomerId: url.searchParams.get("previewCustomerId"),
-      viewAs: url.searchParams.get("viewAs")
+      hasGrowthAccess: url.searchParams.get("hasGrowthAccess")
     });
 
     if (!auth.ok) {
@@ -294,8 +234,7 @@ export async function action({ request }) {
     const body = await request.json();
     const auth = await authorizeGrowthAccess({
       customerId: body.customerId,
-      previewCustomerId: body.previewCustomerId,
-      viewAs: body.viewAs
+      hasGrowthAccess: body.hasGrowthAccess
     });
 
     if (!auth.ok) {

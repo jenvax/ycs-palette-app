@@ -354,6 +354,7 @@
         data-customer-id="{{ customer.id }}"
         data-preview-customer-id="{{ customer.id }}"
         data-view-as="{{ admin_view_as }}"
+        data-has-growth-access="{% if is_catool_growth %}true{% else %}false{% endif %}"
         data-app-base-url="https://ycs-palette-app.vercel.app"
       >
         <div class="ycs-custom-palettes__header">
@@ -1450,7 +1451,8 @@
   const context = {
     customerId: root.dataset.customerId || '',
     previewCustomerId: root.dataset.previewCustomerId || '',
-    viewAs: root.dataset.viewAs || ''
+    viewAs: root.dataset.viewAs || '',
+    hasGrowthAccess: root.dataset.hasGrowthAccess || ''
   };
   const state = { colors: [], palettes: [], activePalette: null, colorSearch: '' };
 
