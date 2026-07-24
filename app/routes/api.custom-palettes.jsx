@@ -39,14 +39,18 @@ function normalizeHex(value) {
 }
 
 async function shopifyAdminGraphQL({ query, variables = {} }) {
-  const shop = process.env.SHOPIFY_SHOP;
+  const shop = String(process.env.SHOPIFY_SHOP || "")
+    .replace(/^https?:\/\//, "")
+    .replace(/\/.*$/, "")
+    .trim();
   const accessToken = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
+  const apiVersion = process.env.SHOPIFY_ADMIN_API_VERSION || "2025-10";
 
   if (!shop || !accessToken) {
     throw new Error("Missing Shopify admin configuration");
   }
 
-  const response = await fetch(`https://${shop}/admin/api/2026-01/graphql.json`, {
+  const response = await fetch(`https://${shop}/admin/api/${apiVersion}/graphql.json`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -58,7 +62,15 @@ async function shopifyAdminGraphQL({ query, variables = {} }) {
   const json = await response.json();
 
   if (!response.ok || json.errors) {
-    throw new Error(json.errors?.[0]?.message || "Shopify Admin GraphQL request failed");
+    const errorMessage = Array.isArray(json.errors)
+      ? json.errors.map((error) => error.message || String(error)).join("; ")
+      : typeof json.errors === "string"
+        ? json.errors
+        : json.errors
+          ? JSON.stringify(json.errors)
+          : "Shopify Admin GraphQL request failed";
+
+    throw new Error(errorMessage);
   }
 
   return json.data;
