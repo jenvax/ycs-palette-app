@@ -1,4 +1,8 @@
-import prisma from "../db.server.js";
+import crypto from "node:crypto";
+
+const COLORS_TABLE = "CustomColors";
+const PALETTES_TABLE = "CustomPalettes";
+const PALETTE_COLORS_TABLE = "CustomPaletteColors";
 
 function getCorsHeaders(origin) {
   const allowedOrigins = [
@@ -39,6 +43,115 @@ function toBool(value) {
   return value === true || String(value || "").trim().toLowerCase() === "true";
 }
 
+function makeId(prefix) {
+  return `${prefix}_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
+}
+
+function escapeFormulaValue(value) {
+  return String(value || "")
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"');
+}
+
+function getAirtableConfig() {
+  const baseId = process.env.AIRTABLE_BASE_ID;
+  const token = process.env.AIRTABLE_TOKEN;
+
+  if (!baseId || !token) {
+    throw new Error("Missing Airtable configuration");
+  }
+
+  return { baseId, token };
+}
+
+function airtableUrl(tableName, searchParams) {
+  const { baseId } = getAirtableConfig();
+  const url = new URL(`https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}`);
+
+  Object.entries(searchParams || {}).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      url.searchParams.set(key, value);
+    }
+  });
+
+  return url;
+}
+
+async function airtableFetchJson(tableName, options = {}) {
+  const { token } = getAirtableConfig();
+  const response = await fetch(airtableUrl(tableName, options.searchParams), {
+    method: options.method || "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      ...(options.headers || {})
+    },
+    body: options.body ? JSON.stringify(options.body) : undefined
+  });
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const message = data?.error?.message || data?.error?.type || JSON.stringify(data);
+    throw new Error(`${response.status} ${message}`);
+  }
+
+  return data;
+}
+
+async function fetchAllRecords(tableName, searchParams = {}) {
+  const records = [];
+  let offset = "";
+
+  do {
+    const data = await airtableFetchJson(tableName, {
+      searchParams: {
+        pageSize: "100",
+        ...searchParams,
+        ...(offset ? { offset } : {})
+      }
+    });
+    records.push(...(data.records || []));
+    offset = data.offset || "";
+  } while (offset);
+
+  return records;
+}
+
+async function createRecord(tableName, fields) {
+  const data = await airtableFetchJson(tableName, {
+    method: "POST",
+    body: { records: [{ fields }] }
+  });
+
+  return data.records?.[0] || null;
+}
+
+async function updateRecord(tableName, recordId, fields) {
+  const data = await airtableFetchJson(tableName, {
+    method: "PATCH",
+    body: { records: [{ id: recordId, fields }] }
+  });
+
+  return data.records?.[0] || null;
+}
+
+async function deleteRecord(tableName, recordId) {
+  await airtableFetchJson(tableName, {
+    method: "DELETE",
+    searchParams: { "records[]": recordId }
+  });
+}
+
+async function deleteRecords(tableName, recordIds) {
+  for (const recordId of recordIds) {
+    await deleteRecord(tableName, recordId);
+  }
+}
+
+function ownerFormula(ownerCustomerId) {
+  return `{OwnerCustomerId}="${escapeFormulaValue(ownerCustomerId)}"`;
+}
+
 function authorizeGrowthAccess({ customerId, hasGrowthAccess }) {
   const ownerCustomerId = normalizeCustomerId(customerId);
 
@@ -53,80 +166,136 @@ function authorizeGrowthAccess({ customerId, hasGrowthAccess }) {
   return { ok: false, status: 403, error: "CATOOLGROWTH access required" };
 }
 
-function serializeColor(color) {
+function colorFromRecord(record, paletteCount = 0) {
+  const fields = record.fields || {};
   return {
-    id: color.id,
-    name: color.name,
-    hexCode: color.hexCode,
-    paletteCount: color._count?.paletteColors || 0,
-    createdAt: color.createdAt,
-    updatedAt: color.updatedAt
+    id: fields.ColorId || record.id,
+    name: fields.Name || "",
+    hexCode: fields.HexCode || "",
+    paletteCount,
+    createdAt: fields.CreatedAt || record.createdTime || "",
+    updatedAt: fields.UpdatedAt || fields.CreatedAt || record.createdTime || ""
   };
 }
 
-function serializePalette(palette) {
-  const colors = (palette.colors || [])
-    .slice()
-    .sort((a, b) => a.displayOrder - b.displayOrder)
-    .map((join) => ({
-      id: join.id,
-      displayOrder: join.displayOrder,
-      color: serializeColor(join.color)
-    }));
+function paletteShellFromRecord(record) {
+  const fields = record.fields || {};
+  return {
+    id: fields.PaletteId || record.id,
+    name: fields.Name || "",
+    colorCount: 0,
+    colors: [],
+    createdAt: fields.CreatedAt || record.createdTime || "",
+    updatedAt: fields.UpdatedAt || fields.CreatedAt || record.createdTime || ""
+  };
+}
+
+function joinFromRecord(record, color) {
+  const fields = record.fields || {};
+  return {
+    id: fields.PaletteColorId || record.id,
+    displayOrder: Number(fields.DisplayOrder || 0),
+    color
+  };
+}
+
+async function fetchOwnedData(ownerCustomerId) {
+  const formula = ownerFormula(ownerCustomerId);
+  const [colorRecords, paletteRecords, joinRecords] = await Promise.all([
+    fetchAllRecords(COLORS_TABLE, { filterByFormula: formula }),
+    fetchAllRecords(PALETTES_TABLE, { filterByFormula: formula }),
+    fetchAllRecords(PALETTE_COLORS_TABLE, { filterByFormula: formula })
+  ]);
+
+  const joinsByColorId = new Map();
+  joinRecords.forEach((record) => {
+    const colorId = record.fields?.ColorId;
+    if (!colorId) return;
+    joinsByColorId.set(colorId, (joinsByColorId.get(colorId) || 0) + 1);
+  });
+
+  const colorById = new Map(
+    colorRecords.map((record) => {
+      const color = colorFromRecord(record, joinsByColorId.get(record.fields?.ColorId) || 0);
+      return [color.id, { record, color }];
+    })
+  );
+
+  const palettes = paletteRecords.map(paletteShellFromRecord);
+  const paletteById = new Map(palettes.map((palette) => [palette.id, palette]));
+
+  joinRecords.forEach((record) => {
+    const palette = paletteById.get(record.fields?.PaletteId);
+    const colorEntry = colorById.get(record.fields?.ColorId);
+    if (!palette || !colorEntry) return;
+    palette.colors.push(joinFromRecord(record, colorEntry.color));
+  });
+
+  palettes.forEach((palette) => {
+    palette.colors.sort((a, b) => a.displayOrder - b.displayOrder);
+    palette.colorCount = palette.colors.length;
+  });
 
   return {
-    id: palette.id,
-    name: palette.name,
-    colorCount: palette._count?.colors ?? colors.length,
-    colors,
-    createdAt: palette.createdAt,
-    updatedAt: palette.updatedAt
+    colorRecords,
+    paletteRecords,
+    joinRecords,
+    colors: Array.from(colorById.values()).map((entry) => entry.color),
+    palettes
   };
 }
 
 async function listCustomData(ownerCustomerId, search = "") {
-  const query = cleanString(search);
-  const colorWhere = {
-    ownerCustomerId,
-    ...(query
-      ? {
-          OR: [
-            { name: { contains: query } },
-            { hexCode: { contains: query.toUpperCase() } }
-          ]
-        }
-      : {})
-  };
+  const data = await fetchOwnedData(ownerCustomerId);
+  const query = String(search || "").trim().toLowerCase();
+  const colors = query
+    ? data.colors.filter((color) =>
+        color.name.toLowerCase().includes(query) ||
+        color.hexCode.toLowerCase().includes(query)
+      )
+    : data.colors;
 
-  const [colors, palettes] = await Promise.all([
-    prisma.customColor.findMany({
-      where: colorWhere,
-      orderBy: [{ updatedAt: "desc" }],
-      include: { _count: { select: { paletteColors: true } } }
-    }),
-    prisma.customPalette.findMany({
-      where: { ownerCustomerId },
-      orderBy: [{ updatedAt: "desc" }],
-      include: {
-        _count: { select: { colors: true } },
-        colors: {
-          orderBy: { displayOrder: "asc" },
-          include: { color: { include: { _count: { select: { paletteColors: true } } } } }
-        }
-      }
-    })
-  ]);
+  colors.sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
+  data.palettes.sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
 
-  return {
-    colors: colors.map(serializeColor),
-    palettes: palettes.map(serializePalette)
-  };
+  return { colors, palettes: data.palettes };
 }
 
-async function requireOwnedPalette(ownerCustomerId, paletteId) {
-  const palette = await prisma.customPalette.findFirst({
-    where: { id: paletteId, ownerCustomerId }
+async function requireOwnedColorRecord(ownerCustomerId, colorId) {
+  const records = await fetchAllRecords(COLORS_TABLE, {
+    maxRecords: "1",
+    filterByFormula: `AND(${ownerFormula(ownerCustomerId)}, {ColorId}="${escapeFormulaValue(colorId)}")`
   });
+  const record = records[0];
+
+  if (!record) {
+    const error = new Error("Custom color not found");
+    error.status = 404;
+    throw error;
+  }
+
+  return record;
+}
+
+async function requireOwnedPaletteRecord(ownerCustomerId, paletteId) {
+  const records = await fetchAllRecords(PALETTES_TABLE, {
+    maxRecords: "1",
+    filterByFormula: `AND(${ownerFormula(ownerCustomerId)}, {PaletteId}="${escapeFormulaValue(paletteId)}")`
+  });
+  const record = records[0];
+
+  if (!record) {
+    const error = new Error("Custom palette not found");
+    error.status = 404;
+    throw error;
+  }
+
+  return record;
+}
+
+async function readPalette(ownerCustomerId, paletteId) {
+  const data = await fetchOwnedData(ownerCustomerId);
+  const palette = data.palettes.find((item) => item.id === paletteId);
 
   if (!palette) {
     const error = new Error("Custom palette not found");
@@ -137,39 +306,10 @@ async function requireOwnedPalette(ownerCustomerId, paletteId) {
   return palette;
 }
 
-async function requireOwnedColor(ownerCustomerId, colorId) {
-  const color = await prisma.customColor.findFirst({
-    where: { id: colorId, ownerCustomerId }
+async function fetchPaletteJoinRecords(ownerCustomerId, paletteId) {
+  return fetchAllRecords(PALETTE_COLORS_TABLE, {
+    filterByFormula: `AND(${ownerFormula(ownerCustomerId)}, {PaletteId}="${escapeFormulaValue(paletteId)}")`
   });
-
-  if (!color) {
-    const error = new Error("Custom color not found");
-    error.status = 404;
-    throw error;
-  }
-
-  return color;
-}
-
-async function readPalette(ownerCustomerId, paletteId) {
-  const palette = await prisma.customPalette.findFirst({
-    where: { id: paletteId, ownerCustomerId },
-    include: {
-      _count: { select: { colors: true } },
-      colors: {
-        orderBy: { displayOrder: "asc" },
-        include: { color: { include: { _count: { select: { paletteColors: true } } } } }
-      }
-    }
-  });
-
-  if (!palette) {
-    const error = new Error("Custom palette not found");
-    error.status = 404;
-    throw error;
-  }
-
-  return serializePalette(palette);
 }
 
 export async function loader({ request }) {
@@ -182,7 +322,7 @@ export async function loader({ request }) {
 
   try {
     const url = new URL(request.url);
-    const auth = await authorizeGrowthAccess({
+    const auth = authorizeGrowthAccess({
       customerId: url.searchParams.get("customerId"),
       hasGrowthAccess: url.searchParams.get("hasGrowthAccess")
     });
@@ -232,7 +372,7 @@ export async function action({ request }) {
 
   try {
     const body = await request.json();
-    const auth = await authorizeGrowthAccess({
+    const auth = authorizeGrowthAccess({
       customerId: body.customerId,
       hasGrowthAccess: body.hasGrowthAccess
     });
@@ -246,6 +386,7 @@ export async function action({ request }) {
 
     const ownerCustomerId = auth.ownerCustomerId;
     const actionName = String(body.action || "").trim();
+    const nowIso = new Date().toISOString();
 
     if (actionName === "createColor") {
       const name = cleanString(body.name);
@@ -259,12 +400,16 @@ export async function action({ request }) {
         return Response.json({ error: "Enter a valid six-character hex code" }, { status: 400, headers: corsHeaders });
       }
 
-      const color = await prisma.customColor.create({
-        data: { ownerCustomerId, name, hexCode },
-        include: { _count: { select: { paletteColors: true } } }
+      const record = await createRecord(COLORS_TABLE, {
+        ColorId: makeId("ccolor"),
+        OwnerCustomerId: ownerCustomerId,
+        Name: name,
+        HexCode: hexCode,
+        CreatedAt: nowIso,
+        UpdatedAt: nowIso
       });
 
-      return Response.json({ color: serializeColor(color) }, { headers: corsHeaders });
+      return Response.json({ color: colorFromRecord(record, 0) }, { headers: corsHeaders });
     }
 
     if (actionName === "updateColor") {
@@ -276,22 +421,30 @@ export async function action({ request }) {
       if (!name) return Response.json({ error: "Color name is required" }, { status: 400, headers: corsHeaders });
       if (!hexCode) return Response.json({ error: "Enter a valid six-character hex code" }, { status: 400, headers: corsHeaders });
 
-      await requireOwnedColor(ownerCustomerId, colorId);
-      const color = await prisma.customColor.update({
-        where: { id: colorId },
-        data: { name, hexCode },
-        include: { _count: { select: { paletteColors: true } } }
+      const existing = await requireOwnedColorRecord(ownerCustomerId, colorId);
+      const record = await updateRecord(COLORS_TABLE, existing.id, {
+        Name: name,
+        HexCode: hexCode,
+        UpdatedAt: nowIso
+      });
+      const joins = await fetchAllRecords(PALETTE_COLORS_TABLE, {
+        filterByFormula: `AND(${ownerFormula(ownerCustomerId)}, {ColorId}="${escapeFormulaValue(colorId)}")`
       });
 
-      return Response.json({ color: serializeColor(color) }, { headers: corsHeaders });
+      return Response.json({ color: colorFromRecord(record, joins.length) }, { headers: corsHeaders });
     }
 
     if (actionName === "deleteColor") {
       const colorId = cleanString(body.colorId);
       if (!colorId) return Response.json({ error: "Missing colorId" }, { status: 400, headers: corsHeaders });
 
-      await requireOwnedColor(ownerCustomerId, colorId);
-      await prisma.customColor.delete({ where: { id: colorId } });
+      const existing = await requireOwnedColorRecord(ownerCustomerId, colorId);
+      const joins = await fetchAllRecords(PALETTE_COLORS_TABLE, {
+        filterByFormula: `AND(${ownerFormula(ownerCustomerId)}, {ColorId}="${escapeFormulaValue(colorId)}")`
+      });
+
+      await deleteRecords(PALETTE_COLORS_TABLE, joins.map((record) => record.id));
+      await deleteRecord(COLORS_TABLE, existing.id);
 
       return Response.json({ success: true }, { headers: corsHeaders });
     }
@@ -300,15 +453,15 @@ export async function action({ request }) {
       const name = cleanString(body.name);
       if (!name) return Response.json({ error: "Palette name is required" }, { status: 400, headers: corsHeaders });
 
-      const palette = await prisma.customPalette.create({
-        data: { ownerCustomerId, name },
-        include: {
-          _count: { select: { colors: true } },
-          colors: { include: { color: { include: { _count: { select: { paletteColors: true } } } } } }
-        }
+      const record = await createRecord(PALETTES_TABLE, {
+        PaletteId: makeId("cpalette"),
+        OwnerCustomerId: ownerCustomerId,
+        Name: name,
+        CreatedAt: nowIso,
+        UpdatedAt: nowIso
       });
 
-      return Response.json({ palette: serializePalette(palette) }, { headers: corsHeaders });
+      return Response.json({ palette: paletteShellFromRecord(record) }, { headers: corsHeaders });
     }
 
     if (actionName === "renamePalette") {
@@ -317,8 +470,8 @@ export async function action({ request }) {
       if (!paletteId) return Response.json({ error: "Missing paletteId" }, { status: 400, headers: corsHeaders });
       if (!name) return Response.json({ error: "Palette name is required" }, { status: 400, headers: corsHeaders });
 
-      await requireOwnedPalette(ownerCustomerId, paletteId);
-      await prisma.customPalette.update({ where: { id: paletteId }, data: { name } });
+      const existing = await requireOwnedPaletteRecord(ownerCustomerId, paletteId);
+      await updateRecord(PALETTES_TABLE, existing.id, { Name: name, UpdatedAt: nowIso });
 
       return Response.json({ palette: await readPalette(ownerCustomerId, paletteId) }, { headers: corsHeaders });
     }
@@ -327,8 +480,10 @@ export async function action({ request }) {
       const paletteId = cleanString(body.paletteId);
       if (!paletteId) return Response.json({ error: "Missing paletteId" }, { status: 400, headers: corsHeaders });
 
-      await requireOwnedPalette(ownerCustomerId, paletteId);
-      await prisma.customPalette.delete({ where: { id: paletteId } });
+      const existing = await requireOwnedPaletteRecord(ownerCustomerId, paletteId);
+      const joins = await fetchPaletteJoinRecords(ownerCustomerId, paletteId);
+      await deleteRecords(PALETTE_COLORS_TABLE, joins.map((record) => record.id));
+      await deleteRecord(PALETTES_TABLE, existing.id);
 
       return Response.json({ success: true }, { headers: corsHeaders });
     }
@@ -342,13 +497,14 @@ export async function action({ request }) {
       if (!paletteId) return Response.json({ error: "Missing paletteId" }, { status: 400, headers: corsHeaders });
       if (!colorIds.length) return Response.json({ error: "Select at least one color" }, { status: 400, headers: corsHeaders });
 
-      await requireOwnedPalette(ownerCustomerId, paletteId);
+      await requireOwnedPaletteRecord(ownerCustomerId, paletteId);
 
-      const ownedColors = await prisma.customColor.findMany({
-        where: { ownerCustomerId, id: { in: colorIds } },
-        select: { id: true }
+      const ownedColorRecords = await fetchAllRecords(COLORS_TABLE, {
+        filterByFormula: `AND(${ownerFormula(ownerCustomerId)}, OR(${colorIds
+          .map((colorId) => `{ColorId}="${escapeFormulaValue(colorId)}"`)
+          .join(",")}))`
       });
-      const ownedColorIds = new Set(ownedColors.map((color) => color.id));
+      const ownedColorIds = new Set(ownedColorRecords.map((record) => record.fields?.ColorId));
 
       if (ownedColorIds.size !== colorIds.length) {
         return Response.json(
@@ -357,27 +513,24 @@ export async function action({ request }) {
         );
       }
 
-      const maxOrder = await prisma.customPaletteColor.aggregate({
-        where: { customPaletteId: paletteId },
-        _max: { displayOrder: true }
-      });
-      let displayOrder = maxOrder._max.displayOrder ?? -1;
+      const joins = await fetchPaletteJoinRecords(ownerCustomerId, paletteId);
+      const existingColorIds = new Set(joins.map((record) => record.fields?.ColorId));
+      let displayOrder = joins.reduce(
+        (max, record) => Math.max(max, Number(record.fields?.DisplayOrder || 0)),
+        -1
+      );
 
       for (const colorId of colorIds) {
+        if (existingColorIds.has(colorId)) continue;
         displayOrder += 1;
-        await prisma.customPaletteColor.upsert({
-          where: {
-            customPaletteId_customColorId: {
-              customPaletteId: paletteId,
-              customColorId: colorId
-            }
-          },
-          update: {},
-          create: {
-            customPaletteId: paletteId,
-            customColorId: colorId,
-            displayOrder
-          }
+        await createRecord(PALETTE_COLORS_TABLE, {
+          PaletteColorId: makeId("cpcolor"),
+          OwnerCustomerId: ownerCustomerId,
+          PaletteId: paletteId,
+          ColorId: colorId,
+          DisplayOrder: displayOrder,
+          CreatedAt: nowIso,
+          UpdatedAt: nowIso
         });
       }
 
@@ -390,10 +543,11 @@ export async function action({ request }) {
       if (!paletteId) return Response.json({ error: "Missing paletteId" }, { status: 400, headers: corsHeaders });
       if (!colorId) return Response.json({ error: "Missing colorId" }, { status: 400, headers: corsHeaders });
 
-      await requireOwnedPalette(ownerCustomerId, paletteId);
-      await prisma.customPaletteColor.deleteMany({
-        where: { customPaletteId: paletteId, customColorId: colorId }
+      await requireOwnedPaletteRecord(ownerCustomerId, paletteId);
+      const joins = await fetchAllRecords(PALETTE_COLORS_TABLE, {
+        filterByFormula: `AND(${ownerFormula(ownerCustomerId)}, {PaletteId}="${escapeFormulaValue(paletteId)}", {ColorId}="${escapeFormulaValue(colorId)}")`
       });
+      await deleteRecords(PALETTE_COLORS_TABLE, joins.map((record) => record.id));
 
       return Response.json({ palette: await readPalette(ownerCustomerId, paletteId) }, { headers: corsHeaders });
     }
@@ -405,13 +559,10 @@ export async function action({ request }) {
         : [];
 
       if (!paletteId) return Response.json({ error: "Missing paletteId" }, { status: 400, headers: corsHeaders });
-      await requireOwnedPalette(ownerCustomerId, paletteId);
+      await requireOwnedPaletteRecord(ownerCustomerId, paletteId);
 
-      const joins = await prisma.customPaletteColor.findMany({
-        where: { customPaletteId: paletteId },
-        select: { id: true, customColorId: true }
-      });
-      const joinByColorId = new Map(joins.map((join) => [join.customColorId, join.id]));
+      const joins = await fetchPaletteJoinRecords(ownerCustomerId, paletteId);
+      const joinByColorId = new Map(joins.map((record) => [record.fields?.ColorId, record]));
 
       if (colorIds.length !== joins.length || colorIds.some((colorId) => !joinByColorId.has(colorId))) {
         return Response.json(
@@ -420,14 +571,12 @@ export async function action({ request }) {
         );
       }
 
-      await prisma.$transaction(
-        colorIds.map((colorId, index) =>
-          prisma.customPaletteColor.update({
-            where: { id: joinByColorId.get(colorId) },
-            data: { displayOrder: index }
-          })
-        )
-      );
+      for (const [index, colorId] of colorIds.entries()) {
+        await updateRecord(PALETTE_COLORS_TABLE, joinByColorId.get(colorId).id, {
+          DisplayOrder: index,
+          UpdatedAt: nowIso
+        });
+      }
 
       return Response.json({ palette: await readPalette(ownerCustomerId, paletteId) }, { headers: corsHeaders });
     }
