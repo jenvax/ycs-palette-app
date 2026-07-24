@@ -1,0 +1,1925 @@
+<div class="ycs-my-palettes">
+  <div class="ycs-palette-topnav">
+    <a href="/account" class="palette-back-link">← My Account</a>
+  </div>
+
+  {% assign palette_access_string = '' %}
+
+  {% if customer %}
+    {% assign palette_access_string = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
+  {% endif %}
+
+  {% capture ycs_header_content %}{{ content_for_header }}{% endcapture %}
+  {% assign ycs_page_url = ycs_header_content
+    | split: '"pageurl":"'
+    | last
+    | split: '"'
+    | first
+    | replace: '\/', '/'
+    | replace: '\\u0026', '&'
+    | replace: '%26', '&'
+    | replace: '%3F', '?'
+    | replace: '%3D', '='
+    | append: '&'
+  %}
+
+  {% assign is_admin = false %}
+  {% if customer and palette_access_string contains ',YCS_ADMIN,' %}
+    {% assign is_admin = true %}
+  {% endif %}
+  {% assign actual_is_admin = is_admin %}
+
+  {% assign is_trade_july_cohort = false %}
+  {% assign trade_july_cohort_expires_at = '2026-08-25 00:00:00 -0400' | date: '%s' %}
+  {% assign current_timestamp = 'now' | date: '%s' %}
+  {% if customer and palette_access_string contains ',TRADEJULYCOHORT,' and current_timestamp < trade_july_cohort_expires_at %}
+    {% assign is_trade_july_cohort = true %}
+  {% endif %}
+
+  {% assign is_trade = false %}
+  {% if customer and palette_access_string contains ',TRADE,' %}
+    {% assign is_trade = true %}
+  {% endif %}
+  {% if is_trade_july_cohort %}
+    {% assign is_trade = true %}
+  {% endif %}
+
+  {% assign is_catool = false %}
+  {% if customer and palette_access_string contains ',CATOOL,' %}
+    {% assign is_catool = true %}
+  {% endif %}
+
+  {% assign is_catool_growth = false %}
+  {% if customer and palette_access_string contains ',CATOOLGROWTH,' %}
+    {% assign is_catool_growth = true %}
+  {% endif %}
+
+  {% assign is_catool_free = false %}
+  {% if customer and palette_access_string contains ',CATOOLFREE,' %}
+    {% assign is_catool_free = true %}
+  {% endif %}
+
+  {% assign is_free_diy_catool = false %}
+  {% if customer and palette_access_string contains ',FREEDIYCATOOL,' %}
+    {% assign is_free_diy_catool = true %}
+  {% endif %}
+
+  {% assign is_diy_catool = false %}
+  {% if customer and palette_access_string contains ',DIYCATOOL,' %}
+    {% assign is_diy_catool = true %}
+  {% endif %}
+
+  {% assign admin_view_as = '' %}
+  {% if actual_is_admin %}
+    {% if ycs_page_url contains 'viewAs=trade&' %}
+      {% assign admin_view_as = 'trade' %}
+    {% elsif ycs_page_url contains 'viewAs=catoolgrowth&' %}
+      {% assign admin_view_as = 'catoolgrowth' %}
+    {% elsif ycs_page_url contains 'viewAs=catoolfree&' %}
+      {% assign admin_view_as = 'catoolfree' %}
+    {% elsif ycs_page_url contains 'viewAs=freediycatool&' %}
+      {% assign admin_view_as = 'freediycatool' %}
+    {% elsif ycs_page_url contains 'viewAs=diycatool&' %}
+      {% assign admin_view_as = 'diycatool' %}
+    {% elsif ycs_page_url contains 'viewAs=catool&' %}
+      {% assign admin_view_as = 'catool' %}
+    {% endif %}
+  {% endif %}
+
+  {% if admin_view_as != '' %}
+    {% assign is_admin = false %}
+    {% assign is_trade = false %}
+    {% assign is_catool = false %}
+    {% assign is_catool_growth = false %}
+    {% assign is_catool_free = false %}
+    {% assign is_free_diy_catool = false %}
+    {% assign is_diy_catool = false %}
+
+    {% if admin_view_as == 'trade' %}
+      {% assign is_trade = true %}
+    {% elsif admin_view_as == 'catoolgrowth' %}
+      {% assign is_catool_growth = true %}
+    {% elsif admin_view_as == 'catoolfree' %}
+      {% assign is_catool_free = true %}
+    {% elsif admin_view_as == 'freediycatool' %}
+      {% assign is_free_diy_catool = true %}
+    {% elsif admin_view_as == 'diycatool' %}
+      {% assign is_diy_catool = true %}
+    {% elsif admin_view_as == 'catool' %}
+      {% assign is_catool = true %}
+    {% endif %}
+  {% endif %}
+
+  {% assign can_use_analysis_tool = false %}
+  {% if is_admin or is_trade or is_catool or is_catool_growth or is_catool_free or is_diy_catool or is_free_diy_catool %}
+    {% assign can_use_analysis_tool = true %}
+  {% endif %}
+
+  {% assign has_all_palette_access = false %}
+  {% if is_admin or is_trade or is_catool or is_catool_growth %}
+    {% assign has_all_palette_access = true %}
+  {% endif %}
+
+  {% assign can_access_all_printable_pdfs = false %}
+  {% if is_admin or is_trade or palette_access_string contains ',VIP,' %}
+    {% assign can_access_all_printable_pdfs = true %}
+  {% endif %}
+
+  {% assign has_draping_studio_starter = false %}
+{% if palette_access_string contains ',DRAPINGSTUDIOSTARTER,' %}
+  {% assign has_draping_studio_starter = true %}
+{% endif %}
+
+{% assign has_draping_studio = false %}
+{% if palette_access_string contains ',DRAPINGSTUDIO,' %}
+  {% assign has_draping_studio = true %}
+{% endif %}
+
+{% assign has_draping_studio_access = false %}
+{% if has_draping_studio_starter or has_draping_studio %}
+  {% assign has_draping_studio_access = true %}
+{% endif %}
+
+{% assign is_sample_user = false %}
+{% if has_draping_studio_access == false and palette_access_string contains ',SAMPLE,' %}
+  {% assign is_sample_user = true %}
+{% endif %}
+
+  {% if customer == nil %}
+    <div class="ycs-my-palettes__header">
+      <p class="ycs-my-palettes__kicker">Your Color Style</p>
+      <h1>{{ section.settings.heading }}</h1>
+      <p class="ycs-my-palettes__intro">Please sign in to view your palettes.</p>
+      <div class="ycs-my-palettes__signin">
+        <a href="{{ routes.account_login_url }}" class="ycs-my-palettes__signin-button">Sign In</a>
+      </div>
+    </div>
+
+  {% else %}
+    <div id="ycs-tools-tos-overlay" class="ycs-tools-tos-overlay">
+  <div class="ycs-tools-tos-modal">
+    <h2>Before you continue</h2>
+
+    <p>
+      By using Photo Prep, the Photo Draping Studio, and the Color Analysis Tool, you agree to our
+      <a href="/pages/terms-of-service" target="_blank">Terms of Service</a>.
+    </p>
+
+    <label class="ycs-tools-tos-check">
+      <input type="checkbox" id="ycs-tools-tos-checkbox">
+      I agree to the Terms
+    </label>
+
+    <button type="button" id="ycs-tools-tos-continue" class="ycs-palette-card__button">
+      Continue
+    </button>
+  </div>
+</div>
+
+    <div class="ycs-my-palettes__header">
+      <p class="ycs-my-palettes__kicker">Your Color Style</p>
+      <h1>{{ section.settings.heading }}</h1>
+      <p class="ycs-my-palettes__intro">{{ section.settings.intro }}</p>
+    </div>
+
+    {% if actual_is_admin %}
+      <div class="ycs-admin-preview">
+        <div>
+          <p class="ycs-admin-preview__kicker">Admin testing</p>
+          <p class="ycs-admin-preview__copy">
+            View the Color Analysis flow as another user type. Your real account stays admin.
+          </p>
+        </div>
+        <label class="ycs-admin-preview__control">
+          <span>View as</span>
+          <select id="ycs-admin-view-as">
+            <option value="" {% if admin_view_as == '' %}selected{% endif %}>Admin</option>
+            <option value="trade" {% if admin_view_as == 'trade' %}selected{% endif %}>Trade</option>
+            <option value="catool" {% if admin_view_as == 'catool' %}selected{% endif %}>CATOOL</option>
+            <option value="catoolgrowth" {% if admin_view_as == 'catoolgrowth' %}selected{% endif %}>CATOOL Growth</option>
+            <option value="catoolfree" {% if admin_view_as == 'catoolfree' %}selected{% endif %}>CATOOL Free Trial</option>
+            <option value="diycatool" {% if admin_view_as == 'diycatool' %}selected{% endif %}>DIY CATOOL</option>
+            <option value="freediycatool" {% if admin_view_as == 'freediycatool' %}selected{% endif %}>Free DIY CATOOL</option>
+          </select>
+        </label>
+      </div>
+    {% endif %}
+
+    <div class="ycs-my-palettes__section ycs-my-palettes__section--studio">
+      <h2 class="ycs-my-palettes__section-title">Tools</h2>
+      <div class="ycs-my-palettes__grid ycs-my-palettes__grid--2">
+
+        {% if can_use_analysis_tool %}
+          <div class="ycs-palette-card ycs-palette-card--admin">
+            <div class="ycs-palette-card__top">
+              <div
+                class="ycs-palette-card__gradient"
+                style="background: linear-gradient(to right, #7a5cff, #5fb6ff, #9be7c4);">
+              </div>
+            </div>
+
+            <div class="ycs-palette-card__content">
+              <div class="ycs-palette-card__text">
+                <h2>Color Analysis Tool</h2>
+                <p class="ycs-palette-card__subtitle">
+                  {% if is_diy_catool %}
+                    Upload your own photo and use the DIY Color Analysis Tool.
+                  {% elsif is_free_diy_catool %}
+                    Try the DIY Color Analysis Tool with three preloaded photos.
+                  {% elsif is_catool_free %}
+                    Try the Color Analysis Tool with three preloaded clients.
+                  {% else %}
+                  Create client records, prep photos, save analyses, and return to client work anytime.
+                  {% endif %}
+                </p>
+                <p class="ycs-palette-card__admin-label">
+                  {% if is_admin %}
+  Admin access • Unlimited uploads
+{% elsif is_trade %}
+  Trade Professional • 15 uploads/month
+{% elsif is_catool_growth %}
+  Growth Plan • 15 uploads/month • Full client management
+{% elsif is_catool %}
+  Starter Plan • 5 uploads/month • Client management
+{% elsif is_diy_catool %}
+  DIY Color Analysis Tool • Self analysis
+{% elsif is_free_diy_catool %}
+  Free DIY Demo • 3 preloaded photos
+{% elsif is_catool_free %}
+  Free Trial • 3 preloaded clients
+{% endif %}
+                </p>
+              </div>
+
+              <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
+                <a href="{% if is_diy_catool or is_free_diy_catool %}/pages/photo-prep?mode=diy&workflow=color-analysis{% elsif is_catool_free %}/pages/photo-prep?mode=trade&workflow=color-analysis&trial=catoolfree{% else %}/pages/photo-prep?mode=trade&workflow=color-analysis{% endif %}" class="ycs-palette-card__button">
+                  Open Tool
+                </a>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
+        {% if is_trade %}
+          <div class="ycs-palette-card ycs-palette-card--admin">
+            <div class="ycs-palette-card__top">
+              <div
+                class="ycs-palette-card__gradient"
+                style="background: linear-gradient(to right, #2f2a25, #b7835f, #f2d6b3);">
+              </div>
+            </div>
+
+            <div class="ycs-palette-card__content">
+              <div class="ycs-palette-card__text">
+                <h2>Training Curriculum</h2>
+                <p class="ycs-palette-card__subtitle">
+                  Open your color analysis training curriculum.
+                </p>
+                <p class="ycs-palette-card__admin-label">
+                  Trade Professional
+                </p>
+              </div>
+
+              <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
+                <a href="https://color-analysis-training.teachery.co/login" class="ycs-palette-card__button" target="_blank" rel="noopener">
+                  Open Training
+                </a>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
+        <div class="ycs-palette-card ycs-palette-card--studio">
+          <div class="ycs-palette-card__top">
+            <div
+              class="ycs-palette-card__gradient ycs-palette-card__gradient--studio"
+              style="background: linear-gradient(to right, #d94c6a, #f2b880, #d9d7f1);">
+            </div>
+          </div>
+
+          <div class="ycs-palette-card__content">
+            <div class="ycs-palette-card__text">
+              <h2>Photo Draping Studio</h2>
+              <p class="ycs-palette-card__subtitle">
+                Upload your photo and see your colors on you.
+              </p>
+
+              {% if palette_access_string contains ',VIP,' or is_admin %}
+                <p class="ycs-palette-card__studio-note ycs-palette-card__studio-note--open">
+                  Included with your membership
+                </p>
+              {% elsif has_draping_studio_starter %}
+  <p class="ycs-palette-card__studio-note ycs-palette-card__studio-note--open">
+    Starter unlocked • 2 photo uploads
+  </p>
+{% elsif has_draping_studio %}
+  <p class="ycs-palette-card__studio-note ycs-palette-card__studio-note--open">
+    Studio unlocked • 5 photo uploads
+  </p>
+              {% elsif is_sample_user %}
+                <p class="ycs-palette-card__studio-note ycs-palette-card__studio-note--open">
+                  Your Free Trial • 1 photo upload • Sample colors
+                </p>
+              {% else %}
+                <p class="ycs-palette-card__studio-note">
+                  Try it free • 1 photo upload • Sample colors
+                </p>
+              {% endif %}
+            </div>
+
+            <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
+              <a href="{% if palette_access_string contains ',VIP,' or is_admin or has_draping_studio_access or is_sample_user %}/pages/photo-prep?mode=personal&workflow=photo-draping{% else %}/pages/photo-prep?mode=personal&workflow=photo-draping&trial=sample{% endif %}" class="ycs-palette-card__button">
+                {% if palette_access_string contains ',VIP,' or is_admin %}
+                  Open Studio
+                {% elsif has_draping_studio_access %}
+  Open Studio
+                {% elsif is_sample_user %}
+                  Try Studio
+                {% else %}
+                  Try Studio Free
+                {% endif %}
+              </a>
+            </div>
+          </div>
+          
+        </div>
+
+      </div>
+    </div>
+
+    {% if is_catool_growth %}
+      <div
+        class="ycs-my-palettes__section ycs-custom-palettes"
+        id="ycs-custom-palettes"
+        data-customer-id="{{ customer.id }}"
+        data-preview-customer-id="{{ customer.id }}"
+        data-view-as="{{ admin_view_as }}"
+        data-app-base-url="https://ycs-palette-app.vercel.app"
+      >
+        <div class="ycs-custom-palettes__header">
+          <div>
+            <h2 class="ycs-my-palettes__section-title">My Custom Palettes</h2>
+            <p class="ycs-custom-palettes__intro">Create and organize palettes using colors from your private custom color collection.</p>
+          </div>
+          <div class="ycs-custom-palettes__actions">
+            <button type="button" class="ycs-palette-card__button" data-ycs-custom-action="create-palette">Create Palette</button>
+            <button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="manage-colors">Manage My Colors</button>
+          </div>
+        </div>
+
+        <div class="ycs-custom-palettes__status" data-ycs-custom-status hidden></div>
+        <div class="ycs-custom-palettes__grid" data-ycs-custom-palettes-list></div>
+
+        <div class="ycs-custom-palettes__empty" data-ycs-custom-empty hidden>
+          <p>You haven’t created any custom palettes yet. Create a palette using colors from your private color collection.</p>
+          <button type="button" class="ycs-palette-card__button" data-ycs-custom-action="create-palette">Create Custom Palette</button>
+        </div>
+      </div>
+
+      <div class="ycs-custom-modal" id="ycs-custom-modal" hidden>
+        <div class="ycs-custom-modal__backdrop" data-ycs-custom-close></div>
+        <div class="ycs-custom-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="ycs-custom-modal-title">
+          <div class="ycs-custom-modal__header">
+            <h2 id="ycs-custom-modal-title">My Colors</h2>
+            <button type="button" class="ycs-custom-icon-button" data-ycs-custom-close aria-label="Close">×</button>
+          </div>
+          <div class="ycs-custom-modal__body" data-ycs-custom-modal-body></div>
+        </div>
+      </div>
+    {% endif %}
+
+    {% assign owned_count = 0 %}
+    {% assign locked_count = 0 %}
+    {% assign admin_count = 0 %}
+
+    {% for block in section.blocks %}
+      {% assign palette_code = block.settings.palette_code | upcase | strip %}
+      {% assign palette_token = ',' | append: palette_code | append: ',' %}
+      {% assign visibility = block.settings.visibility | default: 'customer' %}
+
+      {% if visibility == 'admin' %}
+        {% if is_admin %}
+          {% assign admin_count = admin_count | plus: 1 %}
+        {% endif %}
+        {% continue %}
+      {% endif %}
+
+      {% assign user_owns_palette = false %}
+
+      {% if palette_code == 'SAMPLE' %}
+        {% if is_sample_user %}
+          {% assign user_owns_palette = true %}
+        {% endif %}
+      {% else %}
+        {% if has_all_palette_access or palette_access_string contains palette_token %}
+          {% assign user_owns_palette = true %}
+        {% endif %}
+      {% endif %}
+
+      {% if user_owns_palette %}
+        {% assign owned_count = owned_count | plus: 1 %}
+      {% else %}
+        {% assign locked_count = locked_count | plus: 1 %}
+      {% endif %}
+    {% endfor %}
+
+    {% if owned_count == 0 and locked_count == 0 and admin_count == 0 %}
+      <div class="ycs-my-palettes__empty">
+        No palettes have been added to this page yet.
+      </div>
+    {% endif %}
+
+    {% if is_admin %}
+      <div class="ycs-my-palettes__section ycs-my-palettes__section--admin">
+        <h2 class="ycs-my-palettes__section-title">Admin Views</h2>
+
+        <div class="ycs-my-palettes__grid ycs-my-palettes__grid--locked">
+          <div class="ycs-palette-card ycs-palette-card--admin">
+  <div class="ycs-palette-card__top">
+    <div
+      class="ycs-palette-card__gradient"
+      style="background: linear-gradient(to right, #111111, #8b7d6b, #d94c6a);">
+    </div>
+  </div>
+
+  <div class="ycs-palette-card__content">
+    <div class="ycs-palette-card__text">
+      <h2>Member Photos</h2>
+      <p class="ycs-palette-card__subtitle">
+        View member photos, upload missing photos, and open saved photos in Draping Studio.
+      </p>
+      <p class="ycs-palette-card__admin-label">Admin only</p>
+    </div>
+
+    <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
+      <a href="/pages/member-photos" class="ycs-palette-card__button">
+        Open Member Photos
+      </a>
+    </div>
+  </div>
+</div>
+          <div class="ycs-palette-card ycs-palette-card--admin">
+            <div class="ycs-palette-card__top">
+              <div
+                class="ycs-palette-card__gradient"
+                style="background: linear-gradient(to right, #7a5cff, #5fb6ff, #9be7c4);">
+              </div>
+            </div>
+
+            <div class="ycs-palette-card__content">
+              <div class="ycs-palette-card__text">
+                <h2>View Color Analysis Tool as Growth User</h2>
+                <p class="ycs-palette-card__subtitle">
+                  Preview the normal customer experience with Growth access enabled for this session.
+                </p>
+                <p class="ycs-palette-card__admin-label">Admin preview</p>
+              </div>
+
+              <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
+                <a href="/pages/my-palettes?viewAs=catoolgrowth" class="ycs-palette-card__button">
+                  Open Growth View
+                </a>
+              </div>
+            </div>
+          </div>
+          {% for block in section.blocks %}
+            {% assign visibility = block.settings.visibility | default: 'customer' %}
+
+            {% if visibility == 'admin' %}
+              {% assign palette_url = '/pages/palette?palette=' | append: block.settings.palette_code %}
+
+              <div class="ycs-palette-card ycs-palette-card--admin" {{ block.shopify_attributes }}>
+                <div class="ycs-palette-card__top">
+                  {% if block.settings.palette_image != blank %}
+                    <div class="ycs-palette-card__image-wrap">
+                      {{
+                        block.settings.palette_image
+                        | image_url: width: 1200
+                        | image_tag:
+                          loading: 'lazy',
+                          class: 'ycs-palette-card__image',
+                          alt: block.settings.title
+                      }}
+                    </div>
+                  {% else %}
+                    <div
+                      class="ycs-palette-card__gradient"
+                      style="background: {{ block.settings.gradient }};">
+                    </div>
+                  {% endif %}
+                </div>
+
+                <div class="ycs-palette-card__content">
+                  <div class="ycs-palette-card__text">
+                    <h2>{{ block.settings.title }}</h2>
+
+                    {% if block.settings.subtitle != blank %}
+                      <p class="ycs-palette-card__subtitle">{{ block.settings.subtitle }}</p>
+                    {% endif %}
+
+                    <p class="ycs-palette-card__admin-label">Admin only</p>
+                  </div>
+
+                  <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
+                    <a href="{{ palette_url }}" class="ycs-palette-card__button">
+                      Open View
+                    </a>
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+    {% if owned_count > 0 %}
+      <div class="ycs-my-palettes__section">
+        {% if is_catool_growth %}
+          <h2 class="ycs-my-palettes__section-title">Included YCS Color Palettes</h2>
+        {% endif %}
+        <div class="ycs-my-palettes__grid ycs-my-palettes__grid--{{ owned_count }}">
+          {% for block in section.blocks %}
+            {% assign palette_code = block.settings.palette_code | upcase | strip %}
+            {% assign palette_token = ',' | append: palette_code | append: ',' %}
+            {% assign visibility = block.settings.visibility | default: 'customer' %}
+
+            {% if visibility == 'admin' %}
+              {% continue %}
+            {% endif %}
+
+            {% assign user_owns_palette = false %}
+
+            {% if palette_code == 'SAMPLE' %}
+              {% if is_sample_user %}
+                {% assign user_owns_palette = true %}
+              {% endif %}
+            {% else %}
+              {% if has_all_palette_access or palette_access_string contains palette_token %}
+                {% assign user_owns_palette = true %}
+              {% endif %}
+            {% endif %}
+
+            {% if user_owns_palette %}
+              {% assign palette_url = '/pages/palette?palette=' | append: block.settings.palette_code %}
+
+              <div class="ycs-palette-card" {{ block.shopify_attributes }}>
+                <div class="ycs-palette-card__top">
+                  {% if block.settings.palette_image != blank %}
+                    <div class="ycs-palette-card__image-wrap">
+                      {{
+                        block.settings.palette_image
+                        | image_url: width: 1200
+                        | image_tag:
+                          loading: 'lazy',
+                          class: 'ycs-palette-card__image',
+                          alt: block.settings.title
+                      }}
+                    </div>
+                  {% else %}
+                    <div
+                      class="ycs-palette-card__gradient"
+                      style="background: {{ block.settings.gradient }};">
+                    </div>
+                  {% endif %}
+                </div>
+
+                <div class="ycs-palette-card__content">
+                  <div class="ycs-palette-card__text">
+                    <h2>{{ block.settings.title }}</h2>
+
+                    {% if block.settings.subtitle != blank %}
+                      <p class="ycs-palette-card__subtitle">{{ block.settings.subtitle }}</p>
+                    {% endif %}
+                  </div>
+
+                  <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
+                    <a href="{{ palette_url }}" class="ycs-palette-card__button">
+                      Open Palette
+                    </a>
+
+                    {% if block.settings.printable_pdf_url != blank %}
+                      {% if can_access_all_printable_pdfs or palette_access_string contains palette_token %}
+                        <a href="{{ block.settings.printable_pdf_url }}" class="ycs-palette-card__button ycs-palette-card__button--secondary" target="_blank" rel="noopener">
+                          Printable PDF
+                        </a>
+                      {% endif %}
+                    {% endif %}
+
+                    {% if block.settings.mobile_pdf_url != blank %}
+                      {% if can_access_all_printable_pdfs or palette_access_string contains palette_token %}
+                        <a href="{{ block.settings.mobile_pdf_url }}" class="ycs-palette-card__button ycs-palette-card__button--secondary" target="_blank" rel="noopener">
+                          Mobile PDF
+                        </a>
+                      {% endif %}
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+    {% if locked_count > 0 %}
+      <div class="ycs-my-palettes__section ycs-my-palettes__section--locked">
+        <h2 class="ycs-my-palettes__section-title">Explore More Palettes</h2>
+
+        <div class="ycs-my-palettes__grid ycs-my-palettes__grid--locked">
+          {% for block in section.blocks %}
+            {% assign palette_code = block.settings.palette_code | upcase | strip %}
+            {% assign palette_token = ',' | append: palette_code | append: ',' %}
+            {% assign visibility = block.settings.visibility | default: 'customer' %}
+
+            {% if visibility == 'admin' %}
+              {% continue %}
+            {% endif %}
+
+            {% assign user_owns_palette = false %}
+
+            {% if palette_code == 'SAMPLE' %}
+              {% if is_sample_user %}
+                {% assign user_owns_palette = true %}
+              {% endif %}
+            {% else %}
+              {% if has_all_palette_access or palette_access_string contains palette_token %}
+                {% assign user_owns_palette = true %}
+              {% endif %}
+            {% endif %}
+
+            {% unless user_owns_palette %}
+              <div class="ycs-palette-card is-locked" {{ block.shopify_attributes }}>
+                <div class="ycs-palette-card__top">
+                  {% if block.settings.palette_image != blank %}
+                    <div class="ycs-palette-card__image-wrap">
+                      {{
+                        block.settings.palette_image
+                        | image_url: width: 1200
+                        | image_tag:
+                          loading: 'lazy',
+                          class: 'ycs-palette-card__image',
+                          alt: block.settings.title
+                      }}
+                    </div>
+                  {% else %}
+                    <div
+                      class="ycs-palette-card__gradient"
+                      style="background: {{ block.settings.gradient }};">
+                    </div>
+                  {% endif %}
+                </div>
+
+                <div class="ycs-palette-card__content">
+                  <div class="ycs-palette-card__text">
+                    <h2>{{ block.settings.title }}</h2>
+
+                    {% if block.settings.subtitle != blank %}
+                      <p class="ycs-palette-card__subtitle">{{ block.settings.subtitle }}</p>
+                    {% endif %}
+
+                    <p class="ycs-palette-card__lock">🔒 Locked</p>
+                  </div>
+
+                  <div class="ycs-palette-card__actions">
+                    <a href="{% if block.settings.product_link != blank %}{{ block.settings.product_link }}{% else %}https://yourcolorstyle.com/products/expanded-digital-color-palettes{% endif %}" class="ycs-palette-card__button ycs-palette-card__button--locked">
+                      Unlock Palette
+                    </a>
+                  </div>
+                </div>
+              </div>
+            {% endunless %}
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+  {% endif %}
+</div>
+
+<style>
+  .palette-back-link {
+    font-size: 14px;
+    font-weight: 600;
+    color: #444;
+    text-decoration: none;
+    z-index: 1000;
+  }
+
+  .ycs-my-palettes__section--studio {
+    margin-top: 12px;
+  }
+
+  .ycs-palette-card--studio {
+    border-color: #ead7dc;
+    background: #fffafb;
+  }
+
+  .ycs-palette-card__gradient--studio {
+    height: 10px;
+  }
+
+  .ycs-palette-card__studio-note {
+    margin: 8px 0 0;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .02em;
+    color: #8a5a66;
+  }
+
+  .ycs-palette-card__studio-note--open {
+    color: #4d7c5c;
+  }
+
+  .ycs-my-palettes {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 20px 16px 36px;
+  }
+
+  .ycs-my-palettes__header {
+    text-align: center;
+    margin-bottom: 22px;
+  }
+
+  .ycs-my-palettes__kicker {
+    margin: 0 0 6px;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #777;
+  }
+
+  .ycs-my-palettes__header h1 {
+    margin: 0;
+    font-size: 34px;
+    line-height: 1.05;
+    letter-spacing: 0.02em;
+  }
+
+  .ycs-my-palettes__intro {
+    margin: 10px auto 0;
+    max-width: 560px;
+    font-size: 15px;
+    line-height: 1.5;
+    color: #666;
+  }
+
+  .ycs-my-palettes__signin {
+    margin-top: 18px;
+  }
+
+  .ycs-my-palettes__signin-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    padding: 8px 14px;
+    border-radius: 10px;
+    background: #d94c6a;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid #d94c6a;
+    transition: all .15s ease;
+  }
+
+  .ycs-my-palettes__signin-button:hover {
+    background: #c43f5d;
+    border-color: #c43f5d;
+  }
+
+  .ycs-my-palettes__empty {
+    text-align: center;
+    color: #666;
+    padding: 20px 0;
+  }
+
+  .ycs-my-palettes__section {
+    margin-top: 34px;
+  }
+
+  .ycs-my-palettes__section:first-of-type {
+    margin-top: 0;
+  }
+
+  .ycs-my-palettes__section-title {
+    margin: 0 0 14px;
+    font-size: 20px;
+    line-height: 1.2;
+    color: #333;
+  }
+
+  .ycs-my-palettes__section--locked {
+    border-top: 1px solid #eee;
+    padding-top: 28px;
+  }
+
+  .ycs-my-palettes__section--admin {
+    border-top: 1px solid #eee;
+    border-bottom: 1px solid #eee;
+    padding-top: 28px;
+    padding-bottom: 28px;
+  }
+
+  .ycs-my-palettes__grid {
+    display: grid;
+    gap: 14px;
+    justify-content: center;
+  }
+
+  .ycs-my-palettes__grid--1 {
+    grid-template-columns: minmax(0, 720px);
+  }
+
+  .ycs-my-palettes__grid--2,
+  .ycs-my-palettes__grid--3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ycs-my-palettes__grid--4,
+  .ycs-my-palettes__grid--5,
+  .ycs-my-palettes__grid--6,
+  .ycs-my-palettes__grid--7,
+  .ycs-my-palettes__grid--8,
+  .ycs-my-palettes__grid--9,
+  .ycs-my-palettes__grid--10,
+  .ycs-my-palettes__grid--11,
+  .ycs-my-palettes__grid--12,
+  .ycs-my-palettes__grid--13,
+  .ycs-my-palettes__grid--14,
+  .ycs-my-palettes__grid--15,
+  .ycs-my-palettes__grid--16,
+  .ycs-my-palettes__grid--17,
+  .ycs-my-palettes__grid--18,
+  .ycs-my-palettes__grid--19,
+  .ycs-my-palettes__grid--20,
+  .ycs-my-palettes__grid--21,
+  .ycs-my-palettes__grid--22,
+  .ycs-my-palettes__grid--23,
+  .ycs-my-palettes__grid--24,
+  .ycs-my-palettes__grid--25,
+  .ycs-my-palettes__grid--26,
+  .ycs-my-palettes__grid--27,
+  .ycs-my-palettes__grid--28,
+  .ycs-my-palettes__grid--29,
+  .ycs-my-palettes__grid--30 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ycs-my-palettes__grid--locked {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (max-width: 699px) {
+    .ycs-my-palettes__grid--4,
+    .ycs-my-palettes__grid--5,
+    .ycs-my-palettes__grid--6,
+    .ycs-my-palettes__grid--7,
+    .ycs-my-palettes__grid--8,
+    .ycs-my-palettes__grid--9,
+    .ycs-my-palettes__grid--10,
+    .ycs-my-palettes__grid--11,
+    .ycs-my-palettes__grid--12,
+    .ycs-my-palettes__grid--13,
+    .ycs-my-palettes__grid--14,
+    .ycs-my-palettes__grid--15,
+    .ycs-my-palettes__grid--16,
+    .ycs-my-palettes__grid--17,
+    .ycs-my-palettes__grid--18,
+    .ycs-my-palettes__grid--19,
+    .ycs-my-palettes__grid--20,
+    .ycs-my-palettes__grid--21,
+    .ycs-my-palettes__grid--22,
+    .ycs-my-palettes__grid--23,
+    .ycs-my-palettes__grid--24,
+    .ycs-my-palettes__grid--25,
+    .ycs-my-palettes__grid--26,
+    .ycs-my-palettes__grid--27,
+    .ycs-my-palettes__grid--28,
+    .ycs-my-palettes__grid--29,
+    .ycs-my-palettes__grid--30,
+    .ycs-my-palettes__grid--locked {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .ycs-palette-card {
+    border-radius: 14px;
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.05);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.06);
+    overflow: hidden;
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+
+  .ycs-palette-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 16px 34px rgba(0,0,0,0.08);
+  }
+
+  .ycs-palette-card.is-locked {
+    opacity: 0.9;
+  }
+
+  .ycs-palette-card--admin {
+    border-color: #ead7dc;
+    background: #fffafb;
+  }
+
+  .ycs-palette-card__top {
+    padding: 10px 10px 0;
+  }
+
+  .ycs-palette-card__gradient {
+    height: 8px;
+    width: 100%;
+    border-radius: 999px;
+  }
+
+  .ycs-palette-card__image-wrap {
+    width: 100%;
+    overflow: hidden;
+    border-radius: 12px;
+    background: #f7f7f7;
+  }
+
+  .ycs-palette-card__image {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .ycs-palette-card__content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px 16px;
+  }
+
+  .ycs-palette-card__text {
+    min-width: 0;
+  }
+
+  .ycs-palette-card__text h2 {
+    margin: 0;
+    font-size: 20px;
+    line-height: 1.15;
+    font-weight: 600;
+    letter-spacing: .01em;
+  }
+
+  .ycs-palette-card__subtitle {
+    margin-top: 4px;
+    font-size: 13px;
+    color: #888;
+    letter-spacing: .02em;
+  }
+
+  .ycs-palette-card__lock {
+    margin: 8px 0 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #777;
+  }
+
+  .ycs-palette-card__admin-label {
+    margin: 8px 0 0;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: #b05a70;
+  }
+
+  .ycs-palette-card__actions {
+    flex: 0 0 auto;
+  }
+
+  .ycs-palette-card__actions--stacked {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  .ycs-palette-card__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    padding: 8px 14px;
+    border-radius: 10px;
+    background: #d94c6a;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid #d94c6a;
+    transition: all .15s ease;
+  }
+
+  .ycs-palette-card__button:hover {
+    background: #c43f5d;
+    border-color: #c43f5d;
+  }
+
+  .ycs-palette-card__button--secondary {
+    background: #fff8fa;
+    color: #c23f5e;
+    border: 1px solid #f1c2cc;
+  }
+
+  .ycs-palette-card__button--secondary:hover {
+    background: #fdecef;
+  }
+
+  .ycs-palette-card__button--locked {
+    background: #fff6f8;
+    color: #b93d59;
+    border-color: #efb7c4;
+  }
+
+  .ycs-palette-card__button--locked:hover {
+    background: #fdecef;
+    color: #a8324d;
+    border-color: #e59caf;
+  }
+
+  .ycs-palette-card__button--disabled {
+    background: #b8b8b8;
+    color: #fff;
+    cursor: default;
+  }
+
+  .ycs-palette-card.is-locked {
+    opacity: .8;
+  }
+
+  .ycs-palette-card__lock {
+    margin-top: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: #999;
+  }
+
+  @media (max-width: 699px) {
+    .ycs-palette-card__content {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .ycs-palette-card__actions--stacked {
+      width: 100%;
+      justify-content: flex-start;
+    }
+
+    .ycs-palette-card__button {
+      width: 100%;
+    }
+  }
+  .ycs-tools-tos-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(255,255,255,0.96);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 18px;
+}
+
+.ycs-tools-tos-modal {
+  background: #fff;
+  padding: 28px;
+  max-width: 440px;
+  text-align: center;
+  border-radius: 18px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.12);
+  border: 1px solid #ece7df;
+}
+
+.ycs-tools-tos-modal h2 {
+  margin: 0 0 10px;
+  font-size: 22px;
+}
+
+.ycs-tools-tos-modal p {
+  margin: 0;
+  font-size: 14px;
+  color: #555;
+  line-height: 1.45;
+}
+
+.ycs-tools-tos-check {
+  display: block;
+  margin: 16px 0;
+  font-size: 14px;
+  color: #333;
+}
+
+.ycs-admin-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 0 0 28px;
+  padding: 18px 20px;
+  border: 1px solid #e5d8ca;
+  border-radius: 18px;
+  background: #fbf7f1;
+}
+
+.ycs-admin-preview__kicker {
+  margin: 0 0 4px;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8c7d6d;
+  font-weight: 700;
+}
+
+.ycs-admin-preview__copy {
+  margin: 0;
+  color: #4f4740;
+  font-size: 15px;
+}
+
+.ycs-admin-preview__control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #332e2a;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+  .ycs-admin-preview__control select {
+    border: 1px solid #d8cbbd;
+    border-radius: 999px;
+    padding: 10px 34px 10px 14px;
+    background: #fff;
+  color: #332e2a;
+    font: inherit;
+  }
+
+.ycs-custom-palettes {
+  border-top: 1px solid #eee;
+  border-bottom: 1px solid #eee;
+  padding: 28px 0;
+}
+
+.ycs-custom-palettes__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+
+.ycs-custom-palettes__intro {
+  margin: -8px 0 0;
+  max-width: 560px;
+  color: #666;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.ycs-custom-palettes__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.ycs-custom-palettes__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.ycs-custom-palettes__empty,
+.ycs-custom-palettes__status {
+  border: 1px dashed #e4c7ce;
+  border-radius: 14px;
+  padding: 18px;
+  background: #fffafb;
+  color: #6b5359;
+}
+
+.ycs-custom-palettes__empty p,
+.ycs-custom-palettes__status {
+  margin: 0 0 12px;
+  line-height: 1.45;
+}
+
+.ycs-custom-palettes__status[hidden],
+.ycs-custom-palettes__empty[hidden] {
+  display: none;
+}
+
+.ycs-custom-card {
+  border-color: #e6dde0;
+}
+
+.ycs-custom-card__swatches {
+  display: flex;
+  gap: 4px;
+  margin-top: 10px;
+}
+
+.ycs-custom-swatch {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid rgba(0,0,0,.18);
+  flex: 0 0 auto;
+}
+
+.ycs-custom-modal[hidden] {
+  display: none;
+}
+
+.ycs-custom-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+}
+
+.ycs-custom-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(36, 30, 28, .35);
+}
+
+.ycs-custom-modal__dialog {
+  position: relative;
+  width: min(760px, 100%);
+  max-height: min(86vh, 760px);
+  overflow: auto;
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #ead7dc;
+  box-shadow: 0 24px 70px rgba(0,0,0,.18);
+}
+
+.ycs-custom-modal__header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  background: #fff;
+  border-bottom: 1px solid #f0e2e6;
+}
+
+.ycs-custom-modal__header h2 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.ycs-custom-modal__body {
+  padding: 18px;
+}
+
+.ycs-custom-icon-button {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid #ead7dc;
+  background: #fff8fa;
+  color: #9f324d;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.ycs-custom-form,
+.ycs-custom-toolbar {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.ycs-custom-form label,
+.ycs-custom-toolbar label {
+  display: grid;
+  gap: 6px;
+  color: #332e2a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ycs-custom-form input,
+.ycs-custom-toolbar input {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid #d8cbd0;
+  border-radius: 10px;
+  padding: 9px 11px;
+  font: inherit;
+}
+
+.ycs-custom-form__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.ycs-custom-preview {
+  display: grid;
+  gap: 6px;
+  color: #332e2a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ycs-custom-preview .ycs-custom-swatch {
+  width: 40px;
+  height: 40px;
+}
+
+.ycs-custom-form__actions,
+.ycs-custom-row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ycs-custom-error {
+  margin: 0;
+  color: #a8324d;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ycs-custom-list {
+  display: grid;
+  gap: 10px;
+}
+
+.ycs-custom-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid #eee3e6;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.ycs-custom-row__main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.ycs-custom-row__name {
+  margin: 0;
+  font-weight: 700;
+  color: #2f2a25;
+}
+
+.ycs-custom-row__meta {
+  margin: 2px 0 0;
+  color: #777;
+  font-size: 13px;
+}
+
+.ycs-custom-empty-text {
+  margin: 0;
+  padding: 14px;
+  border: 1px dashed #e4c7ce;
+  border-radius: 12px;
+  color: #6b5359;
+  background: #fffafb;
+}
+
+@media (max-width: 720px) {
+  .ycs-admin-preview {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 699px) {
+  .ycs-custom-palettes__header,
+  .ycs-custom-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ycs-custom-palettes__actions,
+  .ycs-custom-row__actions {
+    justify-content: flex-start;
+  }
+
+  .ycs-custom-palettes__grid,
+  .ycs-custom-form__row {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+<script>
+(function () {
+  const root = document.getElementById('ycs-custom-palettes');
+  const modal = document.getElementById('ycs-custom-modal');
+  if (!root || !modal) return;
+
+  const listEl = root.querySelector('[data-ycs-custom-palettes-list]');
+  const emptyEl = root.querySelector('[data-ycs-custom-empty]');
+  const statusEl = root.querySelector('[data-ycs-custom-status]');
+  const modalTitle = document.getElementById('ycs-custom-modal-title');
+  const modalBody = modal.querySelector('[data-ycs-custom-modal-body]');
+  const apiBase = (root.dataset.appBaseUrl || '').replace(/\/$/, '') + '/api/custom-palettes';
+  const context = {
+    customerId: root.dataset.customerId || '',
+    previewCustomerId: root.dataset.previewCustomerId || '',
+    viewAs: root.dataset.viewAs || ''
+  };
+  const state = { colors: [], palettes: [], activePalette: null, colorSearch: '' };
+
+  function escapeHtml(value) {
+    return String(value || '').replace(/[&<>"']/g, function (char) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char];
+    });
+  }
+
+  function setStatus(message, isError) {
+    if (!statusEl) return;
+    statusEl.textContent = message || '';
+    statusEl.hidden = !message;
+    statusEl.style.borderColor = isError ? '#e09aaa' : '#c9dfcf';
+    statusEl.style.background = isError ? '#fff8fa' : '#f6fff8';
+  }
+
+  function normalizeHexInput(value) {
+    const raw = String(value || '').trim().replace(/^#/, '');
+    return /^[0-9a-fA-F]{6}$/.test(raw) ? '#' + raw.toUpperCase() : '';
+  }
+
+  async function requestJson(action, payload) {
+    const response = await fetch(apiBase, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(Object.assign({}, context, payload, { action: action }))
+    });
+    const json = await response.json();
+    if (!response.ok) throw new Error(json.error || 'Request failed');
+    return json;
+  }
+
+  async function loadData() {
+    const query = new URLSearchParams(context);
+    query.set('action', 'list');
+    const response = await fetch(apiBase + '?' + query.toString());
+    const json = await response.json();
+    if (!response.ok) throw new Error(json.error || 'Unable to load custom palettes');
+    state.colors = json.colors || [];
+    state.palettes = json.palettes || [];
+    renderPalettes();
+  }
+
+  function renderPalettes() {
+    if (!listEl || !emptyEl) return;
+    listEl.innerHTML = '';
+    emptyEl.hidden = state.palettes.length > 0;
+
+    state.palettes.forEach(function (palette) {
+      const swatches = (palette.colors || []).slice(0, 7).map(function (item) {
+        const color = item.color || {};
+        return '<span class="ycs-custom-swatch" title="' + escapeHtml(color.name) + ' ' + escapeHtml(color.hexCode) + '" style="background:' + escapeHtml(color.hexCode) + '"></span>';
+      }).join('');
+
+      const card = document.createElement('div');
+      card.className = 'ycs-palette-card ycs-custom-card';
+      card.innerHTML =
+        '<div class="ycs-palette-card__top"><div class="ycs-palette-card__gradient" style="background: linear-gradient(to right, #2f2a25, #d94c6a, #f2b880, #5fb6ff);"></div></div>' +
+        '<div class="ycs-palette-card__content">' +
+          '<div class="ycs-palette-card__text">' +
+            '<h2>' + escapeHtml(palette.name) + '</h2>' +
+            '<p class="ycs-palette-card__subtitle">' + palette.colorCount + (palette.colorCount === 1 ? ' custom color' : ' custom colors') + '</p>' +
+            '<div class="ycs-custom-card__swatches">' + swatches + '</div>' +
+          '</div>' +
+          '<div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">' +
+            '<button type="button" class="ycs-palette-card__button" data-ycs-custom-action="open-palette" data-palette-id="' + escapeHtml(palette.id) + '">Open</button>' +
+            '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="rename-palette" data-palette-id="' + escapeHtml(palette.id) + '">Rename</button>' +
+            '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="delete-palette" data-palette-id="' + escapeHtml(palette.id) + '">Delete</button>' +
+          '</div>' +
+        '</div>';
+      listEl.appendChild(card);
+    });
+  }
+
+  function openModal(title, html) {
+    modalTitle.textContent = title;
+    modalBody.innerHTML = html;
+    modal.hidden = false;
+  }
+
+  function focusSearchField() {
+    const input = modal.querySelector('[data-ycs-color-search]');
+    if (!input) return;
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+  }
+
+  function closeModal() {
+    modal.hidden = true;
+    state.activePalette = null;
+  }
+
+  function colorRows(colors, selectable, paletteColorIds) {
+    if (!colors.length) {
+      return '<p class="ycs-custom-empty-text">You haven’t added any custom colors yet. Add your first color to begin building your private color collection.</p>';
+    }
+
+    return '<div class="ycs-custom-list">' + colors.map(function (color) {
+      const disabled = paletteColorIds && paletteColorIds.has(color.id);
+      return '<div class="ycs-custom-row">' +
+        '<div class="ycs-custom-row__main">' +
+          (selectable ? '<input type="checkbox" data-color-select value="' + escapeHtml(color.id) + '"' + (disabled ? ' disabled' : '') + ' aria-label="Select ' + escapeHtml(color.name) + '">' : '') +
+          '<span class="ycs-custom-swatch" style="background:' + escapeHtml(color.hexCode) + '"></span>' +
+          '<div><p class="ycs-custom-row__name">' + escapeHtml(color.name) + '</p><p class="ycs-custom-row__meta">' + escapeHtml(color.hexCode) + '</p></div>' +
+        '</div>' +
+        (selectable ? '' : '<div class="ycs-custom-row__actions"><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="edit-color" data-color-id="' + escapeHtml(color.id) + '">Edit</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="delete-color" data-color-id="' + escapeHtml(color.id) + '">Delete</button></div>') +
+      '</div>';
+    }).join('') + '</div>';
+  }
+
+  function filteredColors() {
+    const query = state.colorSearch.trim().toLowerCase();
+    if (!query) return state.colors;
+    return state.colors.filter(function (color) {
+      return color.name.toLowerCase().includes(query) || color.hexCode.toLowerCase().includes(query);
+    });
+  }
+
+  function renderMyColors(error) {
+    openModal('My Colors',
+      '<div class="ycs-custom-toolbar">' +
+        '<label>Search My Colors<input type="search" data-ycs-color-search value="' + escapeHtml(state.colorSearch) + '"></label>' +
+      '</div>' +
+      '<form class="ycs-custom-form" data-ycs-color-form>' +
+        '<div class="ycs-custom-form__row">' +
+          '<label>Color Name<input name="name" required></label>' +
+          '<label>Hex Code<input name="hexCode" required placeholder="#D94C6A"></label>' +
+          '<div class="ycs-custom-preview"><span>Preview</span><span class="ycs-custom-swatch" data-ycs-hex-preview></span></div>' +
+        '</div>' +
+        (error ? '<p class="ycs-custom-error">' + escapeHtml(error) + '</p>' : '') +
+        '<div class="ycs-custom-form__actions"><button type="submit" class="ycs-palette-card__button">Save</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-close>Cancel</button></div>' +
+      '</form>' +
+      colorRows(filteredColors(), false)
+    );
+  }
+
+  function renderColorEdit(color, error) {
+    openModal('Edit Custom Color',
+      '<form class="ycs-custom-form" data-ycs-color-form data-color-id="' + escapeHtml(color.id) + '">' +
+        '<div class="ycs-custom-form__row">' +
+          '<label>Color Name<input name="name" required value="' + escapeHtml(color.name) + '"></label>' +
+          '<label>Hex Code<input name="hexCode" required value="' + escapeHtml(color.hexCode) + '"></label>' +
+          '<div class="ycs-custom-preview"><span>Preview</span><span class="ycs-custom-swatch" data-ycs-hex-preview style="background:' + escapeHtml(color.hexCode) + '"></span></div>' +
+        '</div>' +
+        (error ? '<p class="ycs-custom-error">' + escapeHtml(error) + '</p>' : '') +
+        '<div class="ycs-custom-form__actions"><button type="submit" class="ycs-palette-card__button">Save</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="manage-colors">Cancel</button></div>' +
+      '</form>');
+  }
+
+  function renderPaletteForm(title, action, palette, error) {
+    openModal(title,
+      '<form class="ycs-custom-form" data-ycs-palette-form data-action="' + action + '" data-palette-id="' + escapeHtml((palette && palette.id) || '') + '">' +
+        '<label>Palette Name<input name="name" required value="' + escapeHtml((palette && palette.name) || '') + '"></label>' +
+        (error ? '<p class="ycs-custom-error">' + escapeHtml(error) + '</p>' : '') +
+        '<div class="ycs-custom-form__actions"><button type="submit" class="ycs-palette-card__button">Save</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-close>Cancel</button></div>' +
+      '</form>');
+  }
+
+  function renderPaletteDetail(palette) {
+    state.activePalette = palette;
+    const colors = palette.colors || [];
+    const rows = colors.length ? '<div class="ycs-custom-list">' + colors.map(function (item, index) {
+      const color = item.color;
+      return '<div class="ycs-custom-row">' +
+        '<div class="ycs-custom-row__main"><span class="ycs-custom-swatch" style="background:' + escapeHtml(color.hexCode) + '"></span><div><p class="ycs-custom-row__name">' + escapeHtml(color.name) + '</p><p class="ycs-custom-row__meta">' + escapeHtml(color.hexCode) + '</p></div></div>' +
+        '<div class="ycs-custom-row__actions">' +
+          '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="move-color" data-direction="up" data-color-id="' + escapeHtml(color.id) + '"' + (index === 0 ? ' disabled' : '') + '>Move Up</button>' +
+          '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="move-color" data-direction="down" data-color-id="' + escapeHtml(color.id) + '"' + (index === colors.length - 1 ? ' disabled' : '') + '>Move Down</button>' +
+          '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="remove-from-palette" data-color-id="' + escapeHtml(color.id) + '">Remove</button>' +
+        '</div></div>';
+    }).join('') + '</div>' : '<p class="ycs-custom-empty-text">This palette does not have any colors yet. Add colors from My Colors.</p>';
+
+    openModal(palette.name,
+      '<div class="ycs-custom-form__actions" style="margin-bottom:16px">' +
+        '<button type="button" class="ycs-palette-card__button" data-ycs-custom-action="add-colors">Add Colors</button>' +
+        '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="rename-palette" data-palette-id="' + escapeHtml(palette.id) + '">Rename</button>' +
+      '</div>' + rows);
+  }
+
+  function renderAddColors() {
+    const selectedIds = new Set((state.activePalette.colors || []).map(function (item) { return item.color.id; }));
+    const emptyAction = state.colors.length
+      ? ''
+      : '<div class="ycs-custom-form__actions" style="margin-top:12px"><button type="button" class="ycs-palette-card__button" data-ycs-custom-action="manage-colors">Add Color</button></div>';
+    openModal('Add Colors',
+      '<div class="ycs-custom-toolbar"><label>Search My Colors<input type="search" data-ycs-color-search value="' + escapeHtml(state.colorSearch) + '"></label></div>' +
+      colorRows(filteredColors(), true, selectedIds) +
+      emptyAction +
+      '<div class="ycs-custom-form__actions" style="margin-top:16px"><button type="button" class="ycs-palette-card__button" data-ycs-custom-action="save-add-colors">Add Selected Colors</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="open-palette" data-palette-id="' + escapeHtml(state.activePalette.id) + '">Cancel</button></div>');
+  }
+
+  async function refreshAfterMutation(message) {
+    await loadData();
+    setStatus(message || '', false);
+  }
+
+  root.addEventListener('click', function (event) {
+    const button = event.target.closest('[data-ycs-custom-action]');
+    if (!button) return;
+    const action = button.dataset.ycsCustomAction;
+    const palette = state.palettes.find(function (item) { return item.id === button.dataset.paletteId; });
+    if (action === 'create-palette') renderPaletteForm('Create Custom Palette', 'createPalette');
+    if (action === 'manage-colors') renderMyColors();
+    if (action === 'open-palette' && palette) renderPaletteDetail(palette);
+    if (action === 'rename-palette' && palette) renderPaletteForm('Rename Custom Palette', 'renamePalette', palette);
+    if (action === 'delete-palette' && palette && confirm('Delete this custom palette? This will not delete its colors from My Colors.')) {
+      requestJson('deletePalette', { paletteId: palette.id }).then(function () { return refreshAfterMutation('Custom palette deleted.'); }).catch(function (error) { setStatus(error.message, true); });
+    }
+  });
+
+  modal.addEventListener('click', function (event) {
+    if (event.target.closest('[data-ycs-custom-close]')) closeModal();
+    const button = event.target.closest('[data-ycs-custom-action]');
+    if (!button) return;
+    const action = button.dataset.ycsCustomAction;
+    const color = state.colors.find(function (item) { return item.id === button.dataset.colorId; });
+    const palette = state.palettes.find(function (item) { return item.id === button.dataset.paletteId; }) || state.activePalette;
+
+    if (action === 'manage-colors') renderMyColors();
+    if (action === 'edit-color' && color) renderColorEdit(color);
+    if (action === 'delete-color' && color) {
+      const message = color.paletteCount > 0
+        ? 'Delete this custom color? It will also be removed from any custom palettes that use it.'
+        : 'Delete this custom color?';
+      if (confirm(message)) {
+        requestJson('deleteColor', { colorId: color.id }).then(function () { return refreshAfterMutation('Custom color deleted.'); }).then(renderMyColors).catch(function (error) { renderMyColors(error.message); });
+      }
+    }
+    if (action === 'rename-palette' && palette) renderPaletteForm('Rename Custom Palette', 'renamePalette', palette);
+    if (action === 'open-palette' && palette) renderPaletteDetail(palette);
+    if (action === 'add-colors') renderAddColors();
+    if (action === 'save-add-colors' && state.activePalette) {
+      const colorIds = Array.from(modal.querySelectorAll('[data-color-select]:checked')).map(function (input) { return input.value; });
+      requestJson('addColorsToPalette', { paletteId: state.activePalette.id, colorIds: colorIds }).then(function (json) {
+        return refreshAfterMutation('Colors added.').then(function () { renderPaletteDetail(json.palette); });
+      }).catch(function (error) { setStatus(error.message, true); });
+    }
+    if (action === 'remove-from-palette' && state.activePalette && color) {
+      requestJson('removeColorFromPalette', { paletteId: state.activePalette.id, colorId: color.id }).then(function (json) {
+        return refreshAfterMutation('Color removed from custom palette.').then(function () { renderPaletteDetail(json.palette); });
+      }).catch(function (error) { setStatus(error.message, true); });
+    }
+    if (action === 'move-color' && state.activePalette) {
+      const colorIds = state.activePalette.colors.map(function (item) { return item.color.id; });
+      const index = colorIds.indexOf(button.dataset.colorId);
+      const swapIndex = button.dataset.direction === 'up' ? index - 1 : index + 1;
+      if (index < 0 || swapIndex < 0 || swapIndex >= colorIds.length) return;
+      const moved = colorIds[index];
+      colorIds[index] = colorIds[swapIndex];
+      colorIds[swapIndex] = moved;
+      requestJson('reorderPaletteColors', { paletteId: state.activePalette.id, colorIds: colorIds }).then(function (json) {
+        return refreshAfterMutation('Palette color order saved.').then(function () { renderPaletteDetail(json.palette); });
+      }).catch(function (error) { setStatus(error.message, true); });
+    }
+  });
+
+  modal.addEventListener('input', function (event) {
+    if (event.target.matches('[data-ycs-color-search]')) {
+      state.colorSearch = event.target.value;
+      if (state.activePalette && modalTitle.textContent === 'Add Colors') renderAddColors();
+      else renderMyColors();
+      focusSearchField();
+    }
+    if (event.target.name === 'hexCode') {
+      const preview = modal.querySelector('[data-ycs-hex-preview]');
+      const normalized = normalizeHexInput(event.target.value);
+      if (preview && normalized) preview.style.background = normalized;
+    }
+  });
+
+  modal.addEventListener('submit', function (event) {
+    const colorForm = event.target.closest('[data-ycs-color-form]');
+    const paletteForm = event.target.closest('[data-ycs-palette-form]');
+    if (!colorForm && !paletteForm) return;
+    event.preventDefault();
+
+    if (colorForm) {
+      const formData = new FormData(colorForm);
+      const colorId = colorForm.dataset.colorId || '';
+      const payload = {
+        colorId: colorId,
+        name: formData.get('name'),
+        hexCode: formData.get('hexCode')
+      };
+      requestJson(colorId ? 'updateColor' : 'createColor', payload).then(function () {
+        return refreshAfterMutation(colorId ? 'Custom color updated.' : 'Custom color added.');
+      }).then(renderMyColors).catch(function (error) {
+        if (colorId) {
+          const color = state.colors.find(function (item) { return item.id === colorId; });
+          renderColorEdit(color || payload, error.message);
+        } else {
+          renderMyColors(error.message);
+        }
+      });
+    }
+
+    if (paletteForm) {
+      const formData = new FormData(paletteForm);
+      const action = paletteForm.dataset.action;
+      const paletteId = paletteForm.dataset.paletteId || '';
+      requestJson(action, { paletteId: paletteId, name: formData.get('name') }).then(function (json) {
+        return refreshAfterMutation(action === 'createPalette' ? 'Custom palette created.' : 'Custom palette renamed.').then(function () {
+          renderPaletteDetail(json.palette);
+        });
+      }).catch(function (error) {
+        renderPaletteForm(action === 'createPalette' ? 'Create Custom Palette' : 'Rename Custom Palette', action, { id: paletteId, name: formData.get('name') }, error.message);
+      });
+    }
+  });
+
+  loadData().catch(function (error) {
+    setStatus(error.message, true);
+  });
+})();
+
+(function () {
+  const previewSelect = document.getElementById('ycs-admin-view-as');
+
+  if (previewSelect) {
+    const currentPreviewRole = previewSelect.value;
+
+    function preserveAdminPreviewRole(anchor) {
+      if (!currentPreviewRole || !anchor || !anchor.getAttribute('href')) return;
+      const href = anchor.getAttribute('href');
+      if (
+        !href.includes('/pages/photo-prep') &&
+        !href.includes('/pages/color-analysis-tool') &&
+        !href.includes('/pages/signature-color-analysis')
+      ) {
+        return;
+      }
+
+      const nextUrl = new URL(href, window.location.origin);
+      nextUrl.searchParams.set('viewAs', currentPreviewRole);
+      anchor.setAttribute('href', nextUrl.pathname + nextUrl.search);
+    }
+
+    document.querySelectorAll('a[href]').forEach(preserveAdminPreviewRole);
+
+    previewSelect.addEventListener('change', function () {
+      const nextUrl = new URL(window.location.href);
+      if (previewSelect.value) {
+        nextUrl.searchParams.set('viewAs', previewSelect.value);
+      } else {
+        nextUrl.searchParams.delete('viewAs');
+      }
+      window.location.href = nextUrl.pathname + nextUrl.search;
+    });
+  }
+
+  const overlay = document.getElementById('ycs-tools-tos-overlay');
+  const checkbox = document.getElementById('ycs-tools-tos-checkbox');
+  const continueBtn = document.getElementById('ycs-tools-tos-continue');
+
+  if (!overlay || !checkbox || !continueBtn) return;
+// Change this to reset TOS for users
+// Run localStorage.removeItem('ycs_tools_tos_accepted_v1');
+// localStorage.removeItem('ycs_tools_tos_accepted_my_palettes_v1');
+// in console to clear browser
+  const storageKey = 'ycs_tools_tos_accepted_my_palettes_v1';
+  const hasAcceptedTerms = localStorage.getItem(storageKey);
+
+  if (!hasAcceptedTerms) {
+    overlay.style.display = 'flex';
+  }
+
+  continueBtn.addEventListener('click', function () {
+    if (!checkbox.checked) {
+      alert('Please agree to the Terms to continue.');
+      return;
+    }
+
+    localStorage.setItem(storageKey, new Date().toISOString());
+    overlay.style.display = 'none';
+  });
+})();
+</script>
+
+{% schema %}
+{
+  "name": "My Color Palettes",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "My Color Palettes"
+    },
+    {
+      "type": "textarea",
+      "id": "intro",
+      "label": "Intro text",
+      "default": "Open your digital color fans below."
+    }
+  ],
+  "blocks": [
+    {
+      "type": "palette",
+      "name": "Palette Card",
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Palette title",
+          "default": "Clear Warm Light"
+        },
+        {
+          "type": "text",
+          "id": "subtitle",
+          "label": "Subtitle",
+          "default": "Bright • Warm • Light"
+        },
+        {
+          "type": "text",
+          "id": "palette_code",
+          "label": "Palette code",
+          "default": "CWL"
+        },
+        {
+          "type": "select",
+          "id": "visibility",
+          "label": "Who can see this palette?",
+          "default": "customer",
+          "options": [
+            {
+              "value": "customer",
+              "label": "Customer"
+            },
+            {
+              "value": "admin",
+              "label": "Admin only"
+            }
+          ]
+        },
+        {
+          "type": "image_picker",
+          "id": "palette_image",
+          "label": "Palette image"
+        },
+        {
+          "type": "url",
+          "id": "product_link",
+          "label": "Product link for locked palette"
+        },
+        {
+          "type": "url",
+          "id": "printable_pdf_url",
+          "label": "Printable PDF URL"
+        },
+        {
+          "type": "url",
+          "id": "mobile_pdf_url",
+          "label": "Mobile PDF URL"
+        },
+        {
+          "type": "text",
+          "id": "gradient",
+          "label": "Gradient CSS fallback",
+          "default": "linear-gradient(to right, #c21807, #f28c28, #f4d03f)"
+        }
+      ]
+    }
+  ],
+  "max_blocks": 30,
+  "presets": [
+    {
+      "name": "My Color Palettes"
+    }
+  ]
+}
+{% endschema %}

@@ -84,3 +84,41 @@ model PhotoQualityReview {
   @@index([adminFeedback])
   @@index([reviewedAt])
 }
+
+model CustomColor {
+  id              String               @id @default(cuid())
+  ownerCustomerId String
+  name            String
+  hexCode         String
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  paletteColors   CustomPaletteColor[]
+
+  @@index([ownerCustomerId])
+}
+
+model CustomPalette {
+  id              String               @id @default(cuid())
+  ownerCustomerId String
+  name            String
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  colors          CustomPaletteColor[]
+
+  @@index([ownerCustomerId])
+}
+
+model CustomPaletteColor {
+  id              String        @id @default(cuid())
+  customPaletteId String
+  customColorId   String
+  displayOrder    Int
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  palette         CustomPalette @relation(fields: [customPaletteId], references: [id], onDelete: Cascade)
+  color           CustomColor   @relation(fields: [customColorId], references: [id], onDelete: Cascade)
+
+  @@unique([customPaletteId, customColorId])
+  @@index([customPaletteId, displayOrder])
+  @@index([customColorId])
+}
