@@ -1,4 +1,5 @@
 import prisma from "../db.server.js";
+import { unauthenticated } from "../shopify.server.js";
 
 const GROWTH_TAG = "CATOOLGROWTH";
 const ADMIN_TAG = "YCS_ADMIN";
@@ -42,22 +43,11 @@ async function shopifyAdminGraphQL({ query, variables = {} }) {
   const shop = String(process.env.SHOPIFY_SHOP || "")
     .replace(/^https?:\/\//, "")
     .replace(/\/.*$/, "")
-    .trim();
-  const accessToken = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
-  const apiVersion = process.env.SHOPIFY_ADMIN_API_VERSION || "2025-10";
+    .trim() || "yourcolorstyle.myshopify.com";
 
-  if (!shop || !accessToken) {
-    throw new Error("Missing Shopify admin configuration");
-  }
+  const { admin } = await unauthenticated.admin(shop);
 
-  const response = await fetch(`https://${shop}/admin/api/${apiVersion}/graphql.json`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Shopify-Access-Token": accessToken
-    },
-    body: JSON.stringify({ query, variables })
-  });
+  const response = await admin.graphql(query, { variables });
 
   const json = await response.json();
 
