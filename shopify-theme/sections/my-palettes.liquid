@@ -1800,7 +1800,7 @@
     const rows = colors.length ? '<div class="ycs-custom-list">' + colors.map(function (item, index) {
       const color = item.color;
       return '<div class="ycs-custom-row">' +
-        '<div class="ycs-custom-row__main"><span class="ycs-custom-swatch" style="background:' + escapeHtml(color.hexCode) + '"></span><div><p class="ycs-custom-row__name">' + escapeHtml(color.name) + '</p><p class="ycs-custom-row__meta">' + escapeHtml(color.hexCode) + '</p></div></div>' +
+        '<div class="ycs-custom-row__main"><input type="checkbox" data-palette-color-select value="' + escapeHtml(color.id) + '" aria-label="Select ' + escapeHtml(color.name) + '"><span class="ycs-custom-swatch" style="background:' + escapeHtml(color.hexCode) + '"></span><div><p class="ycs-custom-row__name">' + escapeHtml(color.name) + '</p><p class="ycs-custom-row__meta">' + escapeHtml(color.hexCode) + '</p></div></div>' +
         '<div class="ycs-custom-row__actions">' +
           '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="move-color" data-direction="up" data-color-id="' + escapeHtml(color.id) + '"' + (index === 0 ? ' disabled' : '') + '>Move Up</button>' +
           '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="move-color" data-direction="down" data-color-id="' + escapeHtml(color.id) + '"' + (index === colors.length - 1 ? ' disabled' : '') + '>Move Down</button>' +
@@ -1812,7 +1812,11 @@
       '<div class="ycs-custom-form__actions" style="margin-bottom:16px">' +
         '<button type="button" class="ycs-palette-card__button" data-ycs-custom-action="add-colors">Add Colors</button>' +
         '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="rename-palette" data-palette-id="' + escapeHtml(palette.id) + '">Rename</button>' +
-      '</div>' + rows);
+      '</div>' +
+      (colors.length
+        ? '<div class="ycs-custom-batch-bar"><label><input type="checkbox" data-palette-color-select-all> Select all visible colors</label><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="remove-selected-from-palette">Remove Selected</button></div>'
+        : '') +
+      rows);
   }
 
   function renderAddColors() {
@@ -1893,6 +1897,21 @@
         return refreshAfterMutation('Color removed from custom palette.').then(function () { renderPaletteDetail(json.palette); });
       }).catch(function (error) { setStatus(error.message, true); });
     }
+    if (action === 'remove-selected-from-palette' && state.activePalette) {
+      const colorIds = Array.from(modal.querySelectorAll('[data-palette-color-select]:checked')).map(function (input) { return input.value; });
+      if (!colorIds.length) {
+        setStatus('Select at least one color to remove.', true);
+        return;
+      }
+      Promise.all(colorIds.map(function (colorId) {
+        return requestJson('removeColorFromPalette', { paletteId: state.activePalette.id, colorId: colorId });
+      })).then(function () {
+        return refreshAfterMutation('Selected colors removed from custom palette.');
+      }).then(function () {
+        const palette = state.palettes.find(function (item) { return item.id === state.activePalette.id; });
+        renderPaletteDetail(palette || state.activePalette);
+      }).catch(function (error) { setStatus(error.message, true); });
+    }
     if (action === 'move-color' && state.activePalette) {
       const colorIds = state.activePalette.colors.map(function (item) { return item.color.id; });
       const index = colorIds.indexOf(button.dataset.colorId);
@@ -1910,6 +1929,11 @@
   modal.addEventListener('input', function (event) {
     if (event.target.matches('[data-manage-color-select-all]')) {
       modal.querySelectorAll('[data-manage-color-select]').forEach(function (input) {
+        input.checked = event.target.checked;
+      });
+    }
+    if (event.target.matches('[data-palette-color-select-all]')) {
+      modal.querySelectorAll('[data-palette-color-select]').forEach(function (input) {
         input.checked = event.target.checked;
       });
     }
