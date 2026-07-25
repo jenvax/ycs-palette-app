@@ -51,6 +51,17 @@ const PALETTE_TAGS = new Set([
   "SCLG", "SCMG", "SCDG"
 ]);
 
+const CUSTOM_PALETTE_PREFIX = "CUSTOM_";
+const STYLE_MASTERS_OWNER_ID = "STYLE_MASTERS";
+
+function isCustomPaletteCode(value) {
+  return String(value || "").trim().toUpperCase().startsWith(CUSTOM_PALETTE_PREFIX);
+}
+
+function customPaletteIdFromCode(value) {
+  return String(value || "").trim().replace(/^CUSTOM_/i, "").toLowerCase();
+}
+
 async function removeBackgroundImage({ imageBase64, apiKey }) {
   if (!imageBase64) {
     throw new Error("Missing imageBase64");
@@ -137,6 +148,79 @@ async function fetchAllAirtableRecords({ baseId, tableName, token, sortField, fo
   }
 
   return allRecords;
+}
+
+async function fetchStyleMastersCustomPalette({ baseId, token, paletteId }) {
+  const escapedPaletteId = escapeFormulaValue(paletteId);
+  const ownerFilter = `{OwnerCustomerId}="${STYLE_MASTERS_OWNER_ID}"`;
+  const paletteRecords = await fetchAllAirtableRecords({
+    baseId,
+    tableName: "CustomPalettes",
+    token,
+    formula: `AND(${ownerFilter}, {PaletteId}="${escapedPaletteId}")`
+  });
+  const paletteRecord = paletteRecords[0];
+
+  if (!paletteRecord) {
+    const error = new Error("Custom palette not found");
+    error.status = 404;
+    throw error;
+  }
+
+  const paletteFields = paletteRecord.fields || {};
+  if (!parseTruthy(paletteFields.VisibleToVip)) {
+    const error = new Error("Custom palette not found");
+    error.status = 404;
+    throw error;
+  }
+
+  const [joinRecords, colorRecords] = await Promise.all([
+    fetchAllAirtableRecords({
+      baseId,
+      tableName: "CustomPaletteColors",
+      token,
+      formula: `AND(${ownerFilter}, {PaletteId}="${escapedPaletteId}")`
+    }),
+    fetchAllAirtableRecords({
+      baseId,
+      tableName: "CustomColors",
+      token,
+      formula: ownerFilter
+    })
+  ]);
+  const colorById = new Map(
+    colorRecords.map((record) => [record.fields?.ColorId, record.fields || {}])
+  );
+
+  const colors = joinRecords
+    .map((record) => {
+      const fields = record.fields || {};
+      const colorFields = colorById.get(fields.ColorId);
+      if (!colorFields) return null;
+
+      return {
+        name: normalizeField(colorFields.Name),
+        hex: normalizeField(colorFields.HexCode),
+        sortOrder: Number(fields.DisplayOrder || 0) + 1,
+        category: "Custom",
+        categories: ["Custom"],
+        paletteCodes: `CUSTOM_${paletteId}`,
+        chroma: "",
+        temperature: "",
+        depth: "",
+        isBest: false,
+        isNeutral: false,
+        neutralDepth: "",
+        neutralFamily: ""
+      };
+    })
+    .filter((color) => color && color.name && color.hex)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+
+  return {
+    paletteName: normalizeField(paletteFields.Name) || "Style Masters Color Palette",
+    colors
+  };
 }
 
 async function createAirtableRecord({ baseId, tableName, token, fields }) {
@@ -617,7 +701,10 @@ async function syncCustomerDirectoryFromShopify({ shop, accessToken, baseId, tok
 
 export async function loader({ request }) {
   const url = new URL(request.url);
-  const paletteCode = String(url.searchParams.get("palette") || "").toUpperCase().trim();
+  const rawPaletteCode = String(url.searchParams.get("palette") || "").trim();
+  const paletteCode = isCustomPaletteCode(rawPaletteCode)
+    ? rawPaletteCode
+    : rawPaletteCode.toUpperCase();
   const action = String(url.searchParams.get("action") || "").trim();
   const loggedInCustomerId = String(url.searchParams.get("logged_in_customer_id") || "").trim();
 
@@ -1004,6 +1091,34 @@ for (const customerPhotoRecord of customerPhotoRecords) {
 
   if (!paletteCode) {
     return Response.json({ error: "Missing palette parameter" }, { status: 400 });
+  }
+
+  if (isCustomPaletteCode(paletteCode)) {
+    try {
+      const paletteId = customPaletteIdFromCode(paletteCode);
+      if (!paletteId) {
+        return Response.json({ error: "Missing custom palette id" }, { status: 400 });
+      }
+
+      const customPalette = await fetchStyleMastersCustomPalette({
+        baseId: AIRTABLE_BASE_ID,
+        token: AIRTABLE_TOKEN,
+        paletteId
+      });
+
+      return Response.json({
+        palette: `CUSTOM_${paletteId}`,
+        paletteName: customPalette.paletteName,
+        colors: customPalette.colors,
+        marker: "CUSTOM_PALETTE_LIVE"
+      });
+    } catch (error) {
+      console.error(error);
+      return Response.json(
+        { error: error.message || "Failed to load custom palette colors" },
+        { status: error.status || 500 }
+      );
+    }
   }
 
   try {

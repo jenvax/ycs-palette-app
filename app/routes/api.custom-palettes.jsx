@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 const COLORS_TABLE = "CustomColors";
 const PALETTES_TABLE = "CustomPalettes";
 const PALETTE_COLORS_TABLE = "CustomPaletteColors";
+const STYLE_MASTERS_OWNER_ID = "STYLE_MASTERS";
 
 function getCorsHeaders(origin) {
   const allowedOrigins = [
@@ -152,18 +153,96 @@ function ownerFormula(ownerCustomerId) {
   return `{OwnerCustomerId}="${escapeFormulaValue(ownerCustomerId)}"`;
 }
 
-function authorizeGrowthAccess({ customerId, hasGrowthAccess }) {
+async function fetchShopifyCustomerTags(customerId) {
+  const shop = process.env.SHOPIFY_SHOP;
+  const accessToken = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN || process.env.SHOPIFY_API_TOKEN;
+
+  if (!shop || !accessToken) {
+    const error = new Error("Missing Shopify admin configuration");
+    error.status = 500;
+    throw error;
+  }
+
+  const response = await fetch(`https://${shop}/admin/api/2026-01/graphql.json`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Shopify-Access-Token": accessToken
+    },
+    body: JSON.stringify({
+      query: `
+        query CustomerTags($id: ID!) {
+          customer(id: $id) {
+            tags
+          }
+        }
+      `,
+      variables: {
+        id: `gid://shopify/Customer/${customerId}`
+      }
+    })
+  });
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok || data.errors) {
+    const message = data.errors?.[0]?.message || data.error || "Shopify customer lookup failed";
+    const error = new Error(message);
+    error.status = response.status || 500;
+    throw error;
+  }
+
+  return Array.isArray(data.data?.customer?.tags) ? data.data.customer.tags : [];
+}
+
+async function authorizeAccess({ customerId, hasGrowthAccess, scope }) {
   const ownerCustomerId = normalizeCustomerId(customerId);
+  const requestedScope = String(scope || "private").trim().toLowerCase();
+  const wantsStyleMasters = requestedScope === "stylemasters";
 
   if (!ownerCustomerId) {
     return { ok: false, status: 401, error: "You must be signed in to use My Custom Palettes" };
   }
 
+  if (wantsStyleMasters) {
+    const tagSet = new Set(
+      (await fetchShopifyCustomerTags(ownerCustomerId)).map((tag) =>
+        String(tag || "").trim().toUpperCase()
+      )
+    );
+    const isAdmin = tagSet.has("YCS_ADMIN");
+    const isVip = tagSet.has("VIP");
+
+    if (!isAdmin && !isVip) {
+      return { ok: false, status: 403, error: "VIP access required" };
+    }
+
+    return {
+      ok: true,
+      ownerCustomerId: STYLE_MASTERS_OWNER_ID,
+      scope: "stylemasters",
+      canEdit: isAdmin,
+      visibleOnly: !isAdmin
+    };
+  }
+
   if (toBool(hasGrowthAccess)) {
-    return { ok: true, ownerCustomerId };
+    return {
+      ok: true,
+      ownerCustomerId,
+      scope: "private",
+      canEdit: true,
+      visibleOnly: false
+    };
   }
 
   return { ok: false, status: 403, error: "CATOOLGROWTH access required" };
+}
+
+function requireEditAccess(auth) {
+  if (auth.canEdit) return;
+  const error = new Error("Admin access required");
+  error.status = 403;
+  throw error;
 }
 
 function colorFromRecord(record, paletteCount = 0) {
@@ -183,6 +262,7 @@ function paletteShellFromRecord(record) {
   return {
     id: fields.PaletteId || record.id,
     name: fields.Name || "",
+    visibleToVip: toBool(fields.VisibleToVip),
     colorCount: 0,
     colors: [],
     createdAt: fields.CreatedAt || record.createdTime || "",
@@ -199,7 +279,7 @@ function joinFromRecord(record, color) {
   };
 }
 
-async function fetchOwnedData(ownerCustomerId) {
+async function fetchOwnedData(ownerCustomerId, options = {}) {
   const formula = ownerFormula(ownerCustomerId);
   const [colorRecords, paletteRecords, joinRecords] = await Promise.all([
     fetchAllRecords(COLORS_TABLE, { filterByFormula: formula }),
@@ -221,14 +301,18 @@ async function fetchOwnedData(ownerCustomerId) {
     })
   );
 
-  const palettes = paletteRecords.map(paletteShellFromRecord);
+  const palettes = paletteRecords
+    .map(paletteShellFromRecord)
+    .filter((palette) => !options.visibleOnly || palette.visibleToVip);
   const paletteById = new Map(palettes.map((palette) => [palette.id, palette]));
+  const visibleColorIds = new Set();
 
   joinRecords.forEach((record) => {
     const palette = paletteById.get(record.fields?.PaletteId);
     const colorEntry = colorById.get(record.fields?.ColorId);
     if (!palette || !colorEntry) return;
     palette.colors.push(joinFromRecord(record, colorEntry.color));
+    visibleColorIds.add(colorEntry.color.id);
   });
 
   palettes.forEach((palette) => {
@@ -240,13 +324,15 @@ async function fetchOwnedData(ownerCustomerId) {
     colorRecords,
     paletteRecords,
     joinRecords,
-    colors: Array.from(colorById.values()).map((entry) => entry.color),
+    colors: Array.from(colorById.values())
+      .filter((entry) => !options.visibleOnly || visibleColorIds.has(entry.color.id))
+      .map((entry) => entry.color),
     palettes
   };
 }
 
-async function listCustomData(ownerCustomerId, search = "") {
-  const data = await fetchOwnedData(ownerCustomerId);
+async function listCustomData(ownerCustomerId, search = "", options = {}) {
+  const data = await fetchOwnedData(ownerCustomerId, options);
   const query = String(search || "").trim().toLowerCase();
   const colors = query
     ? data.colors.filter((color) =>
@@ -328,9 +414,10 @@ export async function loader({ request }) {
 
   try {
     const url = new URL(request.url);
-    const auth = authorizeGrowthAccess({
+    const auth = await authorizeAccess({
       customerId: url.searchParams.get("customerId"),
-      hasGrowthAccess: url.searchParams.get("hasGrowthAccess")
+      hasGrowthAccess: url.searchParams.get("hasGrowthAccess"),
+      scope: url.searchParams.get("scope")
     });
 
     if (!auth.ok) {
@@ -351,13 +438,20 @@ export async function loader({ request }) {
         );
       }
 
-      return Response.json(
-        { palette: await readPalette(auth.ownerCustomerId, paletteId) },
-        { headers: corsHeaders }
-      );
+      const palette = await readPalette(auth.ownerCustomerId, paletteId);
+      if (auth.visibleOnly && !palette.visibleToVip) {
+        return Response.json(
+          { error: "Custom palette not found" },
+          { status: 404, headers: corsHeaders }
+        );
+      }
+
+      return Response.json({ palette }, { headers: corsHeaders });
     }
 
-    const data = await listCustomData(auth.ownerCustomerId, url.searchParams.get("search"));
+    const data = await listCustomData(auth.ownerCustomerId, url.searchParams.get("search"), {
+      visibleOnly: auth.visibleOnly
+    });
     return Response.json(data, { headers: corsHeaders });
   } catch (error) {
     console.error("custom palettes loader failed:", error);
@@ -378,9 +472,10 @@ export async function action({ request }) {
 
   try {
     const body = await request.json();
-    const auth = authorizeGrowthAccess({
+    const auth = await authorizeAccess({
       customerId: body.customerId,
-      hasGrowthAccess: body.hasGrowthAccess
+      hasGrowthAccess: body.hasGrowthAccess,
+      scope: body.scope
     });
 
     if (!auth.ok) {
@@ -393,6 +488,8 @@ export async function action({ request }) {
     const ownerCustomerId = auth.ownerCustomerId;
     const actionName = String(body.action || "").trim();
     const nowIso = new Date().toISOString();
+
+    requireEditAccess(auth);
 
     if (actionName === "createColor") {
       const name = cleanString(body.name);
@@ -463,6 +560,7 @@ export async function action({ request }) {
         PaletteId: makeId("cpalette"),
         OwnerCustomerId: ownerCustomerId,
         Name: name,
+        VisibleToVip: false,
         CreatedAt: nowIso,
         UpdatedAt: nowIso
       });
@@ -492,6 +590,25 @@ export async function action({ request }) {
       await deleteRecord(PALETTES_TABLE, existing.id);
 
       return Response.json({ success: true }, { headers: corsHeaders });
+    }
+
+    if (actionName === "setPaletteVipVisibility") {
+      const paletteId = cleanString(body.paletteId);
+      if (!paletteId) return Response.json({ error: "Missing paletteId" }, { status: 400, headers: corsHeaders });
+      if (auth.scope !== "stylemasters") {
+        return Response.json(
+          { error: "VIP visibility is only available for Style Masters palettes" },
+          { status: 400, headers: corsHeaders }
+        );
+      }
+
+      const existing = await requireOwnedPaletteRecord(ownerCustomerId, paletteId);
+      await updateRecord(PALETTES_TABLE, existing.id, {
+        VisibleToVip: toBool(body.visibleToVip),
+        UpdatedAt: nowIso
+      });
+
+      return Response.json({ palette: await readPalette(ownerCustomerId, paletteId) }, { headers: corsHeaders });
     }
 
     if (actionName === "addColorsToPalette") {

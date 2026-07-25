@@ -347,7 +347,7 @@
       </div>
     </div>
 
-    {% if is_catool_growth %}
+    {% if is_catool_growth or actual_is_admin %}
       <div
         class="ycs-my-palettes__section ycs-custom-palettes"
         id="ycs-custom-palettes"
@@ -355,16 +355,23 @@
         data-preview-customer-id="{{ customer.id }}"
         data-view-as="{{ admin_view_as }}"
         data-has-growth-access="{% if is_catool_growth %}true{% else %}false{% endif %}"
+        data-scope="{% if actual_is_admin %}stylemasters{% else %}private{% endif %}"
         data-app-base-url="https://ycs-palette-app.vercel.app"
       >
         <div class="ycs-custom-palettes__header">
           <div>
-            <h2 class="ycs-my-palettes__section-title">My Custom Palettes</h2>
-            <p class="ycs-custom-palettes__intro">Create and organize palettes using colors from your private custom color collection.</p>
+            <h2 class="ycs-my-palettes__section-title">{% if actual_is_admin %}Style Masters Color Palettes{% else %}My Custom Palettes{% endif %}</h2>
+            <p class="ycs-custom-palettes__intro">
+              {% if actual_is_admin %}
+                Create shared custom color palettes and choose which ones VIP users can see.
+              {% else %}
+                Create and organize palettes using colors from your private custom color collection.
+              {% endif %}
+            </p>
           </div>
           <div class="ycs-custom-palettes__actions">
             <button type="button" class="ycs-palette-card__button" data-ycs-custom-action="create-palette">Create Palette</button>
-            <button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="manage-colors">Manage My Colors</button>
+            <button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="manage-colors">{% if actual_is_admin %}Manage Colors{% else %}Manage My Colors{% endif %}</button>
           </div>
         </div>
 
@@ -372,7 +379,7 @@
         <div class="ycs-custom-palettes__grid" data-ycs-custom-palettes-list></div>
 
         <div class="ycs-custom-palettes__empty" data-ycs-custom-empty hidden>
-          <p>You haven’t created any custom palettes yet. Create a palette using colors from your private color collection.</p>
+          <p>{% if actual_is_admin %}Create the first Style Masters custom palette, then turn on VIP visibility when it is ready.{% else %}You haven’t created any custom palettes yet. Create a palette using colors from your private color collection.{% endif %}</p>
           <button type="button" class="ycs-palette-card__button" data-ycs-custom-action="create-palette">Create Custom Palette</button>
         </div>
       </div>
@@ -619,6 +626,22 @@
               </div>
             {% endif %}
           {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+    {% if palette_access_string contains ',VIP,' and actual_is_admin == false %}
+      <div
+        class="ycs-my-palettes__section ycs-style-masters-palettes"
+        id="ycs-style-masters-palettes"
+        data-customer-id="{{ customer.id }}"
+        data-app-base-url="https://ycs-palette-app.vercel.app"
+      >
+        <h2 class="ycs-my-palettes__section-title">Style Masters Color Palettes</h2>
+        <div class="ycs-custom-palettes__status" data-ycs-style-masters-status hidden></div>
+        <div class="ycs-custom-palettes__grid" data-ycs-style-masters-list></div>
+        <div class="ycs-custom-palettes__empty" data-ycs-style-masters-empty hidden>
+          <p>No Style Masters color palettes are available yet.</p>
         </div>
       </div>
     {% endif %}
@@ -1538,8 +1561,10 @@
     customerId: root.dataset.customerId || '',
     previewCustomerId: root.dataset.previewCustomerId || '',
     viewAs: root.dataset.viewAs || '',
-    hasGrowthAccess: root.dataset.hasGrowthAccess || ''
+    hasGrowthAccess: root.dataset.hasGrowthAccess || '',
+    scope: root.dataset.scope || 'private'
   };
+  const isStyleMastersAdmin = context.scope === 'stylemasters';
   const state = { colors: [], palettes: [], activePalette: null, colorSearch: '' };
 
   function escapeHtml(value) {
@@ -1593,6 +1618,17 @@
         const color = item.color || {};
         return '<span class="ycs-custom-swatch" title="' + escapeHtml(color.name) + ' ' + escapeHtml(color.hexCode) + '" style="background:' + escapeHtml(color.hexCode) + '"></span>';
       }).join('');
+      const paletteCode = 'CUSTOM_' + palette.id;
+      const visibilityBadge = isStyleMastersAdmin
+        ? '<p class="ycs-palette-card__admin-label">' + (palette.visibleToVip ? 'Visible to VIP' : 'Admin only') + '</p>'
+        : '';
+      const viewLinks = isStyleMastersAdmin && palette.visibleToVip
+        ? '<a href="/pages/palette?palette=' + encodeURIComponent(paletteCode) + '" class="ycs-palette-card__button ycs-palette-card__button--secondary">View Palette</a>' +
+          '<a href="/pages/photo-prep?mode=personal&workflow=photo-draping&palette=' + encodeURIComponent(paletteCode) + '" class="ycs-palette-card__button ycs-palette-card__button--secondary">Draping Studio</a>'
+        : '';
+      const visibilityButton = isStyleMastersAdmin
+        ? '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="toggle-vip-visibility" data-palette-id="' + escapeHtml(palette.id) + '">' + (palette.visibleToVip ? 'Hide from VIP' : 'Show to VIP') + '</button>'
+        : '';
 
       const card = document.createElement('div');
       card.className = 'ycs-palette-card ycs-custom-card';
@@ -1602,10 +1638,13 @@
           '<div class="ycs-palette-card__text">' +
             '<h2>' + escapeHtml(palette.name) + '</h2>' +
             '<p class="ycs-palette-card__subtitle">' + palette.colorCount + (palette.colorCount === 1 ? ' custom color' : ' custom colors') + '</p>' +
+            visibilityBadge +
             '<div class="ycs-custom-card__swatches">' + swatches + '</div>' +
           '</div>' +
           '<div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">' +
             '<button type="button" class="ycs-palette-card__button" data-ycs-custom-action="open-palette" data-palette-id="' + escapeHtml(palette.id) + '">Open</button>' +
+            visibilityButton +
+            viewLinks +
             '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="rename-palette" data-palette-id="' + escapeHtml(palette.id) + '">Rename</button>' +
             '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="delete-palette" data-palette-id="' + escapeHtml(palette.id) + '">Delete</button>' +
           '</div>' +
@@ -1846,6 +1885,11 @@
     if (action === 'manage-colors') renderMyColors();
     if (action === 'open-palette' && palette) renderPaletteDetail(palette);
     if (action === 'rename-palette' && palette) renderPaletteForm('Rename Custom Palette', 'renamePalette', palette);
+    if (action === 'toggle-vip-visibility' && palette) {
+      requestJson('setPaletteVipVisibility', { paletteId: palette.id, visibleToVip: !palette.visibleToVip }).then(function () {
+        return refreshAfterMutation(palette.visibleToVip ? 'Palette hidden from VIP users.' : 'Palette visible to VIP users.');
+      }).catch(function (error) { setStatus(error.message, true); });
+    }
     if (action === 'delete-palette' && palette && confirm('Delete this custom palette? This will not delete its colors from My Colors.')) {
       requestJson('deletePalette', { paletteId: palette.id }).then(function () { return refreshAfterMutation('Custom palette deleted.'); }).catch(function (error) { setStatus(error.message, true); });
     }
@@ -2018,6 +2062,75 @@
   });
 
   loadData().catch(function (error) {
+    setStatus(error.message, true);
+  });
+})();
+
+(function () {
+  const root = document.getElementById('ycs-style-masters-palettes');
+  if (!root) return;
+
+  const listEl = root.querySelector('[data-ycs-style-masters-list]');
+  const emptyEl = root.querySelector('[data-ycs-style-masters-empty]');
+  const statusEl = root.querySelector('[data-ycs-style-masters-status]');
+  const apiBase = (root.dataset.appBaseUrl || '').replace(/\/$/, '') + '/api/custom-palettes';
+  const context = {
+    customerId: root.dataset.customerId || '',
+    scope: 'stylemasters'
+  };
+
+  function escapeHtml(value) {
+    return String(value || '').replace(/[&<>"']/g, function (char) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char];
+    });
+  }
+
+  function setStatus(message, isError) {
+    if (!statusEl) return;
+    statusEl.textContent = message || '';
+    statusEl.hidden = !message;
+    statusEl.style.borderColor = isError ? '#e09aaa' : '#c9dfcf';
+    statusEl.style.background = isError ? '#fff8fa' : '#f6fff8';
+  }
+
+  function renderPalettes(palettes) {
+    if (!listEl || !emptyEl) return;
+    listEl.innerHTML = '';
+    emptyEl.hidden = palettes.length > 0;
+
+    palettes.forEach(function (palette) {
+      const paletteCode = 'CUSTOM_' + palette.id;
+      const swatches = (palette.colors || []).slice(0, 8).map(function (item) {
+        const color = item.color || {};
+        return '<span class="ycs-custom-swatch" title="' + escapeHtml(color.name) + ' ' + escapeHtml(color.hexCode) + '" style="background:' + escapeHtml(color.hexCode) + '"></span>';
+      }).join('');
+      const card = document.createElement('div');
+      card.className = 'ycs-palette-card ycs-custom-card';
+      card.innerHTML =
+        '<div class="ycs-palette-card__top"><div class="ycs-palette-card__gradient" style="background: linear-gradient(to right, #2f2a25, #d94c6a, #f2b880, #5fb6ff);"></div></div>' +
+        '<div class="ycs-palette-card__content">' +
+          '<div class="ycs-palette-card__text">' +
+            '<h2>' + escapeHtml(palette.name) + '</h2>' +
+            '<p class="ycs-palette-card__subtitle">' + palette.colorCount + (palette.colorCount === 1 ? ' custom color' : ' custom colors') + '</p>' +
+            '<div class="ycs-custom-card__swatches">' + swatches + '</div>' +
+          '</div>' +
+          '<div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">' +
+            '<a href="/pages/palette?palette=' + encodeURIComponent(paletteCode) + '" class="ycs-palette-card__button">Open Palette</a>' +
+            '<a href="/pages/photo-prep?mode=personal&workflow=photo-draping&palette=' + encodeURIComponent(paletteCode) + '" class="ycs-palette-card__button ycs-palette-card__button--secondary">Draping Studio</a>' +
+          '</div>' +
+        '</div>';
+      listEl.appendChild(card);
+    });
+  }
+
+  const query = new URLSearchParams(context);
+  query.set('action', 'list');
+  fetch(apiBase + '?' + query.toString()).then(function (response) {
+    return response.json().then(function (json) {
+      if (!response.ok) throw new Error(json.error || 'Unable to load Style Masters palettes');
+      renderPalettes(json.palettes || []);
+    });
+  }).catch(function (error) {
     setStatus(error.message, true);
   });
 })();
