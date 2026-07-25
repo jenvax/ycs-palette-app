@@ -194,6 +194,36 @@ async function fetchShopifyCustomerTags(customerId) {
   return Array.isArray(data.data?.customer?.tags) ? data.data.customer.tags : [];
 }
 
+async function fetchCustomerDirectoryTags(customerId) {
+  const records = await fetchAllRecords("CustomerDirectory", {
+    maxRecords: "1",
+    filterByFormula: `{CustomerId}="${escapeFormulaValue(customerId)}"`
+  });
+  const fields = records[0]?.fields || null;
+
+  if (!fields) return null;
+
+  const tags = String(fields.ShopifyTags || "")
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+
+  const paletteTags = String(fields.PaletteTags || "")
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+
+  if (toBool(fields.IsVIP)) tags.push("VIP");
+
+  return [...tags, ...paletteTags];
+}
+
+async function fetchCustomerAccessTags(customerId) {
+  const directoryTags = await fetchCustomerDirectoryTags(customerId);
+  if (directoryTags) return directoryTags;
+  return fetchShopifyCustomerTags(customerId);
+}
+
 async function authorizeAccess({ customerId, hasGrowthAccess, scope }) {
   const ownerCustomerId = normalizeCustomerId(customerId);
   const requestedScope = String(scope || "private").trim().toLowerCase();
@@ -205,7 +235,7 @@ async function authorizeAccess({ customerId, hasGrowthAccess, scope }) {
 
   if (wantsStyleMasters) {
     const tagSet = new Set(
-      (await fetchShopifyCustomerTags(ownerCustomerId)).map((tag) =>
+      (await fetchCustomerAccessTags(ownerCustomerId)).map((tag) =>
         String(tag || "").trim().toUpperCase()
       )
     );
