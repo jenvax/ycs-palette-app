@@ -1324,6 +1324,7 @@
 }
 
 .ycs-custom-form input,
+.ycs-custom-form select,
 .ycs-custom-toolbar input {
   width: 100%;
   min-height: 40px;
@@ -1416,6 +1417,40 @@
   color: #777;
   font-size: 12px;
   font-weight: 600;
+}
+
+.ycs-custom-batch-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 10px;
+  border: 1px solid #eee3e6;
+  border-radius: 12px;
+  background: #fffafb;
+}
+
+.ycs-custom-batch-bar label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #332e2a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ycs-custom-batch-bar input {
+  width: 18px;
+  min-height: 18px;
+}
+
+.ycs-custom-batch-summary {
+  margin: -4px 0 4px;
+  color: #6b5359;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .ycs-custom-list {
@@ -1637,7 +1672,34 @@
     });
   }
 
+  function myColorRows(colors) {
+    if (!colors.length) {
+      return '<p class="ycs-custom-empty-text">You haven’t added any custom colors yet. Add your first color to begin building your private color collection.</p>';
+    }
+
+    return '<div class="ycs-custom-list">' + colors.map(function (color) {
+      const assignedPaletteNames = state.palettes.filter(function (palette) {
+        return (palette.colors || []).some(function (item) {
+          return item.color && item.color.id === color.id;
+        });
+      }).map(function (palette) { return palette.name; });
+      const paletteMeta = assignedPaletteNames.length
+        ? assignedPaletteNames.join(', ')
+        : 'Not assigned to any palette';
+
+      return '<div class="ycs-custom-row">' +
+        '<div class="ycs-custom-row__main">' +
+          '<input type="checkbox" data-manage-color-select value="' + escapeHtml(color.id) + '" aria-label="Select ' + escapeHtml(color.name) + '">' +
+          '<span class="ycs-custom-swatch" style="background:' + escapeHtml(color.hexCode) + '"></span>' +
+          '<div><p class="ycs-custom-row__name">' + escapeHtml(color.name) + '</p><p class="ycs-custom-row__meta">' + escapeHtml(color.hexCode) + '</p><p class="ycs-custom-row__meta">' + escapeHtml(paletteMeta) + '</p></div>' +
+        '</div>' +
+        '<div class="ycs-custom-row__actions"><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="assign-color-palettes" data-color-id="' + escapeHtml(color.id) + '">Palettes</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="edit-color" data-color-id="' + escapeHtml(color.id) + '">Edit</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="delete-color" data-color-id="' + escapeHtml(color.id) + '">Delete</button></div>' +
+      '</div>';
+    }).join('') + '</div>';
+  }
+
   function renderMyColors(error) {
+    const colors = filteredColors();
     openModal('My Colors',
       '<div class="ycs-custom-toolbar">' +
         '<label>Search My Colors<input type="search" data-ycs-color-search value="' + escapeHtml(state.colorSearch) + '"></label>' +
@@ -1651,7 +1713,11 @@
         (error ? '<p class="ycs-custom-error">' + escapeHtml(error) + '</p>' : '') +
         '<div class="ycs-custom-form__actions"><button type="submit" class="ycs-palette-card__button">Save</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-close>Cancel</button></div>' +
       '</form>' +
-      colorRows(filteredColors(), false)
+      '<div class="ycs-custom-batch-bar">' +
+        '<label><input type="checkbox" data-manage-color-select-all' + (colors.length ? '' : ' disabled') + '> Select all visible colors</label>' +
+        '<button type="button" class="ycs-palette-card__button" data-ycs-custom-action="batch-assign-colors"' + (state.palettes.length && colors.length ? '' : ' disabled') + '>Assign Selected to Palette</button>' +
+      '</div>' +
+      myColorRows(colors)
     );
   }
 
@@ -1694,6 +1760,28 @@
         paletteOptions +
         (error ? '<p class="ycs-custom-error">' + escapeHtml(error) + '</p>' : '') +
         '<div class="ycs-custom-form__actions"><button type="submit" class="ycs-palette-card__button"' + (state.palettes.length ? '' : ' disabled') + '>Save Palette Assignments</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="manage-colors">Cancel</button></div>' +
+      '</form>');
+  }
+
+  function renderBatchAssignColors(colorIds, error) {
+    const selectedColors = colorIds.map(function (colorId) {
+      return state.colors.find(function (color) { return color.id === colorId; });
+    }).filter(Boolean);
+    const paletteOptions = state.palettes.map(function (palette) {
+      return '<option value="' + escapeHtml(palette.id) + '">' + escapeHtml(palette.name) + '</option>';
+    }).join('');
+    const preview = selectedColors.slice(0, 8).map(function (color) {
+      return '<span class="ycs-custom-swatch" title="' + escapeHtml(color.name) + '" style="background:' + escapeHtml(color.hexCode) + '"></span>';
+    }).join('');
+    const moreCount = selectedColors.length > 8 ? selectedColors.length - 8 : 0;
+
+    openModal('Assign Selected Colors',
+      '<form class="ycs-custom-form" data-ycs-batch-color-palette-form data-color-ids="' + escapeHtml(colorIds.join(',')) + '">' +
+        '<p class="ycs-custom-batch-summary">' + selectedColors.length + (selectedColors.length === 1 ? ' color selected' : ' colors selected') + '</p>' +
+        '<div class="ycs-custom-card__swatches">' + preview + (moreCount ? '<span class="ycs-custom-added-label">+' + moreCount + '</span>' : '') + '</div>' +
+        '<label>Assign to Palette<select name="paletteId" required>' + paletteOptions + '</select></label>' +
+        (error ? '<p class="ycs-custom-error">' + escapeHtml(error) + '</p>' : '') +
+        '<div class="ycs-custom-form__actions"><button type="submit" class="ycs-palette-card__button">Assign Colors</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="manage-colors">Cancel</button></div>' +
       '</form>');
   }
 
@@ -1770,6 +1858,14 @@
     if (action === 'manage-colors') renderMyColors();
     if (action === 'edit-color' && color) renderColorEdit(color);
     if (action === 'assign-color-palettes' && color) renderColorPaletteAssignments(color);
+    if (action === 'batch-assign-colors') {
+      const colorIds = Array.from(modal.querySelectorAll('[data-manage-color-select]:checked')).map(function (input) { return input.value; });
+      if (!colorIds.length) {
+        renderMyColors('Select at least one color to assign.');
+      } else {
+        renderBatchAssignColors(colorIds);
+      }
+    }
     if (action === 'delete-color' && color) {
       const message = color.paletteCount > 0
         ? 'Delete this custom color? It will also be removed from any custom palettes that use it.'
@@ -1812,6 +1908,11 @@
   });
 
   modal.addEventListener('input', function (event) {
+    if (event.target.matches('[data-manage-color-select-all]')) {
+      modal.querySelectorAll('[data-manage-color-select]').forEach(function (input) {
+        input.checked = event.target.checked;
+      });
+    }
     if (event.target.matches('[data-ycs-color-search]')) {
       state.colorSearch = event.target.value;
       if (state.activePalette && modalTitle.textContent === 'Add Colors') renderAddColors();
@@ -1829,7 +1930,8 @@
     const colorForm = event.target.closest('[data-ycs-color-form]');
     const paletteForm = event.target.closest('[data-ycs-palette-form]');
     const colorPalettesForm = event.target.closest('[data-ycs-color-palettes-form]');
-    if (!colorForm && !paletteForm && !colorPalettesForm) return;
+    const batchColorPaletteForm = event.target.closest('[data-ycs-batch-color-palette-form]');
+    if (!colorForm && !paletteForm && !colorPalettesForm && !batchColorPaletteForm) return;
     event.preventDefault();
 
     if (colorForm) {
@@ -1876,6 +1978,17 @@
         setStatus('Palette assignments saved.', false);
       }).catch(function (error) {
         renderColorPaletteAssignments(color || { id: colorId, name: 'Custom Color', hexCode: '#FFFFFF' }, error.message);
+      });
+    }
+
+    if (batchColorPaletteForm) {
+      const formData = new FormData(batchColorPaletteForm);
+      const colorIds = (batchColorPaletteForm.dataset.colorIds || '').split(',').map(function (colorId) { return colorId.trim(); }).filter(Boolean);
+      const paletteId = formData.get('paletteId');
+      requestJson('addColorsToPalette', { paletteId: paletteId, colorIds: colorIds }).then(function () {
+        return refreshAfterMutation('Selected colors assigned to palette.');
+      }).then(renderMyColors).catch(function (error) {
+        renderBatchAssignColors(colorIds, error.message);
       });
     }
   });
