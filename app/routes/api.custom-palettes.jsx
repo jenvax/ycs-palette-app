@@ -153,17 +153,29 @@ function ownerFormula(ownerCustomerId) {
   return `{OwnerCustomerId}="${escapeFormulaValue(ownerCustomerId)}"`;
 }
 
-async function fetchShopifyCustomerTags(customerId) {
-  const shop = process.env.SHOPIFY_SHOP;
-  const accessToken = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN || process.env.SHOPIFY_API_TOKEN;
+async function getShopifyAccessToken({ shop, apiKey, apiSecret }) {
+  const response = await fetch(`https://${shop}/admin/oauth/access_token`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      client_id: apiKey,
+      client_secret: apiSecret,
+      grant_type: "client_credentials"
+    })
+  });
+  const data = await response.json().catch(() => ({}));
 
-  if (!shop || !accessToken) {
-    const error = new Error("Missing Shopify admin configuration");
-    error.status = 500;
-    throw error;
+  if (!response.ok || !data.access_token) {
+    throw new Error("Failed to generate Shopify access token");
   }
 
-  const response = await fetch(`https://${shop}/admin/api/2026-01/graphql.json`, {
+  return data.access_token;
+}
+
+async function fetchShopifyCustomerTagsWithToken({ shop, accessToken, customerId }) {
+  const response = await fetch(`https://${shop}/admin/api/2026-04/graphql.json`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -192,6 +204,43 @@ async function fetchShopifyCustomerTags(customerId) {
   }
 
   return Array.isArray(data.data?.customer?.tags) ? data.data.customer.tags : [];
+}
+
+async function fetchShopifyCustomerTags(customerId) {
+  const shop = process.env.SHOPIFY_SYNC_SHOP || process.env.SHOPIFY_SHOP;
+  const staticAccessToken = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
+
+  if (!shop) {
+    const error = new Error("Missing Shopify shop configuration");
+    error.status = 500;
+    throw error;
+  }
+
+  if (staticAccessToken) {
+    try {
+      return await fetchShopifyCustomerTagsWithToken({ shop, accessToken: staticAccessToken, customerId });
+    } catch (error) {
+      console.error("Static Shopify customer lookup failed, trying generated app token:", error);
+    }
+  }
+
+  if (!process.env.SHOPIFY_API_KEY || !process.env.SHOPIFY_API_SECRET) {
+    const error = new Error("Missing Shopify API credentials");
+    error.status = 500;
+    throw error;
+  }
+
+  const generatedAccessToken = await getShopifyAccessToken({
+    shop,
+    apiKey: process.env.SHOPIFY_API_KEY,
+    apiSecret: process.env.SHOPIFY_API_SECRET
+  });
+
+  return fetchShopifyCustomerTagsWithToken({
+    shop,
+    accessToken: generatedAccessToken,
+    customerId
+  });
 }
 
 async function fetchCustomerDirectoryTags(customerId) {
