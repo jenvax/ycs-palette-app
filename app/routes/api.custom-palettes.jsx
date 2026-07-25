@@ -224,7 +224,9 @@ async function fetchShopifyCustomerTags(customerId) {
     }
   }
 
-  if (!process.env.SHOPIFY_API_KEY || !process.env.SHOPIFY_API_SECRET) {
+  const apiSecret = process.env.SHOPIFY_API_SECRET || process.env.SHOPIFY_API_TOKEN;
+
+  if (!process.env.SHOPIFY_API_KEY || !apiSecret) {
     const error = new Error("Missing Shopify API credentials");
     error.status = 500;
     throw error;
@@ -233,7 +235,7 @@ async function fetchShopifyCustomerTags(customerId) {
   const generatedAccessToken = await getShopifyAccessToken({
     shop,
     apiKey: process.env.SHOPIFY_API_KEY,
-    apiSecret: process.env.SHOPIFY_API_SECRET
+    apiSecret
   });
 
   return fetchShopifyCustomerTagsWithToken({
