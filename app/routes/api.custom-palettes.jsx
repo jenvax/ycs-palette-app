@@ -312,6 +312,12 @@ async function fetchPaletteJoinRecords(ownerCustomerId, paletteId) {
   });
 }
 
+async function fetchColorJoinRecords(ownerCustomerId, colorId) {
+  return fetchAllRecords(PALETTE_COLORS_TABLE, {
+    filterByFormula: `AND(${ownerFormula(ownerCustomerId)}, {ColorId}="${escapeFormulaValue(colorId)}")`
+  });
+}
+
 export async function loader({ request }) {
   const origin = request.headers.get("Origin") || "";
   const corsHeaders = getCorsHeaders(origin);
@@ -550,6 +556,63 @@ export async function action({ request }) {
       await deleteRecords(PALETTE_COLORS_TABLE, joins.map((record) => record.id));
 
       return Response.json({ palette: await readPalette(ownerCustomerId, paletteId) }, { headers: corsHeaders });
+    }
+
+    if (actionName === "setColorPalettes") {
+      const colorId = cleanString(body.colorId);
+      const paletteIds = Array.isArray(body.paletteIds)
+        ? body.paletteIds.map(cleanString).filter(Boolean)
+        : [];
+      const uniquePaletteIds = Array.from(new Set(paletteIds));
+
+      if (!colorId) return Response.json({ error: "Missing colorId" }, { status: 400, headers: corsHeaders });
+
+      await requireOwnedColorRecord(ownerCustomerId, colorId);
+
+      const data = await fetchOwnedData(ownerCustomerId);
+      const paletteIdSet = new Set(data.palettes.map((palette) => palette.id));
+
+      if (uniquePaletteIds.some((paletteId) => !paletteIdSet.has(paletteId))) {
+        return Response.json(
+          { error: "Only your custom palettes can be assigned" },
+          { status: 403, headers: corsHeaders }
+        );
+      }
+
+      const existingJoins = await fetchColorJoinRecords(ownerCustomerId, colorId);
+      const existingByPaletteId = new Map(
+        existingJoins.map((record) => [record.fields?.PaletteId, record])
+      );
+      const desiredPaletteIds = new Set(uniquePaletteIds);
+
+      await deleteRecords(
+        PALETTE_COLORS_TABLE,
+        existingJoins
+          .filter((record) => !desiredPaletteIds.has(record.fields?.PaletteId))
+          .map((record) => record.id)
+      );
+
+      for (const paletteId of uniquePaletteIds) {
+        if (existingByPaletteId.has(paletteId)) continue;
+
+        const paletteJoins = data.joinRecords.filter((record) => record.fields?.PaletteId === paletteId);
+        const displayOrder = paletteJoins.reduce(
+          (max, record) => Math.max(max, Number(record.fields?.DisplayOrder || 0)),
+          -1
+        ) + 1;
+
+        await createRecord(PALETTE_COLORS_TABLE, {
+          PaletteColorId: makeId("cpcolor"),
+          OwnerCustomerId: ownerCustomerId,
+          PaletteId: paletteId,
+          ColorId: colorId,
+          DisplayOrder: displayOrder,
+          CreatedAt: nowIso,
+          UpdatedAt: nowIso
+        });
+      }
+
+      return Response.json(await listCustomData(ownerCustomerId), { headers: corsHeaders });
     }
 
     if (actionName === "reorderPaletteColors") {

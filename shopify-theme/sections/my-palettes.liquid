@@ -1379,6 +1379,45 @@
   font-weight: 700;
 }
 
+.ycs-custom-assignment-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid #eee3e6;
+  border-radius: 12px;
+  background: #fffafb;
+}
+
+.ycs-custom-assignment-list {
+  display: grid;
+  gap: 8px;
+}
+
+.ycs-custom-assignment-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid #eee3e6;
+  border-radius: 12px;
+  background: #fff;
+  color: #332e2a;
+  font-weight: 700;
+}
+
+.ycs-custom-assignment-row input {
+  width: 18px;
+  min-height: 18px;
+}
+
+.ycs-custom-assignment-row small {
+  color: #777;
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .ycs-custom-list {
   display: grid;
   gap: 10px;
@@ -1565,11 +1604,19 @@
 
     return '<div class="ycs-custom-list">' + colors.map(function (color) {
       const disabled = paletteColorIds && paletteColorIds.has(color.id);
+      const assignedPaletteNames = state.palettes.filter(function (palette) {
+        return (palette.colors || []).some(function (item) {
+          return item.color && item.color.id === color.id;
+        });
+      }).map(function (palette) { return palette.name; });
+      const paletteMeta = assignedPaletteNames.length
+        ? assignedPaletteNames.join(', ')
+        : 'Not assigned to any palette';
       return '<div class="ycs-custom-row">' +
         '<div class="ycs-custom-row__main">' +
           (selectable ? '<input type="checkbox" data-color-select value="' + escapeHtml(color.id) + '"' + (disabled ? ' disabled' : '') + ' aria-label="Select ' + escapeHtml(color.name) + '">' : '') +
           '<span class="ycs-custom-swatch" style="background:' + escapeHtml(color.hexCode) + '"></span>' +
-          '<div><p class="ycs-custom-row__name">' + escapeHtml(color.name) + '</p><p class="ycs-custom-row__meta">' + escapeHtml(color.hexCode) + '</p></div>' +
+          '<div><p class="ycs-custom-row__name">' + escapeHtml(color.name) + '</p><p class="ycs-custom-row__meta">' + escapeHtml(color.hexCode) + '</p>' + (selectable ? '' : '<p class="ycs-custom-row__meta">' + escapeHtml(paletteMeta) + '</p>') + '</div>' +
         '</div>' +
         (selectable
           ? '<div class="ycs-custom-row__actions">' +
@@ -1577,7 +1624,7 @@
                 ? '<span class="ycs-custom-added-label">Added</span>'
                 : '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="add-one-color" data-color-id="' + escapeHtml(color.id) + '">Add</button>') +
             '</div>'
-          : '<div class="ycs-custom-row__actions"><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="edit-color" data-color-id="' + escapeHtml(color.id) + '">Edit</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="delete-color" data-color-id="' + escapeHtml(color.id) + '">Delete</button></div>') +
+          : '<div class="ycs-custom-row__actions"><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="assign-color-palettes" data-color-id="' + escapeHtml(color.id) + '">Palettes</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="edit-color" data-color-id="' + escapeHtml(color.id) + '">Edit</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="delete-color" data-color-id="' + escapeHtml(color.id) + '">Delete</button></div>') +
       '</div>';
     }).join('') + '</div>';
   }
@@ -1618,6 +1665,35 @@
         '</div>' +
         (error ? '<p class="ycs-custom-error">' + escapeHtml(error) + '</p>' : '') +
         '<div class="ycs-custom-form__actions"><button type="submit" class="ycs-palette-card__button">Save</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="manage-colors">Cancel</button></div>' +
+      '</form>');
+  }
+
+  function renderColorPaletteAssignments(color, error) {
+    const assignedPaletteIds = new Set(state.palettes.filter(function (palette) {
+      return (palette.colors || []).some(function (item) {
+        return item.color && item.color.id === color.id;
+      });
+    }).map(function (palette) { return palette.id; }));
+    const paletteOptions = state.palettes.length
+      ? '<div class="ycs-custom-assignment-list">' + state.palettes.map(function (palette) {
+          const checked = assignedPaletteIds.has(palette.id);
+          return '<label class="ycs-custom-assignment-row">' +
+            '<input type="checkbox" name="paletteIds" value="' + escapeHtml(palette.id) + '"' + (checked ? ' checked' : '') + '>' +
+            '<span>' + escapeHtml(palette.name) + '</span>' +
+            '<small>' + palette.colorCount + (palette.colorCount === 1 ? ' color' : ' colors') + '</small>' +
+          '</label>';
+        }).join('') + '</div>'
+      : '<p class="ycs-custom-empty-text">Create a custom palette first, then assign this color to it.</p>';
+
+    openModal('Assign ' + color.name + ' To Palettes',
+      '<form class="ycs-custom-form" data-ycs-color-palettes-form data-color-id="' + escapeHtml(color.id) + '">' +
+        '<div class="ycs-custom-assignment-preview">' +
+          '<span class="ycs-custom-swatch" style="background:' + escapeHtml(color.hexCode) + '"></span>' +
+          '<div><p class="ycs-custom-row__name">' + escapeHtml(color.name) + '</p><p class="ycs-custom-row__meta">' + escapeHtml(color.hexCode) + '</p></div>' +
+        '</div>' +
+        paletteOptions +
+        (error ? '<p class="ycs-custom-error">' + escapeHtml(error) + '</p>' : '') +
+        '<div class="ycs-custom-form__actions"><button type="submit" class="ycs-palette-card__button"' + (state.palettes.length ? '' : ' disabled') + '>Save Palette Assignments</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="manage-colors">Cancel</button></div>' +
       '</form>');
   }
 
@@ -1693,6 +1769,7 @@
 
     if (action === 'manage-colors') renderMyColors();
     if (action === 'edit-color' && color) renderColorEdit(color);
+    if (action === 'assign-color-palettes' && color) renderColorPaletteAssignments(color);
     if (action === 'delete-color' && color) {
       const message = color.paletteCount > 0
         ? 'Delete this custom color? It will also be removed from any custom palettes that use it.'
@@ -1751,7 +1828,8 @@
   modal.addEventListener('submit', function (event) {
     const colorForm = event.target.closest('[data-ycs-color-form]');
     const paletteForm = event.target.closest('[data-ycs-palette-form]');
-    if (!colorForm && !paletteForm) return;
+    const colorPalettesForm = event.target.closest('[data-ycs-color-palettes-form]');
+    if (!colorForm && !paletteForm && !colorPalettesForm) return;
     event.preventDefault();
 
     if (colorForm) {
@@ -1784,6 +1862,20 @@
         });
       }).catch(function (error) {
         renderPaletteForm(action === 'createPalette' ? 'Create Custom Palette' : 'Rename Custom Palette', action, { id: paletteId, name: formData.get('name') }, error.message);
+      });
+    }
+
+    if (colorPalettesForm) {
+      const colorId = colorPalettesForm.dataset.colorId || '';
+      const color = state.colors.find(function (item) { return item.id === colorId; });
+      const paletteIds = Array.from(colorPalettesForm.querySelectorAll('input[name="paletteIds"]:checked')).map(function (input) { return input.value; });
+      requestJson('setColorPalettes', { colorId: colorId, paletteIds: paletteIds }).then(function (json) {
+        state.colors = json.colors || [];
+        state.palettes = json.palettes || [];
+        renderMyColors();
+        setStatus('Palette assignments saved.', false);
+      }).catch(function (error) {
+        renderColorPaletteAssignments(color || { id: colorId, name: 'Custom Color', hexCode: '#FFFFFF' }, error.message);
       });
     }
   });
