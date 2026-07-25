@@ -1367,6 +1367,18 @@
   font-weight: 700;
 }
 
+.ycs-custom-added-label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  background: #f5eef0;
+  color: #7b5a62;
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .ycs-custom-list {
   display: grid;
   gap: 10px;
@@ -1559,7 +1571,13 @@
           '<span class="ycs-custom-swatch" style="background:' + escapeHtml(color.hexCode) + '"></span>' +
           '<div><p class="ycs-custom-row__name">' + escapeHtml(color.name) + '</p><p class="ycs-custom-row__meta">' + escapeHtml(color.hexCode) + '</p></div>' +
         '</div>' +
-        (selectable ? '' : '<div class="ycs-custom-row__actions"><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="edit-color" data-color-id="' + escapeHtml(color.id) + '">Edit</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="delete-color" data-color-id="' + escapeHtml(color.id) + '">Delete</button></div>') +
+        (selectable
+          ? '<div class="ycs-custom-row__actions">' +
+              (disabled
+                ? '<span class="ycs-custom-added-label">Added</span>'
+                : '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="add-one-color" data-color-id="' + escapeHtml(color.id) + '">Add</button>') +
+            '</div>'
+          : '<div class="ycs-custom-row__actions"><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="edit-color" data-color-id="' + escapeHtml(color.id) + '">Edit</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="delete-color" data-color-id="' + escapeHtml(color.id) + '">Delete</button></div>') +
       '</div>';
     }).join('') + '</div>';
   }
@@ -1635,6 +1653,7 @@
 
   function renderAddColors() {
     const selectedIds = new Set((state.activePalette.colors || []).map(function (item) { return item.color.id; }));
+    const hasAvailableColors = state.colors.some(function (color) { return !selectedIds.has(color.id); });
     const emptyAction = state.colors.length
       ? ''
       : '<div class="ycs-custom-form__actions" style="margin-top:12px"><button type="button" class="ycs-palette-card__button" data-ycs-custom-action="manage-colors">Add Color</button></div>';
@@ -1642,7 +1661,7 @@
       '<div class="ycs-custom-toolbar"><label>Search My Colors<input type="search" data-ycs-color-search value="' + escapeHtml(state.colorSearch) + '"></label></div>' +
       colorRows(filteredColors(), true, selectedIds) +
       emptyAction +
-      '<div class="ycs-custom-form__actions" style="margin-top:16px"><button type="button" class="ycs-palette-card__button" data-ycs-custom-action="save-add-colors">Add Selected Colors</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="open-palette" data-palette-id="' + escapeHtml(state.activePalette.id) + '">Cancel</button></div>');
+      '<div class="ycs-custom-form__actions" style="margin-top:16px"><button type="button" class="ycs-palette-card__button" data-ycs-custom-action="save-add-colors"' + (hasAvailableColors ? '' : ' disabled') + '>Add Selected Colors</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="open-palette" data-palette-id="' + escapeHtml(state.activePalette.id) + '">Cancel</button></div>');
   }
 
   async function refreshAfterMutation(message) {
@@ -1685,6 +1704,11 @@
     if (action === 'rename-palette' && palette) renderPaletteForm('Rename Custom Palette', 'renamePalette', palette);
     if (action === 'open-palette' && palette) renderPaletteDetail(palette);
     if (action === 'add-colors') renderAddColors();
+    if (action === 'add-one-color' && state.activePalette && color) {
+      requestJson('addColorsToPalette', { paletteId: state.activePalette.id, colorIds: [color.id] }).then(function (json) {
+        return refreshAfterMutation('Color added.').then(function () { renderPaletteDetail(json.palette); });
+      }).catch(function (error) { setStatus(error.message, true); });
+    }
     if (action === 'save-add-colors' && state.activePalette) {
       const colorIds = Array.from(modal.querySelectorAll('[data-color-select]:checked')).map(function (input) { return input.value; });
       requestJson('addColorsToPalette', { paletteId: state.activePalette.id, colorIds: colorIds }).then(function (json) {
