@@ -203,7 +203,7 @@ async function fetchCustomerDirectoryTags(customerId) {
 
   if (!fields) return null;
 
-  const tags = String(fields.ShopifyTags || "")
+  const tags = String(fields.ShopifyTags || fields.Tags || "")
     .split(",")
     .map((tag) => tag.trim())
     .filter(Boolean);
