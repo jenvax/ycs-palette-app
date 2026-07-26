@@ -263,6 +263,7 @@
   ];
 
   const validPaletteCodes = new Set(ALL_CUSTOMER_PALETTE_CODES);
+  let styleMastersPaletteOptions = [];
 
   const state = {
   scale: 1,
@@ -396,6 +397,12 @@
   }
 
   function getPaletteDisplayName(code) {
+    if (isCustomPaletteCode(code)) {
+      const match = styleMastersPaletteOptions.find(function (palette) {
+        return palette.code === code;
+      });
+      return match ? match.name : 'Style Masters Palette';
+    }
     return paletteNames[code] || code || '—';
   }
 
@@ -540,6 +547,62 @@ function updateSignatureAnalysisLink() {
     return String(paletteCode || '').toUpperCase() === DRAPING_PALETTE_CODE;
   }
 
+  function isCustomPaletteCode(code) {
+    return /^CUSTOM_/i.test(String(code || '').trim());
+  }
+
+  function normalizeCustomPaletteOption(palette) {
+    const id = String(palette && palette.id ? palette.id : '').trim();
+    if (!id) return null;
+
+    return {
+      code: 'CUSTOM_' + id,
+      name: String(palette.name || 'Style Masters Palette').trim() || 'Style Masters Palette'
+    };
+  }
+
+  async function loadAdminStyleMastersPalettes() {
+    if (!IS_ADMIN || !APP_BASE_URL || !VIEWER_CUSTOMER_ID) return [];
+
+    try {
+      const query = new URLSearchParams({
+        customerId: VIEWER_CUSTOMER_ID,
+        scope: 'stylemasters',
+        action: 'list'
+      });
+      const response = await fetch(APP_BASE_URL.replace(/\/$/, '') + '/api/custom-palettes?' + query.toString());
+      const text = await response.text();
+      const data = text ? JSON.parse(text) : {};
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Unable to load Style Masters palettes');
+      }
+
+      return (data.palettes || [])
+        .map(normalizeCustomPaletteOption)
+        .filter(Boolean);
+    } catch (error) {
+      console.error('Failed to load Style Masters palettes for signature studio', error);
+      return [];
+    }
+  }
+
+  function orderPalettesForAdmin(palettes) {
+    if (!IS_ADMIN || !styleMastersPaletteOptions.length) return palettes;
+
+    const styleMastersCodes = styleMastersPaletteOptions.map(function (palette) {
+      return palette.code;
+    });
+
+    return styleMastersCodes
+      .concat(palettes.filter(function (code) {
+        return styleMastersCodes.indexOf(code) === -1;
+      }))
+      .filter(function (code, index, allCodes) {
+        return allCodes.indexOf(code) === index;
+      });
+  }
+
   function setFreeTrialLockVisible(visible) {
     if (!freeTrialLockEl) return;
     freeTrialLockEl.hidden = true;
@@ -549,8 +612,12 @@ function updateSignatureAnalysisLink() {
   }
 
   function getAnalystPaletteCodes(accessString) {
+    const adminStyleMastersCodes = styleMastersPaletteOptions.map(function (palette) {
+      return palette.code;
+    });
+
     if (IS_ADMIN || IS_TRADE || IS_CATOOL || IS_CATOOL_GROWTH || IS_CATOOL_FREE || IS_DIY_CATOOL || IS_FREE_DIY_CATOOL) {
-      return [DRAPING_PALETTE_CODE].concat(ALL_CUSTOMER_PALETTE_CODES);
+      return orderPalettesForAdmin([DRAPING_PALETTE_CODE].concat(adminStyleMastersCodes, ALL_CUSTOMER_PALETTE_CODES));
     }
 
     const owned = String(accessString || '')
@@ -4482,12 +4549,15 @@ window.addEventListener('pointercancel', endGesturePointer);
   updateLipActionButtons();
   updateDrapeShape();
   syncZoomSliderBounds();
+  styleMastersPaletteOptions = await loadAdminStyleMastersPalettes();
   populatePaletteSelect();
   populateComparisonPaletteSelects();
 
   const saved = loadAnalysisSession();
   if (saved && saved.paletteCode && paletteSelect) {
-    paletteSelect.value = isDrapingPalette(saved.paletteCode) ? saved.paletteCode : DRAPING_PALETTE_CODE;
+    paletteSelect.value = isDrapingPalette(saved.paletteCode) || isCustomPaletteCode(saved.paletteCode)
+      ? saved.paletteCode
+      : DRAPING_PALETTE_CODE;
     updateCurrentPaletteName();
   }
 
