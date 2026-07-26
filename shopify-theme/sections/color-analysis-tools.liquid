@@ -14,7 +14,7 @@
   | append: '&'
 %}
 
-{% if ycs_tools_page_url contains 'view=tools&' or page.handle == 'color-analysis-tools' or template.suffix == 'color-analysis-tools' %}
+{% if ycs_tools_page_url contains 'view=tools&' or page.handle == 'color-analysis-tools' or template.suffix == 'color-analysis-tools' or template.suffix == 'tools' %}
   {% assign should_render_ycs_color_analysis_tools = true %}
 {% endif %}
 
