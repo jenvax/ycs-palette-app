@@ -682,19 +682,27 @@
                       Open Palette
                     </a>
 
-                    {% if block.settings.printable_pdf_url != blank %}
-                      {% if can_access_all_printable_pdfs or palette_access_string contains palette_token %}
+                    {% if can_access_all_printable_pdfs or palette_access_string contains palette_token %}
+                      {% if block.settings.printable_pdf_url != blank %}
                         <a href="{{ block.settings.printable_pdf_url }}" class="ycs-palette-card__button ycs-palette-card__button--secondary" target="_blank" rel="noopener">
                           Printable PDF
                         </a>
+                      {% elsif can_access_all_printable_pdfs %}
+                        <span class="ycs-palette-card__button ycs-palette-card__button--secondary ycs-palette-card__button--disabled" aria-disabled="true">
+                          Printable PDF
+                        </span>
                       {% endif %}
                     {% endif %}
 
-                    {% if block.settings.mobile_pdf_url != blank %}
-                      {% if can_access_all_printable_pdfs or palette_access_string contains palette_token %}
+                    {% if can_access_all_printable_pdfs or palette_access_string contains palette_token %}
+                      {% if block.settings.mobile_pdf_url != blank %}
                         <a href="{{ block.settings.mobile_pdf_url }}" class="ycs-palette-card__button ycs-palette-card__button--secondary" target="_blank" rel="noopener">
                           Mobile PDF
                         </a>
+                      {% elsif can_access_all_printable_pdfs %}
+                        <span class="ycs-palette-card__button ycs-palette-card__button--secondary ycs-palette-card__button--disabled" aria-disabled="true">
+                          Mobile PDF
+                        </span>
                       {% endif %}
                     {% endif %}
                   </div>

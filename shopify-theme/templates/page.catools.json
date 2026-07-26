@@ -190,18 +190,102 @@
             "mobile_pdf_url": "",
             "gradient": "linear-gradient(to right, #d94c6a, #f2b880, #d9d7f1)"
           }
+        },
+        "palette_cwlg": {
+          "type": "palette",
+          "settings": {
+            "title": "Clear Warm Light for Gray Hair",
+            "subtitle": "Bright • Warm • Light • Gray Hair",
+            "palette_code": "CWLG",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #d94c6a, #f2a36f, #d7c5aa, #a9b6b1, #6ea7d8)"
+          }
+        },
+        "palette_cwmg": {
+          "type": "palette",
+          "settings": {
+            "title": "Clear Warm Medium for Gray Hair",
+            "subtitle": "Bright • Warm • Medium • Gray Hair",
+            "palette_code": "CWMG",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #b93645, #d47743, #b8a173, #8e9b93, #327db8)"
+          }
+        },
+        "palette_cwdg": {
+          "type": "palette",
+          "settings": {
+            "title": "Clear Warm Deep for Gray Hair",
+            "subtitle": "Bright • Warm • Deep • Gray Hair",
+            "palette_code": "CWDG",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #7f2030, #9b5235, #86724b, #687066, #214f7a)"
+          }
+        },
+        "palette_swlg": {
+          "type": "palette",
+          "settings": {
+            "title": "Soft Warm Light for Gray Hair",
+            "subtitle": "Soft • Warm • Light • Gray Hair",
+            "palette_code": "SWLG",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #c9787f, #d6a178, #c3b695, #a6aaa0, #7fa5bd)"
+          }
+        },
+        "palette_swmg": {
+          "type": "palette",
+          "settings": {
+            "title": "Soft Warm Medium for Gray Hair",
+            "subtitle": "Soft • Warm • Medium • Gray Hair",
+            "palette_code": "SWMG",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #a65f67, #b07d5f, #95896d, #7d8176, #5f8498)"
+          }
+        },
+        "palette_swdg": {
+          "type": "palette",
+          "settings": {
+            "title": "Soft Warm Deep for Gray Hair",
+            "subtitle": "Soft • Warm • Deep • Gray Hair",
+            "palette_code": "SWDG",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #743e47, #765743, #6f6654, #5f6259, #3d5968)"
+          }
         }
       },
       "block_order": [
         "palette_cwl",
+        "palette_cwlg",
         "palette_cwm",
+        "palette_cwmg",
         "palette_cwd",
+        "palette_cwdg",
         "palette_ccl",
         "palette_ccm",
         "palette_ccd",
         "palette_swl",
+        "palette_swlg",
         "palette_swm",
+        "palette_swmg",
         "palette_swd",
+        "palette_swdg",
         "palette_scl",
         "palette_scm",
         "palette_scd",
