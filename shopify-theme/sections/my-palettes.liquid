@@ -685,9 +685,13 @@
                     {% assign palette_pdf_url = block.settings.printable_pdf_url | default: block.settings.mobile_pdf_url %}
                     {% if palette_pdf_url != blank %}
                       {% if can_access_all_printable_pdfs or palette_access_string contains palette_token %}
-                        <a href="{{ palette_pdf_url }}" class="ycs-palette-card__button ycs-palette-card__button--secondary" target="_blank" rel="noopener">
+                        <button
+                          type="button"
+                          class="ycs-palette-card__button ycs-palette-card__button--secondary"
+                          data-ycs-pdf-palette-code="{{ palette_code | escape }}"
+                          data-ycs-pdf-palette-title="{{ block.settings.title | escape }}">
                           PDF
-                        </a>
+                        </button>
                       {% endif %}
                     {% endif %}
                   </div>
@@ -2231,6 +2235,437 @@
     });
   }).catch(function (error) {
     setStatus(error.message, true);
+  });
+})();
+
+(function () {
+  let pdfLogoPromise = null;
+
+  function normalizeHexInput(value) {
+    const raw = String(value || '').trim().replace(/^#/, '');
+    return /^[0-9a-fA-F]{6}$/.test(raw) ? '#' + raw.toUpperCase() : '';
+  }
+
+  function normalizePrintHex(value) {
+    return normalizeHexInput(value) || '#FFFFFF';
+  }
+
+  function loadPdfLogoData() {
+    if (pdfLogoPromise) return pdfLogoPromise;
+
+    pdfLogoPromise = fetch('https://cdn.shopify.com/s/files/1/0623/6284/5408/files/YourColorStyle_Logo-120_e3c4c33e-3249-4120-8dc6-c665eb3fec9f.png?v=1644954058')
+      .then(function (response) {
+        if (!response.ok) throw new Error('Unable to load logo.');
+        return response.blob();
+      })
+      .then(function (blob) {
+        return new Promise(function (resolve) {
+          const image = new Image();
+          image.onload = function () {
+            URL.revokeObjectURL(image.src);
+            const targetWidth = 144;
+            const targetHeight = Math.max(1, Math.round(targetWidth * (image.naturalHeight / image.naturalWidth)));
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+            context.fillStyle = '#FFFFFF';
+            context.fillRect(0, 0, targetWidth, targetHeight);
+            context.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+            resolve({
+              data: atob(dataUrl.split(',')[1] || ''),
+              width: targetWidth,
+              height: targetHeight
+            });
+          };
+          image.onerror = function () {
+            URL.revokeObjectURL(image.src);
+            resolve(null);
+          };
+          image.src = URL.createObjectURL(blob);
+        });
+      })
+      .catch(function () {
+        return null;
+      });
+
+    return pdfLogoPromise;
+  }
+
+  function normalizePdfText(value) {
+    return String(value || '')
+      .replace(/[\u2018\u2019]/g, "'")
+      .replace(/[\u201C\u201D]/g, '"')
+      .replace(/[\u2013\u2014]/g, '-')
+      .replace(/[^\x09\x0A\x0D\x20-\x7E]/g, '');
+  }
+
+  function escapePdfText(value) {
+    return normalizePdfText(value).replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+  }
+
+  function estimatePdfTextWidth(value, fontSize) {
+    return normalizePdfText(value).split('').reduce(function (width, char) {
+      if (char === ' ') return width + (fontSize * 0.28);
+      if ('ilI.,;:!|'.indexOf(char) !== -1) return width + (fontSize * 0.24);
+      if ('mwMW@#%&'.indexOf(char) !== -1) return width + (fontSize * 0.72);
+      return width + (fontSize * 0.52);
+    }, 0);
+  }
+
+  function splitPdfText(value, fontSize, maxWidth, maxLines) {
+    const words = normalizePdfText(value).split(/\s+/).filter(Boolean);
+    const lines = [];
+    let current = '';
+
+    words.forEach(function (word) {
+      const next = current ? current + ' ' + word : word;
+      if (estimatePdfTextWidth(next, fontSize) <= maxWidth || !current) {
+        current = next;
+      } else {
+        lines.push(current);
+        current = word;
+      }
+    });
+
+    if (current) lines.push(current);
+    return lines.slice(0, maxLines || lines.length);
+  }
+
+  function normalizePdfColor(color) {
+    return Object.assign({}, color, {
+      hexCode: color.hexCode || color.hex || color.colorHex || '',
+      name: color.name || color.colorName || ''
+    });
+  }
+
+  function getPdfColorCategory(color) {
+    return String(
+      color.category ||
+      color.categoryName ||
+      color.colorCategory ||
+      color.group ||
+      color.family ||
+      'Custom Colors'
+    ).trim() || 'Custom Colors';
+  }
+
+  function buildPalettePrintGroups(palette) {
+    const groups = {};
+    const groupOrder = [];
+
+    (palette.colors || []).forEach(function (item) {
+      const color = normalizePdfColor(item.color || {});
+      const category = getPdfColorCategory(color);
+
+      if (!groups[category]) {
+        groups[category] = [];
+        groupOrder.push(category);
+      }
+
+      groups[category].push(color);
+    });
+
+    return groupOrder.map(function (category) {
+      return { category: category, colors: groups[category] };
+    });
+  }
+
+  function hexToRgb(hex) {
+    const normalized = normalizePrintHex(hex).replace('#', '');
+    const value = normalized.length === 3
+      ? normalized.split('').map(function (char) { return char + char; }).join('')
+      : normalized;
+    const red = parseInt(value.slice(0, 2), 16);
+    const green = parseInt(value.slice(2, 4), 16);
+    const blue = parseInt(value.slice(4, 6), 16);
+
+    return {
+      r: Number.isNaN(red) ? 255 : red,
+      g: Number.isNaN(green) ? 255 : green,
+      b: Number.isNaN(blue) ? 255 : blue
+    };
+  }
+
+  function pdfFileName(name) {
+    const slug = String(name || 'palette')
+      .trim()
+      .replace(/[^a-z0-9]+/gi, '-')
+      .replace(/^-+|-+$/g, '')
+      .toLowerCase();
+
+    return (slug || 'palette') + '.pdf';
+  }
+
+  function pdfBinaryBytes(binary) {
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) {
+      bytes[index] = binary.charCodeAt(index) & 255;
+    }
+    return bytes;
+  }
+
+  function createPdfBlob(pageStreams, logoData) {
+    const encoder = new TextEncoder();
+    const pageCount = pageStreams.length;
+    const logoObjectId = logoData ? 6 : null;
+    const firstPageObjectId = logoData ? 7 : 6;
+    const objects = [];
+
+    function addObject(id, content) {
+      objects[id] = typeof content === 'string' ? encoder.encode(content) : content;
+    }
+
+    addObject(1, '<< /Type /Catalog /Pages 2 0 R >>');
+    addObject(2, '<< /Type /Pages /Kids [' + pageStreams.map(function (_, index) {
+      return (firstPageObjectId + (index * 2)) + ' 0 R';
+    }).join(' ') + '] /Count ' + pageCount + ' >>');
+    addObject(3, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
+    addObject(4, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>');
+    addObject(5, '<< /Type /Font /Subtype /Type1 /BaseFont /Times-Roman >>');
+
+    if (logoData) {
+      const imageBytes = pdfBinaryBytes(logoData.data);
+      const header = encoder.encode('<< /Type /XObject /Subtype /Image /Width ' + logoData.width + ' /Height ' + logoData.height + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + imageBytes.length + ' >>\nstream\n');
+      const footer = encoder.encode('\nendstream');
+      const imageObject = new Uint8Array(header.length + imageBytes.length + footer.length);
+      imageObject.set(header, 0);
+      imageObject.set(imageBytes, header.length);
+      imageObject.set(footer, header.length + imageBytes.length);
+      addObject(logoObjectId, imageObject);
+    }
+
+    pageStreams.forEach(function (stream, index) {
+      const pageId = firstPageObjectId + (index * 2);
+      const contentId = pageId + 1;
+      const resourceParts = ['/Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >>'];
+      if (logoObjectId) resourceParts.push('/XObject << /Logo ' + logoObjectId + ' 0 R >>');
+
+      addObject(pageId, '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << ' + resourceParts.join(' ') + ' >> /Contents ' + contentId + ' 0 R >>');
+
+      const streamBytes = encoder.encode(stream);
+      addObject(contentId, '<< /Length ' + streamBytes.length + ' >>\nstream\n' + stream + '\nendstream');
+    });
+
+    const parts = [];
+    const offsets = [0];
+    let length = 0;
+
+    function pushPart(part) {
+      const bytes = typeof part === 'string' ? encoder.encode(part) : part;
+      parts.push(bytes);
+      length += bytes.length;
+    }
+
+    pushPart('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
+
+    for (let id = 1; id < objects.length; id += 1) {
+      if (!objects[id]) continue;
+      offsets[id] = length;
+      pushPart(id + ' 0 obj\n');
+      pushPart(objects[id]);
+      pushPart('\nendobj\n');
+    }
+
+    const xrefOffset = length;
+    pushPart('xref\n0 ' + objects.length + '\n');
+    pushPart('0000000000 65535 f \n');
+
+    for (let id = 1; id < objects.length; id += 1) {
+      pushPart(String(offsets[id] || 0).padStart(10, '0') + ' 00000 n \n');
+    }
+
+    pushPart('trailer\n<< /Size ' + objects.length + ' /Root 1 0 R >>\nstartxref\n' + xrefOffset + '\n%%EOF');
+
+    return new Blob(parts, { type: 'application/pdf' });
+  }
+
+  function downloadBlob(blob, fileName) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  async function createPalettePdf(palette) {
+    const groups = buildPalettePrintGroups(palette).filter(function (group) {
+      return group.colors.length > 0;
+    });
+
+    if (!groups.length) {
+      alert('No colors were found for this palette.');
+      return;
+    }
+
+    const logoData = await loadPdfLogoData();
+    const pageStreams = [];
+    const pageWidth = 612;
+    const pageHeight = 792;
+    const margin = 36;
+    const contentWidth = pageWidth - (margin * 2);
+    const bottomLimit = pageHeight - margin;
+    const columns = 6;
+    const gapX = 5;
+    const gapY = 8;
+    const swatchSize = (contentWidth - (gapX * (columns - 1))) / columns;
+    const labelGap = 14;
+    const labelLineHeight = 11;
+    const rowHeight = swatchSize + labelGap + (labelLineHeight * 2) + gapY;
+    const categoryTopPadding = 22;
+    const logoWidth = 52;
+    const logoHeight = logoData ? Math.round(logoWidth * (logoData.height / logoData.width)) : 0;
+    let commands = '';
+    let y = margin;
+    let pageStarted = false;
+
+    function pdfY(topY) {
+      return pageHeight - topY;
+    }
+
+    function append(command) {
+      commands += command + '\n';
+    }
+
+    function drawText(text, x, topY, fontSize, fontName, align, rgb) {
+      const safeText = escapePdfText(text);
+      const width = estimatePdfTextWidth(text, fontSize);
+      const textX = align === 'center' ? x - (width / 2) : x;
+      const color = rgb || [0, 0, 0];
+      append('BT ' + (color[0] / 255).toFixed(3) + ' ' + (color[1] / 255).toFixed(3) + ' ' + (color[2] / 255).toFixed(3) + ' rg /' + fontName + ' ' + fontSize + ' Tf ' + textX.toFixed(2) + ' ' + pdfY(topY).toFixed(2) + ' Td (' + safeText + ') Tj ET');
+    }
+
+    function startPage(includeTitle) {
+      if (pageStarted) pageStreams.push(commands);
+      commands = '';
+      pageStarted = true;
+      y = margin;
+
+      if (logoData) {
+        const logoX = (pageWidth - logoWidth) / 2;
+        append('q ' + logoWidth.toFixed(2) + ' 0 0 ' + logoHeight.toFixed(2) + ' ' + logoX.toFixed(2) + ' ' + (pageHeight - y - logoHeight).toFixed(2) + ' cm /Logo Do Q');
+        y += logoHeight + 20;
+      }
+
+      if (includeTitle) {
+        drawText(palette.name || 'Color Palette', pageWidth / 2, y + 24, 34, 'F3', 'center', [0, 0, 0]);
+        y += 58;
+      }
+    }
+
+    function roundedRectPath(x, topY, width, height, radius) {
+      const left = x;
+      const right = x + width;
+      const top = pdfY(topY);
+      const bottom = pdfY(topY + height);
+      const curve = radius * 0.5522847498;
+
+      return [
+        (left + radius).toFixed(2) + ' ' + top.toFixed(2) + ' m',
+        (right - radius).toFixed(2) + ' ' + top.toFixed(2) + ' l',
+        (right - radius + curve).toFixed(2) + ' ' + top.toFixed(2) + ' ' + right.toFixed(2) + ' ' + (top - radius + curve).toFixed(2) + ' ' + right.toFixed(2) + ' ' + (top - radius).toFixed(2) + ' c',
+        right.toFixed(2) + ' ' + (bottom + radius).toFixed(2) + ' l',
+        right.toFixed(2) + ' ' + (bottom + radius - curve).toFixed(2) + ' ' + (right - radius + curve).toFixed(2) + ' ' + bottom.toFixed(2) + ' ' + (right - radius).toFixed(2) + ' ' + bottom.toFixed(2) + ' c',
+        (left + radius).toFixed(2) + ' ' + bottom.toFixed(2) + ' l',
+        (left + radius - curve).toFixed(2) + ' ' + bottom.toFixed(2) + ' ' + left.toFixed(2) + ' ' + (bottom + radius - curve).toFixed(2) + ' ' + left.toFixed(2) + ' ' + (bottom + radius).toFixed(2) + ' c',
+        left.toFixed(2) + ' ' + (top - radius).toFixed(2) + ' l',
+        left.toFixed(2) + ' ' + (top - radius + curve).toFixed(2) + ' ' + (left + radius - curve).toFixed(2) + ' ' + top.toFixed(2) + ' ' + (left + radius).toFixed(2) + ' ' + top.toFixed(2) + ' c',
+        'h'
+      ].join(' ');
+    }
+
+    function drawCategoryHeader(category) {
+      y += categoryTopPadding;
+
+      if (y + 18 + rowHeight > bottomLimit) {
+        startPage(false);
+        y += categoryTopPadding;
+      }
+
+      drawText(String(category || '').toUpperCase(), margin, y, 14, 'F2', 'left', [34, 43, 50]);
+      y += 18;
+    }
+
+    function drawColor(color, column, rowY) {
+      const x = margin + (column * (swatchSize + gapX));
+      const rgb = hexToRgb(color.hexCode);
+
+      append('0.945 0.945 0.945 rg ' + roundedRectPath(x + 2, rowY + 3, swatchSize, swatchSize, 7) + ' f');
+      append((rgb.r / 255).toFixed(3) + ' ' + (rgb.g / 255).toFixed(3) + ' ' + (rgb.b / 255).toFixed(3) + ' rg ' + roundedRectPath(x, rowY, swatchSize, swatchSize, 7) + ' f');
+
+      splitPdfText(color.name || '', 10, swatchSize, 2).forEach(function (line, index) {
+        drawText(line, x + (swatchSize / 2), rowY + swatchSize + labelGap + (index * labelLineHeight), 10, 'F1', 'center', [0, 0, 0]);
+      });
+    }
+
+    startPage(true);
+
+    groups.forEach(function (group) {
+      const colors = group.colors.map(normalizePdfColor);
+      let colorIndex = 0;
+      let needsHeader = true;
+
+      while (colorIndex < colors.length) {
+        if (needsHeader) {
+          drawCategoryHeader(group.category);
+          needsHeader = false;
+        }
+
+        if (y + rowHeight > bottomLimit) {
+          startPage(false);
+          drawCategoryHeader(group.category);
+        }
+
+        colors.slice(colorIndex, colorIndex + columns).forEach(function (color, column) {
+          drawColor(color, column, y);
+        });
+
+        y += rowHeight;
+        colorIndex += columns;
+      }
+    });
+
+    pageStreams.push(commands);
+    downloadBlob(createPdfBlob(pageStreams, logoData), pdfFileName(palette.name));
+  }
+
+  async function createYcsPalettePdf(paletteCode, paletteTitle) {
+    const response = await fetch('/apps/palette-data?palette=' + encodeURIComponent(paletteCode), {
+      credentials: 'same-origin'
+    });
+    const json = await response.json();
+
+    if (!response.ok || !json.colors) {
+      throw new Error(json.error || 'Unable to load palette colors.');
+    }
+
+    await createPalettePdf({
+      name: paletteTitle || json.paletteName || paletteCode,
+      colors: json.colors.map(function (color) {
+        return { color: normalizePdfColor(color) };
+      })
+    });
+  }
+
+  document.addEventListener('click', function (event) {
+    const button = event.target.closest('[data-ycs-pdf-palette-code]');
+    if (!button) return;
+
+    button.disabled = true;
+    createYcsPalettePdf(
+      button.dataset.ycsPdfPaletteCode,
+      button.dataset.ycsPdfPaletteTitle
+    ).catch(function (error) {
+      alert(error.message || 'Unable to create PDF.');
+    }).finally(function () {
+      button.disabled = false;
+    });
   });
 })();
 
