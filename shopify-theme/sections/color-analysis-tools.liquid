@@ -2015,7 +2015,8 @@
       '@page { margin: 0.55in; }',
       '* { box-sizing: border-box; }',
       'body { margin: 0; color: #333; font-family: Arial, Helvetica, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }',
-      'h1 { margin: 0 0 26px; color: #333; font-size: 28px; line-height: 1.1; letter-spacing: 0; }',
+      '.pdf-logo { display: block; width: 120px; height: auto; margin: 0 auto 22px; }',
+      'h1 { margin: 0 0 26px; color: #333; font-size: 28px; line-height: 1.1; letter-spacing: 0; text-align: center; }',
       '.pdf-category { break-inside: avoid; margin: 0 0 28px; }',
       'h2 { margin: 0 0 14px; padding-bottom: 8px; border-bottom: 1px solid #ddd; color: #444; font-size: 18px; line-height: 1.2; letter-spacing: 0; }',
       '.pdf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(82px, 1fr)); gap: 16px 14px; }',
@@ -2024,6 +2025,12 @@
       '.pdf-name { color: #444; font-size: 11px; font-weight: 600; line-height: 1.2; overflow-wrap: anywhere; }'
     ].join('\n');
     doc.head.appendChild(style);
+
+    const logo = doc.createElement('img');
+    logo.className = 'pdf-logo';
+    logo.src = 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/YourColorStyle_Logo-120_e3c4c33e-3249-4120-8dc6-c665eb3fec9f.png?v=1644954058';
+    logo.alt = 'Your Color Style';
+    doc.body.appendChild(logo);
 
     addTextElement(doc, doc.body, 'h1', palette.name);
 
