@@ -14,7 +14,7 @@
   | append: '&'
 %}
 
-{% if ycs_tools_page_url contains 'view=tools&' or page.handle == 'color-analysis-tools' or template.suffix == 'color-analysis-tools' or template.suffix == 'tools' %}
+{% if ycs_tools_page_url contains 'view=tools&' or ycs_tools_page_url contains 'view=catools&' or page.handle == 'color-analysis-tools' or template.suffix == 'color-analysis-tools' or template.suffix == 'tools' or template.suffix == 'catools' %}
   {% assign should_render_ycs_color_analysis_tools = true %}
 {% endif %}
 
@@ -296,7 +296,7 @@
               </div>
 
               <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
-                <a href="{% if is_diy_catool or is_free_diy_catool %}/pages/photo-prep?mode=diy&workflow=color-analysis&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dtools{% elsif is_catool_free %}/pages/photo-prep?mode=trade&workflow=color-analysis&trial=catoolfree&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dtools{% else %}/pages/photo-prep?mode=trade&workflow=color-analysis&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dtools{% endif %}" class="ycs-palette-card__button">
+                <a href="{% if is_diy_catool or is_free_diy_catool %}/pages/photo-prep?mode=diy&workflow=color-analysis&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dcatools{% elsif is_catool_free %}/pages/photo-prep?mode=trade&workflow=color-analysis&trial=catoolfree&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dcatools{% else %}/pages/photo-prep?mode=trade&workflow=color-analysis&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dcatools{% endif %}" class="ycs-palette-card__button">
                   Open Tool
                 </a>
               </div>
@@ -539,7 +539,7 @@
               </div>
 
               <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
-                <a href="/pages/my-palettes?view=tools&viewAs=catoolgrowth" class="ycs-palette-card__button">
+                <a href="/pages/my-palettes?view=catools&viewAs=catoolgrowth" class="ycs-palette-card__button">
                   Open Growth View
                 </a>
               </div>
