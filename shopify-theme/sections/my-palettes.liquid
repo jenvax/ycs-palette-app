@@ -448,51 +448,49 @@
       </div>
     {% endif %}
 
-    {% unless is_color_analysis_tools_page %}
-      {% assign owned_count = 0 %}
-      {% assign locked_count = 0 %}
-      {% assign admin_count = 0 %}
+    {% assign owned_count = 0 %}
+    {% assign locked_count = 0 %}
+    {% assign admin_count = 0 %}
 
-      {% for block in section.blocks %}
-        {% assign palette_code = block.settings.palette_code | upcase | strip %}
-        {% assign palette_token = ',' | append: palette_code | append: ',' %}
-        {% assign visibility = block.settings.visibility | default: 'customer' %}
+    {% for block in section.blocks %}
+      {% assign palette_code = block.settings.palette_code | upcase | strip %}
+      {% assign palette_token = ',' | append: palette_code | append: ',' %}
+      {% assign visibility = block.settings.visibility | default: 'customer' %}
 
-        {% if visibility == 'admin' %}
-          {% if is_admin %}
-            {% assign admin_count = admin_count | plus: 1 %}
-          {% endif %}
-          {% continue %}
+      {% if visibility == 'admin' %}
+        {% if is_admin %}
+          {% assign admin_count = admin_count | plus: 1 %}
         {% endif %}
-
-        {% assign user_owns_palette = false %}
-
-        {% if palette_code == 'SAMPLE' %}
-          {% unless should_show_sample_palette %}
-            {% continue %}
-          {% endunless %}
-          {% if should_show_sample_palette %}
-            {% assign user_owns_palette = true %}
-          {% endif %}
-        {% else %}
-          {% if page_has_all_palette_access or palette_access_string contains palette_token %}
-            {% assign user_owns_palette = true %}
-          {% endif %}
-        {% endif %}
-
-        {% if user_owns_palette %}
-          {% assign owned_count = owned_count | plus: 1 %}
-        {% else %}
-          {% assign locked_count = locked_count | plus: 1 %}
-        {% endif %}
-      {% endfor %}
-
-      {% if owned_count == 0 and locked_count == 0 and admin_count == 0 %}
-        <div class="ycs-my-palettes__empty">
-          No palettes have been added to this page yet.
-        </div>
+        {% continue %}
       {% endif %}
-    {% endunless %}
+
+      {% assign user_owns_palette = false %}
+
+      {% if palette_code == 'SAMPLE' %}
+        {% unless should_show_sample_palette %}
+          {% continue %}
+        {% endunless %}
+        {% if should_show_sample_palette %}
+          {% assign user_owns_palette = true %}
+        {% endif %}
+      {% else %}
+        {% if page_has_all_palette_access or palette_access_string contains palette_token %}
+          {% assign user_owns_palette = true %}
+        {% endif %}
+      {% endif %}
+
+      {% if user_owns_palette %}
+        {% assign owned_count = owned_count | plus: 1 %}
+      {% else %}
+        {% assign locked_count = locked_count | plus: 1 %}
+      {% endif %}
+    {% endfor %}
+
+    {% if is_color_analysis_tools_page == false and owned_count == 0 and locked_count == 0 and admin_count == 0 %}
+      <div class="ycs-my-palettes__empty">
+        No palettes have been added to this page yet.
+      </div>
+    {% endif %}
 
     {% if is_color_analysis_tools_page and is_admin %}
       <div class="ycs-my-palettes__section ycs-my-palettes__section--admin">
@@ -600,7 +598,7 @@
 
     {% if owned_count > 0 %}
       <div class="ycs-my-palettes__section">
-        {% if is_catool_growth %}
+        {% if is_color_analysis_tools_page or is_catool_growth %}
           <h2 class="ycs-my-palettes__section-title">Included YCS Color Palettes</h2>
         {% endif %}
         <div class="ycs-my-palettes__grid ycs-my-palettes__grid--{{ owned_count }}">
