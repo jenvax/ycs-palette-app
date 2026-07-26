@@ -829,6 +829,31 @@
     const openPhotoDrapingEl = document.getElementById('ycs-open-photo-draping');
 
     const params = new URLSearchParams(window.location.search);
+    const returnUrl = params.get('returnUrl') || '/pages/my-palettes';
+    const safeReturnUrl = returnUrl.startsWith('/') ? returnUrl : '/pages/my-palettes';
+    const isToolsReturnUrl =
+      safeReturnUrl.includes('view=tools') ||
+      safeReturnUrl.includes('view=catools') ||
+      safeReturnUrl.includes('/pages/color-analysis-tools');
+    const returnLabel = isToolsReturnUrl ? 'Color Analysis Tools' : 'My Color Palettes';
+    const backLinkEl = document.querySelector('.palette-back-link');
+    const unauthorizedReturnButtonEl = document.querySelector('#palette-unauthorized .ycs-palette-login__button');
+    const unauthorizedReturnTextEl = document.querySelector('#palette-unauthorized .ycs-palette-login__text');
+
+    if (backLinkEl) {
+      backLinkEl.href = safeReturnUrl;
+      backLinkEl.textContent = `← ${returnLabel}`;
+    }
+
+    if (unauthorizedReturnButtonEl) {
+      unauthorizedReturnButtonEl.href = safeReturnUrl;
+      unauthorizedReturnButtonEl.textContent = `Go to ${returnLabel}`;
+    }
+
+    if (unauthorizedReturnTextEl) {
+      unauthorizedReturnTextEl.textContent = `Please return to ${returnLabel} to open a palette you have access to.`;
+    }
+
     const rawPaletteCode = (params.get('palette') || DEFAULT_PALETTE).trim();
     const isCustomPaletteCode = /^CUSTOM_/i.test(rawPaletteCode);
     const paletteCode = isCustomPaletteCode ? rawPaletteCode : rawPaletteCode.toUpperCase();

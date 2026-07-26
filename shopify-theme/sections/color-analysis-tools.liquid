@@ -549,7 +549,7 @@
             {% assign visibility = block.settings.visibility | default: 'customer' %}
 
             {% if visibility == 'admin' %}
-              {% assign palette_url = '/pages/palette?palette=' | append: block.settings.palette_code %}
+              {% assign palette_url = '/pages/palette?palette=' | append: block.settings.palette_code | append: '&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dcatools' %}
 
               <div class="ycs-palette-card ycs-palette-card--admin" {{ block.shopify_attributes }}>
                 <div class="ycs-palette-card__top">
@@ -627,7 +627,7 @@
             {% endif %}
 
             {% if user_owns_palette %}
-              {% assign palette_url = '/pages/palette?palette=' | append: block.settings.palette_code %}
+              {% assign palette_url = '/pages/palette?palette=' | append: block.settings.palette_code | append: '&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dcatools' %}
 
               <div class="ycs-palette-card" {{ block.shopify_attributes }}>
                 <div class="ycs-palette-card__top">
@@ -2196,7 +2196,7 @@
             '<div class="ycs-custom-card__swatches">' + swatches + '</div>' +
           '</div>' +
           '<div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">' +
-            '<a href="/pages/palette?palette=' + encodeURIComponent(paletteCode) + '" class="ycs-palette-card__button">Open Palette</a>' +
+            '<a href="/pages/palette?palette=' + encodeURIComponent(paletteCode) + '&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dcatools" class="ycs-palette-card__button">Open Palette</a>' +
             '<a href="/pages/photo-prep?mode=personal&workflow=photo-draping&palette=' + encodeURIComponent(paletteCode) + '" class="ycs-palette-card__button ycs-palette-card__button--secondary">Draping Studio</a>' +
           '</div>' +
         '</div>';
