@@ -1706,18 +1706,14 @@ const result = text ? JSON.parse(text) : {};
           <body>
             <h1>${escapeHtml(paletteTitle)}</h1>
             ${categoryHtml}
-            <script>
-              window.addEventListener('load', function () {
-                setTimeout(function () {
-                  window.print();
-                }, 150);
-              });
-            <\/script>
           </body>
         </html>
       `);
       printWindow.document.close();
       printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+      }, 250);
     }
 
     function applyViewMode(mode) {
