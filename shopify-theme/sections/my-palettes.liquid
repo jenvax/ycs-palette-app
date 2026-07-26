@@ -1,3 +1,9 @@
+{% assign should_render_ycs_my_palettes = false %}
+{% if page.handle == 'my-palettes' or template.suffix == 'my-palettes' %}
+  {% assign should_render_ycs_my_palettes = true %}
+{% endif %}
+
+{% if should_render_ycs_my_palettes %}
 <div class="ycs-my-palettes">
   <div class="ycs-palette-topnav">
     <a href="/account" class="palette-back-link">← My Account</a>
@@ -2281,6 +2287,7 @@
   });
 })();
 </script>
+{% endif %}
 
 {% schema %}
 {
