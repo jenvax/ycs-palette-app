@@ -1710,6 +1710,9 @@
       const visibilityButton = isStyleMastersAdmin
         ? '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="toggle-vip-visibility" data-palette-id="' + escapeHtml(palette.id) + '">' + (palette.visibleToVip ? 'Hide from VIP' : 'Show to VIP') + '</button>'
         : '';
+      const pdfButton = isStyleMastersAdmin
+        ? '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="create-pdf" data-palette-id="' + escapeHtml(palette.id) + '"' + (palette.colorCount > 0 ? '' : ' disabled') + '>Create PDF</button>'
+        : '';
 
       const card = document.createElement('div');
       card.className = 'ycs-palette-card ycs-custom-card';
@@ -1726,6 +1729,7 @@
             '<button type="button" class="ycs-palette-card__button" data-ycs-custom-action="open-palette" data-palette-id="' + escapeHtml(palette.id) + '">Open</button>' +
             visibilityButton +
             viewLinks +
+            pdfButton +
             '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="rename-palette" data-palette-id="' + escapeHtml(palette.id) + '">Rename</button>' +
             '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="delete-palette" data-palette-id="' + escapeHtml(palette.id) + '">Delete</button>' +
           '</div>' +
@@ -1939,6 +1943,121 @@
       rows);
   }
 
+  function getPdfColorCategory(color) {
+    return String(
+      color.category ||
+      color.categoryName ||
+      color.colorCategory ||
+      color.group ||
+      color.family ||
+      'Custom Colors'
+    ).trim() || 'Custom Colors';
+  }
+
+  function normalizePrintHex(value) {
+    const hex = normalizeHexInput(value);
+    return hex || '#FFFFFF';
+  }
+
+  function buildPalettePrintGroups(palette) {
+    const groups = {};
+    const groupOrder = [];
+
+    (palette.colors || []).forEach(function (item) {
+      const color = item.color || {};
+      const category = getPdfColorCategory(color);
+
+      if (!groups[category]) {
+        groups[category] = [];
+        groupOrder.push(category);
+      }
+
+      groups[category].push(color);
+    });
+
+    return groupOrder.map(function (category) {
+      return { category: category, colors: groups[category] };
+    });
+  }
+
+  function addTextElement(doc, parent, tag, text, className) {
+    const element = doc.createElement(tag);
+    if (className) element.className = className;
+    element.textContent = text || '';
+    parent.appendChild(element);
+    return element;
+  }
+
+  function createPalettePdf(palette) {
+    if (!isStyleMastersAdmin || !palette) return;
+
+    const groups = buildPalettePrintGroups(palette).filter(function (group) {
+      return group.colors.length > 0;
+    });
+
+    if (!groups.length) {
+      setStatus('Add colors to this palette before creating a PDF.', true);
+      return;
+    }
+
+    const printWindow = window.open('', '_blank');
+
+    if (!printWindow) {
+      setStatus('Please allow pop-ups to create the PDF.', true);
+      return;
+    }
+
+    const doc = printWindow.document;
+    doc.title = palette.name + ' PDF';
+
+    const style = doc.createElement('style');
+    style.textContent = [
+      '@page { margin: 0.55in; }',
+      '* { box-sizing: border-box; }',
+      'body { margin: 0; color: #333; font-family: Arial, Helvetica, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }',
+      'h1 { margin: 0 0 26px; color: #333; font-size: 28px; line-height: 1.1; letter-spacing: 0; }',
+      '.pdf-category { break-inside: avoid; margin: 0 0 28px; }',
+      'h2 { margin: 0 0 14px; padding-bottom: 8px; border-bottom: 1px solid #ddd; color: #444; font-size: 18px; line-height: 1.2; letter-spacing: 0; }',
+      '.pdf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(82px, 1fr)); gap: 16px 14px; }',
+      '.pdf-swatch { min-width: 0; text-align: center; break-inside: avoid; }',
+      '.pdf-color { width: 72px; height: 72px; margin: 0 auto 8px; border: 1px solid rgba(0,0,0,.12); border-radius: 14px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.18); }',
+      '.pdf-name { color: #444; font-size: 11px; font-weight: 600; line-height: 1.2; overflow-wrap: anywhere; }'
+    ].join('\n');
+    doc.head.appendChild(style);
+
+    addTextElement(doc, doc.body, 'h1', palette.name);
+
+    groups.forEach(function (group) {
+      const section = doc.createElement('section');
+      section.className = 'pdf-category';
+      addTextElement(doc, section, 'h2', group.category);
+
+      const grid = doc.createElement('div');
+      grid.className = 'pdf-grid';
+
+      group.colors.forEach(function (color) {
+        const swatch = doc.createElement('div');
+        swatch.className = 'pdf-swatch';
+
+        const colorSquare = doc.createElement('div');
+        colorSquare.className = 'pdf-color';
+        colorSquare.style.background = normalizePrintHex(color.hexCode);
+        swatch.appendChild(colorSquare);
+
+        addTextElement(doc, swatch, 'div', color.name, 'pdf-name');
+        grid.appendChild(swatch);
+      });
+
+      section.appendChild(grid);
+      doc.body.appendChild(section);
+    });
+
+    printWindow.focus();
+    setTimeout(function () {
+      printWindow.print();
+    }, 250);
+  }
+
   function renderAddColors() {
     const selectedIds = new Set((state.activePalette.colors || []).map(function (item) { return item.color.id; }));
     const hasAvailableColors = state.colors.some(function (color) { return !selectedIds.has(color.id); });
@@ -1965,6 +2084,7 @@
     if (action === 'create-palette') renderPaletteForm('Create Custom Palette', 'createPalette');
     if (action === 'manage-colors') renderMyColors();
     if (action === 'open-palette' && palette) renderPaletteDetail(palette);
+    if (action === 'create-pdf' && palette) createPalettePdf(palette);
     if (action === 'rename-palette' && palette) renderPaletteForm('Rename Custom Palette', 'renamePalette', palette);
     if (action === 'toggle-vip-visibility' && palette) {
       requestJson('setPaletteVipVisibility', { paletteId: palette.id, visibleToVip: !palette.visibleToVip }).then(function () {
