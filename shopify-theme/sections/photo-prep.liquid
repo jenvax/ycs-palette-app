@@ -1651,6 +1651,7 @@ function updateStartAnalysisLink() {
 
     query.set('customerId', VIEWER_CUSTOMER_ID);
     query.set('mode', 'diy');
+    query.set('returnUrl', safeReturnUrl);
 
     const queryString = query.toString();
     startAnalysisBtn.textContent = 'Start Color Analysis';
@@ -1665,6 +1666,7 @@ function updateStartAnalysisLink() {
   if (IS_CATOOL_FREE_TRIAL_FLOW && state.demoClientId) {
     query.set('demoClient', state.demoClientId);
     query.set('mode', 'trade');
+    query.set('returnUrl', safeReturnUrl);
 
     const queryString = query.toString();
     if (queryString) {
@@ -1689,6 +1691,7 @@ function updateStartAnalysisLink() {
   }
 
   query.set('mode', 'trade');
+  query.set('returnUrl', safeReturnUrl);
 
   const queryString = query.toString();
   if (queryString) {
