@@ -387,6 +387,12 @@
       </div>
     </div>
 
+    {% if is_color_analysis_tools_page and can_use_analysis_tool == false %}
+      <div class="ycs-my-palettes__empty">
+        Color Analysis Tools are not available on this account. Please confirm this customer has a TRADE, CATOOL, DIYCATOOL, FREEDIYCATOOL, CATOOLFREE, CATOOLGROWTH, or YCS_ADMIN tag.
+      </div>
+    {% endif %}
+
     {% if is_color_analysis_tools_page and can_manage_custom_palettes %}
       <div
         class="ycs-my-palettes__section ycs-custom-palettes"
@@ -436,49 +442,51 @@
       </div>
     {% endif %}
 
-    {% assign owned_count = 0 %}
-    {% assign locked_count = 0 %}
-    {% assign admin_count = 0 %}
+    {% unless is_color_analysis_tools_page %}
+      {% assign owned_count = 0 %}
+      {% assign locked_count = 0 %}
+      {% assign admin_count = 0 %}
 
-    {% for block in section.blocks %}
-      {% assign palette_code = block.settings.palette_code | upcase | strip %}
-      {% assign palette_token = ',' | append: palette_code | append: ',' %}
-      {% assign visibility = block.settings.visibility | default: 'customer' %}
+      {% for block in section.blocks %}
+        {% assign palette_code = block.settings.palette_code | upcase | strip %}
+        {% assign palette_token = ',' | append: palette_code | append: ',' %}
+        {% assign visibility = block.settings.visibility | default: 'customer' %}
 
-      {% if visibility == 'admin' %}
-        {% if is_admin %}
-          {% assign admin_count = admin_count | plus: 1 %}
-        {% endif %}
-        {% continue %}
-      {% endif %}
-
-      {% assign user_owns_palette = false %}
-
-      {% if palette_code == 'SAMPLE' %}
-        {% unless should_show_sample_palette %}
+        {% if visibility == 'admin' %}
+          {% if is_admin %}
+            {% assign admin_count = admin_count | plus: 1 %}
+          {% endif %}
           {% continue %}
-        {% endunless %}
-        {% if should_show_sample_palette %}
-          {% assign user_owns_palette = true %}
         {% endif %}
-      {% else %}
-        {% if page_has_all_palette_access or palette_access_string contains palette_token %}
-          {% assign user_owns_palette = true %}
+
+        {% assign user_owns_palette = false %}
+
+        {% if palette_code == 'SAMPLE' %}
+          {% unless should_show_sample_palette %}
+            {% continue %}
+          {% endunless %}
+          {% if should_show_sample_palette %}
+            {% assign user_owns_palette = true %}
+          {% endif %}
+        {% else %}
+          {% if page_has_all_palette_access or palette_access_string contains palette_token %}
+            {% assign user_owns_palette = true %}
+          {% endif %}
         {% endif %}
-      {% endif %}
 
-      {% if user_owns_palette %}
-        {% assign owned_count = owned_count | plus: 1 %}
-      {% else %}
-        {% assign locked_count = locked_count | plus: 1 %}
-      {% endif %}
-    {% endfor %}
+        {% if user_owns_palette %}
+          {% assign owned_count = owned_count | plus: 1 %}
+        {% else %}
+          {% assign locked_count = locked_count | plus: 1 %}
+        {% endif %}
+      {% endfor %}
 
-    {% if owned_count == 0 and locked_count == 0 and admin_count == 0 %}
-      <div class="ycs-my-palettes__empty">
-        No palettes have been added to this page yet.
-      </div>
-    {% endif %}
+      {% if owned_count == 0 and locked_count == 0 and admin_count == 0 %}
+        <div class="ycs-my-palettes__empty">
+          No palettes have been added to this page yet.
+        </div>
+      {% endif %}
+    {% endunless %}
 
     {% if is_color_analysis_tools_page and is_admin %}
       <div class="ycs-my-palettes__section ycs-my-palettes__section--admin">
