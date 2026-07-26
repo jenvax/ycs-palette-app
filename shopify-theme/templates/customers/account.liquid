@@ -4,41 +4,13 @@
 <div class="page-width">
   <h1 class="page-title">{{ 'customer.account.title' | t }}</h1>
 
- {% comment %}
-Show Style Masters Hub button if:
-- customer has VIP tag (active member), OR
-- customer has a permanent Style Masters issue entitlement tag, OR
-- customer has ever purchased Style Masters membership or issue products
-{% endcomment %}
-
 {% assign has_style_masters_access = false %}
-{% assign sm_handles = 'style-masters,style-masters-magazine,style-masters-membership' | split: ',' %}
 
 {% if customer %}
   {% assign account_tag_string = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
 
-  {% if account_tag_string contains ',VIP,' or account_tag_string contains ',STYLEMASTERS_' %}
+  {% if account_tag_string contains ',VIP,' %}
     {% assign has_style_masters_access = true %}
-  {% endif %}
-
-  {% if has_style_masters_access == false %}
-    {% for order in customer.orders %}
-      {% if order.cancelled_at == nil and order.financial_status != 'void' %}
-        {% for item in order.line_items %}
-          {% if item.product %}
-            {% assign item_handle = item.product.handle | downcase %}
-            {% assign item_tags = item.product.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
-            {% if sm_handles contains item_handle or item_handle contains 'style-masters-' or item_tags contains ',STYLE MASTERS ISSUE,' %}
-              {% assign has_style_masters_access = true %}
-              {% break %}
-            {% endif %}
-          {% endif %}
-        {% endfor %}
-        {% if has_style_masters_access %}
-          {% break %}
-        {% endif %}
-      {% endif %}
-    {% endfor %}
   {% endif %}
 {% endif %}
 <h3 class="account-resources-title">Your Resources</h3>
