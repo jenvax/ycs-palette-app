@@ -2029,14 +2029,14 @@
 
     const style = doc.createElement('style');
     style.textContent = [
-      '@page { margin: 0.65in 0.5in; }',
+      '@page { margin: 0; }',
       '* { box-sizing: border-box; }',
       'body { margin: 0; color: #333; font-family: Arial, Helvetica, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }',
-      '@media screen { body { padding: 0.65in 0.5in; } }',
-      '@media print { body { padding: 0; } }',
+      '@media screen, print { body { padding: 0.5in; } }',
       '.pdf-logo { display: block; width: 96px; height: auto; margin: 0 auto 10px; }',
       'h1 { margin: 0 0 14px; color: #050505; font-family: Cambria, "Times New Roman", Times, serif; font-size: 38px; font-weight: 500; line-height: 1.05; letter-spacing: 0; text-align: center; }',
-      '.pdf-category { break-inside: avoid; margin: 0 0 18px; }',
+      '.pdf-category { break-inside: avoid; page-break-inside: avoid; margin: 0 0 18px; padding-top: 0.18in; }',
+      '.pdf-category:first-of-type { padding-top: 0; }',
       'h2 { margin: 0 0 9px; color: #333; font-size: 14px; font-weight: 700; line-height: 1.2; letter-spacing: 0.06em; text-transform: uppercase; }',
       '.pdf-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px 7px; }',
       '.pdf-swatch { min-width: 0; text-align: center; break-inside: avoid; }',
