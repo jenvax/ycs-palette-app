@@ -1179,6 +1179,7 @@ const IS_SAMPLE_TRIAL_REQUEST = appEl.dataset.isSampleTrialRequest === 'true';
 const params = new URLSearchParams(window.location.search);
 const returnUrl = params.get('returnUrl') || '/pages/my-palettes';
 const WORKFLOW = (params.get('workflow') || '').trim().toLowerCase() || '';
+const REQUESTED_PALETTE_CODE = (params.get('palette') || '').trim();
 
 const requestedMode = (params.get('mode') || '').trim().toLowerCase();
 
@@ -1568,6 +1569,10 @@ function updateStartAnalysisLink() {
     }
 
     query.set('mode', 'personal');
+
+    if (REQUESTED_PALETTE_CODE) {
+      query.set('palette', REQUESTED_PALETTE_CODE);
+    }
 
     if (IS_SAMPLE_TRIAL_REQUEST || IS_SAMPLE_USER) {
       query.set('trial', 'sample');
@@ -1986,6 +1991,10 @@ personalLibraryEmptyEl.hidden = true;
       photoId: photoId,
       photoSource: 'PersonalStudioPhotos'
     });
+
+    if (REQUESTED_PALETTE_CODE) {
+      drapeQuery.set('palette', REQUESTED_PALETTE_CODE);
+    }
 
     if (IS_SAMPLE_TRIAL_REQUEST || IS_SAMPLE_USER) {
       drapeQuery.set('trial', 'sample');
