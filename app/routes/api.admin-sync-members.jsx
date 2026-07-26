@@ -11,7 +11,7 @@ async function getAccessToken({ shop, apiKey, apiSecret }) {
     })
   });
 
-  const data = await response.json();
+  const data = await response.json().catch(() => ({}));
 
   if (!response.ok || !data.access_token) {
     throw new Error("Failed to generate Shopify access token");
@@ -75,7 +75,7 @@ async function shopifyAdminGraphQL({ shop, accessToken, query, variables = {} })
     body: JSON.stringify({ query, variables })
   });
 
-  const json = await response.json();
+  const json = await response.json().catch(() => ({}));
 
   if (!response.ok || json.errors) {
     throw new Error(json.errors?.[0]?.message || "Shopify Admin GraphQL request failed");
@@ -470,22 +470,21 @@ export async function action({ request }) {
     }
 
     const SHOPIFY_SHOP = process.env.SHOPIFY_SYNC_SHOP || process.env.SHOPIFY_SHOP;
+    const SHOPIFY_ADMIN_ACCESS_TOKEN = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
     const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
     const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
 
-    if (!SHOPIFY_SHOP || !process.env.SHOPIFY_API_KEY || !process.env.SHOPIFY_API_SECRET) {
-  return Response.json(
-    {
-      error: "Missing Shopify API credentials",
-      missing: {
-        SHOPIFY_SHOP: !SHOPIFY_SHOP,
-        SHOPIFY_API_KEY: !process.env.SHOPIFY_API_KEY,
-        SHOPIFY_API_SECRET: !process.env.SHOPIFY_API_SECRET
-      }
-    },
-    { status: 500, headers: corsHeaders }
-  );
-}
+    if (!SHOPIFY_SHOP) {
+      return Response.json(
+        {
+          error: "Missing Shopify shop configuration",
+          missing: {
+            SHOPIFY_SHOP: true
+          }
+        },
+        { status: 500, headers: corsHeaders }
+      );
+    }
 
     if (!AIRTABLE_BASE_ID || !AIRTABLE_TOKEN) {
       return Response.json(
@@ -500,18 +499,38 @@ export async function action({ request }) {
       );
     }
 
-    const accessToken = await getAccessToken({
-  shop: SHOPIFY_SHOP,
-  apiKey: process.env.SHOPIFY_API_KEY,
-  apiSecret: process.env.SHOPIFY_API_SECRET
-});
+    let accessToken = SHOPIFY_ADMIN_ACCESS_TOKEN;
 
-const summary = await syncCustomerDirectory({
-  shop: SHOPIFY_SHOP,
-  accessToken,
-  baseId: AIRTABLE_BASE_ID,
-  token: AIRTABLE_TOKEN
-});
+    if (!accessToken) {
+      const apiSecret = process.env.SHOPIFY_API_SECRET || process.env.SHOPIFY_API_TOKEN;
+
+      if (!process.env.SHOPIFY_API_KEY || !apiSecret) {
+        return Response.json(
+          {
+            error: "Missing Shopify admin configuration",
+            missing: {
+              SHOPIFY_ADMIN_ACCESS_TOKEN: true,
+              SHOPIFY_API_KEY: !process.env.SHOPIFY_API_KEY,
+              SHOPIFY_API_SECRET_OR_TOKEN: !apiSecret
+            }
+          },
+          { status: 500, headers: corsHeaders }
+        );
+      }
+
+      accessToken = await getAccessToken({
+        shop: SHOPIFY_SHOP,
+        apiKey: process.env.SHOPIFY_API_KEY,
+        apiSecret
+      });
+    }
+
+    const summary = await syncCustomerDirectory({
+      shop: SHOPIFY_SHOP,
+      accessToken,
+      baseId: AIRTABLE_BASE_ID,
+      token: AIRTABLE_TOKEN
+    });
 
     return Response.json(
       {
