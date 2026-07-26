@@ -1,10 +1,7 @@
-{% assign should_render_ycs_my_palettes = false %}
-{% if page.handle == 'my-palettes' or template.suffix == 'my-palettes' %}
-  {% assign should_render_ycs_my_palettes = true %}
-{% endif %}
+{% assign should_render_ycs_color_analysis_tools = false %}
 
-{% capture ycs_my_palettes_header_content %}{{ content_for_header }}{% endcapture %}
-{% assign ycs_my_palettes_page_url = ycs_my_palettes_header_content
+{% capture ycs_tools_header_content %}{{ content_for_header }}{% endcapture %}
+{% assign ycs_tools_page_url = ycs_tools_header_content
   | split: '"pageurl":"'
   | last
   | split: '"'
@@ -17,11 +14,11 @@
   | append: '&'
 %}
 
-{% if ycs_my_palettes_page_url contains 'view=tools&' or ycs_my_palettes_page_url contains '/pages/color-analysis-tools' %}
-  {% assign should_render_ycs_my_palettes = false %}
+{% if ycs_tools_page_url contains 'view=tools&' or page.handle == 'color-analysis-tools' or template.suffix == 'color-analysis-tools' %}
+  {% assign should_render_ycs_color_analysis_tools = true %}
 {% endif %}
 
-{% if should_render_ycs_my_palettes %}
+{% if should_render_ycs_color_analysis_tools %}
 <div class="ycs-my-palettes">
   <div class="ycs-palette-topnav">
     <a href="{{ routes.account_url }}" class="palette-back-link">← My Account</a>
@@ -33,24 +30,9 @@
     {% assign palette_access_string = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
   {% endif %}
 
-  {% capture ycs_header_content %}{{ content_for_header }}{% endcapture %}
-  {% assign ycs_page_url = ycs_header_content
-    | split: '"pageurl":"'
-    | last
-    | split: '"'
-    | first
-    | replace: '\/', '/'
-    | replace: '\\u0026', '&'
-    | replace: '%26', '&'
-    | replace: '%3F', '?'
-    | replace: '%3D', '='
-    | append: '&'
-  %}
+  {% assign ycs_page_url = ycs_tools_page_url %}
 
-  {% assign is_color_analysis_tools_page = false %}
-  {% if ycs_page_url contains 'view=tools&' or ycs_page_url contains '/pages/color-analysis-tools' %}
-    {% assign is_color_analysis_tools_page = true %}
-  {% endif %}
+  {% assign is_color_analysis_tools_page = true %}
 
   {% assign ycs_page_heading = section.settings.heading %}
   {% assign ycs_page_intro = section.settings.intro %}
@@ -2307,19 +2289,19 @@
 
 {% schema %}
 {
-  "name": "My Color Palettes",
+  "name": "Color Analysis Tools",
   "settings": [
     {
       "type": "text",
       "id": "heading",
       "label": "Heading",
-      "default": "My Color Palettes"
+      "default": "Color Analysis Tools"
     },
     {
       "type": "textarea",
       "id": "intro",
       "label": "Intro text",
-      "default": "Open your digital color fans below."
+      "default": "Open your color analysis tools and client workflow."
     }
   ],
   "blocks": [
@@ -2393,7 +2375,7 @@
   "max_blocks": 30,
   "presets": [
     {
-      "name": "My Color Palettes"
+      "name": "Color Analysis Tools"
     }
   ]
 }
