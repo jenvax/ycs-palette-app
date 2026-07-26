@@ -1551,8 +1551,10 @@ if (replaceBtn && !IS_SIMPLE_ANALYST && !IS_PERSONAL_MODE && !IS_MEMBER_PHOTO_MO
   }
 
   if (state.workspaceOpen && (state.clientRecordId || state.customerId)) {
+    const clientListUrl = new URL('/pages/photo-prep?mode=trade&workflow=color-analysis', window.location.origin);
+    clientListUrl.searchParams.set('returnUrl', returnUrl);
     backLink.textContent = '← Back to Client List';
-    backLink.setAttribute('href', '/pages/photo-prep?mode=trade&workflow=color-analysis');
+    backLink.setAttribute('href', clientListUrl.pathname + clientListUrl.search);
     backLink.dataset.backAction = 'client-list';
     return;
   }
@@ -2593,8 +2595,8 @@ state.previewOffsetY = 0;
     const nextUrl = new URL(window.location.href);
     nextUrl.searchParams.delete('clientRecordId');
     nextUrl.searchParams.delete('adminCustomerId');
-    nextUrl.searchParams.delete('returnUrl');
-    window.history.replaceState({}, '', nextUrl.pathname);
+    nextUrl.searchParams.set('returnUrl', returnUrl);
+    window.history.replaceState({}, '', nextUrl.toString());
 
     if (CAN_USE_CLIENT_MANAGEMENT && !IS_MEMBER_PHOTO_MODE) {
   loadRecentClients();
