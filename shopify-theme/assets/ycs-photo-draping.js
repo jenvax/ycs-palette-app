@@ -225,6 +225,7 @@ const HAS_DRAPING_STUDIO_FULL = appEl && appEl.dataset
   let activeFilter = 'all';
   let currentPaletteColors = [];
   let ownedPaletteCodes = [];
+  let styleMastersPaletteOptions = [];
   let selectedHex = '';
   let cachedProcessedImage = null;
   let uploadsRemaining = null;
@@ -627,7 +628,12 @@ const HAS_DRAPING_STUDIO_FULL = appEl && appEl.dataset
   }
 
   function getPaletteDisplayName(code) {
-    if (isCustomPaletteCode(code)) return 'Style Masters Palette';
+    if (isCustomPaletteCode(code)) {
+      const match = styleMastersPaletteOptions.find(function (palette) {
+        return palette.code === code;
+      });
+      return match ? match.name : 'Style Masters Palette';
+    }
     return paletteNames[code] || code || '—';
   }
 
@@ -1271,6 +1277,58 @@ replaceButtons.forEach(function (btn) {
     return /^CUSTOM_/i.test(String(code || '').trim());
   }
 
+  function normalizeCustomPaletteOption(palette) {
+    const id = String(palette && palette.id ? palette.id : '').trim();
+    if (!id) return null;
+
+    return {
+      code: 'CUSTOM_' + id,
+      name: String(palette.name || 'Style Masters Palette').trim() || 'Style Masters Palette'
+    };
+  }
+
+  async function loadAdminStyleMastersPalettes() {
+    if (!IS_ADMIN || !APP_BASE_URL || !VIEWER_CUSTOMER_ID) return [];
+
+    try {
+      const query = new URLSearchParams({
+        customerId: VIEWER_CUSTOMER_ID,
+        scope: 'stylemasters',
+        action: 'list'
+      });
+      const response = await fetch(APP_BASE_URL.replace(/\/$/, '') + '/api/custom-palettes?' + query.toString());
+      const text = await response.text();
+      const data = text ? JSON.parse(text) : {};
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Unable to load Style Masters palettes');
+      }
+
+      return (data.palettes || [])
+        .map(normalizeCustomPaletteOption)
+        .filter(Boolean);
+    } catch (error) {
+      console.error('Failed to load Style Masters palettes for draping studio', error);
+      return [];
+    }
+  }
+
+  function orderPalettesForAdmin(ownedPalettes) {
+    if (!IS_ADMIN || !styleMastersPaletteOptions.length) return ownedPalettes;
+
+    const styleMastersCodes = styleMastersPaletteOptions.map(function (palette) {
+      return palette.code;
+    });
+
+    return styleMastersCodes
+      .concat(ownedPalettes.filter(function (code) {
+        return styleMastersCodes.indexOf(code) === -1;
+      }))
+      .filter(function (code, index, allCodes) {
+        return allCodes.indexOf(code) === index;
+      });
+  }
+
   function populatePaletteSelect() {
   if (!appEl || !paletteSelect) return [];
 
@@ -1305,6 +1363,8 @@ replaceButtons.forEach(function (btn) {
     ownedPalettes.unshift(paletteFromUrl);
   }
 
+  ownedPalettes = orderPalettesForAdmin(ownedPalettes);
+
   ownedPaletteCodes = ownedPalettes.slice();
 
   if (!ownedPalettes.length) {
@@ -1318,7 +1378,7 @@ replaceButtons.forEach(function (btn) {
   ownedPalettes.forEach(function (code) {
     const option = document.createElement('option');
     option.value = code;
-    option.textContent = isCustomPaletteCode(code) ? 'Style Masters Palette' : code;
+    option.textContent = getPaletteDisplayName(code);
     paletteSelect.appendChild(option);
   });
 
@@ -2348,15 +2408,20 @@ function updateFilterArrows() {
     });
   }
 
-  populatePaletteSelect();
-  renderComparisonPalettes();
-  setViewMode('single');
-  updateCurrentPaletteName();
+  async function initializePaletteControls() {
+    styleMastersPaletteOptions = await loadAdminStyleMastersPalettes();
+    populatePaletteSelect();
+    renderComparisonPalettes();
+    setViewMode('single');
+    updateCurrentPaletteName();
 
-  const initialPalette = paletteSelect ? paletteSelect.value : '';
-  if (initialPalette) {
-    renderSwatchesForPalette(initialPalette);
+    const initialPalette = paletteSelect ? paletteSelect.value : '';
+    if (initialPalette) {
+      renderSwatchesForPalette(initialPalette);
+    }
   }
+
+  initializePaletteControls();
 
   const MODE = (urlParams.get('mode') || '').trim().toLowerCase();
 const PERSONAL_PHOTO_ID = (urlParams.get('photoId') || '').trim();
