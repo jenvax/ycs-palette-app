@@ -229,7 +229,6 @@ async function fetchStyleMastersCustomPaletteList({ baseId, token, includeHidden
     baseId,
     tableName: "CustomPalettes",
     token,
-    sortField: "CreatedAt",
     formula: includeHidden
       ? ownerFilter
       : `AND(${ownerFilter}, {VisibleToVip}=TRUE())`
@@ -801,7 +800,7 @@ export async function loader({ request }) {
     try {
       const isAdmin = String(url.searchParams.get("isAdmin") || "").trim() === "true";
 
-      if (!loggedInCustomerId) {
+      if (!loggedInCustomerId && !isAdmin) {
         return Response.json(
           { error: "You must be signed in to use this tool" },
           { status: 401 }
@@ -1166,9 +1165,7 @@ for (const customerPhotoRecord of customerPhotoRecords) {
         baseId: AIRTABLE_BASE_ID,
         token: AIRTABLE_TOKEN,
         paletteId,
-        includeHidden:
-          !!loggedInCustomerId &&
-          String(url.searchParams.get("isAdmin") || "").trim() === "true"
+        includeHidden: String(url.searchParams.get("isAdmin") || "").trim() === "true"
       });
 
       return Response.json({
