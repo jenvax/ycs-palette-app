@@ -2034,9 +2034,9 @@
       'html, body { margin: 0; }',
       'body { color: #333; font-family: Arial, Helvetica, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }',
       '.pdf-page { width: 8.5in; min-height: 11in; padding: 0.5in; background: #fff; overflow: hidden; }',
-      '.pdf-logo { display: block; width: 96px; height: auto; margin: 0 auto 10px; }',
+      '.pdf-logo { display: block; width: 72px; height: auto; margin: 0 auto 12px; }',
       'h1 { margin: 0 0 14px; color: #050505; font-family: Cambria, "Times New Roman", Times, serif; font-size: 38px; font-weight: 500; line-height: 1.05; letter-spacing: 0; text-align: center; }',
-      '.pdf-category { break-inside: avoid; page-break-inside: avoid; margin: 0 0 18px; }',
+      '.pdf-category { break-inside: avoid; page-break-inside: avoid; margin: 0 0 18px; padding-top: 0.22in; }',
       'h2 { margin: 0 0 9px; color: #333; font-size: 14px; font-weight: 700; line-height: 1.2; letter-spacing: 0.06em; text-transform: uppercase; }',
       '.pdf-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px 7px; }',
       '.pdf-swatch { min-width: 0; text-align: center; break-inside: avoid; }',
@@ -2056,13 +2056,13 @@
       page.className = 'pdf-page';
       doc.body.appendChild(page);
 
-      if (includeTitle) {
-        const logo = doc.createElement('img');
-        logo.className = 'pdf-logo';
-        logo.src = 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/YourColorStyle_Logo-120_e3c4c33e-3249-4120-8dc6-c665eb3fec9f.png?v=1644954058';
-        logo.alt = 'Your Color Style';
-        page.appendChild(logo);
+      const logo = doc.createElement('img');
+      logo.className = 'pdf-logo';
+      logo.src = 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/YourColorStyle_Logo-120_e3c4c33e-3249-4120-8dc6-c665eb3fec9f.png?v=1644954058';
+      logo.alt = 'Your Color Style';
+      page.appendChild(logo);
 
+      if (includeTitle) {
         addTextElement(doc, page, 'h1', palette.name);
       }
 
