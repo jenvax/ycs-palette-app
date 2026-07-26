@@ -167,6 +167,22 @@
   {% assign is_sample_user = true %}
 {% endif %}
 
+{% assign can_access_sample_trial = false %}
+{% if is_color_analysis_tools_page == false and has_draping_studio_access == false %}
+  {% assign can_access_sample_trial = true %}
+  {% if palette_access_string contains ',VIP,' %}
+    {% assign can_access_sample_trial = false %}
+  {% endif %}
+  {% if actual_is_admin %}
+    {% assign can_access_sample_trial = false %}
+  {% endif %}
+{% endif %}
+
+{% assign should_show_sample_palette = false %}
+{% if is_sample_user or can_access_sample_trial %}
+  {% assign should_show_sample_palette = true %}
+{% endif %}
+
   {% if customer == nil %}
     <div class="ycs-my-palettes__header">
       <p class="ycs-my-palettes__kicker">Your Color Style</p>
@@ -439,7 +455,10 @@
       {% assign user_owns_palette = false %}
 
       {% if palette_code == 'SAMPLE' %}
-        {% if is_sample_user %}
+        {% unless should_show_sample_palette %}
+          {% continue %}
+        {% endunless %}
+        {% if should_show_sample_palette %}
           {% assign user_owns_palette = true %}
         {% endif %}
       {% else %}
@@ -583,7 +602,10 @@
             {% assign user_owns_palette = false %}
 
             {% if palette_code == 'SAMPLE' %}
-              {% if is_sample_user %}
+              {% unless should_show_sample_palette %}
+                {% continue %}
+              {% endunless %}
+              {% if should_show_sample_palette %}
                 {% assign user_owns_palette = true %}
               {% endif %}
             {% else %}
@@ -687,7 +709,10 @@
             {% assign user_owns_palette = false %}
 
             {% if palette_code == 'SAMPLE' %}
-              {% if is_sample_user %}
+              {% unless should_show_sample_palette %}
+                {% continue %}
+              {% endunless %}
+              {% if should_show_sample_palette %}
                 {% assign user_owns_palette = true %}
               {% endif %}
             {% else %}
