@@ -1,0 +1,1695 @@
+{% assign palette_access_string = '' %}
+
+{% if customer %}
+  {% assign palette_access_string = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
+{% endif %}
+
+{% assign is_trade_july_cohort = false %}
+{% assign trade_july_cohort_expires_at = '2026-08-25 00:00:00 -0400' | date: '%s' %}
+{% assign current_timestamp = 'now' | date: '%s' %}
+{% if palette_access_string contains ',TRADEJULYCOHORT,' and current_timestamp < trade_july_cohort_expires_at %}
+  {% assign is_trade_july_cohort = true %}
+{% endif %}
+
+{% if customer == nil %}
+  <div class="ycs-palette-login">
+    <div class="ycs-palette-login__inner">
+      <p class="ycs-palette-login__kicker">Your Color Style</p>
+      <h1 class="ycs-palette-login__title">Sign in to view your palette</h1>
+      <p class="ycs-palette-login__text">
+        Please sign in to access your digital color fan.
+      </p>
+      <a href="{{ routes.account_login_url }}" class="ycs-palette-login__button js-login-return-link">
+        Sign In
+      </a>
+    </div>
+  </div>
+{% else %}
+  <div
+    class="ycs-palette-app"
+    data-customer-id="{{ customer.id }}"
+    data-customer-email="{{ customer.email | escape }}"
+    data-default-palette="{{ section.settings.default_palette | escape }}"
+    data-palette-access="{{ palette_access_string | escape }}"
+    data-is-admin="{% if palette_access_string contains ',YCS_ADMIN,' %}true{% else %}false{% endif %}"
+    data-is-trade-july-cohort="{% if is_trade_july_cohort %}true{% else %}false{% endif %}"
+    data-is-style-masters="{% if palette_access_string contains ',VIP,' %}true{% else %}false{% endif %}"
+  >
+    <div id="palette-unauthorized" class="ycs-palette-login" style="display:none;">
+      <div class="ycs-palette-login__inner">
+        <p class="ycs-palette-login__kicker">Your Color Style</p>
+        <h1 class="ycs-palette-login__title">This palette is not available on your account</h1>
+        <p class="ycs-palette-login__text">
+          Please return to My Palettes to open a palette you have access to.
+        </p>
+        <a href="/pages/my-palettes" class="ycs-palette-login__button">
+          Go to My Palettes
+        </a>
+      </div>
+    </div>
+
+    <div id="palette-authorized-content">
+      <div class="ycs-palette-topnav">
+        <a class="palette-back-link" href="/pages/my-palettes">← My Palettes</a>
+      </div>
+
+      <div class="ycs-palette-header">
+        <p class="ycs-palette-kicker">Your Color Style Digital Color Fan</p>
+        <h1 id="palette-title">Loading palette...</h1>
+        <p id="palette-subtitle" class="ycs-palette-subtitle"></p>
+      </div>
+
+      <div class="ycs-palette-toolbar">
+        
+        <div id="palette-view-toggle" class="ycs-view-toggle">
+          <button
+            type="button"
+            id="palette-scan-toggle"
+            class="ycs-scan-toggle"
+            aria-pressed="false"
+            aria-label="Toggle scan view"
+            title="Toggle scan view">
+
+            <span class="ycs-icon-grid">
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+                <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+                <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+                <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+              </svg>
+            </span>
+
+            <span class="ycs-icon-list">
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                <rect x="4" y="5" width="16" height="3" rx="1"></rect>
+                <rect x="4" y="10.5" width="16" height="3" rx="1"></rect>
+                <rect x="4" y="16" width="16" height="3" rx="1"></rect>
+              </svg>
+            </span>
+          </button>
+        </div>
+        {% assign has_starter = false %}
+{% if palette_access_string contains ',DRAPINGSTUDIOSTARTER,' %}
+  {% assign has_starter = true %}
+{% endif %}
+
+{% assign has_full = false %}
+{% if palette_access_string contains ',DRAPINGSTUDIO,' %}
+  {% assign has_full = true %}
+{% endif %}
+
+{% assign is_sample = false %}
+{% if has_starter == false and has_full == false and palette_access_string contains ',SAMPLE,' %}
+  {% assign is_sample = true %}
+{% endif %}
+
+{% assign is_vip = false %}
+{% if palette_access_string contains ',VIP,' %}
+  {% assign is_vip = true %}
+{% endif %}
+
+{% assign is_admin = false %}
+{% if palette_access_string contains ',YCS_ADMIN,' %}
+  {% assign is_admin = true %}
+{% endif %}
+
+{% assign has_paid_access = false %}
+{% if has_starter or has_full or is_vip or is_admin %}
+  {% assign has_paid_access = true %}
+{% endif %}
+<a
+  id="ycs-open-photo-draping"
+  class="ycs-open-photo-draping-btn"
+  href="{% if has_paid_access %}
+/pages/photo-prep?mode=personal&workflow=photo-draping&palette={{ request.params.palette | default: section.settings.default_palette | escape }}
+{% else %}
+/pages/photo-prep?mode=personal&workflow=photo-draping&trial=sample&palette={{ request.params.palette | default: section.settings.default_palette | escape }}
+{% endif %}">
+  Draping Studio
+</a>
+        <div class="ycs-category-nav-wrap">
+          <nav id="category-nav" class="ycs-category-nav"></nav>
+        </div>
+      </div>
+
+      <div id="palette-sections" class="ycs-palette-sections"></div>
+
+      <p id="palette-message" class="ycs-palette-message"></p>
+    </div>
+  </div>
+{% endif %}
+
+<style>
+  .ycs-category-nav-wrap {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .ycs-category-nav-wrap::before,
+  .ycs-category-nav-wrap::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 28px;
+    pointer-events: none;
+    z-index: 2;
+    transition: opacity .15s ease;
+  }
+
+  .ycs-category-nav-wrap::before {
+    left: 0;
+    background: linear-gradient(to right, #fff, rgba(255,255,255,0));
+  }
+
+  .ycs-category-nav-wrap::after {
+    right: 0;
+    background: linear-gradient(to left, #fff, rgba(255,255,255,0));
+  }
+
+  .ycs-category-nav-wrap.is-left-hidden::before {
+    opacity: 0;
+  }
+
+  .ycs-category-nav-wrap.is-right-hidden::after {
+    opacity: 0;
+  }
+
+  .page-palette body {
+    overflow-x: hidden;
+  }
+
+  .ycs-palette-topnav {
+    margin-bottom: 10px;
+  }
+
+  .palette-back-link {
+    font-size: 14px;
+    font-weight: 600;
+    color: #444;
+    text-decoration: none;
+  }
+
+  .ycs-palette-login {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 48px 16px 60px;
+  }
+
+  .ycs-palette-login__inner {
+    text-align: center;
+  }
+
+  .ycs-palette-login__kicker {
+    margin: 0 0 6px;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #777;
+  }
+
+  .ycs-palette-login__title {
+    margin: 0;
+    font-size: 34px;
+    line-height: 1.08;
+  }
+
+  .ycs-palette-login__text {
+    margin: 12px auto 0;
+    max-width: 460px;
+    font-size: 15px;
+    line-height: 1.5;
+    color: #666;
+  }
+
+  .ycs-palette-login__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    padding: 8px 14px;
+    border-radius: 10px;
+    background: #d94c6a;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid #d94c6a;
+    transition: all .15s ease;
+  }
+
+  .ycs-palette-login__button:hover {
+    background: #c43f5d;
+    border-color: #c43f5d;
+  }
+
+  .ycs-palette-app {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 16px 16px 32px;
+  }
+
+  .ycs-palette-header {
+    text-align: center;
+    margin-top: 4px;
+    margin-bottom: 8px;
+  }
+
+  .ycs-palette-kicker {
+    margin: 0 0 6px;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #777;
+  }
+
+  #palette-title {
+    margin: 0;
+    font-size: 30px;
+    line-height: 1.05;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .ycs-palette-subtitle {
+    margin: 8px 0 0;
+    font-size: 14px;
+    color: #666;
+  }
+
+  .ycs-palette-subtitle:empty {
+    display: none;
+  }
+
+  .ycs-palette-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 8px 0 10px;
+    position: sticky;
+    top: 0;
+    background: #fff;
+    z-index: 50;
+    padding: 6px 0;
+  }
+.ycs-open-photo-draping-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #111;
+  color: #fff !important;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none !important;
+  white-space: nowrap;
+}
+
+.ycs-open-photo-draping-btn:hover {
+  background: #222;
+  color: #fff !important;
+}
+  .ycs-view-toggle {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+  }
+
+  .ycs-scan-toggle {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border: 0;
+    border-radius: 10px;
+    background: #444;
+    color: #fff;
+    cursor: pointer;
+    transition: transform .15s ease, background .15s ease;
+  }
+
+  .ycs-scan-toggle:hover {
+    background: #2f2f2f;
+    transform: translateY(-1px);
+  }
+
+  .ycs-scan-toggle.is-active {
+    background: #111;
+  }
+
+  .ycs-scan-toggle svg {
+    fill: currentColor;
+    display: block;
+  }
+
+  .ycs-icon-list {
+    display: none;
+  }
+
+  .ycs-scan-toggle.is-active .ycs-icon-grid {
+    display: none;
+  }
+
+  .ycs-scan-toggle.is-active .ycs-icon-list {
+    display: block;
+  }
+
+  .ycs-category-nav {
+    display: flex;
+    flex: 1 1 auto;
+    gap: 8px;
+    overflow-x: auto;
+    white-space: nowrap;
+    margin: 0;
+    padding: 0;
+    scrollbar-width: none;
+    background: transparent;
+  }
+
+  .ycs-category-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ycs-category-link {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 7px 12px;
+    border: 1px solid #ddd;
+    border-radius: 999px;
+    background: #fff;
+    color: #444;
+    font-size: 13px;
+    line-height: 1;
+    flex: 0 0 auto;
+    cursor: pointer;
+    font: inherit;
+    transition: all 0.15s ease;
+    text-decoration: none;
+  }
+
+  .ycs-category-link:hover {
+    border-color: #999;
+    color: #111;
+  }
+
+  .ycs-category-link.is-active {
+    background: #444;
+    color: #fff;
+    border-color: #444;
+  }
+
+  .ycs-category-link.is-active:hover {
+    color: #fff;
+    border-color: #444;
+  }
+
+  .ycs-category-link--icon {
+    width: 38px;
+    min-width: 38px;
+    padding: 7px 0;
+  }
+
+  .ycs-category-link__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 0;
+  }
+
+  .ycs-category-link__icon svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .ycs-category-link.is-active .ycs-category-link__icon svg {
+    fill: currentColor;
+  }
+
+  .ycs-palette-section {
+    margin: 0 0 28px;
+  }
+
+  .ycs-section-header {
+    margin-bottom: 12px;
+  }
+
+  .ycs-section-title {
+    margin: 0 0 6px;
+    font-size: 18px;
+    line-height: 1.1;
+    letter-spacing: 0.01em;
+  }
+
+  .ycs-gradient-bar {
+    height: 4px;
+    border-radius: 4px;
+    margin: 8px 0 18px;
+    opacity: 0.9;
+  }
+
+  .ycs-depth-group {
+    margin: 0 0 20px;
+  }
+
+  .ycs-depth-group:last-child {
+    margin-bottom: 0;
+  }
+
+  .ycs-depth-group__title {
+  margin: 0 0 10px;
+  font-size: 15px;
+  line-height: 1.2;
+  color: #444;
+  font-weight: 700;
+}
+
+  .ycs-swatch-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px 6px;
+    margin-top: 14px;
+  }
+
+  @media (min-width: 700px) {
+    .ycs-swatch-grid {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+  }
+
+  .ycs-palette-section--favorites .ycs-swatch-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px 8px;
+    margin-top: 14px;
+  }
+
+  .ycs-palette-section--favorites .ycs-swatch-link {
+    width: auto;
+    min-width: 0;
+  }
+
+  .ycs-palette-section--favorites .ycs-swatch-tile {
+    border-radius: 16px;
+  }
+
+  .ycs-palette-section--favorites .ycs-swatch-name {
+    margin-top: 6px;
+  }
+
+  @media (min-width: 700px) {
+    .ycs-palette-section--favorites .ycs-swatch-grid {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+  }
+
+  .ycs-swatch-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    position: relative;
+  }
+
+  .ycs-swatch-tile {
+    aspect-ratio: 1 / 1;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.07);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .ycs-swatch-link:hover .ycs-swatch-tile {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.08);
+  }
+
+  .ycs-swatch-name {
+    margin-top: 2px;
+    font-size: 13px;
+    line-height: 1.25;
+    text-align: center;
+    color: #111;
+  }
+
+  .ycs-palette-message {
+    text-align: center;
+    font-size: 14px;
+    color: #666;
+    margin-top: 18px;
+  }
+
+  .ycs-swatch-skeleton {
+    aspect-ratio: 1 / 1;
+    border-radius: 12px;
+    background: linear-gradient(
+      90deg,
+      #f2f2f2 0%,
+      #e8e8e8 50%,
+      #f2f2f2 100%
+    );
+    background-size: 200% 100%;
+    animation: ycs-skeleton 1.2s infinite linear;
+  }
+
+  @keyframes ycs-skeleton {
+    from {
+      background-position: 200% 0;
+    }
+    to {
+      background-position: -200% 0;
+    }
+  }
+
+  .ycs-palette-app.is-compact-palette {
+    max-width: 980px;
+    padding-top: 8px;
+  }
+
+  .ycs-palette-app.is-compact-palette .ycs-palette-header {
+    margin-bottom: 8px;
+  }
+
+  .ycs-palette-app.is-compact-palette #palette-title {
+    font-size: 22px;
+    line-height: 1;
+  }
+
+  .ycs-palette-app.is-compact-palette .ycs-palette-kicker {
+    font-size: 11px;
+    margin-bottom: 4px;
+  }
+
+  .ycs-palette-app.is-compact-palette .ycs-category-nav {
+    display: none;
+  }
+
+  .ycs-palette-app.is-compact-palette .ycs-palette-sections {
+    margin-top: 8px;
+  }
+
+  .ycs-palette-app.is-compact-palette .ycs-palette-section {
+    margin: 0;
+  }
+
+  .ycs-palette-app.is-compact-palette .ycs-section-header {
+    display: none;
+  }
+
+  .ycs-palette-app.is-compact-palette .ycs-depth-group__title {
+    display: none;
+  }
+
+  .ycs-palette-app.is-compact-palette .ycs-depth-group {
+    margin: 0;
+  }
+
+  .ycs-palette-app.is-compact-palette .ycs-swatch-grid {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  @media (min-width: 700px) {
+    .ycs-palette-app.is-compact-palette .ycs-swatch-grid {
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1100px) {
+    .ycs-palette-app.is-compact-palette .ycs-swatch-grid {
+      grid-template-columns: repeat(14, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1400px) {
+    .ycs-palette-app.is-compact-palette .ycs-swatch-grid {
+      grid-template-columns: repeat(18, minmax(0, 1fr));
+    }
+  }
+
+  .ycs-palette-app.is-compact-palette .ycs-swatch-tile {
+    aspect-ratio: 1 / 1;
+    border-radius: 4px;
+    box-shadow: none;
+  }
+
+  .ycs-palette-app.is-compact-palette .ycs-swatch-name {
+    display: none;
+  }
+
+  .ycs-palette-app.is-compact-palette .ycs-swatch-link:hover .ycs-swatch-tile {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .ycs-fav-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 3;
+    width: 28px;
+    height: 28px;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.18);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    box-shadow: none;
+    transition: transform .16s ease, background .16s ease, opacity .16s ease;
+  }
+
+  .ycs-fav-btn:hover {
+    transform: scale(1.06);
+    background: rgba(255,255,255,0.32);
+  }
+
+  @media screen and (max-width: 768px) {
+    .ycs-palette-app.is-compact-palette .ycs-fav-btn {
+      display: none !important;
+    }
+  }
+
+  .ycs-fav-btn:focus-visible {
+    outline: 2px solid rgba(0,0,0,0.22);
+    outline-offset: 2px;
+  }
+
+  .ycs-fav-icon {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: rgba(255,255,255,0.96);
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.22));
+    transition: fill .16s ease, stroke .16s ease, transform .16s ease;
+    pointer-events: none;
+  }
+
+  .ycs-fav-btn.is-favorite {
+    background: transparent;
+  }
+
+  .ycs-fav-btn.is-favorite:hover {
+    background: rgba(255,255,255,0.12);
+  }
+
+  .ycs-fav-btn.is-favorite .ycs-fav-icon {
+    fill: rgba(255,255,255,0.96);
+    stroke: rgba(255,255,255,0.96);
+    transform: scale(1.03);
+  }
+
+  .ycs-palette-app.is-compact-palette .ycs-fav-btn {
+    width: 22px;
+    height: 22px;
+    top: 4px;
+    right: 4px;
+    background: rgba(255,255,255,0.12);
+  }
+
+  .ycs-palette-app.is-compact-palette .ycs-fav-icon {
+    width: 13px;
+    height: 13px;
+    stroke-width: 2;
+  }
+
+  .ycs-empty-favorites {
+    text-align: center;
+    color: #666;
+    font-size: 14px;
+    padding: 24px 0 8px;
+  }
+
+  @media screen and (max-width: 768px) {
+    .ycs-palette-header {
+      text-align: center;
+      margin-top: 0;
+      margin-bottom: 8px;
+    }
+
+    .ycs-palette-topnav {
+      margin-bottom: 0;
+    }
+
+    .ycs-palette-toolbar {
+      margin: 6px 0 12px;
+      gap: 8px;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', async function () {
+    const savedScrollAtLoad = sessionStorage.getItem('paletteScroll');
+    if (savedScrollAtLoad) {
+      setTimeout(() => {
+        window.scrollTo(0, Number(savedScrollAtLoad));
+        sessionStorage.removeItem('paletteScroll');
+      }, 100);
+    }
+
+    const loginReturnLink = document.querySelector('.js-login-return-link');
+    if (loginReturnLink) {
+      const currentUrl = window.location.pathname + window.location.search;
+      loginReturnLink.href = `{{ routes.account_login_url }}?return_url=${encodeURIComponent(currentUrl)}`;
+    }
+
+    const app = document.querySelector('.ycs-palette-app');
+    if (!app) return;
+
+    const customerId = app.dataset.customerId || null;
+    const email = app.dataset.customerEmail || null;
+    const paletteAccessString = (app.dataset.paletteAccess || '').toUpperCase();
+    const accessIsAdmin = app.dataset.isAdmin === 'true';
+    const isStyleMasters = app.dataset.isStyleMasters === 'true';
+    const isLoggedIn = !!customerId;
+
+    const PALETTE_CODES = [
+      'CWL', 'CWM', 'CWD',
+      'CWLG', 'CWMG', 'CWDG',
+      'CCL', 'CCM', 'CCD',
+      'SWL', 'SWM', 'SWD',
+      'SWLG', 'SWMG', 'SWDG',
+      'SCL', 'SCM', 'SCD',
+      'SCLG', 'SCMG', 'SCDG',
+      'LO', 'MO', 'DO'
+    ];
+
+    const ownedPalettes = PALETTE_CODES.filter((code) =>
+      paletteAccessString.includes(`,${code},`)
+    );
+
+    const accessPayload = {
+      customerId,
+      email,
+      isLoggedIn,
+      isAdmin: accessIsAdmin,
+      isStyleMasters,
+      ownedPalettes,
+      features: {
+        palette_viewer: isLoggedIn,
+        favorites: isLoggedIn,
+        compare_tool: accessIsAdmin || isStyleMasters,
+        color_combos: accessIsAdmin || isStyleMasters,
+        photo_draping: accessIsAdmin || isStyleMasters
+      }
+    };
+
+    window.YCS_ACCESS = accessPayload;
+
+    const DEFAULT_PALETTE = app.dataset.defaultPalette || 'CWL';
+    const PALETTE_ACCESS = app.dataset.paletteAccess || '';
+    const CUSTOMER_ID = app.dataset.customerId || '';
+
+    const unauthorizedEl = document.getElementById('palette-unauthorized');
+    const authorizedContentEl = document.getElementById('palette-authorized-content');
+
+    const titleEl = document.getElementById('palette-title');
+    const subtitleEl = document.getElementById('palette-subtitle');
+    const navEl = document.getElementById('category-nav');
+    const sectionsEl = document.getElementById('palette-sections');
+    const messageEl = document.getElementById('palette-message');
+    const scanToggleEl = document.getElementById('palette-scan-toggle');
+    const openPhotoDrapingEl = document.getElementById('ycs-open-photo-draping');
+
+    const params = new URLSearchParams(window.location.search);
+    const rawPaletteCode = (params.get('palette') || DEFAULT_PALETTE).trim();
+    const isCustomPaletteCode = /^CUSTOM_/i.test(rawPaletteCode);
+    const paletteCode = isCustomPaletteCode ? rawPaletteCode : rawPaletteCode.toUpperCase();
+    if (openPhotoDrapingEl) {
+  const hasPaidAccess =
+    paletteAccessString.includes(',DRAPINGSTUDIOSTARTER,') ||
+    paletteAccessString.includes(',DRAPINGSTUDIO,') ||
+    paletteAccessString.includes(',VIP,') ||
+    paletteAccessString.includes(',YCS_ADMIN,');
+
+  if (hasPaidAccess) {
+    openPhotoDrapingEl.href =
+      `/pages/photo-prep?mode=personal&workflow=photo-draping&palette=${encodeURIComponent(paletteCode)}`;
+  } else {
+    openPhotoDrapingEl.href =
+      `/pages/photo-prep?mode=personal&workflow=photo-draping&trial=sample&palette=${encodeURIComponent(paletteCode)}`;
+  }
+}
+    const paletteToken = `,${paletteCode},`;
+    const hasAdminAccess = PALETTE_ACCESS.includes(',YCS_ADMIN,');
+const hasTradeAccess = PALETTE_ACCESS.includes(',TRADE,') || app.dataset.isTradeJulyCohort === 'true';
+const hasCatoolAccess = PALETTE_ACCESS.includes(',CATOOL,');
+const hasCatoolGrowthAccess = PALETTE_ACCESS.includes(',CATOOLGROWTH,');
+
+const hasAllPaletteAccess =
+  hasAdminAccess ||
+  hasTradeAccess ||
+  hasCatoolAccess ||
+  hasCatoolGrowthAccess;
+
+const isAdminPalette = paletteCode.startsWith('ADMIN_');
+const isStyleMastersCustomPalette = isCustomPaletteCode && (
+  PALETTE_ACCESS.includes(',VIP,') ||
+  hasAdminAccess
+);
+
+const hasAccess =
+  PALETTE_ACCESS.includes(paletteToken) ||
+  hasAllPaletteAccess ||
+  (hasAdminAccess && isAdminPalette) ||
+  isStyleMastersCustomPalette;
+
+    if (!hasAccess) {
+      if (authorizedContentEl) authorizedContentEl.style.display = 'none';
+      if (unauthorizedEl) unauthorizedEl.style.display = '';
+      return;
+    }
+
+    
+    const paletteNameMap = {
+      CWL: 'Clear Warm Light',
+      CWM: 'Clear Warm Medium',
+      CWD: 'Clear Warm Deep',
+      CCL: 'Clear Cool Light',
+      CCM: 'Clear Cool Medium',
+      CCD: 'Clear Cool Deep',
+      SWL: 'Soft Warm Light',
+      SWM: 'Soft Warm Medium',
+      SWD: 'Soft Warm Deep',
+      SCL: 'Soft Cool Light',
+      SCM: 'Soft Cool Medium',
+      SCD: 'Soft Cool Deep',
+      CWLG: 'Clear Warm Light for Gray Hair',
+      CWMG: 'Clear Warm Medium for Gray Hair',
+      CWDG: 'Clear Warm Deep for Gray Hair',
+      SWLG: 'Soft Warm Light for Gray Hair',
+      SWMG: 'Soft Warm Medium for Gray Hair',
+      SWDG: 'Soft Warm Deep for Gray Hair',
+      LO: 'Light Olive',
+      MO: 'Medium Olive',
+      DO: 'Deep Olive',
+      ADMIN_ALL: 'All Colors Across Palettes',
+      ADMIN_CLEAR: 'All Clear Colors',
+      ADMIN_SOFT: 'All Soft Colors'
+    };
+
+    const categoryOrder = [
+      'Favorites',
+      'Best',
+      'Reds',
+      'Oranges',
+      'Golden Yellows',
+      'Yellows',
+      'Yellow Greens',
+      'Greens',
+      'Aquas/Teals',
+      'Blues',
+      'Indigos',
+      'Purples',
+      'Plums',
+      'Magentas',
+      'Pinks',
+      'Neutrals'
+    ];
+
+    const viewModeStorageKey = `ycsViewMode_${paletteCode}`;
+
+    let currentViewMode = sessionStorage.getItem(viewModeStorageKey) || 'labeled';
+
+    let sourceAllColors = [];
+    let renderedGrouped = {};
+    let renderedOrderedCategories = [];
+    let renderedFlatColors = [];
+    let favoriteHexes = new Set();
+
+    function slugify(text) {
+      return String(text)
+        .toLowerCase()
+        .replace(/&/g, 'and')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    }
+
+    function normalizeHex(hex) {
+      return String(hex || '').trim().toLowerCase();
+    }
+
+    function normalizeText(value) {
+      return String(value || '').trim().toLowerCase();
+    }
+
+    function normalizeDepth(value) {
+      const normalized = normalizeText(value);
+      if (!normalized) return '';
+      return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+    }
+
+    function colorUrl(hex, name) {
+      return `/pages/color?hex=${encodeURIComponent(String(hex).replace('#', ''))}&name=${encodeURIComponent(name)}&palette=${encodeURIComponent(paletteCode)}`;
+    }
+
+    function gradientForColors(colors) {
+      const hexes = colors
+        .map(c => c.hex)
+        .filter(Boolean)
+        .slice(0, 6);
+
+      if (!hexes.length) return '#ddd';
+      if (hexes.length === 1) return hexes[0];
+      return `linear-gradient(to right, ${hexes.join(', ')})`;
+    }
+
+    function getDepthLabel(color) {
+      const depthValue = normalizeDepth(color.isNeutral ? color.neutralDepth : color.depth);
+
+      if (depthValue === 'Light') return 'Light';
+      if (depthValue === 'Medium') return 'Medium';
+      if (depthValue === 'Deep') return 'Dark';
+      return '';
+    }
+
+    function renderCategoryNav(categories, activeCategory = 'All') {
+      const favoriteExists = categories.includes('Favorites');
+      const regularCategories = categories.filter(category => category !== 'Favorites');
+
+      const favoritesButton = favoriteExists ? `
+        <button
+          type="button"
+          class="ycs-category-link ycs-category-link--icon${activeCategory === 'Favorites' ? ' is-active' : ''}"
+          data-category="Favorites"
+          aria-label="Favorites"
+          title="Favorites">
+          <span class="ycs-category-link__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 20.2c-.2 0-.4-.1-.6-.2C10.1 19 4 14.7 4 9.6 4 6.9 5.9 5 8.5 5c1.5 0 2.8.7 3.5 1.8C12.7 5.7 14 5 15.5 5 18.1 5 20 6.9 20 9.6c0 5.1-6.1 9.4-7.4 10.4-.2.1-.4.2-.6.2z"></path>
+            </svg>
+          </span>
+        </button>
+      ` : '';
+
+      const allButton = `
+        <button
+          type="button"
+          class="ycs-category-link${activeCategory === 'All' ? ' is-active' : ''}"
+          data-category="All">
+          All
+        </button>
+      `;
+
+      const otherButtons = regularCategories.map(category => {
+        const activeClass = category === activeCategory ? ' is-active' : '';
+        return `
+          <button
+            type="button"
+            class="ycs-category-link${activeClass}"
+            data-category="${category}">
+            ${category}
+          </button>
+        `;
+      }).join('');
+
+      navEl.innerHTML = favoritesButton + allButton + otherButtons;
+
+      navEl.querySelectorAll('.ycs-category-link').forEach(button => {
+        button.addEventListener('click', () => {
+          const selectedCategory = button.dataset.category;
+          setActiveCategory(selectedCategory, categories);
+          requestAnimationFrame(() => {
+            centerActiveCategoryLink();
+            updateCategoryNavFade();
+          });
+        });
+      });
+
+      requestAnimationFrame(() => {
+        updateCategoryNavFade();
+      });
+    }
+
+    function updateCategoryNavFade() {
+      const navWrap = document.querySelector('.ycs-category-nav-wrap');
+      if (!navWrap || !navEl) return;
+
+      const maxScrollLeft = navEl.scrollWidth - navEl.clientWidth;
+      const atLeft = navEl.scrollLeft <= 4;
+      const atRight = navEl.scrollLeft >= maxScrollLeft - 4;
+
+      navWrap.classList.toggle('is-left-hidden', atLeft);
+      navWrap.classList.toggle('is-right-hidden', atRight);
+    }
+
+    function centerActiveCategoryLink() {
+      if (!navEl) return;
+
+      const activeLink = navEl.querySelector('.ycs-category-link.is-active');
+      if (!activeLink) return;
+
+      const navRect = navEl.getBoundingClientRect();
+      const linkRect = activeLink.getBoundingClientRect();
+      const currentScroll = navEl.scrollLeft;
+      const targetScroll = currentScroll + (linkRect.left - navRect.left) - (navRect.width / 2) + (linkRect.width / 2);
+
+      navEl.scrollTo({
+        left: Math.max(0, targetScroll),
+        behavior: 'smooth'
+      });
+    }
+
+    function setActiveCategory(activeCategory, categories) {
+      sessionStorage.setItem(`ycsActiveCategory_${paletteCode}`, activeCategory);
+
+      renderCategoryNav(categories, activeCategory);
+
+      const sections = sectionsEl.querySelectorAll('.ycs-palette-section');
+
+      sections.forEach(section => {
+        const sectionCategory = section.dataset.category;
+
+        if (activeCategory === 'All' || sectionCategory === activeCategory) {
+          section.style.display = '';
+        } else {
+          section.style.display = 'none';
+        }
+      });
+
+      requestAnimationFrame(() => {
+        centerActiveCategoryLink();
+        updateCategoryNavFade();
+      });
+    }
+
+    function swatchMarkup(color) {
+      const isFavorite = !!color.isFavorite;
+      const favoriteClass = isFavorite ? ' is-favorite' : '';
+
+      return `
+        <a
+          class="ycs-swatch-link"
+          href="${colorUrl(color.hex, color.name)}"
+          data-color-hex="${color.hex}"
+          data-color-name="${color.name}">
+          <button
+            type="button"
+            class="ycs-fav-btn${favoriteClass}"
+            data-favorite-hex="${color.hex}"
+            data-favorite-name="${color.name}"
+            aria-label="${isFavorite ? 'Remove from favorites' : 'Add to favorites'}"
+            title="${isFavorite ? 'Remove from favorites' : 'Add to favorites'}">
+            <svg class="ycs-fav-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 20.2c-.2 0-.4-.1-.6-.2C10.1 19 4 14.7 4 9.6 4 6.9 5.9 5 8.5 5c1.5 0 2.8.7 3.5 1.8C12.7 5.7 14 5 15.5 5 18.1 5 20 6.9 20 9.6c0 5.1-6.1 9.4-7.4 10.4-.2.1-.4.2-.6.2z"></path>
+            </svg>
+          </button>
+          <div class="ycs-swatch-tile" style="background: ${color.hex};"></div>
+          <div class="ycs-swatch-name">${color.name}</div>
+        </a>
+      `;
+    }
+
+    function getNeutralFamily(color) {
+      return String(
+        color.neutralFamily ||
+        color.NeutralFamily ||
+        color.neutral_family ||
+        ''
+      ).trim();
+    }
+
+    function renderNeutralsSwatches(colors) {
+      const lightColors = [];
+      const groupedFamilies = {};
+
+      colors.forEach(color => {
+        const depthLabel = getDepthLabel(color);
+
+        if (depthLabel === 'Light') {
+          lightColors.push(color);
+          return;
+        }
+
+        const family = getNeutralFamily(color) || 'Other Neutrals';
+
+        if (!groupedFamilies[family]) {
+          groupedFamilies[family] = [];
+        }
+
+        groupedFamilies[family].push(color);
+      });
+
+      let html = '';
+
+      if (lightColors.length) {
+        html += `
+          <div class="ycs-depth-group">
+            <h3 class="ycs-depth-group__title">Light Neutrals</h3>
+            <div class="ycs-swatch-grid">
+              ${lightColors.map(color => swatchMarkup(color)).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      const neutralFamilyOrder = [
+        'Creams',
+        'Olive Greens',
+        'Mustard & Golden Olives',
+        'Warm Browns',
+        'Red Browns',
+        'Browns',
+        'Navy Blues',
+        'Grays',
+        'Taupes',
+        'Black Alternatives'
+      ];
+
+      const familyKeys = Object.keys(groupedFamilies);
+      const orderedFamilies = [
+        ...neutralFamilyOrder
+          .map(orderName => familyKeys.find(family => family.trim().toLowerCase() === orderName.trim().toLowerCase()))
+          .filter(Boolean),
+        ...familyKeys.filter(family => !neutralFamilyOrder.some(orderName => family.trim().toLowerCase() === orderName.trim().toLowerCase()))
+      ];
+
+      orderedFamilies.forEach(family => {
+        const familyColors = groupedFamilies[family] || [];
+
+        if (!familyColors.length) return;
+
+        html += `
+          <div class="ycs-depth-group">
+            <h3 class="ycs-subcategory-heading">${family}</h3>
+            <div class="ycs-swatch-grid">
+              ${familyColors.map(color => swatchMarkup(color)).join('')}
+            </div>
+          </div>
+        `;
+      });
+
+      return html;
+    }
+
+    function renderDepthGroupedSwatches(colors, categoryName) {
+      if (categoryName === 'Neutrals') {
+        return renderNeutralsSwatches(colors);
+      }
+
+      const groupedByDepth = {
+        Light: [],
+        Medium: [],
+        Dark: []
+      };
+
+      colors.forEach(color => {
+        const depthLabel = getDepthLabel(color);
+
+        if (depthLabel === 'Light') groupedByDepth.Light.push(color);
+        if (depthLabel === 'Medium') groupedByDepth.Medium.push(color);
+        if (depthLabel === 'Dark') groupedByDepth.Dark.push(color);
+      });
+
+      return ['Light', 'Medium', 'Dark']
+        .filter(depth => groupedByDepth[depth].length)
+        .map(depth => {
+          let label = `${depth} ${categoryName}`;
+
+          if (categoryName === 'Reds' && depth === 'Light') {
+            label = 'Corals';
+          }
+
+          return `
+            <div class="ycs-depth-group">
+              <h3 class="ycs-depth-group__title">${label}</h3>
+              <div class="ycs-swatch-grid">
+                ${groupedByDepth[depth].map(color => swatchMarkup(color)).join('')}
+              </div>
+            </div>
+          `;
+        })
+        .join('');
+    }
+
+    function renderSections(grouped, orderedCategories, flatColors = []) {
+      if (!flatColors.length) {
+        sectionsEl.innerHTML = '';
+        return;
+      }
+
+      if (currentViewMode === 'compact') {
+        sectionsEl.innerHTML = `
+          <section class="ycs-palette-section ycs-palette-section--compact" data-category="All">
+            <div class="ycs-swatch-grid">
+              ${flatColors.map(color => swatchMarkup(color)).join('')}
+            </div>
+          </section>
+        `;
+        return;
+      }
+
+      sectionsEl.innerHTML = orderedCategories.map(category => {
+        const colors = grouped[category] || [];
+        const id = `cat-${slugify(category)}`;
+        const gradient = gradientForColors(colors);
+
+        if (category === 'Favorites' && !colors.length) {
+          return `
+            <section class="ycs-palette-section" id="${id}" data-category="${category}">
+              <div class="ycs-section-header">
+                <h2 class="ycs-section-title">
+                  <span style="display:inline-flex;align-items:center;gap:8px;">
+                    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" style="fill:#111;stroke:#111;stroke-width:1.6;">
+                      <path d="M12 20.2c-.2 0-.4-.1-.6-.2C10.1 19 4 14.7 4 9.6 4 6.9 5.9 5 8.5 5c1.5 0 2.8.7 3.5 1.8C12.7 5.7 14 5 15.5 5 18.1 5 20 6.9 20 9.6c0 5.1-6.1 9.4-7.4 10.4-.2.1-.4.2-.6.2z"></path>
+                    </svg>
+                    Favorites
+                  </span>
+                </h2>
+                <div class="ycs-gradient-bar" style="background: #eee;"></div>
+              </div>
+              <div class="ycs-empty-favorites">
+                You haven’t saved any favorites yet.
+              </div>
+            </section>
+          `;
+        }
+
+        const sectionClass = category === 'Favorites'
+          ? 'ycs-palette-section ycs-palette-section--favorites'
+          : 'ycs-palette-section';
+
+        const shouldGroupByDepth =
+          category !== 'Favorites' &&
+          category !== 'Best';
+
+        return `
+          <section class="${sectionClass}" id="${id}" data-category="${category}">
+            <div class="ycs-section-header">
+              <h2 class="ycs-section-title">${category}</h2>
+              <div class="ycs-gradient-bar" style="background: ${gradient};"></div>
+            </div>
+            ${
+              shouldGroupByDepth
+                ? renderDepthGroupedSwatches(colors, category)
+                : `<div class="ycs-swatch-grid">
+                    ${colors.map(color => swatchMarkup(color)).join('')}
+                  </div>`
+            }
+          </section>
+        `;
+      }).join('');
+    }
+
+    function attachSwatchClickHandlers(flatColors) {
+      document.querySelectorAll('.ycs-swatch-link').forEach(link => {
+        link.addEventListener('click', function (event) {
+          if (event.target.closest('.ycs-fav-btn')) return;
+
+          sessionStorage.setItem('paletteScroll', String(window.scrollY));
+          sessionStorage.setItem('ycsLastColorHex', this.dataset.colorHex || '');
+          sessionStorage.setItem('ycsLastColorName', this.dataset.colorName || '');
+
+          const clickedHex = this.dataset.colorHex;
+          const clickedName = this.dataset.colorName;
+
+          const clickedIndex = flatColors.findIndex(color =>
+            color.hex === clickedHex && color.name === clickedName
+          );
+
+          sessionStorage.setItem('ycsPaletteColors', JSON.stringify(flatColors));
+          sessionStorage.setItem('ycsPaletteIndex', String(clickedIndex));
+          sessionStorage.setItem('ycsPaletteReturnUrl', window.location.pathname + window.location.search);
+        });
+      });
+    }
+
+    function attachFavoriteHandlers() {
+      document.querySelectorAll('.ycs-fav-btn').forEach(button => {
+        button.addEventListener('click', async function (event) {
+          event.preventDefault();
+          event.stopPropagation();
+
+          const hex = this.dataset.favoriteHex || '';
+          const name = this.dataset.favoriteName || '';
+          if (!hex || !CUSTOMER_ID) return;
+
+          const normalizedHex = normalizeHex(hex);
+          const wasFavorite = favoriteHexes.has(normalizedHex);
+
+          if (wasFavorite) {
+            favoriteHexes.delete(normalizedHex);
+          } else {
+            favoriteHexes.add(normalizedHex);
+          }
+
+          syncFavoritesIntoColors();
+          rerenderCurrentView();
+
+          try {
+            const response = await fetch(`/apps/palette-data?action=toggleFavorite`, {
+  method: 'POST',
+  credentials: 'same-origin',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    customerId: CUSTOMER_ID,
+    paletteCode: paletteCode,
+    colorName: name,
+    hex: hex
+  })
+});
+
+const text = await response.text();
+const result = text ? JSON.parse(text) : {};
+
+            if (!response.ok || !result.success) {
+              throw new Error(result.error || 'Failed to update favorite');
+            }
+
+            if (result.isFavorite) {
+              favoriteHexes.add(normalizedHex);
+            } else {
+              favoriteHexes.delete(normalizedHex);
+            }
+
+            syncFavoritesIntoColors();
+            rerenderCurrentView();
+            messageEl.textContent = '';
+          } catch (error) {
+            console.error(error);
+
+            if (wasFavorite) {
+              favoriteHexes.add(normalizedHex);
+            } else {
+              favoriteHexes.delete(normalizedHex);
+            }
+
+            syncFavoritesIntoColors();
+            rerenderCurrentView();
+            messageEl.textContent = 'Could not update favorites right now.';
+          }
+        });
+      });
+    }
+
+    function getDepthRank(color) {
+      const depthValue = normalizeDepth(color.isNeutral ? color.neutralDepth : color.depth);
+
+      if (depthValue === 'Light') return 1;
+      if (depthValue === 'Medium') return 2;
+      if (depthValue === 'Deep') return 3;
+      return 99;
+    }
+
+    function syncFavoritesIntoColors() {
+      renderedFlatColors = sourceAllColors.map(color => ({
+        ...color,
+        isFavorite: favoriteHexes.has(normalizeHex(color.hex))
+      }));
+
+      const regrouped = {};
+
+      renderedFlatColors.forEach(color => {
+        if (color.isFavorite) {
+          if (!regrouped['Favorites']) regrouped['Favorites'] = [];
+          regrouped['Favorites'].push(color);
+        }
+
+        if (color.isBest) {
+          if (!regrouped['Best']) regrouped['Best'] = [];
+          regrouped['Best'].push(color);
+        }
+
+        if (!regrouped[color.category]) regrouped[color.category] = [];
+        regrouped[color.category].push(color);
+      });
+
+      Object.keys(regrouped).forEach(category => {
+        regrouped[category].sort((a, b) => {
+          if (category === 'Neutrals') {
+            const aDepth = getDepthLabel(a);
+            const bDepth = getDepthLabel(b);
+
+            const aIsLight = aDepth === 'Light';
+            const bIsLight = bDepth === 'Light';
+
+            if (aIsLight && !bIsLight) return -1;
+            if (!aIsLight && bIsLight) return 1;
+
+            if (aIsLight && bIsLight) {
+              return (a.sortOrder || 0) - (b.sortOrder || 0);
+            }
+
+            const aFamily = getNeutralFamily(a) || 'Other Neutrals';
+            const bFamily = getNeutralFamily(b) || 'Other Neutrals';
+
+            const neutralFamilyOrder = [
+              'Creams',
+              'Olive Greens',
+              'Mustard & Golden Olives',
+              'Browns',
+              'Taupes',
+              'Navy Blues',
+              'Grays'
+            ];
+
+            const aIndex = neutralFamilyOrder.findIndex(name => name.toLowerCase() === aFamily.toLowerCase());
+            const bIndex = neutralFamilyOrder.findIndex(name => name.toLowerCase() === bFamily.toLowerCase());
+
+            if (aIndex !== -1 && bIndex !== -1 && aIndex !== bIndex) {
+              return aIndex - bIndex;
+            }
+            if (aIndex !== -1 && bIndex === -1) return -1;
+            if (aIndex === -1 && bIndex !== -1) return 1;
+
+            const familyCompare = aFamily.localeCompare(bFamily);
+            if (familyCompare !== 0) return familyCompare;
+
+            return (a.sortOrder || 0) - (b.sortOrder || 0);
+          }
+
+          const depthCompare = getDepthRank(a) - getDepthRank(b);
+          if (depthCompare !== 0) return depthCompare;
+
+          return (a.sortOrder || 0) - (b.sortOrder || 0);
+        });
+      });
+
+      renderedGrouped = regrouped;
+
+      renderedOrderedCategories = [
+        ...categoryOrder.filter(cat => regrouped[cat]),
+        ...Object.keys(regrouped).filter(cat => !categoryOrder.includes(cat))
+      ];
+    }
+
+    function rerenderCurrentView() {
+      renderSections(renderedGrouped, renderedOrderedCategories, renderedFlatColors);
+
+      if (!renderedFlatColors.length) {
+        navEl.innerHTML = '';
+        messageEl.textContent = 'No colors found.';
+        return;
+      }
+
+      if (currentViewMode === 'compact') {
+        navEl.innerHTML = '';
+      } else {
+        const savedCategory = sessionStorage.getItem(`ycsActiveCategory_${paletteCode}`) || 'All';
+        const restoredCategory =
+          renderedOrderedCategories.includes(savedCategory) || savedCategory === 'All'
+            ? savedCategory
+            : 'All';
+
+        renderCategoryNav(renderedOrderedCategories, restoredCategory);
+        setActiveCategory(restoredCategory, renderedOrderedCategories);
+      }
+
+      attachSwatchClickHandlers(renderedFlatColors);
+      attachFavoriteHandlers();
+      messageEl.textContent = '';
+    }
+
+    function applyViewMode(mode) {
+      currentViewMode = mode;
+
+      if (mode === 'compact') {
+        app.classList.add('is-compact-palette');
+      } else {
+        app.classList.remove('is-compact-palette');
+      }
+
+      if (scanToggleEl) {
+        const isActive = mode === 'compact';
+        scanToggleEl.classList.toggle('is-active', isActive);
+        scanToggleEl.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      }
+
+      sessionStorage.setItem(viewModeStorageKey, mode);
+
+      if (renderedOrderedCategories.length || renderedFlatColors.length) {
+        rerenderCurrentView();
+      }
+    }
+
+    if (scanToggleEl) {
+      scanToggleEl.addEventListener('click', function () {
+        const nextMode = currentViewMode === 'compact' ? 'labeled' : 'compact';
+        applyViewMode(nextMode);
+      });
+    }
+
+    if (navEl) {
+      navEl.addEventListener('scroll', updateCategoryNavFade);
+      window.addEventListener('resize', updateCategoryNavFade);
+    }
+
+    async function loadFavorites() {
+  if (!CUSTOMER_ID) return new Set();
+
+  try {
+    const response = await fetch(
+      `/apps/palette-data?action=getFavorites&customerId=${encodeURIComponent(CUSTOMER_ID)}&palette=${encodeURIComponent(paletteCode)}`,
+      { credentials: 'same-origin' }
+    );
+
+    const text = await response.text();
+    const data = text ? JSON.parse(text) : {};
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Could not load favorites');
+    }
+
+    return new Set((data.favorites || []).map(normalizeHex));
+  } catch (error) {
+    console.error(error);
+    return new Set();
+  }
+}
+
+    async function loadColors() {
+      titleEl.textContent = paletteNameMap[paletteCode] || paletteCode;
+      subtitleEl.textContent = '';
+
+      applyViewMode(currentViewMode);
+
+      messageEl.textContent = 'Loading colors...';
+      sectionsEl.innerHTML = `
+        <div class="ycs-swatch-grid">
+          ${Array.from({ length: 12 }).map(() => `
+            <div class="ycs-swatch-skeleton"></div>
+          `).join('')}
+        </div>
+      `;
+
+      try {
+        const [colorsResponse, loadedFavorites] = await Promise.all([
+          fetch(`/apps/palette-data?palette=${encodeURIComponent(paletteCode)}`, {
+            credentials: 'same-origin'
+          }),
+          loadFavorites()
+        ]);
+
+        favoriteHexes = loadedFavorites;
+
+        const data = await colorsResponse.json();
+
+        if (!data.colors) {
+          throw new Error(data.error || 'No colors returned');
+        }
+
+        if (data.paletteName && isCustomPaletteCode) {
+          titleEl.textContent = data.paletteName;
+        }
+
+        const allColors = data.colors.map(color => ({
+          ...color,
+          isFavorite: favoriteHexes.has(normalizeHex(color.hex))
+        }));
+
+        if (!allColors.length) {
+          messageEl.textContent = `No colors found for ${paletteCode}.`;
+          navEl.innerHTML = '';
+          sectionsEl.innerHTML = '';
+          return;
+        }
+
+        sourceAllColors = allColors.slice();
+
+        syncFavoritesIntoColors();
+        rerenderCurrentView();
+
+        const savedScroll = sessionStorage.getItem('paletteScroll');
+        const lastHex = sessionStorage.getItem('ycsLastColorHex') || '';
+        const lastName = sessionStorage.getItem('ycsLastColorName') || '';
+
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            let restored = false;
+
+            if (lastHex && lastName) {
+              const targetLink = Array.from(document.querySelectorAll('.ycs-swatch-link')).find(link =>
+                (link.dataset.colorHex || '') === lastHex &&
+                (link.dataset.colorName || '') === lastName
+              );
+
+              if (targetLink) {
+                targetLink.scrollIntoView({
+                  block: 'center',
+                  inline: 'nearest',
+                  behavior: 'auto'
+                });
+                restored = true;
+              }
+            }
+
+            if (!restored && savedScroll) {
+              window.scrollTo(0, Number(savedScroll));
+            }
+
+            sessionStorage.removeItem('paletteScroll');
+            sessionStorage.removeItem('ycsLastColorHex');
+            sessionStorage.removeItem('ycsLastColorName');
+          });
+        });
+
+        messageEl.textContent = '';
+      } catch (error) {
+        console.error(error);
+        messageEl.textContent = 'There was a problem loading this palette.';
+        navEl.innerHTML = '';
+        sectionsEl.innerHTML = '';
+      }
+    }
+
+    loadColors();
+  });
+</script>
+
+{% schema %}
+{
+  "name": "Palette Viewer",
+  "settings": [
+    {
+      "type": "text",
+      "id": "default_palette",
+      "label": "Default palette code",
+      "default": "CWL"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Palette Viewer"
+    }
+  ]
+}
+{% endschema %}
