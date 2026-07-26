@@ -1997,15 +1997,211 @@
     });
   }
 
-  function addTextElement(doc, parent, tag, text, className) {
-    const element = doc.createElement(tag);
-    if (className) element.className = className;
-    element.textContent = text || '';
-    parent.appendChild(element);
-    return element;
+  let pdfLogoPromise = null;
+
+  function loadPdfLogoData() {
+    if (pdfLogoPromise) return pdfLogoPromise;
+
+    pdfLogoPromise = fetch('https://cdn.shopify.com/s/files/1/0623/6284/5408/files/YourColorStyle_Logo-120_e3c4c33e-3249-4120-8dc6-c665eb3fec9f.png?v=1644954058')
+      .then(function (response) {
+        if (!response.ok) throw new Error('Unable to load logo.');
+        return response.blob();
+      })
+      .then(function (blob) {
+        return new Promise(function (resolve) {
+          const image = new Image();
+          image.onload = function () {
+            URL.revokeObjectURL(image.src);
+            const targetWidth = 144;
+            const targetHeight = Math.max(1, Math.round(targetWidth * (image.naturalHeight / image.naturalWidth)));
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+            context.fillStyle = '#FFFFFF';
+            context.fillRect(0, 0, targetWidth, targetHeight);
+            context.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+            resolve({
+              data: atob(dataUrl.split(',')[1] || ''),
+              width: targetWidth,
+              height: targetHeight
+            });
+          };
+          image.onerror = function () {
+            URL.revokeObjectURL(image.src);
+            resolve(null);
+          };
+          image.src = URL.createObjectURL(blob);
+        });
+      })
+      .catch(function () {
+        return null;
+      });
+
+    return pdfLogoPromise;
   }
 
-  function createPalettePdf(palette) {
+  function normalizePdfText(value) {
+    return String(value || '')
+      .replace(/[\u2018\u2019]/g, "'")
+      .replace(/[\u201C\u201D]/g, '"')
+      .replace(/[\u2013\u2014]/g, '-')
+      .replace(/[^\x09\x0A\x0D\x20-\x7E]/g, '');
+  }
+
+  function escapePdfText(value) {
+    return normalizePdfText(value).replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+  }
+
+  function estimatePdfTextWidth(value, fontSize) {
+    return normalizePdfText(value).split('').reduce(function (width, char) {
+      if (char === ' ') return width + (fontSize * 0.28);
+      if ('ilI.,;:!|'.indexOf(char) !== -1) return width + (fontSize * 0.24);
+      if ('mwMW@#%&'.indexOf(char) !== -1) return width + (fontSize * 0.72);
+      return width + (fontSize * 0.52);
+    }, 0);
+  }
+
+  function splitPdfText(value, fontSize, maxWidth, maxLines) {
+    const words = normalizePdfText(value).split(/\s+/).filter(Boolean);
+    const lines = [];
+    let current = '';
+
+    words.forEach(function (word) {
+      const next = current ? current + ' ' + word : word;
+      if (estimatePdfTextWidth(next, fontSize) <= maxWidth || !current) {
+        current = next;
+      } else {
+        lines.push(current);
+        current = word;
+      }
+    });
+
+    if (current) lines.push(current);
+    return lines.slice(0, maxLines || lines.length);
+  }
+
+  function hexToRgb(hex) {
+    const normalized = normalizePrintHex(hex).replace('#', '');
+    const value = normalized.length === 3
+      ? normalized.split('').map(function (char) { return char + char; }).join('')
+      : normalized;
+
+    return {
+      r: parseInt(value.slice(0, 2), 16) || 255,
+      g: parseInt(value.slice(2, 4), 16) || 255,
+      b: parseInt(value.slice(4, 6), 16) || 255
+    };
+  }
+
+  function pdfFileName(name) {
+    const slug = String(name || 'palette')
+      .trim()
+      .replace(/[^a-z0-9]+/gi, '-')
+      .replace(/^-+|-+$/g, '')
+      .toLowerCase();
+
+    return (slug || 'palette') + '.pdf';
+  }
+
+  function pdfBinaryBytes(binary) {
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) {
+      bytes[index] = binary.charCodeAt(index) & 255;
+    }
+    return bytes;
+  }
+
+  function createPdfBlob(pageStreams, logoData) {
+    const encoder = new TextEncoder();
+    const pageCount = pageStreams.length;
+    const logoObjectId = logoData ? 6 : null;
+    const firstPageObjectId = logoData ? 7 : 6;
+    const objects = [];
+
+    function addObject(id, content) {
+      objects[id] = typeof content === 'string' ? encoder.encode(content) : content;
+    }
+
+    addObject(1, '<< /Type /Catalog /Pages 2 0 R >>');
+    addObject(2, '<< /Type /Pages /Kids [' + pageStreams.map(function (_, index) {
+      return (firstPageObjectId + (index * 2)) + ' 0 R';
+    }).join(' ') + '] /Count ' + pageCount + ' >>');
+    addObject(3, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
+    addObject(4, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>');
+    addObject(5, '<< /Type /Font /Subtype /Type1 /BaseFont /Times-Roman >>');
+
+    if (logoData) {
+      const imageBytes = pdfBinaryBytes(logoData.data);
+      const header = encoder.encode('<< /Type /XObject /Subtype /Image /Width ' + logoData.width + ' /Height ' + logoData.height + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + imageBytes.length + ' >>\nstream\n');
+      const footer = encoder.encode('\nendstream');
+      const imageObject = new Uint8Array(header.length + imageBytes.length + footer.length);
+      imageObject.set(header, 0);
+      imageObject.set(imageBytes, header.length);
+      imageObject.set(footer, header.length + imageBytes.length);
+      addObject(logoObjectId, imageObject);
+    }
+
+    pageStreams.forEach(function (stream, index) {
+      const pageId = firstPageObjectId + (index * 2);
+      const contentId = pageId + 1;
+      const resourceParts = ['/Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >>'];
+      if (logoObjectId) resourceParts.push('/XObject << /Logo ' + logoObjectId + ' 0 R >>');
+
+      addObject(pageId, '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << ' + resourceParts.join(' ') + ' >> /Contents ' + contentId + ' 0 R >>');
+
+      const streamBytes = encoder.encode(stream);
+      addObject(contentId, '<< /Length ' + streamBytes.length + ' >>\nstream\n' + stream + '\nendstream');
+    });
+
+    const parts = [];
+    const offsets = [0];
+    let length = 0;
+
+    function pushPart(part) {
+      const bytes = typeof part === 'string' ? encoder.encode(part) : part;
+      parts.push(bytes);
+      length += bytes.length;
+    }
+
+    pushPart('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
+
+    for (let id = 1; id < objects.length; id += 1) {
+      if (!objects[id]) continue;
+      offsets[id] = length;
+      pushPart(id + ' 0 obj\n');
+      pushPart(objects[id]);
+      pushPart('\nendobj\n');
+    }
+
+    const xrefOffset = length;
+    pushPart('xref\n0 ' + objects.length + '\n');
+    pushPart('0000000000 65535 f \n');
+
+    for (let id = 1; id < objects.length; id += 1) {
+      pushPart(String(offsets[id] || 0).padStart(10, '0') + ' 00000 n \n');
+    }
+
+    pushPart('trailer\n<< /Size ' + objects.length + ' /Root 1 0 R >>\nstartxref\n' + xrefOffset + '\n%%EOF');
+
+    return new Blob(parts, { type: 'application/pdf' });
+  }
+
+  function downloadBlob(blob, fileName) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  async function createPalettePdf(palette) {
     if (!isStyleMastersAdmin || !palette) return;
 
     const groups = buildPalettePrintGroups(palette).filter(function (group) {
@@ -2017,113 +2213,142 @@
       return;
     }
 
-    const printWindow = window.open('', '_blank');
+    try {
+      setStatus('Creating PDF...', false);
 
-    if (!printWindow) {
-      setStatus('Please allow pop-ups to create the PDF.', true);
-      return;
-    }
+      const logoData = await loadPdfLogoData();
+      const pageStreams = [];
+      const pageWidth = 612;
+      const pageHeight = 792;
+      const margin = 36;
+      const contentWidth = pageWidth - (margin * 2);
+      const bottomLimit = pageHeight - margin;
+      const columns = 6;
+      const gapX = 5;
+      const gapY = 10;
+      const swatchSize = (contentWidth - (gapX * (columns - 1))) / columns;
+      const labelGap = 6;
+      const labelLineHeight = 10;
+      const rowHeight = swatchSize + labelGap + (labelLineHeight * 2) + gapY;
+      const categoryTopPadding = 22;
+      const logoWidth = 42;
+      const logoHeight = logoData ? Math.round(logoWidth * (logoData.height / logoData.width)) : 0;
+      let commands = '';
+      let y = margin;
+      let pageStarted = false;
 
-    const doc = printWindow.document;
-    doc.title = palette.name + ' PDF';
-
-    const style = doc.createElement('style');
-    style.textContent = [
-      '@page { size: letter; margin: 0; }',
-      '* { box-sizing: border-box; }',
-      'html, body { margin: 0; }',
-      'body { color: #333; font-family: Arial, Helvetica, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }',
-      '.pdf-page { width: 8.5in; min-height: 11in; padding: 0.5in; background: #fff; overflow: hidden; }',
-      '.pdf-logo { display: block; width: 72px; height: auto; margin: 0 auto 12px; }',
-      'h1 { margin: 0 0 14px; color: #050505; font-family: Cambria, "Times New Roman", Times, serif; font-size: 38px; font-weight: 500; line-height: 1.05; letter-spacing: 0; text-align: center; }',
-      '.pdf-category { break-inside: avoid; page-break-inside: avoid; margin: 0 0 18px; padding-top: 0.22in; }',
-      'h2 { margin: 0 0 9px; color: #333; font-size: 14px; font-weight: 700; line-height: 1.2; letter-spacing: 0.06em; text-transform: uppercase; }',
-      '.pdf-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px 7px; }',
-      '.pdf-swatch { min-width: 0; text-align: center; break-inside: avoid; }',
-      '.pdf-color { width: 100%; aspect-ratio: 1 / 1; margin: 0 0 4px; border-radius: 11px; box-shadow: 0 7px 12px rgba(0,0,0,.08); }',
-      '.pdf-name { color: #222; font-size: 12px; font-weight: 500; line-height: 1.1; overflow-wrap: anywhere; }',
-      '@media screen { body { background: #5b5d60; padding: 12px 0; } .pdf-page { margin: 0 auto 18px; box-shadow: 0 0 0 1px rgba(0,0,0,.35), 0 4px 18px rgba(0,0,0,.35); } }',
-      '@media print { body { background: #fff; } .pdf-page { margin: 0; break-after: page; page-break-after: always; box-shadow: none; } .pdf-page:last-child { break-after: auto; page-break-after: auto; } }'
-    ].join('\n');
-    doc.head.appendChild(style);
-
-    const colorsPerRow = 6;
-    const firstPageRows = 3;
-    const pageRows = 5;
-
-    function createPrintPage(includeTitle) {
-      const page = doc.createElement('div');
-      page.className = 'pdf-page';
-      doc.body.appendChild(page);
-
-      const logo = doc.createElement('img');
-      logo.className = 'pdf-logo';
-      logo.src = 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/YourColorStyle_Logo-120_e3c4c33e-3249-4120-8dc6-c665eb3fec9f.png?v=1644954058';
-      logo.alt = 'Your Color Style';
-      page.appendChild(logo);
-
-      if (includeTitle) {
-        addTextElement(doc, page, 'h1', palette.name);
+      function pdfY(topY) {
+        return pageHeight - topY;
       }
 
-      return page;
-    }
+      function append(command) {
+        commands += command + '\n';
+      }
 
-    function appendCategorySection(page, category, colors) {
-      const section = doc.createElement('section');
-      section.className = 'pdf-category';
-      addTextElement(doc, section, 'h2', category);
+      function startPage(includeTitle) {
+        if (pageStarted) pageStreams.push(commands);
+        commands = '';
+        pageStarted = true;
+        y = margin;
 
-      const grid = doc.createElement('div');
-      grid.className = 'pdf-grid';
-
-      colors.forEach(function (color) {
-        color = normalizePdfColor(color);
-
-        const swatch = doc.createElement('div');
-        swatch.className = 'pdf-swatch';
-
-        const colorSquare = doc.createElement('div');
-        colorSquare.className = 'pdf-color';
-        colorSquare.style.background = normalizePrintHex(color.hexCode);
-        swatch.appendChild(colorSquare);
-
-        addTextElement(doc, swatch, 'div', color.name, 'pdf-name');
-        grid.appendChild(swatch);
-      });
-
-      section.appendChild(grid);
-      page.appendChild(section);
-    }
-
-    let currentPage = createPrintPage(true);
-    let remainingRows = firstPageRows;
-
-    groups.forEach(function (group) {
-      const colors = group.colors.map(normalizePdfColor);
-      let colorIndex = 0;
-
-      while (colorIndex < colors.length) {
-        if (remainingRows <= 0) {
-          currentPage = createPrintPage(false);
-          remainingRows = pageRows;
+        if (logoData) {
+          const logoX = (pageWidth - logoWidth) / 2;
+          append('q ' + logoWidth.toFixed(2) + ' 0 0 ' + logoHeight.toFixed(2) + ' ' + logoX.toFixed(2) + ' ' + (pageHeight - y - logoHeight).toFixed(2) + ' cm /Logo Do Q');
+          y += logoHeight + 20;
         }
 
-        const colorsForPage = remainingRows * colorsPerRow;
-        const colorChunk = colors.slice(colorIndex, colorIndex + colorsForPage);
-
-        appendCategorySection(currentPage, group.category, colorChunk);
-
-        const rowsUsed = Math.ceil(colorChunk.length / colorsPerRow);
-        remainingRows -= rowsUsed;
-        colorIndex += colorChunk.length;
+        if (includeTitle) {
+          drawText(palette.name || 'Color Palette', pageWidth / 2, y + 24, 34, 'F3', 'center', [0, 0, 0]);
+          y += 58;
+        }
       }
-    });
 
-    printWindow.focus();
-    setTimeout(function () {
-      printWindow.print();
-    }, 250);
+      function roundedRectPath(x, topY, width, height, radius) {
+        const left = x;
+        const right = x + width;
+        const top = pdfY(topY);
+        const bottom = pdfY(topY + height);
+        const curve = radius * 0.5522847498;
+
+        return [
+          (left + radius).toFixed(2) + ' ' + top.toFixed(2) + ' m',
+          (right - radius).toFixed(2) + ' ' + top.toFixed(2) + ' l',
+          (right - radius + curve).toFixed(2) + ' ' + top.toFixed(2) + ' ' + right.toFixed(2) + ' ' + (top - radius + curve).toFixed(2) + ' ' + right.toFixed(2) + ' ' + (top - radius).toFixed(2) + ' c',
+          right.toFixed(2) + ' ' + (bottom + radius).toFixed(2) + ' l',
+          right.toFixed(2) + ' ' + (bottom + radius - curve).toFixed(2) + ' ' + (right - radius + curve).toFixed(2) + ' ' + bottom.toFixed(2) + ' ' + (right - radius).toFixed(2) + ' ' + bottom.toFixed(2) + ' c',
+          (left + radius).toFixed(2) + ' ' + bottom.toFixed(2) + ' l',
+          (left + radius - curve).toFixed(2) + ' ' + bottom.toFixed(2) + ' ' + left.toFixed(2) + ' ' + (bottom + radius - curve).toFixed(2) + ' ' + left.toFixed(2) + ' ' + (bottom + radius).toFixed(2) + ' c',
+          left.toFixed(2) + ' ' + (top - radius).toFixed(2) + ' l',
+          left.toFixed(2) + ' ' + (top - radius + curve).toFixed(2) + ' ' + (left + radius - curve).toFixed(2) + ' ' + top.toFixed(2) + ' ' + (left + radius).toFixed(2) + ' ' + top.toFixed(2) + ' c',
+          'h'
+        ].join(' ');
+      }
+
+      function drawText(text, x, topY, fontSize, fontName, align, rgb) {
+        const safeText = escapePdfText(text);
+        const width = estimatePdfTextWidth(text, fontSize);
+        const textX = align === 'center' ? x - (width / 2) : x;
+        const color = rgb || [0, 0, 0];
+        append('BT ' + (color[0] / 255).toFixed(3) + ' ' + (color[1] / 255).toFixed(3) + ' ' + (color[2] / 255).toFixed(3) + ' rg /' + fontName + ' ' + fontSize + ' Tf ' + textX.toFixed(2) + ' ' + pdfY(topY).toFixed(2) + ' Td (' + safeText + ') Tj ET');
+      }
+
+      function drawCategoryHeader(category) {
+        y += categoryTopPadding;
+
+        if (y + 18 + rowHeight > bottomLimit) {
+          startPage(false);
+          y += categoryTopPadding;
+        }
+
+        drawText(String(category || '').toUpperCase(), margin, y, 14, 'F2', 'left', [34, 43, 50]);
+        y += 18;
+      }
+
+      function drawColor(color, column, rowY) {
+        const x = margin + (column * (swatchSize + gapX));
+        const rgb = hexToRgb(color.hexCode);
+
+        append('0.945 0.945 0.945 rg ' + roundedRectPath(x + 2, rowY + 3, swatchSize, swatchSize, 7) + ' f');
+        append((rgb.r / 255).toFixed(3) + ' ' + (rgb.g / 255).toFixed(3) + ' ' + (rgb.b / 255).toFixed(3) + ' rg ' + roundedRectPath(x, rowY, swatchSize, swatchSize, 7) + ' f');
+
+        splitPdfText(color.name || '', 10, swatchSize, 2).forEach(function (line, index) {
+          drawText(line, x + (swatchSize / 2), rowY + swatchSize + labelGap + (index * labelLineHeight), 10, 'F1', 'center', [0, 0, 0]);
+        });
+      }
+
+      startPage(true);
+
+      groups.forEach(function (group) {
+        const colors = group.colors.map(normalizePdfColor);
+        let colorIndex = 0;
+        let needsHeader = true;
+
+        while (colorIndex < colors.length) {
+          if (needsHeader) {
+            drawCategoryHeader(group.category);
+            needsHeader = false;
+          }
+
+          if (y + rowHeight > bottomLimit) {
+            startPage(false);
+            drawCategoryHeader(group.category);
+          }
+
+          colors.slice(colorIndex, colorIndex + columns).forEach(function (color, column) {
+            drawColor(color, column, y);
+          });
+
+          y += rowHeight;
+          colorIndex += columns;
+        }
+      });
+
+      pageStreams.push(commands);
+      downloadBlob(createPdfBlob(pageStreams, logoData), pdfFileName(palette.name));
+      setStatus('', false);
+    } catch (error) {
+      setStatus(error.message || 'Unable to create PDF.', true);
+    }
   }
 
   async function createYcsPalettePdf(paletteCode, paletteTitle) {
