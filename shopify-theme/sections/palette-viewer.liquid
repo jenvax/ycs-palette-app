@@ -1288,7 +1288,8 @@ const hasAccess =
 
         const shouldGroupByDepth =
           category !== 'Favorites' &&
-          category !== 'Best';
+          category !== 'Best' &&
+          category !== 'Custom';
 
         return `
           <section class="${sectionClass}" id="${id}" data-category="${category}">
