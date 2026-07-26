@@ -672,6 +672,16 @@
                         </a>
                       {% endif %}
                     {% endif %}
+
+                    {% if actual_is_admin %}
+                      <button
+                        type="button"
+                        class="ycs-palette-card__button ycs-palette-card__button--secondary"
+                        data-ycs-pdf-palette-code="{{ palette_code | escape }}"
+                        data-ycs-pdf-palette-title="{{ block.settings.title | escape }}">
+                        Create PDF
+                      </button>
+                    {% endif %}
                   </div>
                 </div>
               </div>
@@ -1959,12 +1969,19 @@
     return hex || '#FFFFFF';
   }
 
+  function normalizePdfColor(color) {
+    return Object.assign({}, color, {
+      hexCode: color.hexCode || color.hex || color.colorHex || '',
+      name: color.name || color.colorName || ''
+    });
+  }
+
   function buildPalettePrintGroups(palette) {
     const groups = {};
     const groupOrder = [];
 
     (palette.colors || []).forEach(function (item) {
-      const color = item.color || {};
+      const color = normalizePdfColor(item.color || {});
       const category = getPdfColorCategory(color);
 
       if (!groups[category]) {
@@ -2012,7 +2029,7 @@
 
     const style = doc.createElement('style');
     style.textContent = [
-      '@page { margin: 0.55in; }',
+      '@page { margin: 0.5in; }',
       '* { box-sizing: border-box; }',
       'body { margin: 0; color: #333; font-family: Arial, Helvetica, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }',
       '.pdf-logo { display: block; width: 120px; height: auto; margin: 0 auto 22px; }',
@@ -2043,6 +2060,8 @@
       grid.className = 'pdf-grid';
 
       group.colors.forEach(function (color) {
+        color = normalizePdfColor(color);
+
         const swatch = doc.createElement('div');
         swatch.className = 'pdf-swatch';
 
@@ -2063,6 +2082,33 @@
     setTimeout(function () {
       printWindow.print();
     }, 250);
+  }
+
+  async function createYcsPalettePdf(paletteCode, paletteTitle) {
+    if (!isStyleMastersAdmin || !paletteCode) return;
+
+    try {
+      setStatus('Loading ' + paletteCode + ' colors for PDF...', false);
+
+      const response = await fetch('/apps/palette-data?palette=' + encodeURIComponent(paletteCode), {
+        credentials: 'same-origin'
+      });
+      const json = await response.json();
+
+      if (!response.ok || !json.colors) {
+        throw new Error(json.error || 'Unable to load palette colors.');
+      }
+
+      createPalettePdf({
+        name: paletteTitle || json.paletteName || paletteCode,
+        colors: json.colors.map(function (color) {
+          return { color: normalizePdfColor(color) };
+        })
+      });
+      setStatus('', false);
+    } catch (error) {
+      setStatus(error.message || 'Unable to create PDF.', true);
+    }
   }
 
   function renderAddColors() {
@@ -2101,6 +2147,16 @@
     if (action === 'delete-palette' && palette && confirm('Delete this custom palette? This will not delete its colors from My Colors.')) {
       requestJson('deletePalette', { paletteId: palette.id }).then(function () { return refreshAfterMutation('Custom palette deleted.'); }).catch(function (error) { setStatus(error.message, true); });
     }
+  });
+
+  document.addEventListener('click', function (event) {
+    const button = event.target.closest('[data-ycs-pdf-palette-code]');
+    if (!button) return;
+
+    createYcsPalettePdf(
+      button.dataset.ycsPdfPaletteCode,
+      button.dataset.ycsPdfPaletteTitle
+    );
   });
 
   modal.addEventListener('click', function (event) {
