@@ -23,6 +23,18 @@
     | append: '&'
   %}
 
+  {% assign is_color_analysis_tools_page = false %}
+  {% if ycs_page_url contains 'view=tools&' or ycs_page_url contains '/pages/color-analysis-tools' %}
+    {% assign is_color_analysis_tools_page = true %}
+  {% endif %}
+
+  {% assign ycs_page_heading = section.settings.heading %}
+  {% assign ycs_page_intro = section.settings.intro %}
+  {% if is_color_analysis_tools_page %}
+    {% assign ycs_page_heading = 'Color Analysis Tools' %}
+    {% assign ycs_page_intro = 'Open your color analysis tools and client workflow.' %}
+  {% endif %}
+
   {% assign is_admin = false %}
   {% if customer and palette_access_string contains ',YCS_ADMIN,' %}
     {% assign is_admin = true %}
@@ -120,6 +132,16 @@
     {% assign has_all_palette_access = true %}
   {% endif %}
 
+  {% assign page_has_all_palette_access = false %}
+  {% if is_color_analysis_tools_page and has_all_palette_access %}
+    {% assign page_has_all_palette_access = true %}
+  {% endif %}
+
+  {% assign can_manage_custom_palettes = false %}
+  {% if is_catool_growth or actual_is_admin %}
+    {% assign can_manage_custom_palettes = true %}
+  {% endif %}
+
   {% assign can_access_all_printable_pdfs = false %}
   {% if is_admin or is_trade or palette_access_string contains ',VIP,' %}
     {% assign can_access_all_printable_pdfs = true %}
@@ -148,7 +170,7 @@
   {% if customer == nil %}
     <div class="ycs-my-palettes__header">
       <p class="ycs-my-palettes__kicker">Your Color Style</p>
-      <h1>{{ section.settings.heading }}</h1>
+      <h1>{{ ycs_page_heading }}</h1>
       <p class="ycs-my-palettes__intro">Please sign in to view your palettes.</p>
       <div class="ycs-my-palettes__signin">
         <a href="{{ routes.account_login_url }}" class="ycs-my-palettes__signin-button">Sign In</a>
@@ -178,11 +200,11 @@
 
     <div class="ycs-my-palettes__header">
       <p class="ycs-my-palettes__kicker">Your Color Style</p>
-      <h1>{{ section.settings.heading }}</h1>
-      <p class="ycs-my-palettes__intro">{{ section.settings.intro }}</p>
+      <h1>{{ ycs_page_heading }}</h1>
+      <p class="ycs-my-palettes__intro">{{ ycs_page_intro }}</p>
     </div>
 
-    {% if actual_is_admin %}
+    {% if actual_is_admin and is_color_analysis_tools_page %}
       <div class="ycs-admin-preview">
         <div>
           <p class="ycs-admin-preview__kicker">Admin testing</p>
@@ -206,10 +228,10 @@
     {% endif %}
 
     <div class="ycs-my-palettes__section ycs-my-palettes__section--studio">
-      <h2 class="ycs-my-palettes__section-title">Tools</h2>
+      <h2 class="ycs-my-palettes__section-title">{% if is_color_analysis_tools_page %}Tools{% else %}Draping Studio{% endif %}</h2>
       <div class="ycs-my-palettes__grid ycs-my-palettes__grid--2">
 
-        {% if can_use_analysis_tool %}
+        {% if is_color_analysis_tools_page and can_use_analysis_tool %}
           <div class="ycs-palette-card ycs-palette-card--admin">
             <div class="ycs-palette-card__top">
               <div
@@ -252,7 +274,7 @@
               </div>
 
               <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
-                <a href="{% if is_diy_catool or is_free_diy_catool %}/pages/photo-prep?mode=diy&workflow=color-analysis{% elsif is_catool_free %}/pages/photo-prep?mode=trade&workflow=color-analysis&trial=catoolfree{% else %}/pages/photo-prep?mode=trade&workflow=color-analysis{% endif %}" class="ycs-palette-card__button">
+                <a href="{% if is_diy_catool or is_free_diy_catool %}/pages/photo-prep?mode=diy&workflow=color-analysis&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dtools{% elsif is_catool_free %}/pages/photo-prep?mode=trade&workflow=color-analysis&trial=catoolfree&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dtools{% else %}/pages/photo-prep?mode=trade&workflow=color-analysis&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dtools{% endif %}" class="ycs-palette-card__button">
                   Open Tool
                 </a>
               </div>
@@ -260,7 +282,7 @@
           </div>
         {% endif %}
 
-        {% if is_trade %}
+        {% if is_color_analysis_tools_page and is_trade %}
           <div class="ycs-palette-card ycs-palette-card--admin">
             <div class="ycs-palette-card__top">
               <div
@@ -289,6 +311,7 @@
           </div>
         {% endif %}
 
+        {% unless is_color_analysis_tools_page %}
         <div class="ycs-palette-card ycs-palette-card--studio">
           <div class="ycs-palette-card__top">
             <div
@@ -343,11 +366,12 @@
           </div>
           
         </div>
+        {% endunless %}
 
       </div>
     </div>
 
-    {% if is_catool_growth or actual_is_admin %}
+    {% if is_color_analysis_tools_page and can_manage_custom_palettes %}
       <div
         class="ycs-my-palettes__section ycs-custom-palettes"
         id="ycs-custom-palettes"
@@ -419,7 +443,7 @@
           {% assign user_owns_palette = true %}
         {% endif %}
       {% else %}
-        {% if has_all_palette_access or palette_access_string contains palette_token %}
+        {% if page_has_all_palette_access or palette_access_string contains palette_token %}
           {% assign user_owns_palette = true %}
         {% endif %}
       {% endif %}
@@ -437,7 +461,7 @@
       </div>
     {% endif %}
 
-    {% if is_admin %}
+    {% if is_color_analysis_tools_page and is_admin %}
       <div class="ycs-my-palettes__section ycs-my-palettes__section--admin">
         <h2 class="ycs-my-palettes__section-title">Admin Views</h2>
 
@@ -484,7 +508,7 @@
               </div>
 
               <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
-                <a href="/pages/my-palettes?viewAs=catoolgrowth" class="ycs-palette-card__button">
+                <a href="/pages/my-palettes?view=tools&viewAs=catoolgrowth" class="ycs-palette-card__button">
                   Open Growth View
                 </a>
               </div>
@@ -563,7 +587,7 @@
                 {% assign user_owns_palette = true %}
               {% endif %}
             {% else %}
-              {% if has_all_palette_access or palette_access_string contains palette_token %}
+              {% if page_has_all_palette_access or palette_access_string contains palette_token %}
                 {% assign user_owns_palette = true %}
               {% endif %}
             {% endif %}
@@ -630,7 +654,7 @@
       </div>
     {% endif %}
 
-    {% if palette_access_string contains ',VIP,' and actual_is_admin == false %}
+    {% if is_color_analysis_tools_page == false and palette_access_string contains ',VIP,' and actual_is_admin == false %}
       <div
         class="ycs-my-palettes__section ycs-style-masters-palettes"
         id="ycs-style-masters-palettes"
@@ -667,7 +691,7 @@
                 {% assign user_owns_palette = true %}
               {% endif %}
             {% else %}
-              {% if has_all_palette_access or palette_access_string contains palette_token %}
+              {% if page_has_all_palette_access or palette_access_string contains palette_token %}
                 {% assign user_owns_palette = true %}
               {% endif %}
             {% endif %}

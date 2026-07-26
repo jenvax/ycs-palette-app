@@ -1178,6 +1178,8 @@ const IS_SAMPLE_TRIAL_REQUEST = appEl.dataset.isSampleTrialRequest === 'true';
 
 const params = new URLSearchParams(window.location.search);
 const returnUrl = params.get('returnUrl') || '/pages/my-palettes';
+const safeReturnUrl = returnUrl.startsWith('/') ? returnUrl : '/pages/my-palettes';
+const returnLabel = safeReturnUrl.includes('view=tools') ? 'Color Analysis Tools' : 'My Color Palettes';
 const WORKFLOW = (params.get('workflow') || '').trim().toLowerCase() || '';
 const REQUESTED_PALETTE_CODE = (params.get('palette') || '').trim();
 
@@ -1527,14 +1529,14 @@ if (replaceBtn && !IS_SIMPLE_ANALYST && !IS_PERSONAL_MODE && !IS_MEMBER_PHOTO_MO
   backLink.dataset.backAction = '';
 
   if (IS_PERSONAL_MODE) {
-    backLink.textContent = '← Back to My Palettes';
-    backLink.setAttribute('href', '/pages/my-palettes');
+    backLink.textContent = '← Back to ' + returnLabel;
+    backLink.setAttribute('href', safeReturnUrl);
     return;
   }
 
   if (IS_DIY_MODE) {
-    backLink.textContent = '← Back to My Palettes';
-    backLink.setAttribute('href', '/pages/my-palettes');
+    backLink.textContent = '← Back to ' + returnLabel;
+    backLink.setAttribute('href', safeReturnUrl);
     return;
   }
 
@@ -1551,8 +1553,8 @@ if (replaceBtn && !IS_SIMPLE_ANALYST && !IS_PERSONAL_MODE && !IS_MEMBER_PHOTO_MO
     return;
   }
 
-  backLink.textContent = '← Back to My Palettes';
-  backLink.setAttribute('href', '/pages/my-palettes');
+  backLink.textContent = '← Back to ' + returnLabel;
+  backLink.setAttribute('href', safeReturnUrl);
 }
 
 function updateStartAnalysisLink() {

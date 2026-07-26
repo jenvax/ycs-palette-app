@@ -1,0 +1,205 @@
+<!-- breadcrumb -->
+{% include 'breadcrumb' %}
+
+<div class="page-width">
+  <h1 class="page-title">{{ 'customer.account.title' | t }}</h1>
+
+ {% comment %}
+Show Style Masters Hub button if:
+- customer has VIP tag (active member), OR
+- customer has a permanent Style Masters issue entitlement tag, OR
+- customer has ever purchased Style Masters membership or issue products
+{% endcomment %}
+
+{% assign has_style_masters_access = false %}
+{% assign sm_handles = 'style-masters,style-masters-magazine,style-masters-membership' | split: ',' %}
+
+{% if customer %}
+  {% assign account_tag_string = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
+
+  {% if account_tag_string contains ',VIP,' or account_tag_string contains ',STYLEMASTERS_' %}
+    {% assign has_style_masters_access = true %}
+  {% endif %}
+
+  {% if has_style_masters_access == false %}
+    {% for order in customer.orders %}
+      {% if order.cancelled_at == nil and order.financial_status != 'void' %}
+        {% for item in order.line_items %}
+          {% if item.product %}
+            {% assign item_handle = item.product.handle | downcase %}
+            {% assign item_tags = item.product.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
+            {% if sm_handles contains item_handle or item_handle contains 'style-masters-' or item_tags contains ',STYLE MASTERS ISSUE,' %}
+              {% assign has_style_masters_access = true %}
+              {% break %}
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+        {% if has_style_masters_access %}
+          {% break %}
+        {% endif %}
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+{% endif %}
+<h3 class="account-resources-title">Your Resources</h3>
+<div class="account-quick-links">
+  {% assign palette_access_string = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
+
+  {% assign has_consumer_palette_access = false %}
+  {% assign consumer_palette_codes = 'CWL,CWM,CWD,CWLG,CWMG,CWDG,CCL,CCM,CCD,CCLG,CCMG,CCDG,SWL,SWM,SWD,SWLG,SWMG,SWDG,SCL,SCM,SCD,SCLG,SCMG,SCDG,LO,MO,DO' | split: ',' %}
+  {% if palette_access_string contains ',VIP,' or palette_access_string contains ',DRAPINGSTUDIO,' or palette_access_string contains ',DRAPINGSTUDIOSTARTER,' or palette_access_string contains ',SAMPLE,' %}
+    {% assign has_consumer_palette_access = true %}
+  {% endif %}
+  {% if has_consumer_palette_access == false %}
+    {% for consumer_palette_code in consumer_palette_codes %}
+      {% assign consumer_palette_token = ',' | append: consumer_palette_code | append: ',' %}
+      {% if palette_access_string contains consumer_palette_token %}
+        {% assign has_consumer_palette_access = true %}
+        {% break %}
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+
+  {% if has_consumer_palette_access %}
+    <a href="/pages/my-palettes" class="account-tool">
+      My Color Palettes
+    </a>
+  {% endif %}
+
+  {% assign has_trade_access = false %}
+  {% assign trade_july_cohort_expires_at = '2026-08-25 00:00:00 -0400' | date: '%s' %}
+  {% assign current_timestamp = 'now' | date: '%s' %}
+  {% if palette_access_string contains ',TRADE,' %}
+    {% assign has_trade_access = true %}
+  {% endif %}
+  {% if palette_access_string contains ',TRADEJULYCOHORT,' and current_timestamp < trade_july_cohort_expires_at %}
+    {% assign has_trade_access = true %}
+  {% endif %}
+
+  {% assign has_color_analysis_tool = false %}
+  {% if palette_access_string contains ',CATOOL,' or palette_access_string contains ',CATOOLGROWTH,' or palette_access_string contains ',CATOOLFREE,' or palette_access_string contains ',DIYCATOOL,' or palette_access_string contains ',FREEDIYCATOOL,' or palette_access_string contains ',YCS_ADMIN,' %}
+    {% assign has_color_analysis_tool = true %}
+  {% endif %}
+
+  {% if has_trade_access or has_color_analysis_tool %}
+    <a href="/pages/my-palettes?view=tools" class="account-tool">
+      Color Analysis Tools
+    </a>
+  {% endif %}
+
+  <a href="/pages/digital-downloads" class="account-tool">
+    Downloads
+  </a>
+
+   <a href="/tools/memberships" class="account-tool">
+    Manage Subscriptions
+  </a>
+
+  {% if has_style_masters_access %}
+
+    <a href="/pages/style-masters-library" class="account-tool">
+      Style Masters Hub
+    </a>
+  {% endif %}
+</div>
+
+
+  <hr/>
+  <div class="grid">
+    <div class="grid__item medium-up--two-thirds">
+      <h4>{{ 'customer.orders.title' | t }}</h4>
+
+      {% paginate customer.orders by 20 %}
+        {% if customer.orders.size != 0 %}
+
+          <table class="responsive-table">
+            <thead>
+              <tr>
+                <th>{{ 'customer.orders.order_number' | t }}</th>
+                <th>{{ 'customer.orders.date' | t }}</th>
+                <th>{{ 'customer.orders.payment_status' | t }}</th>
+                <th>{{ 'customer.orders.fulfillment_status' | t }}</th>
+                <th>{{ 'customer.orders.total' | t }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for order in customer.orders %}
+                <tr>
+                  <td data-label="{{ 'customer.orders.order_number' | t }}">
+                    <a href="{{ order.customer_url }}" class="btn btn--secondary btn--small">{{ order.name }}</a>
+                  </td>
+                  <td data-label="{{ 'customer.orders.date' | t }}">{{ order.created_at | time_tag: format: 'date' }}</td>
+                  <td data-label="{{ 'customer.orders.payment_status' | t }}">{{ order.financial_status_label }}</td>
+                  <td data-label="{{ 'customer.orders.fulfillment_status' | t }}">{{ order.fulfillment_status_label }}</td>
+                  <td data-label="{{ 'customer.orders.total' | t }}">{{ order.total_price | money }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+
+        {% else %}
+
+          <p>{{ 'customer.orders.none' | t }}</p>
+
+        {% endif %}
+        {% if paginate.pages > 1 %}
+          {% include 'pagination' %}
+        {% endif %}
+      {% endpaginate %}
+    </div>
+    <div class="grid__item medium-up--one-third">
+      <h4>{{ 'customer.account.details' | t }}</h4>
+
+      {{ customer.default_address | format_address }}
+
+      <p>
+        <a href="{{ routes.account_addresses_url }}" class="btn btn--small">
+          {{ 'customer.account.view_addresses' | t }} ({{ customer.addresses_count }})
+        </a>
+      </p>
+    </div>
+  </div>
+</div>
+<style>
+  .account-resources-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 18px 0 8px;
+  color: #333;
+}
+  .page-width .account-quick-links {
+    margin: 16px 0 28px !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+    align-items: center !important;
+  }
+
+  .page-width .account-quick-links .account-tool {
+    display: inline-flex !important;
+    width: auto !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    flex: 0 0 auto !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 10px 16px !important;
+    margin: 0 !important;
+    border-radius: 999px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    line-height: 1 !important;
+    text-decoration: none !important;
+    white-space: nowrap !important;
+    border: 1.5px solid #d94c6a !important;
+    color: #d94c6a !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    transition: all 0.15s ease !important;
+  }
+
+  .page-width .account-quick-links .account-tool:hover {
+    background: #d94c6a !important;
+    color: #fff !important;
+  }
+</style>
