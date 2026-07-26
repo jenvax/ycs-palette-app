@@ -30,6 +30,7 @@
   const PHOTO_ID = (urlParams.get('photoId') || '').trim();
   const PHOTO_SOURCE = (urlParams.get('photoSource') || urlParams.get('source') || '').trim();
   const TOOL_MODE = (urlParams.get('mode') || '').trim().toLowerCase();
+  const IS_SIGNATURE_STUDIO = window.location.pathname.indexOf('/pages/signature-color-analysis') !== -1;
   const IS_DIY_MODE = TOOL_MODE === 'diy';
   const IS_FREE_ANALYSIS_DEMO = (IS_CATOOL_FREE || IS_FREE_DIY_CATOOL) && !!DEMO_CLIENT_ID;
 
@@ -521,6 +522,44 @@ function buildSignatureAnalysisHref() {
   return '/pages/signature-color-analysis' + (queryString ? '?' + queryString : '');
 }
 
+function buildColorAnalysisToolHref() {
+  const query = new URLSearchParams();
+
+  if (CLIENT_RECORD_ID) {
+    query.set('clientRecordId', CLIENT_RECORD_ID);
+  } else if (ADMIN_CUSTOMER_ID) {
+    query.set('adminCustomerId', ADMIN_CUSTOMER_ID);
+  } else if (SIMPLE_CUSTOMER_ID) {
+    query.set('customerId', SIMPLE_CUSTOMER_ID);
+  }
+
+  if (PHOTO_ID) {
+    query.set('photoId', PHOTO_ID);
+  }
+
+  if (PHOTO_SOURCE) {
+    query.set('photoSource', PHOTO_SOURCE);
+  }
+
+  if (DEMO_CLIENT_ID) {
+    query.set('demoClient', DEMO_CLIENT_ID);
+  }
+
+  if (TOOL_MODE) {
+    query.set('mode', TOOL_MODE);
+  }
+
+  const returnUrl = getReturnUrl();
+  if (returnUrl) {
+    query.set('returnUrl', returnUrl);
+  }
+
+  addAdminPreviewParam(query);
+
+  const queryString = query.toString();
+  return '/pages/color-analysis-tool' + (queryString ? '?' + queryString : '');
+}
+
 function updateSignatureAnalysisLink() {
   if (!signatureAnalysisLink) return;
 
@@ -535,8 +574,13 @@ function updateSignatureAnalysisLink() {
 
   signatureAnalysisLink.hidden = false;
   signatureAnalysisLink.style.display = '';
-  signatureAnalysisLink.textContent = 'Lip & Draping Studio';
-  signatureAnalysisLink.href = buildSignatureAnalysisHref();
+  if (IS_SIGNATURE_STUDIO) {
+    signatureAnalysisLink.textContent = 'Switch to Color Analysis Tool';
+    signatureAnalysisLink.href = buildColorAnalysisToolHref();
+  } else {
+    signatureAnalysisLink.textContent = 'Lip & Draping Studio';
+    signatureAnalysisLink.href = buildSignatureAnalysisHref();
+  }
 }
   function hideSwatchLoading() {
     if (swatchLoadingEl) swatchLoadingEl.hidden = true;
@@ -562,15 +606,15 @@ function updateSignatureAnalysisLink() {
   }
 
   async function loadAdminStyleMastersPalettes() {
-    if (!IS_ADMIN || !APP_BASE_URL || !VIEWER_CUSTOMER_ID) return [];
+    if (!IS_ADMIN) return [];
 
     try {
       const query = new URLSearchParams({
-        customerId: VIEWER_CUSTOMER_ID,
-        scope: 'stylemasters',
+        isAdmin: 'true',
         action: 'list'
       });
-      const response = await fetch(APP_BASE_URL.replace(/\/$/, '') + '/api/custom-palettes?' + query.toString());
+      query.set('action', 'getStyleMastersPalettes');
+      const response = await fetch('/apps/palette-data?' + query.toString(), { credentials: 'same-origin' });
       const text = await response.text();
       const data = text ? JSON.parse(text) : {};
 
@@ -1775,7 +1819,11 @@ function refreshAllSwatchHighlights() {
 
   async function fetchPaletteColors(paletteCode) {
     try {
-      const url = '/apps/palette-data?palette=' + encodeURIComponent(paletteCode);
+      const query = new URLSearchParams({ palette: paletteCode });
+      if (IS_ADMIN && isCustomPaletteCode(paletteCode)) {
+        query.set('isAdmin', 'true');
+      }
+      const url = '/apps/palette-data?' + query.toString();
       const res = await fetch(url, { credentials: 'same-origin' });
       const data = await res.json();
       return Array.isArray(data.colors) ? data.colors : [];
@@ -4461,7 +4509,9 @@ const y = ((e.clientY - svgRect.top) / svgRect.height) * 1000;
   if (signatureAnalysisLink) {
     updateSignatureAnalysisLink();
     signatureAnalysisLink.addEventListener('click', function () {
-      signatureAnalysisLink.href = buildSignatureAnalysisHref();
+      signatureAnalysisLink.href = IS_SIGNATURE_STUDIO
+        ? buildColorAnalysisToolHref()
+        : buildSignatureAnalysisHref();
     });
   }
 

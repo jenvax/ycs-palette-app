@@ -150,7 +150,7 @@ async function fetchAllAirtableRecords({ baseId, tableName, token, sortField, fo
   return allRecords;
 }
 
-async function fetchStyleMastersCustomPalette({ baseId, token, paletteId }) {
+async function fetchStyleMastersCustomPalette({ baseId, token, paletteId, includeHidden = false }) {
   const escapedPaletteId = escapeFormulaValue(paletteId);
   const ownerFilter = `{OwnerCustomerId}="${STYLE_MASTERS_OWNER_ID}"`;
   const paletteRecords = await fetchAllAirtableRecords({
@@ -168,7 +168,7 @@ async function fetchStyleMastersCustomPalette({ baseId, token, paletteId }) {
   }
 
   const paletteFields = paletteRecord.fields || {};
-  if (!parseTruthy(paletteFields.VisibleToVip)) {
+  if (!includeHidden && !parseTruthy(paletteFields.VisibleToVip)) {
     const error = new Error("Custom palette not found");
     error.status = 404;
     throw error;
@@ -221,6 +221,33 @@ async function fetchStyleMastersCustomPalette({ baseId, token, paletteId }) {
     paletteName: normalizeField(paletteFields.Name) || "Style Masters Color Palette",
     colors
   };
+}
+
+async function fetchStyleMastersCustomPaletteList({ baseId, token, includeHidden = false }) {
+  const ownerFilter = `{OwnerCustomerId}="${STYLE_MASTERS_OWNER_ID}"`;
+  const paletteRecords = await fetchAllAirtableRecords({
+    baseId,
+    tableName: "CustomPalettes",
+    token,
+    sortField: "CreatedAt",
+    formula: includeHidden
+      ? ownerFilter
+      : `AND(${ownerFilter}, {VisibleToVip}=TRUE())`
+  });
+
+  return paletteRecords
+    .map((record) => {
+      const fields = record.fields || {};
+      const id = normalizeField(fields.PaletteId) || record.id;
+      if (!id) return null;
+
+      return {
+        id,
+        name: normalizeField(fields.Name) || "Style Masters Color Palette",
+        visibleToVip: parseTruthy(fields.VisibleToVip)
+      };
+    })
+    .filter(Boolean);
 }
 
 async function createAirtableRecord({ baseId, tableName, token, fields }) {
@@ -770,6 +797,41 @@ export async function loader({ request }) {
     }
   }
 
+  if (action === "getStyleMastersPalettes") {
+    try {
+      const isAdmin = String(url.searchParams.get("isAdmin") || "").trim() === "true";
+
+      if (!loggedInCustomerId) {
+        return Response.json(
+          { error: "You must be signed in to use this tool" },
+          { status: 401 }
+        );
+      }
+
+      if (!isAdmin) {
+        return Response.json(
+          { error: "Admin access required" },
+          { status: 403 }
+        );
+      }
+
+      const palettes = await fetchStyleMastersCustomPaletteList({
+        baseId: AIRTABLE_BASE_ID,
+        token: AIRTABLE_TOKEN,
+        includeHidden: true
+      });
+
+      return Response.json({ palettes });
+    } catch (error) {
+      console.error("getStyleMastersPalettes failed:", error);
+
+      return Response.json(
+        { error: error.message || "Failed to load Style Masters palettes" },
+        { status: 500 }
+      );
+    }
+  }
+
   if (action === "syncCustomerDirectory") {
     try {
       const isAdmin = String(url.searchParams.get("isAdmin") || "").trim() === "true";
@@ -1103,7 +1165,10 @@ for (const customerPhotoRecord of customerPhotoRecords) {
       const customPalette = await fetchStyleMastersCustomPalette({
         baseId: AIRTABLE_BASE_ID,
         token: AIRTABLE_TOKEN,
-        paletteId
+        paletteId,
+        includeHidden:
+          !!loggedInCustomerId &&
+          String(url.searchParams.get("isAdmin") || "").trim() === "true"
       });
 
       return Response.json({
