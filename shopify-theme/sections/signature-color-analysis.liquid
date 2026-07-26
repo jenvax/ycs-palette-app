@@ -1,0 +1,2410 @@
+{% assign palette_access_string = '' %}
+
+{% if customer %}
+  {% assign palette_access_string = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
+{% endif %}
+
+{% capture ycs_header_content %}{{ content_for_header }}{% endcapture %}
+{% assign ycs_page_url = ycs_header_content
+  | split: '"pageurl":"'
+  | last
+  | split: '"'
+  | first
+  | replace: '\/', '/'
+  | replace: '\\u0026', '&'
+  | replace: '%26', '&'
+  | replace: '%3F', '?'
+  | replace: '%3D', '='
+  | append: '&'
+%}
+
+{% assign is_admin = false %}
+{% if palette_access_string contains ',YCS_ADMIN,' %}
+  {% assign is_admin = true %}
+{% endif %}
+{% assign actual_is_admin = is_admin %}
+
+{% assign is_trade_july_cohort = false %}
+{% assign trade_july_cohort_expires_at = '2026-08-25 00:00:00 -0400' | date: '%s' %}
+{% assign current_timestamp = 'now' | date: '%s' %}
+{% if palette_access_string contains ',TRADEJULYCOHORT,' and current_timestamp < trade_july_cohort_expires_at %}
+  {% assign is_trade_july_cohort = true %}
+{% endif %}
+
+{% assign is_trade = false %}
+{% if palette_access_string contains ',TRADE,' %}
+  {% assign is_trade = true %}
+{% endif %}
+{% if is_trade_july_cohort %}
+  {% assign is_trade = true %}
+{% endif %}
+
+{% assign is_catool = false %}
+{% if palette_access_string contains ',CATOOL,' %}
+  {% assign is_catool = true %}
+{% endif %}
+
+{% assign is_catool_growth = false %}
+{% if palette_access_string contains ',CATOOLGROWTH,' %}
+  {% assign is_catool_growth = true %}
+{% endif %}
+
+{% assign admin_view_as = '' %}
+{% if actual_is_admin %}
+  {% if ycs_page_url contains 'viewAs=trade&' %}
+    {% assign admin_view_as = 'trade' %}
+  {% elsif ycs_page_url contains 'viewAs=catoolgrowth&' %}
+    {% assign admin_view_as = 'catoolgrowth' %}
+  {% elsif ycs_page_url contains 'viewAs=catool&' %}
+    {% assign admin_view_as = 'catool' %}
+  {% endif %}
+{% endif %}
+
+{% if admin_view_as != '' %}
+  {% assign is_admin = false %}
+  {% assign is_trade = false %}
+  {% assign is_catool = false %}
+  {% assign is_catool_growth = false %}
+
+  {% if admin_view_as == 'trade' %}
+    {% assign is_trade = true %}
+  {% elsif admin_view_as == 'catoolgrowth' %}
+    {% assign is_catool_growth = true %}
+  {% elsif admin_view_as == 'catool' %}
+    {% assign is_catool = true %}
+  {% endif %}
+{% endif %}
+
+{% assign can_use_analysis_tool = false %}
+{% if is_admin or is_trade or is_catool or is_catool_growth %}
+  {% assign can_use_analysis_tool = true %}
+{% endif %}
+
+<div
+  class="ycs-analysis-app ycs-signature-analysis-app"
+  data-signature-mode="true"
+  data-customer-id="{{ customer.id }}"
+  data-is-admin="{% if is_admin %}true{% else %}false{% endif %}"
+  data-is-trade="{% if is_trade %}true{% else %}false{% endif %}"
+  data-is-catool="{% if is_catool %}true{% else %}false{% endif %}"
+  data-is-catool-growth="{% if is_catool_growth %}true{% else %}false{% endif %}"
+  data-can-use-analysis-tool="{% if can_use_analysis_tool %}true{% else %}false{% endif %}"
+  data-actual-is-admin="{% if actual_is_admin %}true{% else %}false{% endif %}"
+  data-admin-preview-role="{{ admin_view_as }}"
+  data-palette-access="{{ palette_access_string }}"
+  data-app-base-url="https://ycs-palette-app.vercel.app"
+>
+  {% if customer == nil %}
+    <div class="ycs-analysis-login">
+      <h1>Sign in to access the Color Analysis Tool</h1>
+      <a href="{{ routes.account_login_url }}">Sign In</a>
+    </div>
+
+  {% elsif can_use_analysis_tool != true %}
+  <div class="ycs-analysis-locked">
+    <h1>Color Analysis Tool</h1>
+    <p>This tool is not available for your account.</p>
+  </div>
+
+  {% else %}
+    
+
+    <div class="ycs-analysis-shell">
+      <div class="ycs-signature-topbar">
+  <a href="/pages/photo-prep?mode=trade&workflow=color-analysis" id="ycs-signature-back-link" class="ycs-signature-back-link">
+  ← Back to Client List
+</a>
+</div>
+      <div class="ycs-analysis-header">
+        <p class="ycs-analysis-kicker">Your Color Style</p>
+        <h1 class="ycs-analysis-title">Lip & Draping Studio</h1>
+        <p class="ycs-analysis-subtitle">
+            Draping and lip color testing for a selected Your Color Style palette.
+        </p>
+      </div>
+
+      <div class="ycs-analysis-toolbar">
+  <div class="ycs-analysis-toolbar-left">
+    <div class="ycs-analysis-toolbar-block ycs-analysis-toolbar-block--zoom">
+      <label for="ycs-analysis-zoom-slider" class="ycs-analysis-toolbar-label">Zoom</label>
+      <input
+        type="range"
+        id="ycs-analysis-zoom-slider"
+        data-analysis-zoom
+        min="0.6"
+        max="3"
+        step="0.01"
+        value="1"
+        class="ycs-analysis-range"
+      />
+    </div>
+
+    <div class="ycs-analysis-toolbar-actions">
+      <button type="button" id="ycs-analysis-save-position" class="ycs-analysis-save-btn">
+        Save Position
+      </button>
+      <a
+  id="ycs-signature-standard-analysis-link"
+  href="/pages/color-analysis-tool"
+  class="ycs-analysis-toolbar-link"
+>
+  Switch to Color Analysis Tool
+</a>
+
+      <a id="ycs-analysis-photo-prep-link" href="/pages/photo-prep" class="ycs-analysis-toolbar-link">
+        Back to Photo Prep
+      </a>
+    </div>
+  </div>
+
+  <div class="ycs-analysis-toolbar-right">
+    <div class="ycs-analysis-toolbar-block ycs-analysis-toolbar-block--palette">
+      <label for="ycs-analysis-palette-select" class="ycs-analysis-toolbar-label">Palette</label>
+      <div class="ycs-analysis-palette-select-wrap">
+        <select id="ycs-analysis-palette-select" class="ycs-analysis-palette-select"></select>
+      </div>
+    </div>
+    <label class="ycs-analysis-realistic-toggle">
+      <input type="checkbox" id="ycs-analysis-realistic-drape-toggle">
+      <span>Realistic fabric drape</span>
+    </label>
+  </div>
+</div>
+
+      <div id="ycs-analysis-loading" class="ycs-analysis-loading-panel" hidden>
+        <div class="ycs-analysis-loading__dots">
+          <span></span><span></span><span></span>
+        </div>
+        <p id="ycs-analysis-loading-text" class="ycs-analysis-loading__text">Loading photo…</p>
+      </div>
+
+      <div class="ycs-analysis-main-grid">
+        <aside class="ycs-signature-side-rail ycs-signature-side-rail--left" data-signature-side="left">
+          <div class="ycs-signature-side-card">
+            <label for="ycs-signature-left-palette-select" class="ycs-analysis-toolbar-label">Left Palette</label>
+            <select id="ycs-signature-left-palette-select" class="ycs-analysis-palette-select"></select>
+
+            <div class="ycs-signature-side-section ycs-signature-side-section--lip">
+              <div class="ycs-signature-side-heading">Lip Colors</div>
+              <div class="ycs-signature-lip-controls" data-lip-controls-panel="left">
+                <div class="ycs-signature-lip-actions">
+                  <button type="button" id="ycs-signature-left-lip-edit">Edit</button>
+                  <button type="button" id="ycs-signature-left-lip-visibility">Hide Lips</button>
+                </div>
+                <label class="ycs-signature-lip-opacity">
+                  <span>Left opacity <strong id="ycs-signature-left-lip-opacity-value">45%</strong></span>
+                  <input id="ycs-signature-left-lip-opacity" type="range" min="0.1" max="0.8" step="0.05" value="0.45" />
+                </label>
+              </div>
+              <div id="ycs-signature-left-lip-swatches" class="ycs-signature-side-swatches ycs-signature-side-swatches--lip"></div>
+            </div>
+
+            <div class="ycs-signature-side-section">
+              <div class="ycs-signature-side-heading">Drape Colors</div>
+              <div id="ycs-signature-left-drape-filters" class="ycs-signature-side-filters"></div>
+              <div id="ycs-signature-left-drape-swatches" class="ycs-signature-side-swatches"></div>
+            </div>
+          </div>
+        </aside>
+
+        <div class="ycs-analysis-stage-panel" data-panel="left">
+          <div class="ycs-analysis-photo-stage">
+            <div class="ycs-analysis-photo-frame" id="ycs-analysis-frame-left">
+              <div class="ycs-signature-photo-label ycs-signature-photo-label--name" data-signature-first-name></div>
+<div class="ycs-signature-photo-label ycs-signature-photo-label--palette" data-signature-palette-code></div>
+<div class="ycs-signature-photo-label ycs-signature-photo-label--color" data-signature-color-name-left></div>
+  <img
+    id="ycs-analysis-depth-drape-left"
+    class="ycs-analysis-depth-stage-drape"
+    alt="Left depth drape"
+    hidden
+  />
+
+  <img
+    id="ycs-analysis-photo-left"
+    class="ycs-analysis-photo-preview"
+    alt="Left comparison photo"
+    draggable="false"
+  />
+
+  <canvas id="ycs-lip-canvas-left" class="ycs-lip-canvas"></canvas>
+
+        <svg class="ycs-lip-svg" id="ycs-lip-svg-left" viewBox="0 0 1000 1000" preserveAspectRatio="none">
+  <defs>
+    <filter id="ycs-lip-blur-left">
+      <feGaussianBlur stdDeviation="3.5" />
+    </filter>
+
+    <filter id="ycs-lip-highlight-blur-left">
+      <feGaussianBlur stdDeviation="2.2" />
+    </filter>
+
+    <linearGradient id="ycs-lip-gradient-left" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.18"></stop>
+      <stop offset="22%" stop-color="#ffffff" stop-opacity="0.08"></stop>
+      <stop offset="45%" stop-color="#000000" stop-opacity="0.03"></stop>
+      <stop offset="72%" stop-color="#000000" stop-opacity="0.10"></stop>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.18"></stop>
+    </linearGradient>
+  </defs>
+
+  <path id="ycs-lip-path-left-blur" class="ycs-lip-color-layer" fill="none"></path>
+<path id="ycs-lip-path-left" class="ycs-lip-color-layer" fill="none"></path>
+<path id="ycs-lip-path-left-shade" class="ycs-lip-shade-layer" fill="none"></path>
+<path id="ycs-lip-path-left-highlight" class="ycs-lip-highlight-layer" fill="none"></path>
+  <g id="ycs-lip-guides-left"></g>
+</svg>
+
+        <div class="ycs-analysis-drape-wrap">
+                <svg
+                  class="ycs-analysis-drape-svg"
+                  viewBox="0 0 1000 500"
+                  preserveAspectRatio="none"
+                >
+                <defs>
+                  <clipPath id="ycs-analysis-drape-clip-left">
+                    <use href="#ycs-analysis-drape-left"></use>
+                  </clipPath>
+                </defs>
+                <path
+                    id="ycs-analysis-drape-left"
+                    d="M0,235 Q160,170 320,182 Q500,310 680,182 Q840,170 1000,235 L1000,500 L0,500 Z"
+                    fill="#e8dfd4"
+                  />
+                  <foreignObject
+                    class="ycs-analysis-drape-overlay-object"
+                    x="0"
+                    y="0"
+                    width="1000"
+                    height="500"
+                    clip-path="url(#ycs-analysis-drape-clip-left)"
+                  >
+                    <div xmlns="http://www.w3.org/1999/xhtml" class="ycs-analysis-drape-overlay"></div>
+                  </foreignObject>
+                </svg>
+        </div>
+              <button
+                type="button"
+                class="ycs-analysis-drag-layer"
+                data-panel="left"
+                aria-label="Drag photo"
+              ></button>
+            </div>
+          </div>
+
+          <div class="ycs-analysis-panel-footer">
+            <div class="ycs-analysis-selected">
+              <span class="ycs-analysis-selected-label">Applied</span>
+              <span id="ycs-analysis-selected-left" class="ycs-analysis-selected-name">—</span>
+            </div>
+
+            <div class="ycs-analysis-save-controls">
+              <label class="ycs-analysis-export-label-toggle">
+                <input type="checkbox" id="ycs-analysis-export-label-left" checked>
+                Save with color name
+              </label>
+              <label class="ycs-analysis-export-label-toggle">
+                <input type="checkbox" id="ycs-analysis-export-name-left" checked>
+                Save with name + color type
+              </label>
+              <button type="button" id="ycs-analysis-save-left" class="ycs-analysis-save-btn">
+                Save Left View
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="ycs-analysis-stage-panel" data-panel="right">
+          <div class="ycs-analysis-photo-stage">
+            <div class="ycs-analysis-photo-frame" id="ycs-analysis-frame-right">
+              <div class="ycs-signature-photo-label ycs-signature-photo-label--name" data-signature-first-name></div>
+<div class="ycs-signature-photo-label ycs-signature-photo-label--palette" data-signature-palette-code></div>
+<div class="ycs-signature-photo-label ycs-signature-photo-label--color" data-signature-color-name-right></div>
+              
+                <img
+  id="ycs-analysis-depth-drape-right"
+  class="ycs-analysis-depth-stage-drape"
+  alt="Right depth drape"
+  hidden
+/>
+<img
+  id="ycs-analysis-photo-right"
+  class="ycs-analysis-photo-preview"
+  alt="Right comparison photo"
+  draggable="false"
+/>
+
+<canvas id="ycs-lip-canvas-right" class="ycs-lip-canvas"></canvas>
+              <svg class="ycs-lip-svg" id="ycs-lip-svg-right" viewBox="0 0 1000 1000" preserveAspectRatio="none">
+  <defs>
+    <filter id="ycs-lip-blur-right">
+      <feGaussianBlur stdDeviation="5" />
+    </filter>
+
+    <filter id="ycs-lip-highlight-blur-right">
+      <feGaussianBlur stdDeviation="5" />
+    </filter>
+
+    <linearGradient id="ycs-lip-gradient-right" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.18"></stop>
+      <stop offset="22%" stop-color="#ffffff" stop-opacity="0.08"></stop>
+      <stop offset="45%" stop-color="#000000" stop-opacity="0.03"></stop>
+      <stop offset="72%" stop-color="#000000" stop-opacity="0.10"></stop>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.18"></stop>
+    </linearGradient>
+  </defs>
+
+  <path id="ycs-lip-path-right-blur" class="ycs-lip-color-layer" fill="none"></path>
+<path id="ycs-lip-path-right" class="ycs-lip-color-layer" fill="none"></path>
+<path id="ycs-lip-path-right-shade" class="ycs-lip-shade-layer" fill="none"></path>
+<path id="ycs-lip-path-right-highlight" class="ycs-lip-highlight-layer" fill="none"></path>
+  <g id="ycs-lip-guides-right"></g>
+</svg>
+              <div class="ycs-analysis-drape-wrap">
+                <svg
+                  class="ycs-analysis-drape-svg"
+                  viewBox="0 0 1000 500"
+                  preserveAspectRatio="none"
+                >
+                  <defs>
+                    <clipPath id="ycs-analysis-drape-clip-right">
+                      <use href="#ycs-analysis-drape-right"></use>
+                    </clipPath>
+                  </defs>
+                  <path
+                    id="ycs-analysis-drape-right"
+                    d="M0,235 Q160,170 320,182 Q500,310 680,182 Q840,170 1000,235 L1000,500 L0,500 Z"
+                    fill="#e8dfd4"
+                  />
+                  <foreignObject
+                    class="ycs-analysis-drape-overlay-object"
+                    x="0"
+                    y="0"
+                    width="1000"
+                    height="500"
+                    clip-path="url(#ycs-analysis-drape-clip-right)"
+                  >
+                    <div xmlns="http://www.w3.org/1999/xhtml" class="ycs-analysis-drape-overlay"></div>
+                  </foreignObject>
+                </svg>
+              </div>
+              <button
+                type="button"
+                class="ycs-analysis-drag-layer"
+                data-panel="right"
+                aria-label="Drag photo"
+              ></button>
+            </div>
+          </div>
+
+          <div class="ycs-analysis-panel-footer">
+            <div class="ycs-analysis-selected">
+              <span class="ycs-analysis-selected-label">Selected</span>
+              <span id="ycs-analysis-selected-right" class="ycs-analysis-selected-name">—</span>
+            </div>
+
+            <div class="ycs-analysis-save-controls">
+              <label class="ycs-analysis-export-label-toggle">
+                <input type="checkbox" id="ycs-analysis-export-label-right" checked>
+                Save with color name
+              </label>
+              <label class="ycs-analysis-export-label-toggle">
+                <input type="checkbox" id="ycs-analysis-export-name-right" checked>
+                Save with name + color type
+              </label>
+              <button type="button" id="ycs-analysis-save-right" class="ycs-analysis-save-btn">
+                Save Right View
+              </button>
+            </div>
+          </div>
+        </div>
+        <aside class="ycs-signature-side-rail ycs-signature-side-rail--right" data-signature-side="right">
+          <div class="ycs-signature-side-card">
+            <label for="ycs-signature-right-palette-select" class="ycs-analysis-toolbar-label">Right Palette</label>
+            <select id="ycs-signature-right-palette-select" class="ycs-analysis-palette-select"></select>
+
+            <div class="ycs-signature-side-section ycs-signature-side-section--lip">
+              <div class="ycs-signature-side-heading">Lip Colors</div>
+              <div class="ycs-signature-lip-controls" data-lip-controls-panel="right">
+                <div class="ycs-signature-lip-actions">
+                  <button type="button" id="ycs-signature-right-lip-edit">Edit</button>
+                  <button type="button" id="ycs-signature-right-lip-visibility">Hide Lips</button>
+                </div>
+                <label class="ycs-signature-lip-opacity">
+                  <span>Right opacity <strong id="ycs-signature-right-lip-opacity-value">45%</strong></span>
+                  <input id="ycs-signature-right-lip-opacity" type="range" min="0.1" max="0.8" step="0.05" value="0.45" />
+                </label>
+              </div>
+              <div id="ycs-signature-right-lip-swatches" class="ycs-signature-side-swatches ycs-signature-side-swatches--lip"></div>
+            </div>
+
+            <div class="ycs-signature-side-section">
+              <div class="ycs-signature-side-heading">Drape Colors</div>
+              <div id="ycs-signature-right-drape-filters" class="ycs-signature-side-filters"></div>
+              <div id="ycs-signature-right-drape-swatches" class="ycs-signature-side-swatches"></div>
+            </div>
+          </div>
+        </aside>
+<!-- RIGHT PANEL -->
+<!-- RIGHT PANEL -->
+<div id="ycs-analysis-guided-panel" class="ycs-analysis-guided-panel" hidden>
+  <div id="ycs-analysis-depth-step" hidden></div>
+  <div id="ycs-analysis-undertone-step" hidden></div>
+  <div id="ycs-analysis-chroma-step" hidden></div>
+  <div id="ycs-analysis-undertone-sections" hidden></div>
+  <div id="ycs-analysis-depth-sections" hidden></div>
+  <div id="ycs-analysis-chroma-sections" hidden></div>
+</div>
+
+<div id="ycs-analysis-standard-panel" class="ycs-analysis-colors-panel ycs-analysis-standard-panel">
+  <div class="ycs-lip-panel">
+  <div class="ycs-lip-header">
+    <strong>Lip Color</strong>
+  </div>
+
+  <div id="ycs-lip-empty-mode" class="ycs-lip-mode is-active">
+    <div class="ycs-lip-actions">
+      <button id="ycs-lip-edit" type="button">Create Lips</button>
+    </div>
+
+    <div id="ycs-lip-status" class="ycs-lip-status">
+      Create a lip shape to test lip colors.
+    </div>
+  </div>
+<!-- EDIT MODE -->
+  <div id="ycs-lip-edit-mode" class="ycs-lip-mode" hidden>
+    <div class="ycs-lip-status ycs-lip-edit-help">
+      Zoom in if needed. Click around the lips to place points.
+    </div>
+
+    <div class="ycs-lip-actions">
+  <button id="ycs-lip-finish" type="button" disabled>Finish Shape</button>
+  <button id="ycs-lip-undo" type="button" disabled>Undo</button>
+  <button id="ycs-lip-clear" type="button">Start Over</button>
+  <button type="button" id="ycs-lip-cancel" class="ycs-lip-secondary-btn">Cancel</button>
+</div>
+  </div>
+<!-- ADJUST MODE -->
+ <div id="ycs-lip-adjust-mode" class="ycs-lip-mode" hidden>
+  <div class="ycs-lip-actions">
+  <button id="ycs-lip-move-photo" type="button">Move Photo</button>
+  <button id="ycs-lip-edit-shape-1" type="button">Edit Shape 1</button>
+  <button id="ycs-lip-edit-shape-2" type="button">Edit Shape 2</button>
+  <button id="ycs-lip-done" type="button">Done Editing</button>
+  <button id="ycs-lip-add-shape" type="button" disabled>Add Second Shape</button>
+  <button id="ycs-lip-start-over" type="button">Start Over</button>
+  <button type="button" class="ycs-lip-cancel-secondary">Cancel</button>
+</div>
+</div>
+  <div id="ycs-lip-use-mode" class="ycs-lip-mode" hidden>
+    <div class="ycs-lip-actions-inline">
+      <button id="ycs-lip-edit-again" type="button">Edit</button>
+      <button id="ycs-lip-visibility-toggle" type="button">Hide Lips</button>
+    </div>
+
+    <div class="ycs-lip-opacity-row">
+      <label>Opacity <span id="ycs-lip-opacity-value">60%</span></label>
+      <input id="ycs-lip-opacity" type="range" min="0.1" max="0.8" step="0.05" value="0.6" />
+    </div>
+
+    <div id="ycs-lip-swatches" class="ycs-lip-swatches"></div>
+  </div>
+</div>
+
+  <div class="ycs-analysis-filter-row">
+    <div id="ycs-analysis-filters" class="ycs-analysis-filters"></div>
+
+    <div class="ycs-analysis-filter-nav">
+      <button type="button" id="ycs-analysis-filter-left" class="ycs-analysis-filter-arrow" aria-label="Scroll filters left">‹</button>
+      <button type="button" id="ycs-analysis-filter-right" class="ycs-analysis-filter-arrow" aria-label="Scroll filters right">›</button>
+    </div>
+  </div>
+
+  <div class="ycs-analysis-swatches-wrap">
+    <div id="ycs-analysis-swatch-loading" class="ycs-analysis-swatch-loading" hidden>
+      <div class="ycs-analysis-loading__dots">
+        <span></span><span></span><span></span>
+      </div>
+      <p class="ycs-analysis-loading__text">Loading colors…</p>
+    </div>
+
+    <div id="ycs-analysis-swatches" class="ycs-analysis-swatches"></div>
+  </div>
+</div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+<style>
+  .ycs-analysis-app {
+    max-width: 1320px;
+    margin: 0 auto;
+    margin-bottom: 40px;
+    padding: 12px 16px 20px;
+  }
+
+  .ycs-analysis-login,
+  .ycs-analysis-locked {
+    max-width: 720px;
+    margin: 60px auto;
+    padding: 32px;
+    border: 1px solid #e7e3dc;
+    border-radius: 20px;
+    background: #fffdf9;
+    text-align: center;
+  }
+
+  .ycs-analysis-login h1,
+  .ycs-analysis-locked h1 {
+    margin: 0 0 12px;
+  }
+
+  .ycs-analysis-login a {
+    display: inline-block;
+    margin-top: 16px;
+    padding: 12px 18px;
+    border-radius: 999px;
+    text-decoration: none;
+    background: #111;
+    color: #fff;
+  }
+
+  .ycs-analysis-topnav {
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  .ycs-analysis-back-link {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    color: #444;
+    cursor: pointer;
+  }
+
+  /* LIP PANEL */
+  .ycs-lip-mode[hidden] {
+  display: none !important;
+}
+
+.ycs-lip-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.ycs-lip-panel {
+  border: 1px solid #ece7df;
+  background: #fffdfb;
+  border-radius: 18px;
+  padding: 12px;
+  margin: 6px 0 14px;
+}
+
+.ycs-lip-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.ycs-lip-header strong {
+  font-size: 14px;
+  line-height: 1.1;
+  color: #2f2a25;
+}
+
+
+.ycs-lip-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ycs-lip-actions-inline {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.ycs-lip-actions-inline button {
+  min-height: 34px;
+  padding: 6px 12px;
+  border: 1px solid #ddd3c8;
+  background: #fff;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ycs-lip-opacity-row {
+  margin-bottom: 2px;
+}
+
+.ycs-lip-opacity-row label {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 2px;
+  line-height: 1.2;
+}
+
+.ycs-lip-opacity-row input[type="range"] {
+  width: 100%;
+  margin: 0;
+}
+
+.ycs-lip-swatches {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+}
+
+.ycs-lip-status {
+  font-size: 10px;
+  line-height: 1.3;
+  color: #6a635b;
+  margin-bottom: 10px;
+}
+
+.ycs-analysis-step-apply-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 6px 0 12px;
+}
+
+.ycs-lip-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ycs-lip-actions button {
+  min-height: 36px;
+  padding: 7px 12px;
+  border-radius: 12px;
+  border: 1px solid #d8cfc3;
+  background: #fff;
+  color: #2f2a25;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ycs-lip-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ycs-lip-swatches {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 2px 0 10px;
+}
+.ycs-lip-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.ycs-lip-top-row strong {
+  font-size: 14px;
+}
+
+
+.ycs-lip-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ycs-lip-group-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8b7d6b;
+}
+
+.ycs-lip-group-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ycs-lip-swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+}
+
+.ycs-lip-controls {
+  margin-bottom: 8px;
+}
+.ycs-lip-controls--compact {
+  margin-bottom: 2px;
+}
+
+.ycs-lip-controls--compact label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #8b7d6b;
+  margin-bottom: 2px;
+}
+
+.ycs-lip-controls--compact input[type="range"] {
+  width: 100%;
+  max-width: 180px;
+}
+
+#ycs-lip-opacity-value {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.ycs-lip-svg {
+  position: absolute;
+  z-index: 3;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.ycs-analysis-app.is-lip-editing .ycs-lip-svg {
+  pointer-events: auto;
+}
+
+.ycs-analysis-app.is-lip-editing .ycs-lip-guide-point {
+  cursor: move;
+}
+
+
+.ycs-analysis-app.is-lip-editing .ycs-analysis-drag-layer,
+.ycs-analysis-app.is-lip-adjusting .ycs-analysis-drag-layer {
+  pointer-events: none;
+}
+.ycs-analysis-app.is-lip-editing .ycs-analysis-photo-frame {
+  cursor: crosshair;
+}
+.ycs-analysis-app.is-lip-adjusting .ycs-lip-svg {
+  pointer-events: auto;
+}
+
+.ycs-analysis-app.is-lip-adjusting .ycs-lip-guide-point {
+  cursor: move;
+}
+.ycs-analysis-app.is-lip-adjusting .ycs-analysis-drag-layer {
+  pointer-events: none;
+}
+
+.ycs-analysis-app.is-lip-adjusting .ycs-analysis-photo-frame {
+  cursor: default;
+}
+.ycs-lip-guide-point {
+  cursor: move;
+}
+.ycs-lip-color-layer {
+  /* mix-blend-mode: multiply; */
+  mix-blend-mode: soft-light;
+}
+
+.ycs-lip-shade-layer {
+  mix-blend-mode: soft-light;
+}
+
+.ycs-lip-highlight-layer {
+  mix-blend-mode: screen;
+}
+ .ycs-analysis-depth-sections {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.ycs-lip-swatch--none {
+  min-width: 54px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid #d8cfc3;
+  background: #fff;
+  color: #2f2a25;
+  font-size: 12px;
+  font-weight: 600;
+}
+.ycs-analysis-depth-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.ycs-analysis-depth-swatch {
+  width: 100%;
+  max-width: 92px;
+  aspect-ratio: 1 / 1;
+  border-radius: 16px;
+  border: 1px solid #d8cfc3;
+  cursor: pointer;
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+}
+
+.ycs-analysis-depth-swatch:hover {
+  transform: translateY(-1px);
+}
+
+.ycs-analysis-depth-swatch.is-selected {
+  box-shadow: 0 0 0 2px #111 inset;
+}
+
+.ycs-analysis-depth-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #2f2a25;
+  text-align: center;
+  width: 100%;
+}
+
+.ycs-analysis-depth-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.ycs-analysis-depth-meta .ycs-analysis-commit-btn {
+  min-height: 34px;
+  padding: 8px 12px;
+  font-size: 12px;
+}
+
+.ycs-analysis-guided-title {
+  font-size: 16px;
+}
+
+.ycs-analysis-guided-copy {
+  margin: 0 0 14px 0;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.ycs-analysis-depth-stage-drape {
+  position: absolute;
+  left: 50%;
+  bottom: -1%;
+  transform: translateX(-50%);
+  width: 112%;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.ycs-analysis-depth-stage-drape[hidden] {
+  display: none !important;
+}
+  .ycs-analysis-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+/* HEADER */
+ .ycs-analysis-header {
+  margin-bottom: 4px;
+}
+
+.ycs-analysis-title {
+  margin: 0 0 2px;
+  font-size: 20px;
+  line-height: 1.02;
+}
+
+.ycs-analysis-subtitle {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.2;
+  color: #5f5a54;
+}
+  .ycs-analysis-kicker {
+    margin: 0 0 4px;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #8b7d6b;
+  }
+
+  
+
+  .ycs-analysis-chroma-column .ycs-analysis-commit-row {
+  margin-top: 8px;
+}
+
+  
+
+  .ycs-analysis-depth-toolbar {
+  margin-top: 14px;
+  margin-bottom: 6px;
+}
+
+.ycs-analysis-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #4f4942;
+}
+
+
+.ycs-analysis-depth-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+
+
+.ycs-analysis-depth-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+
+@media screen and (max-width: 980px) {
+  .ycs-analysis-depth-sections {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+.ycs-analysis-apply-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8b7d6b;
+}
+
+
+
+ 
+
+  .ycs-analysis-panel-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .ycs-analysis-toggle-btn {
+    min-height: 36px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid #d8cfc3;
+    background: #fff;
+    color: #2f2a25;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .ycs-analysis-toggle-btn:hover {
+    background: #f6f1ea;
+  }
+
+  .ycs-analysis-toggle-btn.is-active {
+    background: #111;
+    color: #fff;
+    border-color: #111;
+  }
+
+  .ycs-analysis-range {
+  width: 100%;
+  height: 4px;
+  accent-color: #111;
+  opacity: 0.6;
+  transition: opacity 0.15s ease;
+}
+
+.ycs-analysis-range:hover {
+  opacity: 1;
+}
+
+  .ycs-analysis-palette-select-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .ycs-analysis-palette-select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    width: 100%;
+    height: 38px;
+    min-width: 0;
+    padding: 0 38px 0 14px;
+    border-radius: 999px;
+    border: 1px solid #d6ccc2;
+    background: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    color: #2f2a26;
+    cursor: pointer;
+  }
+
+  .ycs-analysis-palette-select-wrap::after {
+    content: "";
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-40%);
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 6px solid #8a8176;
+    pointer-events: none;
+  }
+
+  .ycs-analysis-loading-panel[hidden],
+  .ycs-analysis-swatch-loading[hidden],
+  .ycs-analysis-guided-panel[hidden],
+  .ycs-analysis-standard-panel[hidden] {
+    display: none !important;
+  }
+
+  .ycs-analysis-guided-panel.is-lip-editing-mode .ycs-analysis-guided-header,
+.ycs-analysis-guided-panel.is-lip-editing-mode .ycs-analysis-reset-link,
+.ycs-analysis-guided-panel.is-lip-editing-mode .ycs-analysis-step-apply-row,
+.ycs-analysis-guided-panel.is-lip-editing-mode #ycs-analysis-undertone-sections {
+  display: none !important;
+}
+
+.ycs-analysis-guided-panel.is-lip-editing-mode .ycs-lip-panel {
+  border-top: 0;
+  padding-top: 0;
+  margin-top: 0;
+}
+  .ycs-analysis-guided-swatch:hover,
+.ycs-analysis-swatch:hover {
+  transform: scale(1.05);
+}
+
+  .ycs-analysis-loading-panel {
+    padding: 14px;
+    border-radius: 18px;
+    border: 1px solid #ece7df;
+    background: #fff;
+    display: grid;
+    justify-items: center;
+    gap: 8px;
+  }
+
+
+
+.ycs-analysis-chroma-panel[hidden] {
+  display: none !important;
+}
+
+.ycs-analysis-chroma-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #ece7df;
+}
+.ycs-analysis-chroma-result {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #2f2a25;
+}
+
+.ycs-analysis-chroma-result strong {
+  font-weight: 700;
+}
+
+.ycs-analysis-commit-btn.is-selected {
+  background: #111;
+  color: #fff;
+  border-color: #111;
+}
+
+.ycs-analysis-reset-link {
+  align-self: flex-start;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin-bottom: 10px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: #8b7d6b;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ycs-analysis-chroma-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ycs-analysis-chroma-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ycs-analysis-chroma-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.ycs-analysis-chroma-column {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ycs-analysis-chroma-column-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.ycs-analysis-chroma-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8b7d6b;
+}
+
+
+
+.ycs-analysis-commit-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.ycs-analysis-commit-btn {
+  min-height: 42px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid #d8cfc3;
+  background: #fff;
+  color: #2f2a25;
+  font-size: 13px;
+  line-height: 1.15;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s ease;
+}
+
+.ycs-analysis-commit-btn:hover {
+  background: #f6f1ea;
+  transform: translateY(-1px);
+}
+
+.ycs-analysis-commit-btn.is-selected {
+  background: #111;
+  color: #fff;
+  border-color: #111;
+}
+
+
+@media screen and (max-width: 980px) {
+  .ycs-analysis-chroma-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+  .ycs-analysis-loading__dots span {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: #cfc5b8;
+    animation: ycsAnalysisLoadingBounce 1s infinite ease-in-out;
+  }
+
+  .ycs-analysis-loading__dots span:nth-child(2) {
+    animation-delay: 0.15s;
+  }
+
+  .ycs-analysis-loading__dots span:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+
+  .ycs-analysis-loading__text {
+    margin: 0;
+    font-size: 12px;
+    color: #7b746c;
+  }
+
+  @keyframes ycsAnalysisLoadingBounce {
+    0%, 80%, 100% {
+      opacity: 0.35;
+      transform: scale(0.8);
+    }
+    40% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .ycs-analysis-main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 340px;
+  gap: 12px;
+  align-items: stretch;
+  height: calc(100vh - 205px);
+}
+
+  .ycs-analysis-stage-panel,
+.ycs-analysis-colors-panel {
+  min-height: 0;
+}
+
+  .ycs-analysis-stage-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+    height: 100%;
+    cursor: pointer;
+  }
+
+  .ycs-analysis-photo-stage {
+  background: #ffffff;
+  border: 1px solid #ece7df;
+  border-radius: 18px;
+  padding: 6px;
+}
+
+  .ycs-analysis-photo-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 0.88 / 1;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid #e8e1d8;
+}
+.ycs-analysis-photo-frame,
+.ycs-analysis-drag-layer,
+.ycs-analysis-photo-preview,
+.ycs-lip-svg {
+  touch-action: none;
+  overscroll-behavior: contain;
+}
+
+  .ycs-analysis-photo-preview {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    transform: translate(-50%, -50%) scale(1);
+    transform-origin: center center;
+    user-select: none;
+    -webkit-user-drag: none;
+    z-index: 1;
+    display: block;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+
+  .ycs-analysis-photo-preview.is-visible {
+    opacity: 1;
+  }
+
+  .ycs-analysis-drape-wrap {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 3;
+  }
+
+  .ycs-analysis-drape-svg {
+    --analysis-drape-color: #e8dfd4;
+    --analysis-drape-overlay-url: url("https://cdn.shopify.com/s/files/1/0623/6284/5408/files/fabric-drape-overlay-550.png?v=1778252521");
+    --analysis-drape-overlay-opacity: 0;
+    position: absolute;
+    bottom: -1%;
+    left: 0;
+    width: 100%;
+    height: 28%;
+    filter: blur(1.2px);
+    opacity: 1;
+  }
+
+  .ycs-analysis-drape-svg path[id^="ycs-analysis-drape-"] {
+    opacity: 1;
+    fill-opacity: 1;
+  }
+
+  .ycs-analysis-drape-overlay-object {
+    mix-blend-mode: normal;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .ycs-analysis-drape-overlay {
+    width: 100%;
+    height: 100%;
+    background-color: var(--analysis-drape-color);
+    background-image: var(--analysis-drape-overlay-url);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-blend-mode: multiply;
+    mix-blend-mode: normal;
+    pointer-events: none;
+  }
+
+  .ycs-analysis-drape-svg.drape-realistic .ycs-analysis-drape-overlay-object {
+    opacity: var(--analysis-drape-overlay-opacity);
+  }
+
+  .ycs-analysis-drag-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    cursor: grab;
+  }
+
+  .ycs-analysis-photo-frame.is-dragging .ycs-analysis-drag-layer {
+    cursor: grabbing;
+  }
+
+  .ycs-analysis-panel-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 0 2px;
+  }
+
+  .ycs-analysis-selected {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .ycs-analysis-selected-label {
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #8b7d6b;
+  }
+
+  .ycs-analysis-selected-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #2f2a25;
+    line-height: 1.25;
+    max-width: 260px;
+  }
+
+  .ycs-hex-row,
+  .ycs-lip-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #746b62;
+  }
+
+  .ycs-hex-copy {
+    appearance: none;
+    border: 1px solid #d8cfc3;
+    border-radius: 999px;
+    background: #fff;
+    color: #2f2a25;
+    cursor: pointer;
+    font: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    line-height: 1;
+    margin-left: 4px;
+    padding: 3px 7px;
+    text-transform: uppercase;
+    user-select: text;
+    -webkit-user-select: text;
+  }
+
+  .ycs-hex-copy:hover,
+  .ycs-hex-copy.is-copied {
+    border-color: #2f2a25;
+    background: #2f2a25;
+    color: #fff;
+  }
+
+  .ycs-analysis-save-btn {
+    min-height: 38px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: none;
+    background: #111;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.18s ease;
+  }
+
+  .ycs-analysis-save-btn:hover {
+    background: #000;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.14);
+  }
+
+  .ycs-analysis-save-controls {
+    display: grid;
+    justify-items: end;
+    gap: 5px;
+  }
+
+  .ycs-analysis-export-label-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #6b645c;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .ycs-analysis-export-label-toggle input {
+    accent-color: #111;
+    width: 14px;
+    height: 14px;
+    margin: 0;
+    cursor: pointer;
+  }
+
+  .ycs-analysis-realistic-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #3f362f;
+  }
+
+  .ycs-analysis-realistic-toggle input {
+    width: 16px;
+    height: 16px;
+    accent-color: #d94c6a;
+  }
+
+  .ycs-analysis-stage-panel.is-active-panel .ycs-analysis-photo-stage {
+    box-shadow: 0 0 0 2px #111 inset, 0 8px 18px rgba(0,0,0,0.08);
+    border-radius: 18px;
+  }
+
+  /*  TOOLBAR BLOCK */
+  .ycs-analysis-toolbar {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) 280px;
+  gap: 12px;
+  align-items: end;
+  padding: 10px 14px;
+  border: 1px solid #ece7df;
+  border-radius: 18px;
+  background: #fffdfb;
+}
+
+.ycs-analysis-toolbar-left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  max-width: 420px;
+}
+
+.ycs-analysis-toolbar-right {
+  min-width: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: end;
+}
+
+.ycs-analysis-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.ycs-analysis-toolbar-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  max-width: 220px;
+}
+
+.ycs-analysis-toolbar-block--zoom {
+  max-width: 260px;
+}
+
+.ycs-analysis-toolbar-block--palette {
+  width: 100%;
+  max-width: 280px;
+}
+
+.ycs-analysis-toolbar-label {
+  font-size: 11px;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+.ycs-analysis-toolbar-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid #d8cfc3;
+  background: #fff;
+  color: #2f2a25;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.ycs-analysis-toolbar-link:hover {
+  background: #f6f1ea;
+}
+
+ .ycs-analysis-colors-panel {
+  background: #fffdfb;
+  border: 1px solid #ece7df;
+  border-radius: 18px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: calc(100vh - 200px);
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+}
+
+.ycs-analysis-colors-panel::-webkit-scrollbar {
+  width: 10px;
+}
+
+.ycs-analysis-colors-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ycs-analysis-colors-panel::-webkit-scrollbar-thumb {
+  background: #cfc5b8;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.ycs-analysis-colors-panel::-webkit-scrollbar-thumb:hover {
+  background: #b9ad9d;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+  .ycs-analysis-color-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .ycs-analysis-color-title {
+    display: flex;
+    align-items: center;
+    min-height: 24px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #2f2a26;
+  }
+
+
+
+  .ycs-analysis-filter-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .ycs-analysis-filters {
+    position: relative;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex: 1 1 auto;
+    min-width: 0;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .ycs-analysis-filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ycs-analysis-filters.is-loading {
+    opacity: 0.45;
+    pointer-events: none;
+  }
+
+  .ycs-analysis-filters::before,
+  .ycs-analysis-filters::after {
+    content: "";
+    position: sticky;
+    top: 0;
+    width: 18px;
+    flex: 0 0 18px;
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0;
+    transition: opacity 0.18s ease;
+  }
+
+  .ycs-analysis-filters::before {
+    left: 0;
+    margin-right: -18px;
+    background: linear-gradient(to right, #fffdfb 0%, rgba(255,253,251,0) 100%);
+  }
+
+  .ycs-analysis-filters::after {
+    right: 0;
+    margin-left: -18px;
+    background: linear-gradient(to left, #fffdfb 0%, rgba(255,253,251,0) 100%);
+  }
+
+  .ycs-analysis-filters.has-left-fade::before,
+  .ycs-analysis-filters.has-right-fade::after {
+    opacity: 1;
+  }
+
+  .ycs-analysis-filter-nav {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .ycs-analysis-filter-arrow {
+    width: 30px;
+    height: 30px;
+    border-radius: 999px;
+    border: 1px solid #d8cfc3;
+    background: #fff;
+    font-size: 16px;
+    color: #2f2a25;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .ycs-analysis-filter-arrow:hover {
+    background: #f6f1ea;
+    transform: translateY(-1px);
+  }
+
+  .ycs-analysis-filter-arrow.is-hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .ycs-analysis-filter {
+    flex: 0 0 auto;
+    border: 1px solid #d8cfc3;
+    background: #fff;
+    color: #2f2a25;
+    border-radius: 999px;
+    padding: 6px 10px;
+    font-size: 11px;
+    line-height: 1;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .ycs-analysis-filter.is-active {
+    background: #111;
+    color: #fff;
+    border-color: #111;
+  }
+
+  .ycs-analysis-swatches-wrap {
+    min-height: 54px;
+  }
+
+  .ycs-analysis-swatches {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+  .ycs-analysis-swatch {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 8px;
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+  border: none;
+}
+
+  .ycs-analysis-swatch:hover {
+    transform: translateY(-1px);
+  }
+
+  .ycs-analysis-swatch.is-active {
+    box-shadow: 0 0 0 2px #111 inset;
+  }
+
+  .ycs-analysis-empty {
+    margin: 0;
+    font-size: 13px;
+    color: #7b746c;
+  }
+
+  .ycs-analysis-guided-panel,
+.ycs-analysis-standard-panel {
+  background: #fffdfb;
+  border: 1px solid #ece7df;
+  border-radius: 18px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-self: start;
+  height: auto;
+  max-height: calc(100vh - 200px);
+  min-width: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+}
+
+.ycs-analysis-guided-panel::-webkit-scrollbar,
+.ycs-analysis-standard-panel::-webkit-scrollbar {
+  width: 10px;
+}
+
+.ycs-analysis-guided-panel::-webkit-scrollbar-track,
+.ycs-analysis-standard-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ycs-analysis-guided-panel::-webkit-scrollbar-thumb,
+.ycs-analysis-standard-panel::-webkit-scrollbar-thumb {
+  background: #cfc5b8;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.ycs-analysis-guided-panel::-webkit-scrollbar-thumb:hover,
+.ycs-analysis-standard-panel::-webkit-scrollbar-thumb:hover {
+  background: #b9ad9d;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+  .ycs-analysis-guided-header {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .ycs-analysis-guided-title {
+    margin: 0;
+    font-size: 18px;
+    line-height: 1.1;
+    color: #2f2a25;
+  }
+
+  .ycs-analysis-guided-copy {
+    margin: 0 0 20px 0;
+    font-size: 12px;
+    line-height: 1.4;
+    color: #6a635b;
+
+  }
+
+ .ycs-analysis-undertone-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+  .ycs-analysis-undertone-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 8px;
+  border-top: 1px solid #ece7df;
+}
+
+  .ycs-analysis-undertone-block:first-child {
+  padding-top: 10px;
+  border-top: 1px solid #ece7df;
+}
+
+  .ycs-analysis-undertone-depth {
+  margin: 0 0 2px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #2f2a25;
+  }
+
+  .ycs-analysis-undertone-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .ycs-analysis-undertone-column {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .ycs-analysis-undertone-column-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+  }
+
+  .ycs-analysis-undertone-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #8b7d6b;
+  }
+
+  
+
+  .ycs-analysis-guided-swatches {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.ycs-analysis-guided-swatch {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 8px;
+}
+.ycs-analysis-guided-swatch,
+.ycs-analysis-swatch {
+  border: none;
+}
+
+  .ycs-analysis-guided-swatch:hover {
+    transform: translateY(-1px);
+  }
+
+  .ycs-analysis-guided-swatch.is-active {
+    box-shadow: 0 0 0 2px #111 inset;
+  }
+  .ycs-analysis-guided-swatch.is-active,
+.ycs-analysis-swatch.is-active {
+  box-shadow: 0 0 0 2px #111 inset;
+  transform: scale(1.03);
+}
+
+  .ycs-analysis-guided-empty {
+    font-size: 12px;
+    color: #8b7d6b;
+  }
+
+  @media screen and (max-width: 1100px) {
+    .ycs-analysis-main-grid {
+      grid-template-columns: 1fr 1fr 280px;
+    }
+  }
+
+  @media screen and (max-width: 980px) {
+    .ycs-analysis-app {
+      padding: 12px 12px 24px;
+    }
+.ycs-analysis-guided-panel,
+.ycs-analysis-standard-panel {
+  height: auto;
+  overflow: visible;
+}
+    .ycs-analysis-title {
+      font-size: 22px;
+    }
+
+    .ycs-analysis-toolbar {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .ycs-analysis-toolbar-block,
+  .ycs-analysis-toolbar-block--zoom,
+  .ycs-analysis-toolbar-block--palette {
+    max-width: 100%;
+  }
+
+  .ycs-analysis-toolbar-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ycs-analysis-toolbar-link,
+  .ycs-analysis-save-btn {
+    width: 100%;
+  }
+
+    .ycs-analysis-main-grid {
+  grid-template-columns: 1fr;
+  gap: 10px;
+  height: calc(100vh - 170px);
+}
+
+    .ycs-analysis-stage-panel {
+      height: auto;
+      cursor: default;
+    }
+
+    .ycs-analysis-photo-frame {
+      aspect-ratio: 0.9 / 1;
+    }
+
+    .ycs-analysis-panel-footer {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .ycs-analysis-save-btn {
+      width: 100%;
+    }
+
+   
+
+    .ycs-analysis-undertone-columns {
+      grid-template-columns: 1fr;
+    }
+
+
+
+    .ycs-analysis-swatch {
+      width: 34px;
+      height: 34px;
+    }
+
+    
+  }
+  .ycs-signature-analysis-app .ycs-analysis-main-grid {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr) minmax(0, 1fr) 240px;
+  gap: 12px;
+  align-items: start;
+}
+
+.ycs-signature-analysis-app #ycs-analysis-guided-panel[hidden] {
+  display: none !important;
+}
+
+.ycs-signature-analysis-app #ycs-analysis-standard-panel {
+  grid-column: 1 / -1;
+  height: auto;
+  max-height: none;
+  overflow: visible;
+}
+
+.ycs-signature-analysis-app .ycs-analysis-toolbar-block--palette,
+.ycs-signature-analysis-app .ycs-analysis-filter-row,
+.ycs-signature-analysis-app .ycs-analysis-swatches-wrap {
+  display: none !important;
+}
+
+.ycs-signature-analysis-app .ycs-analysis-toolbar-right {
+  align-self: center;
+}
+
+.ycs-signature-side-rail {
+  min-width: 0;
+  height: calc(100vh - 200px);
+  max-height: calc(100vh - 200px);
+}
+
+.ycs-signature-side-card {
+  height: 100%;
+  overflow-y: auto;
+  border: 1px solid #ece7df;
+  border-radius: 14px;
+  background: #fffdfb;
+  padding: 12px;
+}
+
+.ycs-signature-side-section {
+  margin-top: 14px;
+}
+
+.ycs-signature-side-section--lip {
+  padding-bottom: 14px;
+  border-bottom: 1px solid #ece7df;
+}
+
+.ycs-signature-side-heading {
+  margin-bottom: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  color: #8b7d6b;
+}
+
+.ycs-signature-side-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.ycs-signature-side-filter {
+  min-height: 28px;
+  padding: 5px 9px;
+  border: 1px solid #dfd5c9;
+  border-radius: 999px;
+  background: #fff;
+  color: #50473f;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ycs-signature-side-filter.is-active {
+  border-color: #24201c;
+  background: #24201c;
+  color: #fff;
+}
+
+.ycs-signature-side-swatches {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.ycs-signature-lip-controls {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0 10px;
+}
+
+.ycs-signature-lip-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ycs-signature-lip-actions button {
+  appearance: none;
+  border: 1px solid #dfd5c9;
+  border-radius: 999px;
+  background: #fff;
+  color: #302a25;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 8px 11px;
+}
+
+.ycs-signature-lip-actions button:hover,
+.ycs-signature-lip-actions button:focus-visible {
+  border-color: #24201c;
+  outline: none;
+}
+
+.ycs-signature-lip-opacity {
+  display: grid;
+  gap: 5px;
+  color: #302a25;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ycs-signature-lip-opacity strong {
+  font-weight: 800;
+}
+
+.ycs-signature-lip-opacity input[type="range"] {
+  width: 100%;
+}
+
+.ycs-signature-side-swatch {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 1px solid rgba(38, 32, 28, 0.16);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.ycs-signature-side-swatches--lip .ycs-signature-side-swatch {
+  border-radius: 999px;
+}
+
+.ycs-signature-side-swatches:not(.ycs-signature-side-swatches--lip) {
+  max-height: 42vh;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.ycs-signature-side-swatch.is-active {
+  outline: 2px solid #24201c;
+  outline-offset: 2px;
+}
+
+.ycs-signature-analysis-app .ycs-lip-panel {
+  display: none !important;
+}
+
+.ycs-signature-analysis-app .ycs-lip-header {
+  display: none !important;
+}
+
+.ycs-signature-analysis-app .ycs-lip-panel[data-lip-mode="edit"],
+.ycs-signature-analysis-app .ycs-lip-panel[data-lip-mode="adjust"] {
+  display: block !important;
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  z-index: 9999;
+  width: min(720px, calc(100vw - 32px));
+  margin: 0;
+  padding: 14px 16px;
+  transform: translateX(-50%);
+  border: 1px solid #e4d8cb;
+  border-radius: 18px;
+  background: #fffdfb;
+  box-shadow: 0 18px 48px rgba(28, 22, 18, 0.18);
+}
+
+.ycs-signature-analysis-app #ycs-lip-use-mode {
+  gap: 8px;
+}
+
+.ycs-signature-analysis-app #ycs-lip-use-mode .ycs-lip-actions-inline,
+.ycs-signature-analysis-app #ycs-lip-use-mode .ycs-lip-opacity-row {
+  display: none !important;
+}
+
+.ycs-signature-analysis-app .ycs-lip-opacity-row {
+  margin-bottom: 0;
+}
+
+.ycs-signature-analysis-app #ycs-lip-swatches {
+  display: none !important;
+}
+
+.ycs-signature-analysis-app .ycs-signature-side-section--lip:not(.has-lip-shape) .ycs-signature-lip-opacity,
+.ycs-signature-analysis-app .ycs-signature-side-section--lip:not(.has-lip-shape) .ycs-signature-side-swatches--lip,
+.ycs-signature-analysis-app .ycs-signature-side-section--lip:not(.has-lip-shape) .ycs-signature-lip-actions button[id$="-visibility"] {
+  display: none !important;
+}
+
+#shopify-section-footer,
+.shopify-section--footer,
+.site-footer,
+footer.footer,
+footer[role="contentinfo"] {
+  display: none !important;
+}
+
+.ycs-signature-side-empty {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #6a635b;
+}
+
+@media screen and (max-width: 1180px) {
+  .ycs-signature-analysis-app .ycs-analysis-main-grid {
+    grid-template-columns: 210px minmax(0, 1fr) minmax(0, 1fr) 210px;
+  }
+
+  .ycs-signature-side-swatches {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media screen and (max-width: 980px) {
+  .ycs-signature-analysis-app .ycs-analysis-main-grid {
+    grid-template-columns: 1fr 1fr;
+    height: auto;
+  }
+
+  .ycs-signature-side-rail {
+    height: auto;
+    max-height: none;
+  }
+
+  .ycs-signature-side-rail--left {
+    order: 1;
+  }
+
+  .ycs-analysis-stage-panel[data-panel="left"] {
+    order: 2;
+  }
+
+  .ycs-analysis-stage-panel[data-panel="right"] {
+    order: 3;
+  }
+
+  .ycs-signature-side-rail--right {
+    order: 4;
+  }
+
+  .ycs-signature-analysis-app #ycs-analysis-standard-panel {
+    order: 5;
+  }
+}
+.ycs-signature-analysis-app .ycs-analysis-swatches,
+.ycs-signature-analysis-app .ycs-analysis-guided-swatches {
+  grid-template-columns: repeat(6, 1fr);
+}
+
+.ycs-signature-analysis-app .ycs-analysis-swatch,
+.ycs-signature-analysis-app .ycs-analysis-guided-swatch {
+  border-radius: 6px;
+}
+/* Remove Shopify header/nav */
+.shopify-section-header,
+#shopify-section-header,
+.site-header,
+.header-wrapper,
+.header,
+nav[role="navigation"] {
+  display: none !important;
+}
+
+/* Remove extra top spacing caused by header */
+body {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+.ycs-signature-topbar {
+  padding: 12px 16px 4px;
+}
+
+.ycs-signature-back-link {
+  display: inline-flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: #2f2a25;
+  text-decoration: none;
+}
+
+.ycs-signature-back-link:hover {
+  text-decoration: underline;
+}
+/* Base */
+.ycs-signature-analysis-app .ycs-signature-photo-label {
+  position: absolute;
+  z-index: 6;
+  pointer-events: none;
+  font-family: Poppins, Arial, sans-serif;
+  line-height: 1;
+}
+
+/* NAME — smaller + quieter */
+.ycs-signature-analysis-app .ycs-signature-photo-label--name {
+  top: 20px;
+  left: 20px;
+  color: #7a7a7a;
+  font-size: clamp(12px, 1.8vw, 14px); /* smaller */
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+/* PALETTE — black pill with white text */
+.ycs-signature-analysis-app .ycs-signature-photo-label--palette {
+  top: 20px;
+  right: 20px;
+  font-size: clamp(11px, 1.6vw, 13px);
+  font-weight: 600;
+  color: #ffffff;
+
+  background: #111; /* black */
+  padding: 6px 10px;
+  border-radius: 999px;
+
+  border: none;
+}
+
+/* COLOR NAME — smaller + lower */
+.ycs-signature-analysis-app .ycs-signature-photo-label--color {
+  left: 0;
+  right: 0;
+  bottom: 12px; /* LOWER than before */
+  text-align: center;
+
+  color: #ffffff;
+  font-size: clamp(16px, 3vw, 22px);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+
+  text-shadow: 0 2px 6px rgba(0,0,0,0.25);
+}
+</style>
+
+{{ 'signature-color-analysis.js' | asset_url | script_tag }}
