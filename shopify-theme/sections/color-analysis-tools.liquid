@@ -2029,39 +2029,55 @@
 
     const style = doc.createElement('style');
     style.textContent = [
-      '@page { margin: 0; }',
+      '@page { size: letter; margin: 0; }',
       '* { box-sizing: border-box; }',
-      'body { margin: 0; color: #333; font-family: Arial, Helvetica, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }',
-      '@media screen, print { body { padding: 0.75in 0.5in; } }',
+      'html, body { margin: 0; }',
+      'body { color: #333; font-family: Arial, Helvetica, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }',
+      '.pdf-page { width: 8.5in; min-height: 11in; padding: 0.5in; background: #fff; overflow: hidden; }',
       '.pdf-logo { display: block; width: 96px; height: auto; margin: 0 auto 10px; }',
       'h1 { margin: 0 0 14px; color: #050505; font-family: Cambria, "Times New Roman", Times, serif; font-size: 38px; font-weight: 500; line-height: 1.05; letter-spacing: 0; text-align: center; }',
-      '.pdf-category { break-inside: avoid; page-break-inside: avoid; margin: 0 0 18px; padding-top: 0.18in; }',
-      '.pdf-category:first-of-type { padding-top: 0; }',
+      '.pdf-category { break-inside: avoid; page-break-inside: avoid; margin: 0 0 18px; }',
       'h2 { margin: 0 0 9px; color: #333; font-size: 14px; font-weight: 700; line-height: 1.2; letter-spacing: 0.06em; text-transform: uppercase; }',
       '.pdf-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px 7px; }',
       '.pdf-swatch { min-width: 0; text-align: center; break-inside: avoid; }',
       '.pdf-color { width: 100%; aspect-ratio: 1 / 1; margin: 0 0 4px; border-radius: 11px; box-shadow: 0 7px 12px rgba(0,0,0,.08); }',
-      '.pdf-name { color: #222; font-size: 12px; font-weight: 500; line-height: 1.1; overflow-wrap: anywhere; }'
+      '.pdf-name { color: #222; font-size: 12px; font-weight: 500; line-height: 1.1; overflow-wrap: anywhere; }',
+      '@media screen { body { background: #5b5d60; padding: 12px 0; } .pdf-page { margin: 0 auto 18px; box-shadow: 0 0 0 1px rgba(0,0,0,.35), 0 4px 18px rgba(0,0,0,.35); } }',
+      '@media print { body { background: #fff; } .pdf-page { margin: 0; break-after: page; page-break-after: always; box-shadow: none; } .pdf-page:last-child { break-after: auto; page-break-after: auto; } }'
     ].join('\n');
     doc.head.appendChild(style);
 
-    const logo = doc.createElement('img');
-    logo.className = 'pdf-logo';
-    logo.src = 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/YourColorStyle_Logo-120_e3c4c33e-3249-4120-8dc6-c665eb3fec9f.png?v=1644954058';
-    logo.alt = 'Your Color Style';
-    doc.body.appendChild(logo);
+    const colorsPerRow = 6;
+    const firstPageRows = 3;
+    const pageRows = 5;
 
-    addTextElement(doc, doc.body, 'h1', palette.name);
+    function createPrintPage(includeTitle) {
+      const page = doc.createElement('div');
+      page.className = 'pdf-page';
+      doc.body.appendChild(page);
 
-    groups.forEach(function (group) {
+      if (includeTitle) {
+        const logo = doc.createElement('img');
+        logo.className = 'pdf-logo';
+        logo.src = 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/YourColorStyle_Logo-120_e3c4c33e-3249-4120-8dc6-c665eb3fec9f.png?v=1644954058';
+        logo.alt = 'Your Color Style';
+        page.appendChild(logo);
+
+        addTextElement(doc, page, 'h1', palette.name);
+      }
+
+      return page;
+    }
+
+    function appendCategorySection(page, category, colors) {
       const section = doc.createElement('section');
       section.className = 'pdf-category';
-      addTextElement(doc, section, 'h2', group.category);
+      addTextElement(doc, section, 'h2', category);
 
       const grid = doc.createElement('div');
       grid.className = 'pdf-grid';
 
-      group.colors.forEach(function (color) {
+      colors.forEach(function (color) {
         color = normalizePdfColor(color);
 
         const swatch = doc.createElement('div');
@@ -2077,7 +2093,31 @@
       });
 
       section.appendChild(grid);
-      doc.body.appendChild(section);
+      page.appendChild(section);
+    }
+
+    let currentPage = createPrintPage(true);
+    let remainingRows = firstPageRows;
+
+    groups.forEach(function (group) {
+      const colors = group.colors.map(normalizePdfColor);
+      let colorIndex = 0;
+
+      while (colorIndex < colors.length) {
+        if (remainingRows <= 0) {
+          currentPage = createPrintPage(false);
+          remainingRows = pageRows;
+        }
+
+        const colorsForPage = remainingRows * colorsPerRow;
+        const colorChunk = colors.slice(colorIndex, colorIndex + colorsForPage);
+
+        appendCategorySection(currentPage, group.category, colorChunk);
+
+        const rowsUsed = Math.ceil(colorChunk.length / colorsPerRow);
+        remainingRows -= rowsUsed;
+        colorIndex += colorChunk.length;
+      }
     });
 
     printWindow.focus();
