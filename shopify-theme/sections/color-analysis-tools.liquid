@@ -2089,11 +2089,14 @@
     const value = normalized.length === 3
       ? normalized.split('').map(function (char) { return char + char; }).join('')
       : normalized;
+    const red = parseInt(value.slice(0, 2), 16);
+    const green = parseInt(value.slice(2, 4), 16);
+    const blue = parseInt(value.slice(4, 6), 16);
 
     return {
-      r: parseInt(value.slice(0, 2), 16) || 255,
-      g: parseInt(value.slice(2, 4), 16) || 255,
-      b: parseInt(value.slice(4, 6), 16) || 255
+      r: Number.isNaN(red) ? 255 : red,
+      g: Number.isNaN(green) ? 255 : green,
+      b: Number.isNaN(blue) ? 255 : blue
     };
   }
 
@@ -2225,10 +2228,10 @@
       const bottomLimit = pageHeight - margin;
       const columns = 6;
       const gapX = 5;
-      const gapY = 10;
+      const gapY = 12;
       const swatchSize = (contentWidth - (gapX * (columns - 1))) / columns;
-      const labelGap = 6;
-      const labelLineHeight = 10;
+      const labelGap = 14;
+      const labelLineHeight = 11;
       const rowHeight = swatchSize + labelGap + (labelLineHeight * 2) + gapY;
       const categoryTopPadding = 22;
       const logoWidth = 42;
