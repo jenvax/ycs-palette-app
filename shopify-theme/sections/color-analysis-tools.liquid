@@ -2029,9 +2029,11 @@
 
     const style = doc.createElement('style');
     style.textContent = [
-      '@page { margin: 0; }',
+      '@page { margin: 0.65in 0.5in; }',
       '* { box-sizing: border-box; }',
-      'body { margin: 0; padding: 0.5in; color: #333; font-family: Arial, Helvetica, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }',
+      'body { margin: 0; color: #333; font-family: Arial, Helvetica, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }',
+      '@media screen { body { padding: 0.65in 0.5in; } }',
+      '@media print { body { padding: 0; } }',
       '.pdf-logo { display: block; width: 96px; height: auto; margin: 0 auto 10px; }',
       'h1 { margin: 0 0 14px; color: #050505; font-family: Cambria, "Times New Roman", Times, serif; font-size: 38px; font-weight: 500; line-height: 1.05; letter-spacing: 0; text-align: center; }',
       '.pdf-category { break-inside: avoid; margin: 0 0 18px; }',
