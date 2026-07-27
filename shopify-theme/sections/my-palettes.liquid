@@ -1,8 +1,4 @@
 <div class="ycs-my-palettes">
-  <div class="ycs-palette-topnav">
-    <a href="/account" class="palette-back-link">← My Account</a>
-  </div>
-
   {% assign palette_access_string = '' %}
 
   {% if customer %}
@@ -697,6 +693,10 @@
 </div>
 
 <style>
+  .bredcrumbWrap {
+    display: none !important;
+  }
+
   .palette-back-link {
     font-size: 14px;
     font-weight: 600;
