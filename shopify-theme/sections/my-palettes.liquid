@@ -2059,6 +2059,67 @@
 (function () {
   const previewSelect = document.getElementById('ycs-admin-view-as');
 
+  function ensureClientsCard() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('view') !== 'catools') return;
+
+    const headings = Array.from(document.querySelectorAll('.ycs-palette-card h2'));
+    if (headings.some(function (heading) { return heading.textContent.trim() === 'My Clients'; })) return;
+
+    const analysisHeading = headings.find(function (heading) {
+      return heading.textContent.trim() === 'Color Analysis Tool';
+    });
+    if (!analysisHeading) return;
+
+    const analysisCard = analysisHeading.closest('.ycs-palette-card');
+    const toolsGrid = analysisCard && analysisCard.parentElement;
+    if (!analysisCard || !toolsGrid) return;
+
+    const accessLabel = (analysisCard.querySelector('.ycs-palette-card__admin-label') || {}).textContent || '';
+    const normalizedLabel = accessLabel.replace(/\s+/g, ' ').trim().toUpperCase();
+    if (
+      normalizedLabel.includes('DIY COLOR ANALYSIS TOOL') ||
+      normalizedLabel.includes('FREE DIY DEMO') ||
+      normalizedLabel.includes('FREE TRIAL')
+    ) {
+      return;
+    }
+
+    const clientsUrl = new URL('/pages/my-clients', window.location.origin);
+    if (previewSelect && previewSelect.value) {
+      clientsUrl.searchParams.set('viewAs', previewSelect.value);
+    }
+
+    const label = normalizedLabel.includes('ADMIN')
+      ? 'Admin client management'
+      : normalizedLabel.includes('TRADE')
+        ? 'Trade client management'
+        : normalizedLabel.includes('GROWTH')
+          ? 'Growth Plan - Full client management'
+          : 'Client management';
+
+    const card = document.createElement('div');
+    card.className = 'ycs-palette-card ycs-palette-card--admin';
+    card.innerHTML =
+      '<div class="ycs-palette-card__top">' +
+        '<div class="ycs-palette-card__gradient" style="background: linear-gradient(to right, #2f2a25, #d94c6a, #f2b880);"></div>' +
+      '</div>' +
+      '<div class="ycs-palette-card__content">' +
+        '<div class="ycs-palette-card__text">' +
+          '<h2>My Clients</h2>' +
+          '<p class="ycs-palette-card__subtitle">View and manage your color analysis clients.</p>' +
+          '<p class="ycs-palette-card__admin-label">' + label + '</p>' +
+        '</div>' +
+        '<div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">' +
+          '<a href="' + clientsUrl.pathname + clientsUrl.search + '" class="ycs-palette-card__button">View My Clients</a>' +
+        '</div>' +
+      '</div>';
+
+    analysisCard.insertAdjacentElement('afterend', card);
+  }
+
+  ensureClientsCard();
+
   if (previewSelect) {
     const currentPreviewRole = previewSelect.value;
 
