@@ -23,6 +23,17 @@ function cleanString(value) {
   return stringValue || null;
 }
 
+function firstField(fields, fieldNames) {
+  for (const fieldName of fieldNames) {
+    const value = fields?.[fieldName];
+    if (value !== undefined && value !== null && String(value).trim() !== "") {
+      return value;
+    }
+  }
+
+  return null;
+}
+
 function isMissingIsArchivedError(data) {
   const message = String(data?.error?.message || "").toLowerCase();
   return (
@@ -109,12 +120,69 @@ export async function loader({ request }) {
       );
     }
 
-    const clients = (data.records || []).map((record) => ({
-      clientRecordId: record.fields?.ClientRecordId || "",
-      firstName: record.fields?.FirstName || "",
-      lastName: record.fields?.LastName || "",
-      email: record.fields?.Email || ""
-    }));
+    const clients = (data.records || []).map((record) => {
+      const fields = record.fields || {};
+      const originalPhotoUrl = firstField(fields, [
+        "OriginalPhotoUrl",
+        "OriginalImageUrl",
+        "OriginalPhoto",
+        "PhotoUrl"
+      ]);
+      const adjustedPhotoUrl = firstField(fields, [
+        "AdjustedPhotoUrl",
+        "PreparedPhotoUrl",
+        "TransformedPhotoUrl"
+      ]);
+      const activePhotoUrl = firstField(fields, [
+        "PrimaryPhotoUrl",
+        "ActivePhotoUrl",
+        "PhotoUrl",
+        "AdjustedPhotoUrl",
+        "PreparedPhotoUrl",
+        "OriginalPhotoUrl"
+      ]);
+      const paletteCode = firstField(fields, [
+        "AssignedPaletteCode",
+        "PaletteCode",
+        "ColorPaletteCode",
+        "FinalPaletteCode",
+        "YcsPaletteCode"
+      ]);
+      const paletteName = firstField(fields, [
+        "AssignedPaletteName",
+        "PaletteName",
+        "ColorPaletteName",
+        "FinalPaletteName",
+        "YcsPaletteName"
+      ]);
+      const status = firstField(fields, [
+        "AnalysisStatus",
+        "Status",
+        "ClientStatus"
+      ]);
+      const notes = firstField(fields, [
+        "Notes",
+        "ClientNotes",
+        "AnalysisNotes"
+      ]);
+
+      return {
+        clientRecordId: fields.ClientRecordId || "",
+        firstName: fields.FirstName || "",
+        lastName: fields.LastName || "",
+        email: fields.Email || "",
+        paletteCode: paletteCode || "",
+        paletteName: paletteName || "",
+        analysisStatus: status || "New",
+        notes: notes || "",
+        originalPhotoUrl: originalPhotoUrl || "",
+        adjustedPhotoUrl: adjustedPhotoUrl || "",
+        primaryPhotoUrl: activePhotoUrl || adjustedPhotoUrl || originalPhotoUrl || "",
+        activePhotoUrl: activePhotoUrl || "",
+        createdAt: firstField(fields, ["CreatedAt", "Created Date"]) || record.createdTime || "",
+        updatedAt: firstField(fields, ["UpdatedAt", "LastUpdated", "ModifiedAt", "Last Modified"]) || record.createdTime || ""
+      };
+    });
 
     return Response.json(
       { clients },
