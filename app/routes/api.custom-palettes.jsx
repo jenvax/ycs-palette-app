@@ -96,7 +96,13 @@ async function authorizeGrowthAccess({ customerId, previewCustomerId, viewAs }) 
   const tagSet = new Set(tags);
 
   if (tagSet.has(GROWTH_TAG)) {
-    return { ok: true, ownerCustomerId };
+    return {
+      ok: true,
+      ownerCustomerId:
+        previewCustomerId && safePreviewCustomerId !== ownerCustomerId
+          ? safePreviewCustomerId
+          : ownerCustomerId
+    };
   }
 
   const isGrowthPreview =
