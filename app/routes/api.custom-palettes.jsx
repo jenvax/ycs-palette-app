@@ -174,10 +174,22 @@ async function authorizeVipAccess(customerId) {
     return { ok: false, status: 401, error: "You must be signed in to view Style Masters palettes" };
   }
 
-  const tags = await fetchCustomerTags(safeCustomerId);
+  let tags = [];
+  try {
+    tags = await fetchCustomerTags(safeCustomerId);
+  } catch (error) {
+    console.warn("Style Masters palette tag lookup failed; returning VIP-visible palettes only:", error);
+    return { ok: true };
+  }
   const tagSet = new Set(tags);
 
-  if (tagSet.has(VIP_TAG) || tagSet.has(ADMIN_TAG)) {
+  if (
+    tagSet.has(VIP_TAG) ||
+    tagSet.has(ADMIN_TAG) ||
+    tagSet.has("STYLEMASTERS") ||
+    tagSet.has("STYLE MASTERS") ||
+    tags.some((tag) => tag.startsWith("STYLEMASTERS_"))
+  ) {
     return { ok: true };
   }
 
