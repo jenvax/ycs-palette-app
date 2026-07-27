@@ -23,6 +23,31 @@ function cleanString(value) {
   return stringValue || null;
 }
 
+function isMissingIsArchivedError(data) {
+  const message = String(data?.error?.message || "").toLowerCase();
+  return (
+    data?.error?.type === "INVALID_FILTER_BY_FORMULA" &&
+    message.includes("isarchived")
+  );
+}
+
+async function fetchConsultantClients({ airtableBase, airtableTable, airtableToken, formula }) {
+  const airtableUrl =
+    `https://api.airtable.com/v0/${airtableBase}/${airtableTable}` +
+    `?filterByFormula=${encodeURIComponent(formula)}` +
+    `&sort[0][field]=CreatedAt` +
+    `&sort[0][direction]=desc`;
+
+  const response = await fetch(airtableUrl, {
+    headers: {
+      Authorization: `Bearer ${airtableToken}`
+    }
+  });
+
+  const data = await response.json();
+  return { response, data };
+}
+
 export async function loader({ request }) {
   const origin = request.headers.get("Origin") || "";
   const corsHeaders = getCorsHeaders(origin);
@@ -56,21 +81,24 @@ export async function loader({ request }) {
       );
     }
 
-    const formula = `AND({ConsultantId}="${consultantId}", OR({IsArchived}=BLANK(), {IsArchived}=0, {IsArchived}=FALSE()))`;
+    const activeFormula = `AND({ConsultantId}="${consultantId}", OR({IsArchived}=BLANK(), {IsArchived}=0, {IsArchived}=FALSE()))`;
+    const fallbackFormula = `{ConsultantId}="${consultantId}"`;
 
-    const airtableUrl =
-      `https://api.airtable.com/v0/${airtableBase}/${airtableTable}` +
-      `?filterByFormula=${encodeURIComponent(formula)}` +
-      `&sort[0][field]=CreatedAt` +
-      `&sort[0][direction]=desc`;
-
-    const response = await fetch(airtableUrl, {
-      headers: {
-        Authorization: `Bearer ${airtableToken}`
-      }
+    let { response, data } = await fetchConsultantClients({
+      airtableBase,
+      airtableTable,
+      airtableToken,
+      formula: activeFormula
     });
 
-    const data = await response.json();
+    if (!response.ok && isMissingIsArchivedError(data)) {
+      ({ response, data } = await fetchConsultantClients({
+        airtableBase,
+        airtableTable,
+        airtableToken,
+        formula: fallbackFormula
+      }));
+    }
 
     if (!response.ok) {
       console.error("Airtable get consultant clients error:", data);
