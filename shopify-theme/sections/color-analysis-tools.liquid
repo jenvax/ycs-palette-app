@@ -1,0 +1,3285 @@
+{% assign should_render_ycs_color_analysis_tools = false %}
+
+{% capture ycs_tools_header_content %}{{ content_for_header }}{% endcapture %}
+{% assign ycs_tools_page_url = ycs_tools_header_content
+  | split: '"pageurl":"'
+  | last
+  | split: '"'
+  | first
+  | replace: '\/', '/'
+  | replace: '\\u0026', '&'
+  | replace: '%26', '&'
+  | replace: '%3F', '?'
+  | replace: '%3D', '='
+  | append: '&'
+%}
+
+{% if ycs_tools_page_url contains 'view=tools&' or ycs_tools_page_url contains 'view=catools&' or page.handle == 'color-analysis-tools' or template.suffix == 'color-analysis-tools' or template.suffix == 'tools' or template.suffix == 'catools' %}
+  {% assign should_render_ycs_color_analysis_tools = true %}
+{% endif %}
+
+{% if should_render_ycs_color_analysis_tools %}
+<div class="ycs-my-palettes">
+  <div class="ycs-palette-topnav">
+    <a href="{{ routes.account_url }}" class="palette-back-link">← My Account</a>
+  </div>
+
+  {% assign palette_access_string = '' %}
+
+  {% if customer %}
+    {% assign palette_access_string = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
+  {% endif %}
+
+  {% assign ycs_page_url = ycs_tools_page_url %}
+
+  {% assign is_color_analysis_tools_page = true %}
+
+  {% assign ycs_page_heading = section.settings.heading %}
+  {% assign ycs_page_intro = section.settings.intro %}
+  {% if is_color_analysis_tools_page %}
+    {% assign ycs_page_heading = 'Color Analysis Tools' %}
+    {% assign ycs_page_intro = 'Open your color analysis tools and client workflow.' %}
+  {% endif %}
+
+  {% assign is_admin = false %}
+  {% if customer and palette_access_string contains ',YCS_ADMIN,' %}
+    {% assign is_admin = true %}
+  {% endif %}
+  {% assign actual_is_admin = is_admin %}
+
+  {% assign is_trade_july_cohort = false %}
+  {% assign trade_july_cohort_expires_at = '2026-08-25 00:00:00 -0400' | date: '%s' %}
+  {% assign current_timestamp = 'now' | date: '%s' %}
+  {% if customer and palette_access_string contains ',TRADEJULYCOHORT,' and current_timestamp < trade_july_cohort_expires_at %}
+    {% assign is_trade_july_cohort = true %}
+  {% endif %}
+
+  {% assign is_trade = false %}
+  {% if customer and palette_access_string contains ',TRADE,' %}
+    {% assign is_trade = true %}
+  {% endif %}
+  {% if is_trade_july_cohort %}
+    {% assign is_trade = true %}
+  {% endif %}
+
+  {% assign is_catool = false %}
+  {% if customer and palette_access_string contains ',CATOOL,' %}
+    {% assign is_catool = true %}
+  {% endif %}
+
+  {% assign is_catool_growth = false %}
+  {% if customer and palette_access_string contains ',CATOOLGROWTH,' %}
+    {% assign is_catool_growth = true %}
+  {% endif %}
+
+  {% assign is_catool_free = false %}
+  {% if customer and palette_access_string contains ',CATOOLFREE,' %}
+    {% assign is_catool_free = true %}
+  {% endif %}
+
+  {% assign is_free_diy_catool = false %}
+  {% if customer and palette_access_string contains ',FREEDIYCATOOL,' %}
+    {% assign is_free_diy_catool = true %}
+  {% endif %}
+
+  {% assign is_diy_catool = false %}
+  {% if customer and palette_access_string contains ',DIYCATOOL,' %}
+    {% assign is_diy_catool = true %}
+  {% endif %}
+
+  {% assign admin_view_as = '' %}
+  {% if actual_is_admin %}
+    {% if ycs_page_url contains 'viewAs=trade&' %}
+      {% assign admin_view_as = 'trade' %}
+    {% elsif ycs_page_url contains 'viewAs=catoolgrowth&' %}
+      {% assign admin_view_as = 'catoolgrowth' %}
+    {% elsif ycs_page_url contains 'viewAs=catoolfree&' %}
+      {% assign admin_view_as = 'catoolfree' %}
+    {% elsif ycs_page_url contains 'viewAs=freediycatool&' %}
+      {% assign admin_view_as = 'freediycatool' %}
+    {% elsif ycs_page_url contains 'viewAs=diycatool&' %}
+      {% assign admin_view_as = 'diycatool' %}
+    {% elsif ycs_page_url contains 'viewAs=catool&' %}
+      {% assign admin_view_as = 'catool' %}
+    {% endif %}
+  {% endif %}
+
+  {% if admin_view_as != '' %}
+    {% assign is_admin = false %}
+    {% assign is_trade = false %}
+    {% assign is_catool = false %}
+    {% assign is_catool_growth = false %}
+    {% assign is_catool_free = false %}
+    {% assign is_free_diy_catool = false %}
+    {% assign is_diy_catool = false %}
+
+    {% if admin_view_as == 'trade' %}
+      {% assign is_trade = true %}
+    {% elsif admin_view_as == 'catoolgrowth' %}
+      {% assign is_catool_growth = true %}
+    {% elsif admin_view_as == 'catoolfree' %}
+      {% assign is_catool_free = true %}
+    {% elsif admin_view_as == 'freediycatool' %}
+      {% assign is_free_diy_catool = true %}
+    {% elsif admin_view_as == 'diycatool' %}
+      {% assign is_diy_catool = true %}
+    {% elsif admin_view_as == 'catool' %}
+      {% assign is_catool = true %}
+    {% endif %}
+  {% endif %}
+
+  {% assign can_use_analysis_tool = false %}
+  {% if is_admin or is_trade or is_catool or is_catool_growth or is_catool_free or is_diy_catool or is_free_diy_catool %}
+    {% assign can_use_analysis_tool = true %}
+  {% endif %}
+
+  {% assign can_manage_clients = false %}
+  {% if is_admin or is_trade or is_catool or is_catool_growth %}
+    {% assign can_manage_clients = true %}
+  {% endif %}
+
+  {% assign has_all_palette_access = false %}
+  {% if is_admin or is_trade or is_catool or is_catool_growth %}
+    {% assign has_all_palette_access = true %}
+  {% endif %}
+
+  {% assign page_has_all_palette_access = false %}
+  {% if is_color_analysis_tools_page and has_all_palette_access %}
+    {% assign page_has_all_palette_access = true %}
+  {% endif %}
+
+  {% assign can_manage_custom_palettes = false %}
+  {% if is_catool_growth or actual_is_admin %}
+    {% assign can_manage_custom_palettes = true %}
+  {% endif %}
+
+  {% assign can_access_all_printable_pdfs = false %}
+  {% if is_admin or is_trade or palette_access_string contains ',VIP,' %}
+    {% assign can_access_all_printable_pdfs = true %}
+  {% endif %}
+
+  {% assign has_draping_studio_starter = false %}
+{% if palette_access_string contains ',DRAPINGSTUDIOSTARTER,' %}
+  {% assign has_draping_studio_starter = true %}
+{% endif %}
+
+{% assign has_draping_studio = false %}
+{% if palette_access_string contains ',DRAPINGSTUDIO,' %}
+  {% assign has_draping_studio = true %}
+{% endif %}
+
+{% assign has_draping_studio_access = false %}
+{% if has_draping_studio_starter or has_draping_studio %}
+  {% assign has_draping_studio_access = true %}
+{% endif %}
+
+{% assign is_sample_user = false %}
+{% if has_draping_studio_access == false and palette_access_string contains ',SAMPLE,' %}
+  {% assign is_sample_user = true %}
+{% endif %}
+
+{% assign can_access_sample_trial = false %}
+{% if is_color_analysis_tools_page == false and has_draping_studio_access == false %}
+  {% assign can_access_sample_trial = true %}
+  {% if palette_access_string contains ',VIP,' %}
+    {% assign can_access_sample_trial = false %}
+  {% endif %}
+  {% if actual_is_admin %}
+    {% assign can_access_sample_trial = false %}
+  {% endif %}
+{% endif %}
+
+{% assign should_show_sample_palette = false %}
+{% if is_sample_user or can_access_sample_trial %}
+  {% assign should_show_sample_palette = true %}
+{% endif %}
+
+  {% if customer == nil %}
+    <div class="ycs-my-palettes__header">
+      <p class="ycs-my-palettes__kicker">Your Color Style</p>
+      <h1>{{ ycs_page_heading }}</h1>
+      <p class="ycs-my-palettes__intro">Please sign in to view your palettes.</p>
+      <div class="ycs-my-palettes__signin">
+        <a href="{{ routes.account_login_url }}" class="ycs-my-palettes__signin-button">Sign In</a>
+      </div>
+    </div>
+
+  {% else %}
+    <div id="ycs-tools-tos-overlay" class="ycs-tools-tos-overlay">
+  <div class="ycs-tools-tos-modal">
+    <h2>Before you continue</h2>
+
+    <p>
+      By using Photo Prep, the Photo Draping Studio, and the Color Analysis Tool, you agree to our
+      <a href="/pages/terms-of-service" target="_blank">Terms of Service</a>.
+    </p>
+
+    <label class="ycs-tools-tos-check">
+      <input type="checkbox" id="ycs-tools-tos-checkbox">
+      I agree to the Terms
+    </label>
+
+    <button type="button" id="ycs-tools-tos-continue" class="ycs-palette-card__button">
+      Continue
+    </button>
+  </div>
+</div>
+
+    <div class="ycs-my-palettes__header">
+      <p class="ycs-my-palettes__kicker">Your Color Style</p>
+      <h1>{{ ycs_page_heading }}</h1>
+      <p class="ycs-my-palettes__intro">{{ ycs_page_intro }}</p>
+    </div>
+
+    {% if actual_is_admin and is_color_analysis_tools_page %}
+      <div class="ycs-admin-preview">
+        <div>
+          <p class="ycs-admin-preview__kicker">Admin testing</p>
+          <p class="ycs-admin-preview__copy">
+            View the Color Analysis flow as another user type. Your real account stays admin.
+          </p>
+        </div>
+        <label class="ycs-admin-preview__control">
+          <span>View as</span>
+          <select id="ycs-admin-view-as">
+            <option value="" {% if admin_view_as == '' %}selected{% endif %}>Admin</option>
+            <option value="trade" {% if admin_view_as == 'trade' %}selected{% endif %}>Trade</option>
+            <option value="catool" {% if admin_view_as == 'catool' %}selected{% endif %}>CATOOL</option>
+            <option value="catoolgrowth" {% if admin_view_as == 'catoolgrowth' %}selected{% endif %}>CATOOL Growth</option>
+            <option value="catoolfree" {% if admin_view_as == 'catoolfree' %}selected{% endif %}>CATOOL Free Trial</option>
+            <option value="diycatool" {% if admin_view_as == 'diycatool' %}selected{% endif %}>DIY CATOOL</option>
+            <option value="freediycatool" {% if admin_view_as == 'freediycatool' %}selected{% endif %}>Free DIY CATOOL</option>
+          </select>
+        </label>
+      </div>
+    {% endif %}
+
+    <div class="ycs-my-palettes__section ycs-my-palettes__section--studio">
+      <h2 class="ycs-my-palettes__section-title">{% if is_color_analysis_tools_page %}Tools{% else %}Draping Studio{% endif %}</h2>
+      <div class="ycs-my-palettes__grid ycs-my-palettes__grid--2">
+
+        {% if is_color_analysis_tools_page and can_use_analysis_tool %}
+          <div class="ycs-palette-card ycs-palette-card--admin">
+            <div class="ycs-palette-card__top">
+              <div
+                class="ycs-palette-card__gradient"
+                style="background: linear-gradient(to right, #7a5cff, #5fb6ff, #9be7c4);">
+              </div>
+            </div>
+
+            <div class="ycs-palette-card__content">
+              <div class="ycs-palette-card__text">
+                <h2>Color Analysis Tool</h2>
+                <p class="ycs-palette-card__subtitle">
+                  {% if is_diy_catool %}
+                    Upload your own photo and use the DIY Color Analysis Tool.
+                  {% elsif is_free_diy_catool %}
+                    Try the DIY Color Analysis Tool with three preloaded photos.
+                  {% elsif is_catool_free %}
+                    Try the Color Analysis Tool with three preloaded clients.
+                  {% else %}
+                  Create client records, prep photos, save analyses, and return to client work anytime.
+                  {% endif %}
+                </p>
+                <p class="ycs-palette-card__admin-label">
+                  {% if is_admin %}
+  Admin access • Unlimited uploads
+{% elsif is_trade %}
+  Trade Professional • 15 uploads/month
+{% elsif is_catool_growth %}
+  Growth Plan • 15 uploads/month • Full client management
+{% elsif is_catool %}
+  Starter Plan • 5 uploads/month • Client management
+{% elsif is_diy_catool %}
+  DIY Color Analysis Tool • Self analysis
+{% elsif is_free_diy_catool %}
+  Free DIY Demo • 3 preloaded photos
+{% elsif is_catool_free %}
+  Free Trial • 3 preloaded clients
+{% endif %}
+                </p>
+              </div>
+
+              <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
+                <a href="{% if is_diy_catool or is_free_diy_catool %}/pages/photo-prep?mode=diy&workflow=color-analysis&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dcatools{% elsif is_catool_free %}/pages/photo-prep?mode=trade&workflow=color-analysis&trial=catoolfree&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dcatools{% else %}/pages/photo-prep?mode=trade&workflow=color-analysis&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dcatools{% endif %}" class="ycs-palette-card__button">
+                  Open Tool
+                </a>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
+        {% if is_color_analysis_tools_page and can_manage_clients %}
+          <div class="ycs-palette-card ycs-palette-card--admin">
+            <div class="ycs-palette-card__top">
+              <div
+                class="ycs-palette-card__gradient"
+                style="background: linear-gradient(to right, #2f2a25, #d94c6a, #f2b880);">
+              </div>
+            </div>
+
+            <div class="ycs-palette-card__content">
+              <div class="ycs-palette-card__text">
+                <h2>My Clients</h2>
+                <p class="ycs-palette-card__subtitle">
+                  View and manage your color analysis clients.
+                </p>
+                <p class="ycs-palette-card__admin-label">
+                  {% if is_admin %}
+                    Admin client management
+                  {% elsif is_trade %}
+                    Trade client management
+                  {% elsif is_catool_growth %}
+                    Growth Plan • Full client management
+                  {% elsif is_catool %}
+                    Starter Plan • Client management
+                  {% endif %}
+                </p>
+              </div>
+
+              <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
+                <a href="/pages/my-clients{% if admin_view_as != '' %}?viewAs={{ admin_view_as }}{% endif %}" class="ycs-palette-card__button">
+                  View My Clients
+                </a>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
+        {% if is_color_analysis_tools_page and is_trade %}
+          <div class="ycs-palette-card ycs-palette-card--admin">
+            <div class="ycs-palette-card__top">
+              <div
+                class="ycs-palette-card__gradient"
+                style="background: linear-gradient(to right, #2f2a25, #b7835f, #f2d6b3);">
+              </div>
+            </div>
+
+            <div class="ycs-palette-card__content">
+              <div class="ycs-palette-card__text">
+                <h2>Training Curriculum</h2>
+                <p class="ycs-palette-card__subtitle">
+                  Open your color analysis training curriculum.
+                </p>
+                <p class="ycs-palette-card__admin-label">
+                  Trade Professional
+                </p>
+              </div>
+
+              <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
+                <a href="https://color-analysis-training.teachery.co/login" class="ycs-palette-card__button" target="_blank" rel="noopener">
+                  Open Training
+                </a>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
+        {% unless is_color_analysis_tools_page %}
+        <div class="ycs-palette-card ycs-palette-card--studio">
+          <div class="ycs-palette-card__top">
+            <div
+              class="ycs-palette-card__gradient ycs-palette-card__gradient--studio"
+              style="background: linear-gradient(to right, #d94c6a, #f2b880, #d9d7f1);">
+            </div>
+          </div>
+
+          <div class="ycs-palette-card__content">
+            <div class="ycs-palette-card__text">
+              <h2>Photo Draping Studio</h2>
+              <p class="ycs-palette-card__subtitle">
+                Upload your photo and see your colors on you.
+              </p>
+
+              {% if palette_access_string contains ',VIP,' or is_admin %}
+                <p class="ycs-palette-card__studio-note ycs-palette-card__studio-note--open">
+                  Included with your membership
+                </p>
+              {% elsif has_draping_studio_starter %}
+  <p class="ycs-palette-card__studio-note ycs-palette-card__studio-note--open">
+    Starter unlocked • 2 photo uploads
+  </p>
+{% elsif has_draping_studio %}
+  <p class="ycs-palette-card__studio-note ycs-palette-card__studio-note--open">
+    Studio unlocked • 5 photo uploads
+  </p>
+              {% elsif is_sample_user %}
+                <p class="ycs-palette-card__studio-note ycs-palette-card__studio-note--open">
+                  Your Free Trial • 1 photo upload • Sample colors
+                </p>
+              {% else %}
+                <p class="ycs-palette-card__studio-note">
+                  Try it free • 1 photo upload • Sample colors
+                </p>
+              {% endif %}
+            </div>
+
+            <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
+              <a href="{% if palette_access_string contains ',VIP,' or is_admin or has_draping_studio_access or is_sample_user %}/pages/photo-prep?mode=personal&workflow=photo-draping{% else %}/pages/photo-prep?mode=personal&workflow=photo-draping&trial=sample{% endif %}" class="ycs-palette-card__button">
+                {% if palette_access_string contains ',VIP,' or is_admin %}
+                  Open Studio
+                {% elsif has_draping_studio_access %}
+  Open Studio
+                {% elsif is_sample_user %}
+                  Try Studio
+                {% else %}
+                  Try Studio Free
+                {% endif %}
+              </a>
+            </div>
+          </div>
+          
+        </div>
+        {% endunless %}
+
+      </div>
+    </div>
+
+    {% if is_color_analysis_tools_page and can_use_analysis_tool == false %}
+      <div class="ycs-my-palettes__empty">
+        Color Analysis Tools are not available on this account. Please confirm this customer has a TRADE, CATOOL, DIYCATOOL, FREEDIYCATOOL, CATOOLFREE, CATOOLGROWTH, or YCS_ADMIN tag.
+      </div>
+    {% endif %}
+
+    {% if is_color_analysis_tools_page and can_manage_custom_palettes %}
+      <div
+        class="ycs-my-palettes__section ycs-custom-palettes"
+        id="ycs-custom-palettes"
+        data-customer-id="{{ customer.id }}"
+        data-preview-customer-id="{{ customer.id }}"
+        data-view-as="{{ admin_view_as }}"
+        data-has-growth-access="{% if is_catool_growth %}true{% else %}false{% endif %}"
+        data-scope="{% if actual_is_admin %}stylemasters{% else %}private{% endif %}"
+        data-app-base-url="https://ycs-palette-app.vercel.app"
+      >
+        <div class="ycs-custom-palettes__header">
+          <div>
+            <h2 class="ycs-my-palettes__section-title">{% if actual_is_admin %}Style Masters Color Palettes{% else %}My Custom Palettes{% endif %}</h2>
+            <p class="ycs-custom-palettes__intro">
+              {% if actual_is_admin %}
+                Create shared custom color palettes and choose which ones VIP users can see.
+              {% else %}
+                Create and organize palettes using colors from your private custom color collection.
+              {% endif %}
+            </p>
+          </div>
+          <div class="ycs-custom-palettes__actions">
+            <button type="button" class="ycs-palette-card__button" data-ycs-custom-action="create-palette">Create Palette</button>
+            <button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="manage-colors">{% if actual_is_admin %}Manage Colors{% else %}Manage My Colors{% endif %}</button>
+          </div>
+        </div>
+
+        <div class="ycs-custom-palettes__status" data-ycs-custom-status hidden></div>
+        <div class="ycs-custom-palettes__grid" data-ycs-custom-palettes-list></div>
+
+        <div class="ycs-custom-palettes__empty" data-ycs-custom-empty hidden>
+          <p>{% if actual_is_admin %}Create the first Style Masters custom palette, then turn on VIP visibility when it is ready.{% else %}You haven’t created any custom palettes yet. Create a palette using colors from your private color collection.{% endif %}</p>
+          <button type="button" class="ycs-palette-card__button" data-ycs-custom-action="create-palette">Create Custom Palette</button>
+        </div>
+      </div>
+
+      <div class="ycs-custom-modal" id="ycs-custom-modal" hidden>
+        <div class="ycs-custom-modal__backdrop" data-ycs-custom-close></div>
+        <div class="ycs-custom-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="ycs-custom-modal-title">
+          <div class="ycs-custom-modal__header">
+            <h2 id="ycs-custom-modal-title">My Colors</h2>
+            <button type="button" class="ycs-custom-icon-button" data-ycs-custom-close aria-label="Close">×</button>
+          </div>
+          <div class="ycs-custom-modal__body" data-ycs-custom-modal-body></div>
+        </div>
+      </div>
+    {% endif %}
+
+    {% assign owned_count = 0 %}
+    {% assign locked_count = 0 %}
+    {% assign admin_count = 0 %}
+
+    {% for block in section.blocks %}
+      {% assign palette_code = block.settings.palette_code | upcase | strip %}
+      {% assign palette_token = ',' | append: palette_code | append: ',' %}
+      {% assign visibility = block.settings.visibility | default: 'customer' %}
+
+      {% if visibility == 'admin' %}
+        {% if is_admin %}
+          {% assign admin_count = admin_count | plus: 1 %}
+        {% endif %}
+        {% continue %}
+      {% endif %}
+
+      {% assign user_owns_palette = false %}
+
+      {% if palette_code == 'SAMPLE' %}
+        {% unless should_show_sample_palette %}
+          {% continue %}
+        {% endunless %}
+        {% if should_show_sample_palette %}
+          {% assign user_owns_palette = true %}
+        {% endif %}
+      {% else %}
+        {% if page_has_all_palette_access or palette_access_string contains palette_token %}
+          {% assign user_owns_palette = true %}
+        {% endif %}
+      {% endif %}
+
+      {% if user_owns_palette %}
+        {% assign owned_count = owned_count | plus: 1 %}
+      {% else %}
+        {% assign locked_count = locked_count | plus: 1 %}
+      {% endif %}
+    {% endfor %}
+
+    {% if is_color_analysis_tools_page == false and owned_count == 0 and locked_count == 0 and admin_count == 0 %}
+      <div class="ycs-my-palettes__empty">
+        No palettes have been added to this page yet.
+      </div>
+    {% endif %}
+
+    {% if is_color_analysis_tools_page and is_admin %}
+      <div class="ycs-my-palettes__section ycs-my-palettes__section--admin">
+        <h2 class="ycs-my-palettes__section-title">Admin Views</h2>
+
+        <div class="ycs-my-palettes__grid ycs-my-palettes__grid--locked">
+          <div class="ycs-palette-card ycs-palette-card--admin">
+  <div class="ycs-palette-card__top">
+    <div
+      class="ycs-palette-card__gradient"
+      style="background: linear-gradient(to right, #111111, #8b7d6b, #d94c6a);">
+    </div>
+  </div>
+
+  <div class="ycs-palette-card__content">
+    <div class="ycs-palette-card__text">
+      <h2>Member Photos</h2>
+      <p class="ycs-palette-card__subtitle">
+        View member photos, upload missing photos, and open saved photos in Draping Studio.
+      </p>
+      <p class="ycs-palette-card__admin-label">Admin only</p>
+    </div>
+
+    <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
+      <a href="/pages/member-photos" class="ycs-palette-card__button">
+        Open Member Photos
+      </a>
+    </div>
+  </div>
+</div>
+          <div class="ycs-palette-card ycs-palette-card--admin">
+            <div class="ycs-palette-card__top">
+              <div
+                class="ycs-palette-card__gradient"
+                style="background: linear-gradient(to right, #7a5cff, #5fb6ff, #9be7c4);">
+              </div>
+            </div>
+
+            <div class="ycs-palette-card__content">
+              <div class="ycs-palette-card__text">
+                <h2>View Color Analysis Tool as Growth User</h2>
+                <p class="ycs-palette-card__subtitle">
+                  Preview the normal customer experience with Growth access enabled for this session.
+                </p>
+                <p class="ycs-palette-card__admin-label">Admin preview</p>
+              </div>
+
+              <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
+                <a href="/pages/my-palettes?view=catools&viewAs=catoolgrowth" class="ycs-palette-card__button">
+                  Open Growth View
+                </a>
+              </div>
+            </div>
+          </div>
+          {% for block in section.blocks %}
+            {% assign visibility = block.settings.visibility | default: 'customer' %}
+
+            {% if visibility == 'admin' %}
+              {% assign palette_url = '/pages/palette?palette=' | append: block.settings.palette_code | append: '&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dcatools' %}
+
+              <div class="ycs-palette-card ycs-palette-card--admin" {{ block.shopify_attributes }}>
+                <div class="ycs-palette-card__top">
+                  {% if block.settings.palette_image != blank %}
+                    <div class="ycs-palette-card__image-wrap">
+                      {{
+                        block.settings.palette_image
+                        | image_url: width: 1200
+                        | image_tag:
+                          loading: 'lazy',
+                          class: 'ycs-palette-card__image',
+                          alt: block.settings.title
+                      }}
+                    </div>
+                  {% else %}
+                    <div
+                      class="ycs-palette-card__gradient"
+                      style="background: {{ block.settings.gradient }};">
+                    </div>
+                  {% endif %}
+                </div>
+
+                <div class="ycs-palette-card__content">
+                  <div class="ycs-palette-card__text">
+                    <h2>{{ block.settings.title }}</h2>
+
+                    {% if block.settings.subtitle != blank %}
+                      <p class="ycs-palette-card__subtitle">{{ block.settings.subtitle }}</p>
+                    {% endif %}
+
+                    <p class="ycs-palette-card__admin-label">Admin only</p>
+                  </div>
+
+                  <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
+                    <a href="{{ palette_url }}" class="ycs-palette-card__button">
+                      Open View
+                    </a>
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+    {% if owned_count > 0 %}
+      <div class="ycs-my-palettes__section">
+        {% if is_color_analysis_tools_page or is_catool_growth %}
+          <h2 class="ycs-my-palettes__section-title">Included YCS Color Palettes</h2>
+        {% endif %}
+        <div class="ycs-my-palettes__grid ycs-my-palettes__grid--{{ owned_count }}">
+          {% for block in section.blocks %}
+            {% assign palette_code = block.settings.palette_code | upcase | strip %}
+            {% assign palette_token = ',' | append: palette_code | append: ',' %}
+            {% assign visibility = block.settings.visibility | default: 'customer' %}
+
+            {% if visibility == 'admin' %}
+              {% continue %}
+            {% endif %}
+
+            {% assign user_owns_palette = false %}
+
+            {% if palette_code == 'SAMPLE' %}
+              {% unless should_show_sample_palette %}
+                {% continue %}
+              {% endunless %}
+              {% if should_show_sample_palette %}
+                {% assign user_owns_palette = true %}
+              {% endif %}
+            {% else %}
+              {% if page_has_all_palette_access or palette_access_string contains palette_token %}
+                {% assign user_owns_palette = true %}
+              {% endif %}
+            {% endif %}
+
+            {% if user_owns_palette %}
+              {% assign palette_url = '/pages/palette?palette=' | append: block.settings.palette_code | append: '&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dcatools' %}
+
+              <div class="ycs-palette-card" {{ block.shopify_attributes }}>
+                <div class="ycs-palette-card__top">
+                  {% if block.settings.palette_image != blank %}
+                    <div class="ycs-palette-card__image-wrap">
+                      {{
+                        block.settings.palette_image
+                        | image_url: width: 1200
+                        | image_tag:
+                          loading: 'lazy',
+                          class: 'ycs-palette-card__image',
+                          alt: block.settings.title
+                      }}
+                    </div>
+                  {% else %}
+                    <div
+                      class="ycs-palette-card__gradient"
+                      style="background: {{ block.settings.gradient }};">
+                    </div>
+                  {% endif %}
+                </div>
+
+                <div class="ycs-palette-card__content">
+                  <div class="ycs-palette-card__text">
+                    <h2>{{ block.settings.title }}</h2>
+
+                    {% if block.settings.subtitle != blank %}
+                      <p class="ycs-palette-card__subtitle">{{ block.settings.subtitle }}</p>
+                    {% endif %}
+                  </div>
+
+                  <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
+                    <a href="{{ palette_url }}" class="ycs-palette-card__button">
+                      Open Palette
+                    </a>
+
+                    {% assign palette_pdf_url = block.settings.printable_pdf_url | default: block.settings.mobile_pdf_url %}
+                    {% if palette_pdf_url != blank or actual_is_admin %}
+                      {% if can_access_all_printable_pdfs or palette_access_string contains palette_token %}
+                        <button
+                          type="button"
+                          class="ycs-palette-card__button ycs-palette-card__button--secondary"
+                          data-ycs-pdf-palette-code="{{ palette_code | escape }}"
+                          data-ycs-pdf-palette-title="{{ block.settings.title | escape }}">
+                          PDF
+                        </button>
+                      {% endif %}
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+    {% if is_color_analysis_tools_page == false and palette_access_string contains ',VIP,' and actual_is_admin == false %}
+      <div
+        class="ycs-my-palettes__section ycs-style-masters-palettes"
+        id="ycs-style-masters-palettes"
+        data-customer-id="{{ customer.id }}"
+        data-app-base-url="https://ycs-palette-app.vercel.app"
+      >
+        <h2 class="ycs-my-palettes__section-title">Style Masters Color Palettes</h2>
+        <div class="ycs-custom-palettes__status" data-ycs-style-masters-status hidden></div>
+        <div class="ycs-custom-palettes__grid" data-ycs-style-masters-list></div>
+        <div class="ycs-custom-palettes__empty" data-ycs-style-masters-empty hidden>
+          <p>No Style Masters color palettes are available yet.</p>
+        </div>
+      </div>
+    {% endif %}
+
+    {% if locked_count > 0 %}
+      <div class="ycs-my-palettes__section ycs-my-palettes__section--locked">
+        <h2 class="ycs-my-palettes__section-title">Explore More Palettes</h2>
+
+        <div class="ycs-my-palettes__grid ycs-my-palettes__grid--locked">
+          {% for block in section.blocks %}
+            {% assign palette_code = block.settings.palette_code | upcase | strip %}
+            {% assign palette_token = ',' | append: palette_code | append: ',' %}
+            {% assign visibility = block.settings.visibility | default: 'customer' %}
+
+            {% if visibility == 'admin' %}
+              {% continue %}
+            {% endif %}
+
+            {% assign user_owns_palette = false %}
+
+            {% if palette_code == 'SAMPLE' %}
+              {% unless should_show_sample_palette %}
+                {% continue %}
+              {% endunless %}
+              {% if should_show_sample_palette %}
+                {% assign user_owns_palette = true %}
+              {% endif %}
+            {% else %}
+              {% if page_has_all_palette_access or palette_access_string contains palette_token %}
+                {% assign user_owns_palette = true %}
+              {% endif %}
+            {% endif %}
+
+            {% unless user_owns_palette %}
+              <div class="ycs-palette-card is-locked" {{ block.shopify_attributes }}>
+                <div class="ycs-palette-card__top">
+                  {% if block.settings.palette_image != blank %}
+                    <div class="ycs-palette-card__image-wrap">
+                      {{
+                        block.settings.palette_image
+                        | image_url: width: 1200
+                        | image_tag:
+                          loading: 'lazy',
+                          class: 'ycs-palette-card__image',
+                          alt: block.settings.title
+                      }}
+                    </div>
+                  {% else %}
+                    <div
+                      class="ycs-palette-card__gradient"
+                      style="background: {{ block.settings.gradient }};">
+                    </div>
+                  {% endif %}
+                </div>
+
+                <div class="ycs-palette-card__content">
+                  <div class="ycs-palette-card__text">
+                    <h2>{{ block.settings.title }}</h2>
+
+                    {% if block.settings.subtitle != blank %}
+                      <p class="ycs-palette-card__subtitle">{{ block.settings.subtitle }}</p>
+                    {% endif %}
+
+                    <p class="ycs-palette-card__lock">🔒 Locked</p>
+                  </div>
+
+                  <div class="ycs-palette-card__actions">
+                    <a href="{% if block.settings.product_link != blank %}{{ block.settings.product_link }}{% else %}https://yourcolorstyle.com/products/expanded-digital-color-palettes{% endif %}" class="ycs-palette-card__button ycs-palette-card__button--locked">
+                      Unlock Palette
+                    </a>
+                  </div>
+                </div>
+              </div>
+            {% endunless %}
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+  {% endif %}
+</div>
+
+<style>
+  .palette-back-link {
+    font-size: 14px;
+    font-weight: 600;
+    color: #444;
+    text-decoration: none;
+    z-index: 1000;
+  }
+
+  .ycs-my-palettes__section--studio {
+    margin-top: 12px;
+  }
+
+  .ycs-palette-card--studio {
+    border-color: #ead7dc;
+    background: #fffafb;
+  }
+
+  .ycs-palette-card__gradient--studio {
+    height: 10px;
+  }
+
+  .ycs-palette-card__studio-note {
+    margin: 8px 0 0;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .02em;
+    color: #8a5a66;
+  }
+
+  .ycs-palette-card__studio-note--open {
+    color: #4d7c5c;
+  }
+
+  .ycs-my-palettes {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 20px 16px 36px;
+  }
+
+  .ycs-my-palettes__header {
+    text-align: center;
+    margin-bottom: 22px;
+  }
+
+  .ycs-my-palettes__kicker {
+    margin: 0 0 6px;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #777;
+  }
+
+  .ycs-my-palettes__header h1 {
+    margin: 0;
+    font-size: 34px;
+    line-height: 1.05;
+    letter-spacing: 0.02em;
+  }
+
+  .ycs-my-palettes__intro {
+    margin: 10px auto 0;
+    max-width: 560px;
+    font-size: 15px;
+    line-height: 1.5;
+    color: #666;
+  }
+
+  .ycs-my-palettes__signin {
+    margin-top: 18px;
+  }
+
+  .ycs-my-palettes__signin-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    padding: 8px 14px;
+    border-radius: 10px;
+    background: #d94c6a;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid #d94c6a;
+    transition: all .15s ease;
+  }
+
+  .ycs-my-palettes__signin-button:hover {
+    background: #c43f5d;
+    border-color: #c43f5d;
+  }
+
+  .ycs-my-palettes__empty {
+    text-align: center;
+    color: #666;
+    padding: 20px 0;
+  }
+
+  .ycs-my-palettes__section {
+    margin-top: 34px;
+  }
+
+  .ycs-my-palettes__section:first-of-type {
+    margin-top: 0;
+  }
+
+  .ycs-my-palettes__section-title {
+    margin: 0 0 14px;
+    font-size: 20px;
+    line-height: 1.2;
+    color: #333;
+  }
+
+  .ycs-my-palettes__section--locked {
+    border-top: 1px solid #eee;
+    padding-top: 28px;
+  }
+
+  .ycs-my-palettes__section--admin {
+    border-top: 1px solid #eee;
+    border-bottom: 1px solid #eee;
+    padding-top: 28px;
+    padding-bottom: 28px;
+  }
+
+  .ycs-my-palettes__grid {
+    display: grid;
+    gap: 14px;
+    justify-content: center;
+  }
+
+  .ycs-my-palettes__grid--1 {
+    grid-template-columns: minmax(0, 720px);
+  }
+
+  .ycs-my-palettes__grid--2,
+  .ycs-my-palettes__grid--3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ycs-my-palettes__grid--4,
+  .ycs-my-palettes__grid--5,
+  .ycs-my-palettes__grid--6,
+  .ycs-my-palettes__grid--7,
+  .ycs-my-palettes__grid--8,
+  .ycs-my-palettes__grid--9,
+  .ycs-my-palettes__grid--10,
+  .ycs-my-palettes__grid--11,
+  .ycs-my-palettes__grid--12,
+  .ycs-my-palettes__grid--13,
+  .ycs-my-palettes__grid--14,
+  .ycs-my-palettes__grid--15,
+  .ycs-my-palettes__grid--16,
+  .ycs-my-palettes__grid--17,
+  .ycs-my-palettes__grid--18,
+  .ycs-my-palettes__grid--19,
+  .ycs-my-palettes__grid--20,
+  .ycs-my-palettes__grid--21,
+  .ycs-my-palettes__grid--22,
+  .ycs-my-palettes__grid--23,
+  .ycs-my-palettes__grid--24,
+  .ycs-my-palettes__grid--25,
+  .ycs-my-palettes__grid--26,
+  .ycs-my-palettes__grid--27,
+  .ycs-my-palettes__grid--28,
+  .ycs-my-palettes__grid--29,
+  .ycs-my-palettes__grid--30 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ycs-my-palettes__grid--locked {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (max-width: 699px) {
+    .ycs-my-palettes__grid--4,
+    .ycs-my-palettes__grid--5,
+    .ycs-my-palettes__grid--6,
+    .ycs-my-palettes__grid--7,
+    .ycs-my-palettes__grid--8,
+    .ycs-my-palettes__grid--9,
+    .ycs-my-palettes__grid--10,
+    .ycs-my-palettes__grid--11,
+    .ycs-my-palettes__grid--12,
+    .ycs-my-palettes__grid--13,
+    .ycs-my-palettes__grid--14,
+    .ycs-my-palettes__grid--15,
+    .ycs-my-palettes__grid--16,
+    .ycs-my-palettes__grid--17,
+    .ycs-my-palettes__grid--18,
+    .ycs-my-palettes__grid--19,
+    .ycs-my-palettes__grid--20,
+    .ycs-my-palettes__grid--21,
+    .ycs-my-palettes__grid--22,
+    .ycs-my-palettes__grid--23,
+    .ycs-my-palettes__grid--24,
+    .ycs-my-palettes__grid--25,
+    .ycs-my-palettes__grid--26,
+    .ycs-my-palettes__grid--27,
+    .ycs-my-palettes__grid--28,
+    .ycs-my-palettes__grid--29,
+    .ycs-my-palettes__grid--30,
+    .ycs-my-palettes__grid--locked {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .ycs-palette-card {
+    border-radius: 14px;
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.05);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.06);
+    overflow: hidden;
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+
+  .ycs-palette-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 16px 34px rgba(0,0,0,0.08);
+  }
+
+  .ycs-palette-card.is-locked {
+    opacity: 0.9;
+  }
+
+  .ycs-palette-card--admin {
+    border-color: #ead7dc;
+    background: #fffafb;
+  }
+
+  .ycs-palette-card__top {
+    padding: 10px 10px 0;
+  }
+
+  .ycs-palette-card__gradient {
+    height: 8px;
+    width: 100%;
+    border-radius: 999px;
+  }
+
+  .ycs-palette-card__image-wrap {
+    width: 100%;
+    overflow: hidden;
+    border-radius: 12px;
+    background: #f7f7f7;
+  }
+
+  .ycs-palette-card__image {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .ycs-palette-card__content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px 16px;
+  }
+
+  .ycs-palette-card__text {
+    min-width: 0;
+  }
+
+  .ycs-palette-card__text h2 {
+    margin: 0;
+    font-size: 20px;
+    line-height: 1.15;
+    font-weight: 600;
+    letter-spacing: .01em;
+  }
+
+  .ycs-palette-card__subtitle {
+    margin-top: 4px;
+    font-size: 13px;
+    color: #888;
+    letter-spacing: .02em;
+  }
+
+  .ycs-palette-card__lock {
+    margin: 8px 0 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #777;
+  }
+
+  .ycs-palette-card__admin-label {
+    margin: 8px 0 0;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: #b05a70;
+  }
+
+  .ycs-palette-card__actions {
+    flex: 0 0 auto;
+  }
+
+  .ycs-palette-card__actions--stacked {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  .ycs-palette-card__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    padding: 8px 14px;
+    border-radius: 10px;
+    background: #d94c6a;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid #d94c6a;
+    transition: all .15s ease;
+  }
+
+  .ycs-palette-card__button:hover {
+    background: #c43f5d;
+    border-color: #c43f5d;
+  }
+
+  .ycs-palette-card__button--secondary {
+    background: #fff8fa;
+    color: #c23f5e;
+    border: 1px solid #f1c2cc;
+  }
+
+  .ycs-palette-card__button--secondary:hover {
+    background: #fdecef;
+  }
+
+  .ycs-palette-card__button--locked {
+    background: #fff6f8;
+    color: #b93d59;
+    border-color: #efb7c4;
+  }
+
+  .ycs-palette-card__button--locked:hover {
+    background: #fdecef;
+    color: #a8324d;
+    border-color: #e59caf;
+  }
+
+  .ycs-palette-card__button--disabled {
+    background: #b8b8b8;
+    color: #fff;
+    cursor: default;
+  }
+
+  .ycs-palette-card.is-locked {
+    opacity: .8;
+  }
+
+  .ycs-palette-card__lock {
+    margin-top: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: #999;
+  }
+
+  @media (max-width: 699px) {
+    .ycs-palette-card__content {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .ycs-palette-card__actions--stacked {
+      width: 100%;
+      justify-content: flex-start;
+    }
+
+    .ycs-palette-card__button {
+      width: 100%;
+    }
+  }
+  .ycs-tools-tos-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(255,255,255,0.96);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 18px;
+}
+
+.ycs-tools-tos-modal {
+  background: #fff;
+  padding: 28px;
+  max-width: 440px;
+  text-align: center;
+  border-radius: 18px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.12);
+  border: 1px solid #ece7df;
+}
+
+.ycs-tools-tos-modal h2 {
+  margin: 0 0 10px;
+  font-size: 22px;
+}
+
+.ycs-tools-tos-modal p {
+  margin: 0;
+  font-size: 14px;
+  color: #555;
+  line-height: 1.45;
+}
+
+.ycs-tools-tos-check {
+  display: block;
+  margin: 16px 0;
+  font-size: 14px;
+  color: #333;
+}
+
+.ycs-admin-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 0 0 28px;
+  padding: 18px 20px;
+  border: 1px solid #e5d8ca;
+  border-radius: 18px;
+  background: #fbf7f1;
+}
+
+.ycs-admin-preview__kicker {
+  margin: 0 0 4px;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8c7d6d;
+  font-weight: 700;
+}
+
+.ycs-admin-preview__copy {
+  margin: 0;
+  color: #4f4740;
+  font-size: 15px;
+}
+
+.ycs-admin-preview__control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #332e2a;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+  .ycs-admin-preview__control select {
+    border: 1px solid #d8cbbd;
+    border-radius: 999px;
+    padding: 10px 34px 10px 14px;
+    background: #fff;
+  color: #332e2a;
+    font: inherit;
+  }
+
+.ycs-custom-palettes {
+  border-top: 1px solid #eee;
+  border-bottom: 1px solid #eee;
+  padding: 28px 0;
+}
+
+.ycs-custom-palettes__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+
+.ycs-custom-palettes__intro {
+  margin: -8px 0 0;
+  max-width: 560px;
+  color: #666;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.ycs-custom-palettes__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.ycs-custom-palettes__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.ycs-custom-palettes__empty,
+.ycs-custom-palettes__status {
+  border: 1px dashed #e4c7ce;
+  border-radius: 14px;
+  padding: 18px;
+  background: #fffafb;
+  color: #6b5359;
+}
+
+.ycs-custom-palettes__empty p,
+.ycs-custom-palettes__status {
+  margin: 0 0 12px;
+  line-height: 1.45;
+}
+
+.ycs-custom-palettes__status[hidden],
+.ycs-custom-palettes__empty[hidden] {
+  display: none;
+}
+
+.ycs-custom-card {
+  border-color: #e6dde0;
+}
+
+.ycs-custom-card .ycs-palette-card__content {
+  align-items: stretch;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.ycs-custom-card .ycs-palette-card__text {
+  width: 100%;
+}
+
+.ycs-custom-card .ycs-palette-card__text h2 {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.ycs-custom-card .ycs-palette-card__actions--stacked {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  justify-content: stretch;
+  width: 100%;
+}
+
+.ycs-custom-card .ycs-palette-card__button {
+  width: 100%;
+}
+
+.ycs-custom-card__swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 10px;
+}
+
+.ycs-custom-swatch {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid rgba(0,0,0,.18);
+  flex: 0 0 auto;
+}
+
+.ycs-custom-modal[hidden] {
+  display: none;
+}
+
+.ycs-custom-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+}
+
+.ycs-custom-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(36, 30, 28, .35);
+}
+
+.ycs-custom-modal__dialog {
+  position: relative;
+  width: min(760px, 100%);
+  max-height: min(86vh, 760px);
+  overflow: auto;
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #ead7dc;
+  box-shadow: 0 24px 70px rgba(0,0,0,.18);
+}
+
+.ycs-custom-modal__header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  background: #fff;
+  border-bottom: 1px solid #f0e2e6;
+}
+
+.ycs-custom-modal__header h2 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.ycs-custom-modal__body {
+  padding: 18px;
+}
+
+.ycs-custom-icon-button {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid #ead7dc;
+  background: #fff8fa;
+  color: #9f324d;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.ycs-custom-form,
+.ycs-custom-toolbar {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.ycs-custom-form label,
+.ycs-custom-toolbar label {
+  display: grid;
+  gap: 6px;
+  color: #332e2a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ycs-custom-form input,
+.ycs-custom-form select,
+.ycs-custom-toolbar input {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid #d8cbd0;
+  border-radius: 10px;
+  padding: 9px 11px;
+  font: inherit;
+}
+
+.ycs-custom-form__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.ycs-custom-preview {
+  display: grid;
+  gap: 6px;
+  color: #332e2a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ycs-custom-preview .ycs-custom-swatch {
+  width: 40px;
+  height: 40px;
+}
+
+.ycs-custom-form__actions,
+.ycs-custom-row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ycs-custom-error {
+  margin: 0;
+  color: #a8324d;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ycs-custom-added-label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  background: #f5eef0;
+  color: #7b5a62;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ycs-custom-assignment-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid #eee3e6;
+  border-radius: 12px;
+  background: #fffafb;
+}
+
+.ycs-custom-assignment-list {
+  display: grid;
+  gap: 8px;
+}
+
+.ycs-custom-assignment-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid #eee3e6;
+  border-radius: 12px;
+  background: #fff;
+  color: #332e2a;
+  font-weight: 700;
+}
+
+.ycs-custom-assignment-row input {
+  width: 18px;
+  min-height: 18px;
+}
+
+.ycs-custom-assignment-row small {
+  color: #777;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ycs-custom-batch-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 10px;
+  border: 1px solid #eee3e6;
+  border-radius: 12px;
+  background: #fffafb;
+}
+
+.ycs-custom-batch-bar label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #332e2a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ycs-custom-batch-bar input {
+  width: 18px;
+  min-height: 18px;
+}
+
+.ycs-custom-batch-summary {
+  margin: -4px 0 4px;
+  color: #6b5359;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ycs-custom-list {
+  display: grid;
+  gap: 10px;
+}
+
+.ycs-custom-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid #eee3e6;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.ycs-custom-row__main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.ycs-custom-row__name {
+  margin: 0;
+  font-weight: 700;
+  color: #2f2a25;
+}
+
+.ycs-custom-row__meta {
+  margin: 2px 0 0;
+  color: #777;
+  font-size: 13px;
+}
+
+.ycs-custom-empty-text {
+  margin: 0;
+  padding: 14px;
+  border: 1px dashed #e4c7ce;
+  border-radius: 12px;
+  color: #6b5359;
+  background: #fffafb;
+}
+
+@media (max-width: 720px) {
+  .ycs-admin-preview {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 699px) {
+  .ycs-custom-palettes__header,
+  .ycs-custom-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ycs-custom-palettes__actions,
+  .ycs-custom-row__actions {
+    justify-content: flex-start;
+  }
+
+  .ycs-custom-palettes__grid,
+  .ycs-custom-form__row {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+<script>
+(function () {
+  const root = document.getElementById('ycs-custom-palettes');
+  const modal = document.getElementById('ycs-custom-modal');
+  if (!root || !modal) return;
+
+  const listEl = root.querySelector('[data-ycs-custom-palettes-list]');
+  const emptyEl = root.querySelector('[data-ycs-custom-empty]');
+  const statusEl = root.querySelector('[data-ycs-custom-status]');
+  const modalTitle = document.getElementById('ycs-custom-modal-title');
+  const modalBody = modal.querySelector('[data-ycs-custom-modal-body]');
+  const apiBase = (root.dataset.appBaseUrl || '').replace(/\/$/, '') + '/api/custom-palettes';
+  const context = {
+    customerId: root.dataset.customerId || '',
+    previewCustomerId: root.dataset.previewCustomerId || '',
+    viewAs: root.dataset.viewAs || '',
+    hasGrowthAccess: root.dataset.hasGrowthAccess || '',
+    scope: root.dataset.scope || 'private'
+  };
+  const isStyleMastersAdmin = context.scope === 'stylemasters';
+  const state = { colors: [], palettes: [], activePalette: null, colorSearch: '' };
+
+  function escapeHtml(value) {
+    return String(value || '').replace(/[&<>"']/g, function (char) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char];
+    });
+  }
+
+  function setStatus(message, isError) {
+    if (!statusEl) return;
+    statusEl.textContent = message || '';
+    statusEl.hidden = !message;
+    statusEl.style.borderColor = isError ? '#e09aaa' : '#c9dfcf';
+    statusEl.style.background = isError ? '#fff8fa' : '#f6fff8';
+  }
+
+  function normalizeHexInput(value) {
+    const raw = String(value || '').trim().replace(/^#/, '');
+    return /^[0-9a-fA-F]{6}$/.test(raw) ? '#' + raw.toUpperCase() : '';
+  }
+
+  async function requestJson(action, payload) {
+    const response = await fetch(apiBase, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(Object.assign({}, context, payload, { action: action }))
+    });
+    const json = await response.json();
+    if (!response.ok) throw new Error(json.error || 'Request failed');
+    return json;
+  }
+
+  async function loadData() {
+    const query = new URLSearchParams(context);
+    query.set('action', 'list');
+    const response = await fetch(apiBase + '?' + query.toString());
+    const json = await response.json();
+    if (!response.ok) throw new Error(json.error || 'Unable to load custom palettes');
+    state.colors = json.colors || [];
+    state.palettes = json.palettes || [];
+    renderPalettes();
+  }
+
+  function renderPalettes() {
+    if (!listEl || !emptyEl) return;
+    listEl.innerHTML = '';
+    emptyEl.hidden = state.palettes.length > 0;
+
+    state.palettes.forEach(function (palette) {
+      const swatches = (palette.colors || []).slice(0, 7).map(function (item) {
+        const color = item.color || {};
+        return '<span class="ycs-custom-swatch" title="' + escapeHtml(color.name) + ' ' + escapeHtml(color.hexCode) + '" style="background:' + escapeHtml(color.hexCode) + '"></span>';
+      }).join('');
+      const paletteCode = 'CUSTOM_' + palette.id;
+      const visibilityBadge = isStyleMastersAdmin
+        ? '<p class="ycs-palette-card__admin-label">' + (palette.visibleToVip ? 'Visible to VIP' : 'Admin only') + '</p>'
+        : '';
+      const viewLinks = isStyleMastersAdmin && palette.visibleToVip
+        ? '<a href="/pages/palette?palette=' + encodeURIComponent(paletteCode) + '" class="ycs-palette-card__button ycs-palette-card__button--secondary">View Palette</a>' +
+          '<a href="/pages/photo-prep?mode=personal&workflow=photo-draping&palette=' + encodeURIComponent(paletteCode) + '" class="ycs-palette-card__button ycs-palette-card__button--secondary">Draping Studio</a>'
+        : '';
+      const visibilityButton = isStyleMastersAdmin
+        ? '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="toggle-vip-visibility" data-palette-id="' + escapeHtml(palette.id) + '">' + (palette.visibleToVip ? 'Hide from VIP' : 'Show to VIP') + '</button>'
+        : '';
+      const pdfButton = isStyleMastersAdmin
+        ? '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="create-pdf" data-palette-id="' + escapeHtml(palette.id) + '"' + (palette.colorCount > 0 ? '' : ' disabled') + '>PDF</button>'
+        : '';
+
+      const card = document.createElement('div');
+      card.className = 'ycs-palette-card ycs-custom-card';
+      card.innerHTML =
+        '<div class="ycs-palette-card__top"><div class="ycs-palette-card__gradient" style="background: linear-gradient(to right, #2f2a25, #d94c6a, #f2b880, #5fb6ff);"></div></div>' +
+        '<div class="ycs-palette-card__content">' +
+          '<div class="ycs-palette-card__text">' +
+            '<h2>' + escapeHtml(palette.name) + '</h2>' +
+            '<p class="ycs-palette-card__subtitle">' + palette.colorCount + (palette.colorCount === 1 ? ' custom color' : ' custom colors') + '</p>' +
+            visibilityBadge +
+            '<div class="ycs-custom-card__swatches">' + swatches + '</div>' +
+          '</div>' +
+          '<div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">' +
+            '<button type="button" class="ycs-palette-card__button" data-ycs-custom-action="open-palette" data-palette-id="' + escapeHtml(palette.id) + '">Open</button>' +
+            visibilityButton +
+            viewLinks +
+            pdfButton +
+            '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="rename-palette" data-palette-id="' + escapeHtml(palette.id) + '">Rename</button>' +
+            '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="delete-palette" data-palette-id="' + escapeHtml(palette.id) + '">Delete</button>' +
+          '</div>' +
+        '</div>';
+      listEl.appendChild(card);
+    });
+  }
+
+  function openModal(title, html) {
+    modalTitle.textContent = title;
+    modalBody.innerHTML = html;
+    modal.hidden = false;
+  }
+
+  function focusSearchField() {
+    const input = modal.querySelector('[data-ycs-color-search]');
+    if (!input) return;
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+  }
+
+  function closeModal() {
+    modal.hidden = true;
+    state.activePalette = null;
+  }
+
+  function colorRows(colors, selectable, paletteColorIds) {
+    if (!colors.length) {
+      return '<p class="ycs-custom-empty-text">You haven’t added any custom colors yet. Add your first color to begin building your private color collection.</p>';
+    }
+
+    return '<div class="ycs-custom-list">' + colors.map(function (color) {
+      const disabled = paletteColorIds && paletteColorIds.has(color.id);
+      const assignedPaletteNames = state.palettes.filter(function (palette) {
+        return (palette.colors || []).some(function (item) {
+          return item.color && item.color.id === color.id;
+        });
+      }).map(function (palette) { return palette.name; });
+      const paletteMeta = assignedPaletteNames.length
+        ? assignedPaletteNames.join(', ')
+        : 'Not assigned to any palette';
+      return '<div class="ycs-custom-row">' +
+        '<div class="ycs-custom-row__main">' +
+          (selectable ? '<input type="checkbox" data-color-select value="' + escapeHtml(color.id) + '"' + (disabled ? ' disabled' : '') + ' aria-label="Select ' + escapeHtml(color.name) + '">' : '') +
+          '<span class="ycs-custom-swatch" style="background:' + escapeHtml(color.hexCode) + '"></span>' +
+          '<div><p class="ycs-custom-row__name">' + escapeHtml(color.name) + '</p><p class="ycs-custom-row__meta">' + escapeHtml(color.hexCode) + '</p>' + (selectable ? '' : '<p class="ycs-custom-row__meta">' + escapeHtml(paletteMeta) + '</p>') + '</div>' +
+        '</div>' +
+        (selectable
+          ? '<div class="ycs-custom-row__actions">' +
+              (disabled
+                ? '<span class="ycs-custom-added-label">Added</span>'
+                : '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="add-one-color" data-color-id="' + escapeHtml(color.id) + '">Add</button>') +
+            '</div>'
+          : '<div class="ycs-custom-row__actions"><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="assign-color-palettes" data-color-id="' + escapeHtml(color.id) + '">Palettes</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="edit-color" data-color-id="' + escapeHtml(color.id) + '">Edit</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="delete-color" data-color-id="' + escapeHtml(color.id) + '">Delete</button></div>') +
+      '</div>';
+    }).join('') + '</div>';
+  }
+
+  function filteredColors() {
+    const query = state.colorSearch.trim().toLowerCase();
+    if (!query) return state.colors;
+    return state.colors.filter(function (color) {
+      return color.name.toLowerCase().includes(query) || color.hexCode.toLowerCase().includes(query);
+    });
+  }
+
+  function myColorRows(colors) {
+    if (!colors.length) {
+      return '<p class="ycs-custom-empty-text">You haven’t added any custom colors yet. Add your first color to begin building your private color collection.</p>';
+    }
+
+    return '<div class="ycs-custom-list">' + colors.map(function (color) {
+      const assignedPaletteNames = state.palettes.filter(function (palette) {
+        return (palette.colors || []).some(function (item) {
+          return item.color && item.color.id === color.id;
+        });
+      }).map(function (palette) { return palette.name; });
+      const paletteMeta = assignedPaletteNames.length
+        ? assignedPaletteNames.join(', ')
+        : 'Not assigned to any palette';
+
+      return '<div class="ycs-custom-row">' +
+        '<div class="ycs-custom-row__main">' +
+          '<input type="checkbox" data-manage-color-select value="' + escapeHtml(color.id) + '" aria-label="Select ' + escapeHtml(color.name) + '">' +
+          '<span class="ycs-custom-swatch" style="background:' + escapeHtml(color.hexCode) + '"></span>' +
+          '<div><p class="ycs-custom-row__name">' + escapeHtml(color.name) + '</p><p class="ycs-custom-row__meta">' + escapeHtml(color.hexCode) + '</p><p class="ycs-custom-row__meta">' + escapeHtml(paletteMeta) + '</p></div>' +
+        '</div>' +
+        '<div class="ycs-custom-row__actions"><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="assign-color-palettes" data-color-id="' + escapeHtml(color.id) + '">Palettes</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="edit-color" data-color-id="' + escapeHtml(color.id) + '">Edit</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="delete-color" data-color-id="' + escapeHtml(color.id) + '">Delete</button></div>' +
+      '</div>';
+    }).join('') + '</div>';
+  }
+
+  function renderMyColors(error) {
+    const colors = filteredColors();
+    openModal('My Colors',
+      '<div class="ycs-custom-toolbar">' +
+        '<label>Search My Colors<input type="search" data-ycs-color-search value="' + escapeHtml(state.colorSearch) + '"></label>' +
+      '</div>' +
+      '<form class="ycs-custom-form" data-ycs-color-form>' +
+        '<div class="ycs-custom-form__row">' +
+          '<label>Color Name<input name="name" required></label>' +
+          '<label>Hex Code<input name="hexCode" required placeholder="#D94C6A"></label>' +
+          '<div class="ycs-custom-preview"><span>Preview</span><span class="ycs-custom-swatch" data-ycs-hex-preview></span></div>' +
+        '</div>' +
+        (error ? '<p class="ycs-custom-error">' + escapeHtml(error) + '</p>' : '') +
+        '<div class="ycs-custom-form__actions"><button type="submit" class="ycs-palette-card__button">Save</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-close>Cancel</button></div>' +
+      '</form>' +
+      '<div class="ycs-custom-batch-bar">' +
+        '<label><input type="checkbox" data-manage-color-select-all' + (colors.length ? '' : ' disabled') + '> Select all visible colors</label>' +
+        '<button type="button" class="ycs-palette-card__button" data-ycs-custom-action="batch-assign-colors"' + (state.palettes.length && colors.length ? '' : ' disabled') + '>Assign Selected to Palette</button>' +
+      '</div>' +
+      myColorRows(colors)
+    );
+  }
+
+  function renderColorEdit(color, error) {
+    openModal('Edit Custom Color',
+      '<form class="ycs-custom-form" data-ycs-color-form data-color-id="' + escapeHtml(color.id) + '">' +
+        '<div class="ycs-custom-form__row">' +
+          '<label>Color Name<input name="name" required value="' + escapeHtml(color.name) + '"></label>' +
+          '<label>Hex Code<input name="hexCode" required value="' + escapeHtml(color.hexCode) + '"></label>' +
+          '<div class="ycs-custom-preview"><span>Preview</span><span class="ycs-custom-swatch" data-ycs-hex-preview style="background:' + escapeHtml(color.hexCode) + '"></span></div>' +
+        '</div>' +
+        (error ? '<p class="ycs-custom-error">' + escapeHtml(error) + '</p>' : '') +
+        '<div class="ycs-custom-form__actions"><button type="submit" class="ycs-palette-card__button">Save</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="manage-colors">Cancel</button></div>' +
+      '</form>');
+  }
+
+  function renderColorPaletteAssignments(color, error) {
+    const assignedPaletteIds = new Set(state.palettes.filter(function (palette) {
+      return (palette.colors || []).some(function (item) {
+        return item.color && item.color.id === color.id;
+      });
+    }).map(function (palette) { return palette.id; }));
+    const paletteOptions = state.palettes.length
+      ? '<div class="ycs-custom-assignment-list">' + state.palettes.map(function (palette) {
+          const checked = assignedPaletteIds.has(palette.id);
+          return '<label class="ycs-custom-assignment-row">' +
+            '<input type="checkbox" name="paletteIds" value="' + escapeHtml(palette.id) + '"' + (checked ? ' checked' : '') + '>' +
+            '<span>' + escapeHtml(palette.name) + '</span>' +
+            '<small>' + palette.colorCount + (palette.colorCount === 1 ? ' color' : ' colors') + '</small>' +
+          '</label>';
+        }).join('') + '</div>'
+      : '<p class="ycs-custom-empty-text">Create a custom palette first, then assign this color to it.</p>';
+
+    openModal('Assign ' + color.name + ' To Palettes',
+      '<form class="ycs-custom-form" data-ycs-color-palettes-form data-color-id="' + escapeHtml(color.id) + '">' +
+        '<div class="ycs-custom-assignment-preview">' +
+          '<span class="ycs-custom-swatch" style="background:' + escapeHtml(color.hexCode) + '"></span>' +
+          '<div><p class="ycs-custom-row__name">' + escapeHtml(color.name) + '</p><p class="ycs-custom-row__meta">' + escapeHtml(color.hexCode) + '</p></div>' +
+        '</div>' +
+        paletteOptions +
+        (error ? '<p class="ycs-custom-error">' + escapeHtml(error) + '</p>' : '') +
+        '<div class="ycs-custom-form__actions"><button type="submit" class="ycs-palette-card__button"' + (state.palettes.length ? '' : ' disabled') + '>Save Palette Assignments</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="manage-colors">Cancel</button></div>' +
+      '</form>');
+  }
+
+  function renderBatchAssignColors(colorIds, error) {
+    const selectedColors = colorIds.map(function (colorId) {
+      return state.colors.find(function (color) { return color.id === colorId; });
+    }).filter(Boolean);
+    const paletteOptions = state.palettes.map(function (palette) {
+      return '<option value="' + escapeHtml(palette.id) + '">' + escapeHtml(palette.name) + '</option>';
+    }).join('');
+    const preview = selectedColors.slice(0, 8).map(function (color) {
+      return '<span class="ycs-custom-swatch" title="' + escapeHtml(color.name) + '" style="background:' + escapeHtml(color.hexCode) + '"></span>';
+    }).join('');
+    const moreCount = selectedColors.length > 8 ? selectedColors.length - 8 : 0;
+
+    openModal('Assign Selected Colors',
+      '<form class="ycs-custom-form" data-ycs-batch-color-palette-form data-color-ids="' + escapeHtml(colorIds.join(',')) + '">' +
+        '<p class="ycs-custom-batch-summary">' + selectedColors.length + (selectedColors.length === 1 ? ' color selected' : ' colors selected') + '</p>' +
+        '<div class="ycs-custom-card__swatches">' + preview + (moreCount ? '<span class="ycs-custom-added-label">+' + moreCount + '</span>' : '') + '</div>' +
+        '<label>Assign to Palette<select name="paletteId" required>' + paletteOptions + '</select></label>' +
+        (error ? '<p class="ycs-custom-error">' + escapeHtml(error) + '</p>' : '') +
+        '<div class="ycs-custom-form__actions"><button type="submit" class="ycs-palette-card__button">Assign Colors</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="manage-colors">Cancel</button></div>' +
+      '</form>');
+  }
+
+  function renderPaletteForm(title, action, palette, error) {
+    openModal(title,
+      '<form class="ycs-custom-form" data-ycs-palette-form data-action="' + action + '" data-palette-id="' + escapeHtml((palette && palette.id) || '') + '">' +
+        '<label>Palette Name<input name="name" required value="' + escapeHtml((palette && palette.name) || '') + '"></label>' +
+        (error ? '<p class="ycs-custom-error">' + escapeHtml(error) + '</p>' : '') +
+        '<div class="ycs-custom-form__actions"><button type="submit" class="ycs-palette-card__button">Save</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-close>Cancel</button></div>' +
+      '</form>');
+  }
+
+  function renderPaletteDetail(palette) {
+    state.activePalette = palette;
+    const colors = palette.colors || [];
+    const rows = colors.length ? '<div class="ycs-custom-list">' + colors.map(function (item, index) {
+      const color = item.color;
+      return '<div class="ycs-custom-row">' +
+        '<div class="ycs-custom-row__main"><input type="checkbox" data-palette-color-select value="' + escapeHtml(color.id) + '" aria-label="Select ' + escapeHtml(color.name) + '"><span class="ycs-custom-swatch" style="background:' + escapeHtml(color.hexCode) + '"></span><div><p class="ycs-custom-row__name">' + escapeHtml(color.name) + '</p><p class="ycs-custom-row__meta">' + escapeHtml(color.hexCode) + '</p></div></div>' +
+        '<div class="ycs-custom-row__actions">' +
+          '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="move-color" data-direction="up" data-color-id="' + escapeHtml(color.id) + '"' + (index === 0 ? ' disabled' : '') + '>Move Up</button>' +
+          '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="move-color" data-direction="down" data-color-id="' + escapeHtml(color.id) + '"' + (index === colors.length - 1 ? ' disabled' : '') + '>Move Down</button>' +
+          '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="remove-from-palette" data-color-id="' + escapeHtml(color.id) + '">Remove</button>' +
+        '</div></div>';
+    }).join('') + '</div>' : '<p class="ycs-custom-empty-text">This palette does not have any colors yet. Add colors from My Colors.</p>';
+
+    openModal(palette.name,
+      '<div class="ycs-custom-form__actions" style="margin-bottom:16px">' +
+        '<button type="button" class="ycs-palette-card__button" data-ycs-custom-action="add-colors">Add Colors</button>' +
+        '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="rename-palette" data-palette-id="' + escapeHtml(palette.id) + '">Rename</button>' +
+      '</div>' +
+      (colors.length
+        ? '<div class="ycs-custom-batch-bar"><label><input type="checkbox" data-palette-color-select-all> Select all visible colors</label><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="remove-selected-from-palette">Remove Selected</button></div>'
+        : '') +
+      rows);
+  }
+
+  function getPdfColorCategory(color) {
+    return String(
+      color.category ||
+      color.categoryName ||
+      color.colorCategory ||
+      color.group ||
+      color.family ||
+      'Custom Colors'
+    ).trim() || 'Custom Colors';
+  }
+
+  function normalizePrintHex(value) {
+    const hex = normalizeHexInput(value);
+    return hex || '#FFFFFF';
+  }
+
+  function normalizePdfColor(color) {
+    return Object.assign({}, color, {
+      hexCode: color.hexCode || color.hex || color.colorHex || '',
+      name: color.name || color.colorName || ''
+    });
+  }
+
+  function buildPalettePrintGroups(palette) {
+    const groups = {};
+    const groupOrder = [];
+
+    (palette.colors || []).forEach(function (item) {
+      const color = normalizePdfColor(item.color || {});
+      const category = getPdfColorCategory(color);
+
+      if (!groups[category]) {
+        groups[category] = [];
+        groupOrder.push(category);
+      }
+
+      groups[category].push(color);
+    });
+
+    return groupOrder.map(function (category) {
+      return { category: category, colors: groups[category] };
+    });
+  }
+
+  let pdfLogoPromise = null;
+
+  function loadPdfLogoData() {
+    if (pdfLogoPromise) return pdfLogoPromise;
+
+    pdfLogoPromise = fetch('https://cdn.shopify.com/s/files/1/0623/6284/5408/files/YourColorStyle_Logo-120_e3c4c33e-3249-4120-8dc6-c665eb3fec9f.png?v=1644954058')
+      .then(function (response) {
+        if (!response.ok) throw new Error('Unable to load logo.');
+        return response.blob();
+      })
+      .then(function (blob) {
+        return new Promise(function (resolve) {
+          const image = new Image();
+          image.onload = function () {
+            URL.revokeObjectURL(image.src);
+            const targetWidth = 144;
+            const targetHeight = Math.max(1, Math.round(targetWidth * (image.naturalHeight / image.naturalWidth)));
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+            context.fillStyle = '#FFFFFF';
+            context.fillRect(0, 0, targetWidth, targetHeight);
+            context.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+            resolve({
+              data: atob(dataUrl.split(',')[1] || ''),
+              width: targetWidth,
+              height: targetHeight
+            });
+          };
+          image.onerror = function () {
+            URL.revokeObjectURL(image.src);
+            resolve(null);
+          };
+          image.src = URL.createObjectURL(blob);
+        });
+      })
+      .catch(function () {
+        return null;
+      });
+
+    return pdfLogoPromise;
+  }
+
+  function normalizePdfText(value) {
+    return String(value || '')
+      .replace(/[\u2018\u2019]/g, "'")
+      .replace(/[\u201C\u201D]/g, '"')
+      .replace(/[\u2013\u2014]/g, '-')
+      .replace(/[^\x09\x0A\x0D\x20-\x7E]/g, '');
+  }
+
+  function escapePdfText(value) {
+    return normalizePdfText(value).replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+  }
+
+  function estimatePdfTextWidth(value, fontSize) {
+    return normalizePdfText(value).split('').reduce(function (width, char) {
+      if (char === ' ') return width + (fontSize * 0.28);
+      if ('ilI.,;:!|'.indexOf(char) !== -1) return width + (fontSize * 0.24);
+      if ('mwMW@#%&'.indexOf(char) !== -1) return width + (fontSize * 0.72);
+      return width + (fontSize * 0.52);
+    }, 0);
+  }
+
+  function splitPdfText(value, fontSize, maxWidth, maxLines) {
+    const words = normalizePdfText(value).split(/\s+/).filter(Boolean);
+    const lines = [];
+    let current = '';
+
+    words.forEach(function (word) {
+      const next = current ? current + ' ' + word : word;
+      if (estimatePdfTextWidth(next, fontSize) <= maxWidth || !current) {
+        current = next;
+      } else {
+        lines.push(current);
+        current = word;
+      }
+    });
+
+    if (current) lines.push(current);
+    return lines.slice(0, maxLines || lines.length);
+  }
+
+  function hexToRgb(hex) {
+    const normalized = normalizePrintHex(hex).replace('#', '');
+    const value = normalized.length === 3
+      ? normalized.split('').map(function (char) { return char + char; }).join('')
+      : normalized;
+    const red = parseInt(value.slice(0, 2), 16);
+    const green = parseInt(value.slice(2, 4), 16);
+    const blue = parseInt(value.slice(4, 6), 16);
+
+    return {
+      r: Number.isNaN(red) ? 255 : red,
+      g: Number.isNaN(green) ? 255 : green,
+      b: Number.isNaN(blue) ? 255 : blue
+    };
+  }
+
+  function pdfFileName(name) {
+    const slug = String(name || 'palette')
+      .trim()
+      .replace(/[^a-z0-9]+/gi, '-')
+      .replace(/^-+|-+$/g, '')
+      .toLowerCase();
+
+    return (slug || 'palette') + '.pdf';
+  }
+
+  function pdfBinaryBytes(binary) {
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) {
+      bytes[index] = binary.charCodeAt(index) & 255;
+    }
+    return bytes;
+  }
+
+  function createPdfBlob(pageStreams, logoData) {
+    const encoder = new TextEncoder();
+    const pageCount = pageStreams.length;
+    const logoObjectId = logoData ? 6 : null;
+    const firstPageObjectId = logoData ? 7 : 6;
+    const objects = [];
+
+    function addObject(id, content) {
+      objects[id] = typeof content === 'string' ? encoder.encode(content) : content;
+    }
+
+    addObject(1, '<< /Type /Catalog /Pages 2 0 R >>');
+    addObject(2, '<< /Type /Pages /Kids [' + pageStreams.map(function (_, index) {
+      return (firstPageObjectId + (index * 2)) + ' 0 R';
+    }).join(' ') + '] /Count ' + pageCount + ' >>');
+    addObject(3, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
+    addObject(4, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>');
+    addObject(5, '<< /Type /Font /Subtype /Type1 /BaseFont /Times-Roman >>');
+
+    if (logoData) {
+      const imageBytes = pdfBinaryBytes(logoData.data);
+      const header = encoder.encode('<< /Type /XObject /Subtype /Image /Width ' + logoData.width + ' /Height ' + logoData.height + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + imageBytes.length + ' >>\nstream\n');
+      const footer = encoder.encode('\nendstream');
+      const imageObject = new Uint8Array(header.length + imageBytes.length + footer.length);
+      imageObject.set(header, 0);
+      imageObject.set(imageBytes, header.length);
+      imageObject.set(footer, header.length + imageBytes.length);
+      addObject(logoObjectId, imageObject);
+    }
+
+    pageStreams.forEach(function (stream, index) {
+      const pageId = firstPageObjectId + (index * 2);
+      const contentId = pageId + 1;
+      const resourceParts = ['/Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >>'];
+      if (logoObjectId) resourceParts.push('/XObject << /Logo ' + logoObjectId + ' 0 R >>');
+
+      addObject(pageId, '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << ' + resourceParts.join(' ') + ' >> /Contents ' + contentId + ' 0 R >>');
+
+      const streamBytes = encoder.encode(stream);
+      addObject(contentId, '<< /Length ' + streamBytes.length + ' >>\nstream\n' + stream + '\nendstream');
+    });
+
+    const parts = [];
+    const offsets = [0];
+    let length = 0;
+
+    function pushPart(part) {
+      const bytes = typeof part === 'string' ? encoder.encode(part) : part;
+      parts.push(bytes);
+      length += bytes.length;
+    }
+
+    pushPart('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
+
+    for (let id = 1; id < objects.length; id += 1) {
+      if (!objects[id]) continue;
+      offsets[id] = length;
+      pushPart(id + ' 0 obj\n');
+      pushPart(objects[id]);
+      pushPart('\nendobj\n');
+    }
+
+    const xrefOffset = length;
+    pushPart('xref\n0 ' + objects.length + '\n');
+    pushPart('0000000000 65535 f \n');
+
+    for (let id = 1; id < objects.length; id += 1) {
+      pushPart(String(offsets[id] || 0).padStart(10, '0') + ' 00000 n \n');
+    }
+
+    pushPart('trailer\n<< /Size ' + objects.length + ' /Root 1 0 R >>\nstartxref\n' + xrefOffset + '\n%%EOF');
+
+    return new Blob(parts, { type: 'application/pdf' });
+  }
+
+  function downloadBlob(blob, fileName) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  async function createPalettePdf(palette) {
+    if (!palette) return;
+
+    const groups = buildPalettePrintGroups(palette).filter(function (group) {
+      return group.colors.length > 0;
+    });
+
+    if (!groups.length) {
+      setStatus('Add colors to this palette before creating a PDF.', true);
+      return;
+    }
+
+    try {
+      setStatus('Creating PDF...', false);
+
+      const logoData = await loadPdfLogoData();
+      const pageStreams = [];
+      const pageWidth = 612;
+      const pageHeight = 792;
+      const margin = 36;
+      const contentWidth = pageWidth - (margin * 2);
+      const bottomLimit = pageHeight - margin;
+      const columns = 6;
+      const gapX = 5;
+      const gapY = 8;
+      const swatchSize = (contentWidth - (gapX * (columns - 1))) / columns;
+      const labelGap = 14;
+      const labelLineHeight = 11;
+      const rowHeight = swatchSize + labelGap + (labelLineHeight * 2) + gapY;
+      const categoryTopPadding = 22;
+      const logoWidth = 52;
+      const logoHeight = logoData ? Math.round(logoWidth * (logoData.height / logoData.width)) : 0;
+      let commands = '';
+      let y = margin;
+      let pageStarted = false;
+
+      function pdfY(topY) {
+        return pageHeight - topY;
+      }
+
+      function append(command) {
+        commands += command + '\n';
+      }
+
+      function startPage(includeTitle) {
+        if (pageStarted) pageStreams.push(commands);
+        commands = '';
+        pageStarted = true;
+        y = margin;
+
+        if (logoData) {
+          const logoX = (pageWidth - logoWidth) / 2;
+          append('q ' + logoWidth.toFixed(2) + ' 0 0 ' + logoHeight.toFixed(2) + ' ' + logoX.toFixed(2) + ' ' + (pageHeight - y - logoHeight).toFixed(2) + ' cm /Logo Do Q');
+          y += logoHeight + 20;
+        }
+
+        if (includeTitle) {
+          drawText(palette.name || 'Color Palette', pageWidth / 2, y + 24, 34, 'F3', 'center', [0, 0, 0]);
+          y += 58;
+        }
+      }
+
+      function roundedRectPath(x, topY, width, height, radius) {
+        const left = x;
+        const right = x + width;
+        const top = pdfY(topY);
+        const bottom = pdfY(topY + height);
+        const curve = radius * 0.5522847498;
+
+        return [
+          (left + radius).toFixed(2) + ' ' + top.toFixed(2) + ' m',
+          (right - radius).toFixed(2) + ' ' + top.toFixed(2) + ' l',
+          (right - radius + curve).toFixed(2) + ' ' + top.toFixed(2) + ' ' + right.toFixed(2) + ' ' + (top - radius + curve).toFixed(2) + ' ' + right.toFixed(2) + ' ' + (top - radius).toFixed(2) + ' c',
+          right.toFixed(2) + ' ' + (bottom + radius).toFixed(2) + ' l',
+          right.toFixed(2) + ' ' + (bottom + radius - curve).toFixed(2) + ' ' + (right - radius + curve).toFixed(2) + ' ' + bottom.toFixed(2) + ' ' + (right - radius).toFixed(2) + ' ' + bottom.toFixed(2) + ' c',
+          (left + radius).toFixed(2) + ' ' + bottom.toFixed(2) + ' l',
+          (left + radius - curve).toFixed(2) + ' ' + bottom.toFixed(2) + ' ' + left.toFixed(2) + ' ' + (bottom + radius - curve).toFixed(2) + ' ' + left.toFixed(2) + ' ' + (bottom + radius).toFixed(2) + ' c',
+          left.toFixed(2) + ' ' + (top - radius).toFixed(2) + ' l',
+          left.toFixed(2) + ' ' + (top - radius + curve).toFixed(2) + ' ' + (left + radius - curve).toFixed(2) + ' ' + top.toFixed(2) + ' ' + (left + radius).toFixed(2) + ' ' + top.toFixed(2) + ' c',
+          'h'
+        ].join(' ');
+      }
+
+      function drawText(text, x, topY, fontSize, fontName, align, rgb) {
+        const safeText = escapePdfText(text);
+        const width = estimatePdfTextWidth(text, fontSize);
+        const textX = align === 'center' ? x - (width / 2) : x;
+        const color = rgb || [0, 0, 0];
+        append('BT ' + (color[0] / 255).toFixed(3) + ' ' + (color[1] / 255).toFixed(3) + ' ' + (color[2] / 255).toFixed(3) + ' rg /' + fontName + ' ' + fontSize + ' Tf ' + textX.toFixed(2) + ' ' + pdfY(topY).toFixed(2) + ' Td (' + safeText + ') Tj ET');
+      }
+
+      function drawCategoryHeader(category) {
+        y += categoryTopPadding;
+
+        if (y + 18 + rowHeight > bottomLimit) {
+          startPage(false);
+          y += categoryTopPadding;
+        }
+
+        drawText(String(category || '').toUpperCase(), margin, y, 14, 'F2', 'left', [34, 43, 50]);
+        y += 18;
+      }
+
+      function drawColor(color, column, rowY) {
+        const x = margin + (column * (swatchSize + gapX));
+        const rgb = hexToRgb(color.hexCode);
+
+        append('0.945 0.945 0.945 rg ' + roundedRectPath(x + 2, rowY + 3, swatchSize, swatchSize, 7) + ' f');
+        append((rgb.r / 255).toFixed(3) + ' ' + (rgb.g / 255).toFixed(3) + ' ' + (rgb.b / 255).toFixed(3) + ' rg ' + roundedRectPath(x, rowY, swatchSize, swatchSize, 7) + ' f');
+
+        splitPdfText(color.name || '', 10, swatchSize, 2).forEach(function (line, index) {
+          drawText(line, x + (swatchSize / 2), rowY + swatchSize + labelGap + (index * labelLineHeight), 10, 'F1', 'center', [0, 0, 0]);
+        });
+      }
+
+      startPage(true);
+
+      groups.forEach(function (group) {
+        const colors = group.colors.map(normalizePdfColor);
+        let colorIndex = 0;
+        let needsHeader = true;
+
+        while (colorIndex < colors.length) {
+          if (needsHeader) {
+            drawCategoryHeader(group.category);
+            needsHeader = false;
+          }
+
+          if (y + rowHeight > bottomLimit) {
+            startPage(false);
+            drawCategoryHeader(group.category);
+          }
+
+          colors.slice(colorIndex, colorIndex + columns).forEach(function (color, column) {
+            drawColor(color, column, y);
+          });
+
+          y += rowHeight;
+          colorIndex += columns;
+        }
+      });
+
+      pageStreams.push(commands);
+      downloadBlob(createPdfBlob(pageStreams, logoData), pdfFileName(palette.name));
+      setStatus('', false);
+    } catch (error) {
+      setStatus(error.message || 'Unable to create PDF.', true);
+    }
+  }
+
+  async function createYcsPalettePdf(paletteCode, paletteTitle) {
+    if (!paletteCode) return;
+
+    try {
+      setStatus('Loading ' + paletteCode + ' colors for PDF...', false);
+
+      const response = await fetch('/apps/palette-data?palette=' + encodeURIComponent(paletteCode), {
+        credentials: 'same-origin'
+      });
+      const json = await response.json();
+
+      if (!response.ok || !json.colors) {
+        throw new Error(json.error || 'Unable to load palette colors.');
+      }
+
+      createPalettePdf({
+        name: paletteTitle || json.paletteName || paletteCode,
+        colors: json.colors.map(function (color) {
+          return { color: normalizePdfColor(color) };
+        })
+      });
+      setStatus('', false);
+    } catch (error) {
+      setStatus(error.message || 'Unable to create PDF.', true);
+    }
+  }
+
+  function renderAddColors() {
+    const selectedIds = new Set((state.activePalette.colors || []).map(function (item) { return item.color.id; }));
+    const hasAvailableColors = state.colors.some(function (color) { return !selectedIds.has(color.id); });
+    const emptyAction = state.colors.length
+      ? ''
+      : '<div class="ycs-custom-form__actions" style="margin-top:12px"><button type="button" class="ycs-palette-card__button" data-ycs-custom-action="manage-colors">Add Color</button></div>';
+    openModal('Add Colors',
+      '<div class="ycs-custom-toolbar"><label>Search My Colors<input type="search" data-ycs-color-search value="' + escapeHtml(state.colorSearch) + '"></label></div>' +
+      colorRows(filteredColors(), true, selectedIds) +
+      emptyAction +
+      '<div class="ycs-custom-form__actions" style="margin-top:16px"><button type="button" class="ycs-palette-card__button" data-ycs-custom-action="save-add-colors"' + (hasAvailableColors ? '' : ' disabled') + '>Add Selected Colors</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="open-palette" data-palette-id="' + escapeHtml(state.activePalette.id) + '">Cancel</button></div>');
+  }
+
+  async function refreshAfterMutation(message) {
+    await loadData();
+    setStatus(message || '', false);
+  }
+
+  root.addEventListener('click', function (event) {
+    const button = event.target.closest('[data-ycs-custom-action]');
+    if (!button) return;
+    const action = button.dataset.ycsCustomAction;
+    const palette = state.palettes.find(function (item) { return item.id === button.dataset.paletteId; });
+    if (action === 'create-palette') renderPaletteForm('Create Custom Palette', 'createPalette');
+    if (action === 'manage-colors') renderMyColors();
+    if (action === 'open-palette' && palette) renderPaletteDetail(palette);
+    if (action === 'create-pdf' && palette) createPalettePdf(palette);
+    if (action === 'rename-palette' && palette) renderPaletteForm('Rename Custom Palette', 'renamePalette', palette);
+    if (action === 'toggle-vip-visibility' && palette) {
+      requestJson('setPaletteVipVisibility', { paletteId: palette.id, visibleToVip: !palette.visibleToVip }).then(function () {
+        return refreshAfterMutation(palette.visibleToVip ? 'Palette hidden from VIP users.' : 'Palette visible to VIP users.');
+      }).catch(function (error) { setStatus(error.message, true); });
+    }
+    if (action === 'delete-palette' && palette && confirm('Delete this custom palette? This will not delete its colors from My Colors.')) {
+      requestJson('deletePalette', { paletteId: palette.id }).then(function () { return refreshAfterMutation('Custom palette deleted.'); }).catch(function (error) { setStatus(error.message, true); });
+    }
+  });
+
+  modal.addEventListener('click', function (event) {
+    if (event.target.closest('[data-ycs-custom-close]')) closeModal();
+    const button = event.target.closest('[data-ycs-custom-action]');
+    if (!button) return;
+    const action = button.dataset.ycsCustomAction;
+    const color = state.colors.find(function (item) { return item.id === button.dataset.colorId; });
+    const palette = state.palettes.find(function (item) { return item.id === button.dataset.paletteId; }) || state.activePalette;
+
+    if (action === 'manage-colors') renderMyColors();
+    if (action === 'edit-color' && color) renderColorEdit(color);
+    if (action === 'assign-color-palettes' && color) renderColorPaletteAssignments(color);
+    if (action === 'batch-assign-colors') {
+      const colorIds = Array.from(modal.querySelectorAll('[data-manage-color-select]:checked')).map(function (input) { return input.value; });
+      if (!colorIds.length) {
+        renderMyColors('Select at least one color to assign.');
+      } else {
+        renderBatchAssignColors(colorIds);
+      }
+    }
+    if (action === 'delete-color' && color) {
+      const message = color.paletteCount > 0
+        ? 'Delete this custom color? It will also be removed from any custom palettes that use it.'
+        : 'Delete this custom color?';
+      if (confirm(message)) {
+        requestJson('deleteColor', { colorId: color.id }).then(function () { return refreshAfterMutation('Custom color deleted.'); }).then(renderMyColors).catch(function (error) { renderMyColors(error.message); });
+      }
+    }
+    if (action === 'rename-palette' && palette) renderPaletteForm('Rename Custom Palette', 'renamePalette', palette);
+    if (action === 'open-palette' && palette) renderPaletteDetail(palette);
+    if (action === 'add-colors') renderAddColors();
+    if (action === 'add-one-color' && state.activePalette && color) {
+      requestJson('addColorsToPalette', { paletteId: state.activePalette.id, colorIds: [color.id] }).then(function (json) {
+        return refreshAfterMutation('Color added.').then(function () { renderPaletteDetail(json.palette); });
+      }).catch(function (error) { setStatus(error.message, true); });
+    }
+    if (action === 'save-add-colors' && state.activePalette) {
+      const colorIds = Array.from(modal.querySelectorAll('[data-color-select]:checked')).map(function (input) { return input.value; });
+      requestJson('addColorsToPalette', { paletteId: state.activePalette.id, colorIds: colorIds }).then(function (json) {
+        return refreshAfterMutation('Colors added.').then(function () { renderPaletteDetail(json.palette); });
+      }).catch(function (error) { setStatus(error.message, true); });
+    }
+    if (action === 'remove-from-palette' && state.activePalette && color) {
+      requestJson('removeColorFromPalette', { paletteId: state.activePalette.id, colorId: color.id }).then(function (json) {
+        return refreshAfterMutation('Color removed from custom palette.').then(function () { renderPaletteDetail(json.palette); });
+      }).catch(function (error) { setStatus(error.message, true); });
+    }
+    if (action === 'remove-selected-from-palette' && state.activePalette) {
+      const colorIds = Array.from(modal.querySelectorAll('[data-palette-color-select]:checked')).map(function (input) { return input.value; });
+      if (!colorIds.length) {
+        setStatus('Select at least one color to remove.', true);
+        return;
+      }
+      Promise.all(colorIds.map(function (colorId) {
+        return requestJson('removeColorFromPalette', { paletteId: state.activePalette.id, colorId: colorId });
+      })).then(function () {
+        return refreshAfterMutation('Selected colors removed from custom palette.');
+      }).then(function () {
+        const palette = state.palettes.find(function (item) { return item.id === state.activePalette.id; });
+        renderPaletteDetail(palette || state.activePalette);
+      }).catch(function (error) { setStatus(error.message, true); });
+    }
+    if (action === 'move-color' && state.activePalette) {
+      const colorIds = state.activePalette.colors.map(function (item) { return item.color.id; });
+      const index = colorIds.indexOf(button.dataset.colorId);
+      const swapIndex = button.dataset.direction === 'up' ? index - 1 : index + 1;
+      if (index < 0 || swapIndex < 0 || swapIndex >= colorIds.length) return;
+      const moved = colorIds[index];
+      colorIds[index] = colorIds[swapIndex];
+      colorIds[swapIndex] = moved;
+      requestJson('reorderPaletteColors', { paletteId: state.activePalette.id, colorIds: colorIds }).then(function (json) {
+        return refreshAfterMutation('Palette color order saved.').then(function () { renderPaletteDetail(json.palette); });
+      }).catch(function (error) { setStatus(error.message, true); });
+    }
+  });
+
+  modal.addEventListener('input', function (event) {
+    if (event.target.matches('[data-manage-color-select-all]')) {
+      modal.querySelectorAll('[data-manage-color-select]').forEach(function (input) {
+        input.checked = event.target.checked;
+      });
+    }
+    if (event.target.matches('[data-palette-color-select-all]')) {
+      modal.querySelectorAll('[data-palette-color-select]').forEach(function (input) {
+        input.checked = event.target.checked;
+      });
+    }
+    if (event.target.matches('[data-ycs-color-search]')) {
+      state.colorSearch = event.target.value;
+      if (state.activePalette && modalTitle.textContent === 'Add Colors') renderAddColors();
+      else renderMyColors();
+      focusSearchField();
+    }
+    if (event.target.name === 'hexCode') {
+      const preview = modal.querySelector('[data-ycs-hex-preview]');
+      const normalized = normalizeHexInput(event.target.value);
+      if (preview && normalized) preview.style.background = normalized;
+    }
+  });
+
+  modal.addEventListener('submit', function (event) {
+    const colorForm = event.target.closest('[data-ycs-color-form]');
+    const paletteForm = event.target.closest('[data-ycs-palette-form]');
+    const colorPalettesForm = event.target.closest('[data-ycs-color-palettes-form]');
+    const batchColorPaletteForm = event.target.closest('[data-ycs-batch-color-palette-form]');
+    if (!colorForm && !paletteForm && !colorPalettesForm && !batchColorPaletteForm) return;
+    event.preventDefault();
+
+    if (colorForm) {
+      const formData = new FormData(colorForm);
+      const colorId = colorForm.dataset.colorId || '';
+      const payload = {
+        colorId: colorId,
+        name: formData.get('name'),
+        hexCode: formData.get('hexCode')
+      };
+      requestJson(colorId ? 'updateColor' : 'createColor', payload).then(function () {
+        return refreshAfterMutation(colorId ? 'Custom color updated.' : 'Custom color added.');
+      }).then(renderMyColors).catch(function (error) {
+        if (colorId) {
+          const color = state.colors.find(function (item) { return item.id === colorId; });
+          renderColorEdit(color || payload, error.message);
+        } else {
+          renderMyColors(error.message);
+        }
+      });
+    }
+
+    if (paletteForm) {
+      const formData = new FormData(paletteForm);
+      const action = paletteForm.dataset.action;
+      const paletteId = paletteForm.dataset.paletteId || '';
+      requestJson(action, { paletteId: paletteId, name: formData.get('name') }).then(function (json) {
+        return refreshAfterMutation(action === 'createPalette' ? 'Custom palette created.' : 'Custom palette renamed.').then(function () {
+          renderPaletteDetail(json.palette);
+        });
+      }).catch(function (error) {
+        renderPaletteForm(action === 'createPalette' ? 'Create Custom Palette' : 'Rename Custom Palette', action, { id: paletteId, name: formData.get('name') }, error.message);
+      });
+    }
+
+    if (colorPalettesForm) {
+      const colorId = colorPalettesForm.dataset.colorId || '';
+      const color = state.colors.find(function (item) { return item.id === colorId; });
+      const paletteIds = Array.from(colorPalettesForm.querySelectorAll('input[name="paletteIds"]:checked')).map(function (input) { return input.value; });
+      requestJson('setColorPalettes', { colorId: colorId, paletteIds: paletteIds }).then(function (json) {
+        state.colors = json.colors || [];
+        state.palettes = json.palettes || [];
+        renderMyColors();
+        setStatus('Palette assignments saved.', false);
+      }).catch(function (error) {
+        renderColorPaletteAssignments(color || { id: colorId, name: 'Custom Color', hexCode: '#FFFFFF' }, error.message);
+      });
+    }
+
+    if (batchColorPaletteForm) {
+      const formData = new FormData(batchColorPaletteForm);
+      const colorIds = (batchColorPaletteForm.dataset.colorIds || '').split(',').map(function (colorId) { return colorId.trim(); }).filter(Boolean);
+      const paletteId = formData.get('paletteId');
+      requestJson('addColorsToPalette', { paletteId: paletteId, colorIds: colorIds }).then(function () {
+        return refreshAfterMutation('Selected colors assigned to palette.');
+      }).then(renderMyColors).catch(function (error) {
+        renderBatchAssignColors(colorIds, error.message);
+      });
+    }
+  });
+
+  loadData().catch(function (error) {
+    setStatus(error.message, true);
+  });
+})();
+
+
+(function () {
+  let pdfLogoPromise = null;
+
+  function normalizeHexInput(value) {
+    const raw = String(value || '').trim().replace(/^#/, '');
+    return /^[0-9a-fA-F]{6}$/.test(raw) ? '#' + raw.toUpperCase() : '';
+  }
+
+  function normalizePrintHex(value) {
+    return normalizeHexInput(value) || '#FFFFFF';
+  }
+
+  function loadPdfLogoData() {
+    if (pdfLogoPromise) return pdfLogoPromise;
+
+    pdfLogoPromise = fetch('https://cdn.shopify.com/s/files/1/0623/6284/5408/files/YourColorStyle_Logo-120_e3c4c33e-3249-4120-8dc6-c665eb3fec9f.png?v=1644954058')
+      .then(function (response) {
+        if (!response.ok) throw new Error('Unable to load logo.');
+        return response.blob();
+      })
+      .then(function (blob) {
+        return new Promise(function (resolve) {
+          const image = new Image();
+          image.onload = function () {
+            URL.revokeObjectURL(image.src);
+            const targetWidth = 144;
+            const targetHeight = Math.max(1, Math.round(targetWidth * (image.naturalHeight / image.naturalWidth)));
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+            context.fillStyle = '#FFFFFF';
+            context.fillRect(0, 0, targetWidth, targetHeight);
+            context.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+            resolve({
+              data: atob(dataUrl.split(',')[1] || ''),
+              width: targetWidth,
+              height: targetHeight
+            });
+          };
+          image.onerror = function () {
+            URL.revokeObjectURL(image.src);
+            resolve(null);
+          };
+          image.src = URL.createObjectURL(blob);
+        });
+      })
+      .catch(function () {
+        return null;
+      });
+
+    return pdfLogoPromise;
+  }
+
+  function normalizePdfText(value) {
+    return String(value || '')
+      .replace(/[\u2018\u2019]/g, "'")
+      .replace(/[\u201C\u201D]/g, '"')
+      .replace(/[\u2013\u2014]/g, '-')
+      .replace(/[^\x09\x0A\x0D\x20-\x7E]/g, '');
+  }
+
+  function escapePdfText(value) {
+    return normalizePdfText(value).replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+  }
+
+  function estimatePdfTextWidth(value, fontSize) {
+    return normalizePdfText(value).split('').reduce(function (width, char) {
+      if (char === ' ') return width + (fontSize * 0.28);
+      if ('ilI.,;:!|'.indexOf(char) !== -1) return width + (fontSize * 0.24);
+      if ('mwMW@#%&'.indexOf(char) !== -1) return width + (fontSize * 0.72);
+      return width + (fontSize * 0.52);
+    }, 0);
+  }
+
+  function splitPdfText(value, fontSize, maxWidth, maxLines) {
+    const words = normalizePdfText(value).split(/\s+/).filter(Boolean);
+    const lines = [];
+    let current = '';
+
+    words.forEach(function (word) {
+      const next = current ? current + ' ' + word : word;
+      if (estimatePdfTextWidth(next, fontSize) <= maxWidth || !current) {
+        current = next;
+      } else {
+        lines.push(current);
+        current = word;
+      }
+    });
+
+    if (current) lines.push(current);
+    return lines.slice(0, maxLines || lines.length);
+  }
+
+  function normalizePdfColor(color) {
+    return Object.assign({}, color, {
+      hexCode: color.hexCode || color.hex || color.colorHex || '',
+      name: color.name || color.colorName || ''
+    });
+  }
+
+  function getPdfColorCategory(color) {
+    return String(
+      color.category ||
+      color.categoryName ||
+      color.colorCategory ||
+      color.group ||
+      color.family ||
+      'Custom Colors'
+    ).trim() || 'Custom Colors';
+  }
+
+  function buildPalettePrintGroups(palette) {
+    const groups = {};
+    const groupOrder = [];
+
+    (palette.colors || []).forEach(function (item) {
+      const color = normalizePdfColor(item.color || {});
+      const category = getPdfColorCategory(color);
+
+      if (!groups[category]) {
+        groups[category] = [];
+        groupOrder.push(category);
+      }
+
+      groups[category].push(color);
+    });
+
+    return groupOrder.map(function (category) {
+      return { category: category, colors: groups[category] };
+    });
+  }
+
+  function hexToRgb(hex) {
+    const normalized = normalizePrintHex(hex).replace('#', '');
+    const value = normalized.length === 3
+      ? normalized.split('').map(function (char) { return char + char; }).join('')
+      : normalized;
+    const red = parseInt(value.slice(0, 2), 16);
+    const green = parseInt(value.slice(2, 4), 16);
+    const blue = parseInt(value.slice(4, 6), 16);
+
+    return {
+      r: Number.isNaN(red) ? 255 : red,
+      g: Number.isNaN(green) ? 255 : green,
+      b: Number.isNaN(blue) ? 255 : blue
+    };
+  }
+
+  function pdfFileName(name) {
+    const slug = String(name || 'palette')
+      .trim()
+      .replace(/[^a-z0-9]+/gi, '-')
+      .replace(/^-+|-+$/g, '')
+      .toLowerCase();
+
+    return (slug || 'palette') + '.pdf';
+  }
+
+  function pdfBinaryBytes(binary) {
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) {
+      bytes[index] = binary.charCodeAt(index) & 255;
+    }
+    return bytes;
+  }
+
+  function createPdfBlob(pageStreams, logoData) {
+    const encoder = new TextEncoder();
+    const pageCount = pageStreams.length;
+    const logoObjectId = logoData ? 6 : null;
+    const firstPageObjectId = logoData ? 7 : 6;
+    const objects = [];
+
+    function addObject(id, content) {
+      objects[id] = typeof content === 'string' ? encoder.encode(content) : content;
+    }
+
+    addObject(1, '<< /Type /Catalog /Pages 2 0 R >>');
+    addObject(2, '<< /Type /Pages /Kids [' + pageStreams.map(function (_, index) {
+      return (firstPageObjectId + (index * 2)) + ' 0 R';
+    }).join(' ') + '] /Count ' + pageCount + ' >>');
+    addObject(3, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
+    addObject(4, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>');
+    addObject(5, '<< /Type /Font /Subtype /Type1 /BaseFont /Times-Roman >>');
+
+    if (logoData) {
+      const imageBytes = pdfBinaryBytes(logoData.data);
+      const header = encoder.encode('<< /Type /XObject /Subtype /Image /Width ' + logoData.width + ' /Height ' + logoData.height + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + imageBytes.length + ' >>\nstream\n');
+      const footer = encoder.encode('\nendstream');
+      const imageObject = new Uint8Array(header.length + imageBytes.length + footer.length);
+      imageObject.set(header, 0);
+      imageObject.set(imageBytes, header.length);
+      imageObject.set(footer, header.length + imageBytes.length);
+      addObject(logoObjectId, imageObject);
+    }
+
+    pageStreams.forEach(function (stream, index) {
+      const pageId = firstPageObjectId + (index * 2);
+      const contentId = pageId + 1;
+      const resourceParts = ['/Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >>'];
+      if (logoObjectId) resourceParts.push('/XObject << /Logo ' + logoObjectId + ' 0 R >>');
+
+      addObject(pageId, '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << ' + resourceParts.join(' ') + ' >> /Contents ' + contentId + ' 0 R >>');
+
+      const streamBytes = encoder.encode(stream);
+      addObject(contentId, '<< /Length ' + streamBytes.length + ' >>\nstream\n' + stream + '\nendstream');
+    });
+
+    const parts = [];
+    const offsets = [0];
+    let length = 0;
+
+    function pushPart(part) {
+      const bytes = typeof part === 'string' ? encoder.encode(part) : part;
+      parts.push(bytes);
+      length += bytes.length;
+    }
+
+    pushPart('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
+
+    for (let id = 1; id < objects.length; id += 1) {
+      if (!objects[id]) continue;
+      offsets[id] = length;
+      pushPart(id + ' 0 obj\n');
+      pushPart(objects[id]);
+      pushPart('\nendobj\n');
+    }
+
+    const xrefOffset = length;
+    pushPart('xref\n0 ' + objects.length + '\n');
+    pushPart('0000000000 65535 f \n');
+
+    for (let id = 1; id < objects.length; id += 1) {
+      pushPart(String(offsets[id] || 0).padStart(10, '0') + ' 00000 n \n');
+    }
+
+    pushPart('trailer\n<< /Size ' + objects.length + ' /Root 1 0 R >>\nstartxref\n' + xrefOffset + '\n%%EOF');
+
+    return new Blob(parts, { type: 'application/pdf' });
+  }
+
+  function downloadBlob(blob, fileName) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  async function createPalettePdf(palette) {
+    const groups = buildPalettePrintGroups(palette).filter(function (group) {
+      return group.colors.length > 0;
+    });
+
+    if (!groups.length) {
+      alert('No colors were found for this palette.');
+      return;
+    }
+
+    const logoData = await loadPdfLogoData();
+    const pageStreams = [];
+    const pageWidth = 612;
+    const pageHeight = 792;
+    const margin = 36;
+    const contentWidth = pageWidth - (margin * 2);
+    const bottomLimit = pageHeight - margin;
+    const columns = 6;
+    const gapX = 5;
+    const gapY = 8;
+    const swatchSize = (contentWidth - (gapX * (columns - 1))) / columns;
+    const labelGap = 14;
+    const labelLineHeight = 11;
+    const rowHeight = swatchSize + labelGap + (labelLineHeight * 2) + gapY;
+    const categoryTopPadding = 22;
+    const logoWidth = 52;
+    const logoHeight = logoData ? Math.round(logoWidth * (logoData.height / logoData.width)) : 0;
+    let commands = '';
+    let y = margin;
+    let pageStarted = false;
+
+    function pdfY(topY) {
+      return pageHeight - topY;
+    }
+
+    function append(command) {
+      commands += command + '\n';
+    }
+
+    function drawText(text, x, topY, fontSize, fontName, align, rgb) {
+      const safeText = escapePdfText(text);
+      const width = estimatePdfTextWidth(text, fontSize);
+      const textX = align === 'center' ? x - (width / 2) : x;
+      const color = rgb || [0, 0, 0];
+      append('BT ' + (color[0] / 255).toFixed(3) + ' ' + (color[1] / 255).toFixed(3) + ' ' + (color[2] / 255).toFixed(3) + ' rg /' + fontName + ' ' + fontSize + ' Tf ' + textX.toFixed(2) + ' ' + pdfY(topY).toFixed(2) + ' Td (' + safeText + ') Tj ET');
+    }
+
+    function startPage(includeTitle) {
+      if (pageStarted) pageStreams.push(commands);
+      commands = '';
+      pageStarted = true;
+      y = margin;
+
+      if (logoData) {
+        const logoX = (pageWidth - logoWidth) / 2;
+        append('q ' + logoWidth.toFixed(2) + ' 0 0 ' + logoHeight.toFixed(2) + ' ' + logoX.toFixed(2) + ' ' + (pageHeight - y - logoHeight).toFixed(2) + ' cm /Logo Do Q');
+        y += logoHeight + 20;
+      }
+
+      if (includeTitle) {
+        drawText(palette.name || 'Color Palette', pageWidth / 2, y + 24, 34, 'F3', 'center', [0, 0, 0]);
+        y += 58;
+      }
+    }
+
+    function roundedRectPath(x, topY, width, height, radius) {
+      const left = x;
+      const right = x + width;
+      const top = pdfY(topY);
+      const bottom = pdfY(topY + height);
+      const curve = radius * 0.5522847498;
+
+      return [
+        (left + radius).toFixed(2) + ' ' + top.toFixed(2) + ' m',
+        (right - radius).toFixed(2) + ' ' + top.toFixed(2) + ' l',
+        (right - radius + curve).toFixed(2) + ' ' + top.toFixed(2) + ' ' + right.toFixed(2) + ' ' + (top - radius + curve).toFixed(2) + ' ' + right.toFixed(2) + ' ' + (top - radius).toFixed(2) + ' c',
+        right.toFixed(2) + ' ' + (bottom + radius).toFixed(2) + ' l',
+        right.toFixed(2) + ' ' + (bottom + radius - curve).toFixed(2) + ' ' + (right - radius + curve).toFixed(2) + ' ' + bottom.toFixed(2) + ' ' + (right - radius).toFixed(2) + ' ' + bottom.toFixed(2) + ' c',
+        (left + radius).toFixed(2) + ' ' + bottom.toFixed(2) + ' l',
+        (left + radius - curve).toFixed(2) + ' ' + bottom.toFixed(2) + ' ' + left.toFixed(2) + ' ' + (bottom + radius - curve).toFixed(2) + ' ' + left.toFixed(2) + ' ' + (bottom + radius).toFixed(2) + ' c',
+        left.toFixed(2) + ' ' + (top - radius).toFixed(2) + ' l',
+        left.toFixed(2) + ' ' + (top - radius + curve).toFixed(2) + ' ' + (left + radius - curve).toFixed(2) + ' ' + top.toFixed(2) + ' ' + (left + radius).toFixed(2) + ' ' + top.toFixed(2) + ' c',
+        'h'
+      ].join(' ');
+    }
+
+    function drawCategoryHeader(category) {
+      y += categoryTopPadding;
+
+      if (y + 18 + rowHeight > bottomLimit) {
+        startPage(false);
+        y += categoryTopPadding;
+      }
+
+      drawText(String(category || '').toUpperCase(), margin, y, 14, 'F2', 'left', [34, 43, 50]);
+      y += 18;
+    }
+
+    function drawColor(color, column, rowY) {
+      const x = margin + (column * (swatchSize + gapX));
+      const rgb = hexToRgb(color.hexCode);
+
+      append('0.945 0.945 0.945 rg ' + roundedRectPath(x + 2, rowY + 3, swatchSize, swatchSize, 7) + ' f');
+      append((rgb.r / 255).toFixed(3) + ' ' + (rgb.g / 255).toFixed(3) + ' ' + (rgb.b / 255).toFixed(3) + ' rg ' + roundedRectPath(x, rowY, swatchSize, swatchSize, 7) + ' f');
+
+      splitPdfText(color.name || '', 10, swatchSize, 2).forEach(function (line, index) {
+        drawText(line, x + (swatchSize / 2), rowY + swatchSize + labelGap + (index * labelLineHeight), 10, 'F1', 'center', [0, 0, 0]);
+      });
+    }
+
+    startPage(true);
+
+    groups.forEach(function (group) {
+      const colors = group.colors.map(normalizePdfColor);
+      let colorIndex = 0;
+      let needsHeader = true;
+
+      while (colorIndex < colors.length) {
+        if (needsHeader) {
+          drawCategoryHeader(group.category);
+          needsHeader = false;
+        }
+
+        if (y + rowHeight > bottomLimit) {
+          startPage(false);
+          drawCategoryHeader(group.category);
+        }
+
+        colors.slice(colorIndex, colorIndex + columns).forEach(function (color, column) {
+          drawColor(color, column, y);
+        });
+
+        y += rowHeight;
+        colorIndex += columns;
+      }
+    });
+
+    pageStreams.push(commands);
+    downloadBlob(createPdfBlob(pageStreams, logoData), pdfFileName(palette.name));
+  }
+
+  async function createYcsPalettePdf(paletteCode, paletteTitle) {
+    const response = await fetch('/apps/palette-data?palette=' + encodeURIComponent(paletteCode), {
+      credentials: 'same-origin'
+    });
+    const json = await response.json();
+
+    if (!response.ok || !json.colors) {
+      throw new Error(json.error || 'Unable to load palette colors.');
+    }
+
+    await createPalettePdf({
+      name: paletteTitle || json.paletteName || paletteCode,
+      colors: json.colors.map(function (color) {
+        return { color: normalizePdfColor(color) };
+      })
+    });
+  }
+
+  document.addEventListener('click', function (event) {
+    const button = event.target.closest('[data-ycs-pdf-palette-code]');
+    if (!button) return;
+
+    button.disabled = true;
+    createYcsPalettePdf(
+      button.dataset.ycsPdfPaletteCode,
+      button.dataset.ycsPdfPaletteTitle
+    ).catch(function (error) {
+      alert(error.message || 'Unable to create PDF.');
+    }).finally(function () {
+      button.disabled = false;
+    });
+  });
+})();
+(function () {
+  const root = document.getElementById('ycs-style-masters-palettes');
+  if (!root) return;
+
+  const listEl = root.querySelector('[data-ycs-style-masters-list]');
+  const emptyEl = root.querySelector('[data-ycs-style-masters-empty]');
+  const statusEl = root.querySelector('[data-ycs-style-masters-status]');
+  const apiBase = (root.dataset.appBaseUrl || '').replace(/\/$/, '') + '/api/custom-palettes';
+  const context = {
+    customerId: root.dataset.customerId || '',
+    scope: 'stylemasters'
+  };
+
+  function escapeHtml(value) {
+    return String(value || '').replace(/[&<>"']/g, function (char) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char];
+    });
+  }
+
+  function setStatus(message, isError) {
+    if (!statusEl) return;
+    statusEl.textContent = message || '';
+    statusEl.hidden = !message;
+    statusEl.style.borderColor = isError ? '#e09aaa' : '#c9dfcf';
+    statusEl.style.background = isError ? '#fff8fa' : '#f6fff8';
+  }
+
+  function renderPalettes(palettes) {
+    if (!listEl || !emptyEl) return;
+    listEl.innerHTML = '';
+    emptyEl.hidden = palettes.length > 0;
+
+    palettes.forEach(function (palette) {
+      const paletteCode = 'CUSTOM_' + palette.id;
+      const swatches = (palette.colors || []).slice(0, 8).map(function (item) {
+        const color = item.color || {};
+        return '<span class="ycs-custom-swatch" title="' + escapeHtml(color.name) + ' ' + escapeHtml(color.hexCode) + '" style="background:' + escapeHtml(color.hexCode) + '"></span>';
+      }).join('');
+      const card = document.createElement('div');
+      card.className = 'ycs-palette-card ycs-custom-card';
+      card.innerHTML =
+        '<div class="ycs-palette-card__top"><div class="ycs-palette-card__gradient" style="background: linear-gradient(to right, #2f2a25, #d94c6a, #f2b880, #5fb6ff);"></div></div>' +
+        '<div class="ycs-palette-card__content">' +
+          '<div class="ycs-palette-card__text">' +
+            '<h2>' + escapeHtml(palette.name) + '</h2>' +
+            '<p class="ycs-palette-card__subtitle">' + palette.colorCount + (palette.colorCount === 1 ? ' custom color' : ' custom colors') + '</p>' +
+            '<div class="ycs-custom-card__swatches">' + swatches + '</div>' +
+          '</div>' +
+          '<div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">' +
+            '<a href="/pages/palette?palette=' + encodeURIComponent(paletteCode) + '&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dcatools" class="ycs-palette-card__button">Open Palette</a>' +
+            '<a href="/pages/photo-prep?mode=personal&workflow=photo-draping&palette=' + encodeURIComponent(paletteCode) + '" class="ycs-palette-card__button ycs-palette-card__button--secondary">Draping Studio</a>' +
+          '</div>' +
+        '</div>';
+      listEl.appendChild(card);
+    });
+  }
+
+  const query = new URLSearchParams(context);
+  query.set('action', 'list');
+  fetch(apiBase + '?' + query.toString()).then(function (response) {
+    return response.json().then(function (json) {
+      if (!response.ok) throw new Error(json.error || 'Unable to load Style Masters palettes');
+      renderPalettes(json.palettes || []);
+    });
+  }).catch(function (error) {
+    setStatus(error.message, true);
+  });
+})();
+
+(function () {
+  const previewSelect = document.getElementById('ycs-admin-view-as');
+
+  if (previewSelect) {
+    const currentPreviewRole = previewSelect.value;
+
+    function preserveAdminPreviewRole(anchor) {
+      if (!currentPreviewRole || !anchor || !anchor.getAttribute('href')) return;
+      const href = anchor.getAttribute('href');
+      if (
+        !href.includes('/pages/photo-prep') &&
+        !href.includes('/pages/color-analysis-tool') &&
+        !href.includes('/pages/signature-color-analysis')
+      ) {
+        return;
+      }
+
+      const nextUrl = new URL(href, window.location.origin);
+      nextUrl.searchParams.set('viewAs', currentPreviewRole);
+      anchor.setAttribute('href', nextUrl.pathname + nextUrl.search);
+    }
+
+    document.querySelectorAll('a[href]').forEach(preserveAdminPreviewRole);
+
+    previewSelect.addEventListener('change', function () {
+      const nextUrl = new URL(window.location.href);
+      if (previewSelect.value) {
+        nextUrl.searchParams.set('viewAs', previewSelect.value);
+      } else {
+        nextUrl.searchParams.delete('viewAs');
+      }
+      window.location.href = nextUrl.pathname + nextUrl.search;
+    });
+  }
+
+  const overlay = document.getElementById('ycs-tools-tos-overlay');
+  const checkbox = document.getElementById('ycs-tools-tos-checkbox');
+  const continueBtn = document.getElementById('ycs-tools-tos-continue');
+
+  if (!overlay || !checkbox || !continueBtn) return;
+// Change this to reset TOS for users
+// Run localStorage.removeItem('ycs_tools_tos_accepted_v1');
+// localStorage.removeItem('ycs_tools_tos_accepted_my_palettes_v1');
+// in console to clear browser
+  const storageKey = 'ycs_tools_tos_accepted_my_palettes_v1';
+  const hasAcceptedTerms = localStorage.getItem(storageKey);
+
+  if (!hasAcceptedTerms) {
+    overlay.style.display = 'flex';
+  }
+
+  continueBtn.addEventListener('click', function () {
+    if (!checkbox.checked) {
+      alert('Please agree to the Terms to continue.');
+      return;
+    }
+
+    localStorage.setItem(storageKey, new Date().toISOString());
+    overlay.style.display = 'none';
+  });
+})();
+</script>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Color Analysis Tools",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Color Analysis Tools"
+    },
+    {
+      "type": "textarea",
+      "id": "intro",
+      "label": "Intro text",
+      "default": "Open your color analysis tools and client workflow."
+    }
+  ],
+  "blocks": [
+    {
+      "type": "palette",
+      "name": "Palette Card",
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Palette title",
+          "default": "Clear Warm Light"
+        },
+        {
+          "type": "text",
+          "id": "subtitle",
+          "label": "Subtitle",
+          "default": "Bright • Warm • Light"
+        },
+        {
+          "type": "text",
+          "id": "palette_code",
+          "label": "Palette code",
+          "default": "CWL"
+        },
+        {
+          "type": "select",
+          "id": "visibility",
+          "label": "Who can see this palette?",
+          "default": "customer",
+          "options": [
+            {
+              "value": "customer",
+              "label": "Customer"
+            },
+            {
+              "value": "admin",
+              "label": "Admin only"
+            }
+          ]
+        },
+        {
+          "type": "image_picker",
+          "id": "palette_image",
+          "label": "Palette image"
+        },
+        {
+          "type": "url",
+          "id": "product_link",
+          "label": "Product link for locked palette"
+        },
+        {
+          "type": "url",
+          "id": "printable_pdf_url",
+          "label": "Printable PDF URL"
+        },
+        {
+          "type": "url",
+          "id": "mobile_pdf_url",
+          "label": "Mobile PDF URL"
+        },
+        {
+          "type": "text",
+          "id": "gradient",
+          "label": "Gradient CSS fallback",
+          "default": "linear-gradient(to right, #c21807, #f28c28, #f4d03f)"
+        }
+      ]
+    }
+  ],
+  "max_blocks": 30,
+  "presets": [
+    {
+      "name": "Color Analysis Tools"
+    }
+  ]
+}
+{% endschema %}
