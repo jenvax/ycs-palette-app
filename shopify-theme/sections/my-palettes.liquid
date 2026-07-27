@@ -313,9 +313,48 @@
               </div>
             </div>
           </div>
+
+          {% unless is_diy_catool or is_free_diy_catool or is_catool_free %}
+            <div class="ycs-palette-card ycs-palette-card--admin">
+              <div class="ycs-palette-card__top">
+                <div
+                  class="ycs-palette-card__gradient"
+                  style="background: linear-gradient(to right, #2f2a25, #d94c6a, #f2b880);">
+                </div>
+              </div>
+
+              <div class="ycs-palette-card__content">
+                <div class="ycs-palette-card__text">
+                  <h2>My Clients</h2>
+                  <p class="ycs-palette-card__subtitle">
+                    View and manage your color analysis clients.
+                  </p>
+                  <p class="ycs-palette-card__admin-label">
+                    {% if is_admin %}
+                      Admin client management
+                    {% elsif is_trade %}
+                      Trade client management
+                    {% elsif is_catool_growth %}
+                      Growth Plan • Full client management
+                    {% elsif is_catool %}
+                      Starter Plan • Client management
+                    {% else %}
+                      Client management
+                    {% endif %}
+                  </p>
+                </div>
+
+                <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
+                  <a href="/pages/my-clients{% if admin_view_as != '' %}?viewAs={{ admin_view_as }}{% endif %}" class="ycs-palette-card__button">
+                    View My Clients
+                  </a>
+                </div>
+              </div>
+            </div>
+          {% endunless %}
         {% endif %}
 
-        {% if show_clients_card %}
+        {% if false and show_clients_card %}
           <div class="ycs-palette-card ycs-palette-card--admin">
             <div class="ycs-palette-card__top">
               <div
