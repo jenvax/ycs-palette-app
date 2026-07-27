@@ -156,6 +156,20 @@
     {% assign can_access_all_printable_pdfs = true %}
   {% endif %}
 
+  {% assign has_style_masters_access = false %}
+  {% if customer and palette_access_string contains ',VIP,' %}
+    {% assign has_style_masters_access = true %}
+  {% endif %}
+  {% if customer and palette_access_string contains ',STYLEMASTERS,' %}
+    {% assign has_style_masters_access = true %}
+  {% endif %}
+  {% if customer and palette_access_string contains ',STYLE MASTERS,' %}
+    {% assign has_style_masters_access = true %}
+  {% endif %}
+  {% if customer and palette_access_string contains ',STYLEMASTERS_' %}
+    {% assign has_style_masters_access = true %}
+  {% endif %}
+
   {% assign has_draping_studio_starter = false %}
 {% if palette_access_string contains ',DRAPINGSTUDIOSTARTER,' %}
   {% assign has_draping_studio_starter = true %}
@@ -502,6 +516,36 @@
     {% if owned_count == 0 and locked_count == 0 and admin_count == 0 %}
       <div class="ycs-my-palettes__empty">
         No palettes have been added to this page yet.
+      </div>
+    {% endif %}
+
+    {% if has_style_masters_access and is_catools_view == false %}
+      <div class="ycs-my-palettes__section">
+        <div class="ycs-my-palettes__grid ycs-my-palettes__grid--1">
+          <div class="ycs-palette-card">
+            <div class="ycs-palette-card__top">
+              <div
+                class="ycs-palette-card__gradient"
+                style="background: linear-gradient(to right, #2f2a25, #d94c6a, #f2b880, #9be7c4);">
+              </div>
+            </div>
+
+            <div class="ycs-palette-card__content">
+              <div class="ycs-palette-card__text">
+                <h2>Style Masters Color Palettes</h2>
+                <p class="ycs-palette-card__subtitle">
+                  Open your Style Masters palette downloads and resources.
+                </p>
+              </div>
+
+              <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
+                <a href="/pages/style-masters-library" class="ycs-palette-card__button">
+                  Open Palette
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     {% endif %}
 
