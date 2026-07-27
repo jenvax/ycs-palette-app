@@ -41,8 +41,18 @@
   {% assign is_admin = true %}
 {% endif %}
 
+{% assign is_trade_july_cohort = false %}
+{% assign trade_july_cohort_expires_at = '2026-08-25 00:00:00 -0400' | date: '%s' %}
+{% assign current_timestamp = 'now' | date: '%s' %}
+{% if palette_access_string contains ',TRADEJULYCOHORT,' and current_timestamp < trade_july_cohort_expires_at %}
+  {% assign is_trade_july_cohort = true %}
+{% endif %}
+
 {% assign is_trade = false %}
 {% if palette_access_string contains ',TRADE,' %}
+  {% assign is_trade = true %}
+{% endif %}
+{% if is_trade_july_cohort %}
   {% assign is_trade = true %}
 {% endif %}
 
