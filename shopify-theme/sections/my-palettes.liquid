@@ -148,8 +148,11 @@
 
   {% assign show_clients_card = false %}
   {% if is_catools_view %}
-    {% if actual_is_admin or is_admin or can_manage_clients %}
+    {% if can_use_analysis_tool %}
       {% assign show_clients_card = true %}
+    {% endif %}
+    {% if is_diy_catool or is_free_diy_catool or is_catool_free %}
+      {% assign show_clients_card = false %}
     {% endif %}
   {% endif %}
 
