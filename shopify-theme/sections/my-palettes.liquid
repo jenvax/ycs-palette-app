@@ -1313,6 +1313,36 @@
   margin-bottom: 16px;
 }
 
+.ycs-custom-toolbar--add-colors {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+}
+
+.ycs-custom-bulk-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.ycs-custom-select-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 4px;
+  color: #332e2a;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ycs-custom-select-all input {
+  width: auto;
+  min-height: 0;
+}
+
 .ycs-custom-form label,
 .ycs-custom-toolbar label {
   display: grid;
@@ -1433,6 +1463,14 @@
   .ycs-custom-form__row {
     grid-template-columns: 1fr;
   }
+
+  .ycs-custom-toolbar--add-colors {
+    grid-template-columns: 1fr;
+  }
+
+  .ycs-custom-bulk-actions {
+    justify-content: flex-start;
+  }
 }
 </style>
 <script>
@@ -1452,7 +1490,7 @@
     previewCustomerId: root.dataset.previewCustomerId || '',
     viewAs: root.dataset.viewAs || ''
   };
-  const state = { colors: [], palettes: [], activePalette: null, colorSearch: '' };
+  const state = { colors: [], palettes: [], activePalette: null, colorSearch: '', addColorSelection: [] };
 
   function escapeHtml(value) {
     return String(value || '').replace(/[&<>"']/g, function (char) {
@@ -1542,6 +1580,7 @@
   function closeModal() {
     modal.hidden = true;
     state.activePalette = null;
+    state.addColorSelection = [];
   }
 
   function colorRows(colors, selectable, paletteColorIds) {
@@ -1551,13 +1590,14 @@
 
     return '<div class="ycs-custom-list">' + colors.map(function (color) {
       const disabled = paletteColorIds && paletteColorIds.has(color.id);
+      const checked = selectable && state.addColorSelection.indexOf(color.id) !== -1;
       return '<div class="ycs-custom-row">' +
         '<div class="ycs-custom-row__main">' +
-          (selectable ? '<input type="checkbox" data-color-select value="' + escapeHtml(color.id) + '"' + (disabled ? ' disabled' : '') + ' aria-label="Select ' + escapeHtml(color.name) + '">' : '') +
+          (selectable ? '<input type="checkbox" data-color-select value="' + escapeHtml(color.id) + '"' + (checked ? ' checked' : '') + (disabled ? ' disabled' : '') + ' aria-label="Select ' + escapeHtml(color.name) + '">' : '') +
           '<span class="ycs-custom-swatch" style="background:' + escapeHtml(color.hexCode) + '"></span>' +
           '<div><p class="ycs-custom-row__name">' + escapeHtml(color.name) + '</p><p class="ycs-custom-row__meta">' + escapeHtml(color.hexCode) + '</p></div>' +
         '</div>' +
-        (selectable ? '' : '<div class="ycs-custom-row__actions"><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="edit-color" data-color-id="' + escapeHtml(color.id) + '">Edit</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="delete-color" data-color-id="' + escapeHtml(color.id) + '">Delete</button></div>') +
+        (selectable ? '<div class="ycs-custom-row__actions"><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="add-single-color" data-color-id="' + escapeHtml(color.id) + '"' + (disabled ? ' disabled' : '') + '>Add</button></div>' : '<div class="ycs-custom-row__actions"><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="edit-color" data-color-id="' + escapeHtml(color.id) + '">Edit</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="delete-color" data-color-id="' + escapeHtml(color.id) + '">Delete</button></div>') +
       '</div>';
     }).join('') + '</div>';
   }
@@ -1633,14 +1673,47 @@
 
   function renderAddColors() {
     const selectedIds = new Set((state.activePalette.colors || []).map(function (item) { return item.color.id; }));
+    const checkedIds = new Set(state.addColorSelection || []);
+    const selectableColors = filteredColors().filter(function (color) {
+      return !selectedIds.has(color.id);
+    });
+    const allVisibleSelected = selectableColors.length > 0 && selectableColors.every(function (color) {
+      return checkedIds.has(color.id);
+    });
     const emptyAction = state.colors.length
       ? ''
       : '<div class="ycs-custom-form__actions" style="margin-top:12px"><button type="button" class="ycs-palette-card__button" data-ycs-custom-action="manage-colors">Add Color</button></div>';
     openModal('Add Colors',
-      '<div class="ycs-custom-toolbar"><label>Search My Colors<input type="search" data-ycs-color-search value="' + escapeHtml(state.colorSearch) + '"></label></div>' +
+      '<div class="ycs-custom-toolbar ycs-custom-toolbar--add-colors">' +
+        '<label>Search My Colors<input type="search" data-ycs-color-search value="' + escapeHtml(state.colorSearch) + '"></label>' +
+        '<div class="ycs-custom-bulk-actions">' +
+          '<label class="ycs-custom-select-all"><input type="checkbox" data-ycs-select-all-visible' + (allVisibleSelected ? ' checked' : '') + (selectableColors.length ? '' : ' disabled') + '> Select all visible</label>' +
+          '<button type="button" class="ycs-palette-card__button" data-ycs-custom-action="save-add-colors">Add Selected</button>' +
+        '</div>' +
+      '</div>' +
       colorRows(filteredColors(), true, selectedIds) +
       emptyAction +
-      '<div class="ycs-custom-form__actions" style="margin-top:16px"><button type="button" class="ycs-palette-card__button" data-ycs-custom-action="save-add-colors">Add Selected Colors</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="open-palette" data-palette-id="' + escapeHtml(state.activePalette.id) + '">Cancel</button></div>');
+      '<div class="ycs-custom-form__actions" style="margin-top:16px"><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="open-palette" data-palette-id="' + escapeHtml(state.activePalette.id) + '">Cancel</button></div>');
+  }
+
+  function syncAddColorSelectAllControl() {
+    const selectAll = modal.querySelector('[data-ycs-select-all-visible]');
+    if (!selectAll) return;
+    const visibleInputs = Array.from(modal.querySelectorAll('[data-color-select]:not(:disabled)'));
+    const checkedCount = visibleInputs.filter(function (input) { return input.checked; }).length;
+    selectAll.checked = visibleInputs.length > 0 && checkedCount === visibleInputs.length;
+    selectAll.indeterminate = checkedCount > 0 && checkedCount < visibleInputs.length;
+  }
+
+  function addColorsToActivePalette(colorIds) {
+    if (!state.activePalette) return;
+    if (!colorIds || !colorIds.length) {
+      setStatus('Select at least one color to add.', true);
+      return;
+    }
+    requestJson('addColorsToPalette', { paletteId: state.activePalette.id, colorIds: colorIds }).then(function (json) {
+      return refreshAfterMutation(colorIds.length === 1 ? 'Color added.' : 'Colors added.').then(function () { renderPaletteDetail(json.palette); });
+    }).catch(function (error) { setStatus(error.message, true); });
   }
 
   async function refreshAfterMutation(message) {
@@ -1682,12 +1755,15 @@
     }
     if (action === 'rename-palette' && palette) renderPaletteForm('Rename Custom Palette', 'renamePalette', palette);
     if (action === 'open-palette' && palette) renderPaletteDetail(palette);
-    if (action === 'add-colors') renderAddColors();
+    if (action === 'add-colors') {
+      state.addColorSelection = [];
+      renderAddColors();
+    }
     if (action === 'save-add-colors' && state.activePalette) {
-      const colorIds = Array.from(modal.querySelectorAll('[data-color-select]:checked')).map(function (input) { return input.value; });
-      requestJson('addColorsToPalette', { paletteId: state.activePalette.id, colorIds: colorIds }).then(function (json) {
-        return refreshAfterMutation('Colors added.').then(function () { renderPaletteDetail(json.palette); });
-      }).catch(function (error) { setStatus(error.message, true); });
+      addColorsToActivePalette(state.addColorSelection || []);
+    }
+    if (action === 'add-single-color' && state.activePalette && button.dataset.colorId) {
+      addColorsToActivePalette([button.dataset.colorId]);
     }
     if (action === 'remove-from-palette' && state.activePalette && color) {
       requestJson('removeColorFromPalette', { paletteId: state.activePalette.id, colorId: color.id }).then(function (json) {
@@ -1709,6 +1785,28 @@
   });
 
   modal.addEventListener('input', function (event) {
+    if (event.target.matches('[data-ycs-select-all-visible]')) {
+      modal.querySelectorAll('[data-color-select]:not(:disabled)').forEach(function (input) {
+        input.checked = event.target.checked;
+      });
+      const visibleIds = Array.from(modal.querySelectorAll('[data-color-select]:not(:disabled)')).map(function (input) { return input.value; });
+      const nextIds = new Set(state.addColorSelection || []);
+      visibleIds.forEach(function (id) {
+        if (event.target.checked) nextIds.add(id);
+        else nextIds.delete(id);
+      });
+      state.addColorSelection = Array.from(nextIds);
+      syncAddColorSelectAllControl();
+      return;
+    }
+    if (event.target.matches('[data-color-select]')) {
+      const nextIds = new Set(state.addColorSelection || []);
+      if (event.target.checked) nextIds.add(event.target.value);
+      else nextIds.delete(event.target.value);
+      state.addColorSelection = Array.from(nextIds);
+      syncAddColorSelectAllControl();
+      return;
+    }
     if (event.target.matches('[data-ycs-color-search]')) {
       state.colorSearch = event.target.value;
       if (state.activePalette && modalTitle.textContent === 'Add Colors') renderAddColors();
