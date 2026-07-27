@@ -1700,10 +1700,12 @@
           '<div class="ycs-palette-card__text">' +
             '<h2>' + escapeHtml(palette.name) + '</h2>' +
             '<p class="ycs-palette-card__subtitle">' + palette.colorCount + (palette.colorCount === 1 ? ' custom color' : ' custom colors') + '</p>' +
+            '<p class="ycs-palette-card__admin-label">' + (palette.visibleToVip || palette.isVisibleToVip ? 'VISIBLE TO VIP' : 'ADMIN ONLY') + '</p>' +
             '<div class="ycs-custom-card__swatches">' + swatches + '</div>' +
           '</div>' +
           '<div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">' +
             '<button type="button" class="ycs-palette-card__button" data-ycs-custom-action="open-palette" data-palette-id="' + escapeHtml(palette.id) + '">Open</button>' +
+            '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="' + (palette.visibleToVip || palette.isVisibleToVip ? 'hide-from-vip' : 'show-to-vip') + '" data-palette-id="' + escapeHtml(palette.id) + '">' + (palette.visibleToVip || palette.isVisibleToVip ? 'Hide from VIP' : 'Show to VIP') + '</button>' +
             '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="rename-palette" data-palette-id="' + escapeHtml(palette.id) + '">Rename</button>' +
             '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="delete-palette" data-palette-id="' + escapeHtml(palette.id) + '">Delete</button>' +
           '</div>' +
@@ -1878,6 +1880,11 @@
     if (action === 'manage-colors') renderMyColors();
     if (action === 'open-palette' && palette) renderPaletteDetail(palette);
     if (action === 'rename-palette' && palette) renderPaletteForm('Rename Custom Palette', 'renamePalette', palette);
+    if ((action === 'show-to-vip' || action === 'hide-from-vip') && palette) {
+      requestJson(action, { paletteId: palette.id }).then(function () {
+        return refreshAfterMutation(action === 'show-to-vip' ? 'Palette is now visible to VIP users.' : 'Palette is hidden from VIP users.');
+      }).catch(function (error) { setStatus(error.message, true); });
+    }
     if (action === 'delete-palette' && palette && confirm('Delete this custom palette? This will not delete its colors from My Colors.')) {
       requestJson('deletePalette', { paletteId: palette.id }).then(function () { return refreshAfterMutation('Custom palette deleted.'); }).catch(function (error) { setStatus(error.message, true); });
     }

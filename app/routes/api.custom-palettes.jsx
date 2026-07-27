@@ -1,3 +1,4 @@
+/* global process */
 import prisma from "../db.server.js";
 
 const GROWTH_TAG = "CATOOLGROWTH";
@@ -190,6 +191,8 @@ function serializePalette(palette) {
   return {
     id: palette.id,
     name: palette.name,
+    visibleToVip: Boolean(palette.visibleToVip),
+    isVisibleToVip: Boolean(palette.visibleToVip),
     colorCount: palette._count?.colors ?? colors.length,
     colors,
     createdAt: palette.createdAt,
@@ -438,6 +441,42 @@ export async function action({ request }) {
       await prisma.customPalette.update({ where: { id: paletteId }, data: { name } });
 
       return Response.json({ palette: await readPalette(ownerCustomerId, paletteId) }, { headers: corsHeaders });
+    }
+
+    if (
+      actionName === "setVipVisibility" ||
+      actionName === "toggleVipVisibility" ||
+      actionName === "showToVip" ||
+      actionName === "hideFromVip" ||
+      actionName === "show-to-vip" ||
+      actionName === "hide-from-vip" ||
+      actionName === "toggle-vip-visibility"
+    ) {
+      const paletteId = cleanString(body.paletteId);
+      if (!paletteId) return Response.json({ error: "Missing paletteId" }, { status: 400, headers: corsHeaders });
+
+      const palette = await requireOwnedPalette(ownerCustomerId, paletteId);
+      const nextVisibleToVip =
+        actionName === "toggleVipVisibility" || actionName === "toggle-vip-visibility"
+          ? !palette.visibleToVip
+          : actionName === "hideFromVip" || actionName === "hide-from-vip"
+            ? false
+            : body.visibleToVip !== undefined
+              ? body.visibleToVip === true || String(body.visibleToVip || "") === "true"
+              : true;
+
+      await prisma.customPalette.update({
+        where: { id: paletteId },
+        data: { visibleToVip: nextVisibleToVip }
+      });
+
+      return Response.json(
+        {
+          palette: await readPalette(ownerCustomerId, paletteId),
+          visibleToVip: nextVisibleToVip
+        },
+        { headers: corsHeaders }
+      );
     }
 
     if (actionName === "deletePalette") {

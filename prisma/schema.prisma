@@ -101,11 +101,13 @@ model CustomPalette {
   id              String               @id @default(cuid())
   ownerCustomerId String
   name            String
+  visibleToVip    Boolean              @default(false)
   createdAt       DateTime             @default(now())
   updatedAt       DateTime             @updatedAt
   colors          CustomPaletteColor[]
 
   @@index([ownerCustomerId])
+  @@index([visibleToVip])
 }
 
 model CustomPaletteColor {
