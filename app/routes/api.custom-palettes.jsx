@@ -3,6 +3,7 @@ import prisma from "../db.server.js";
 
 const GROWTH_TAG = "CATOOLGROWTH";
 const ADMIN_TAG = "YCS_ADMIN";
+const VIP_TAG = "VIP";
 
 function getCorsHeaders(origin) {
   const allowedOrigins = [
@@ -167,6 +168,22 @@ async function authorizeGrowthAccess({ customerId, previewCustomerId, viewAs, cl
   return { ok: false, status: 403, error: "CATOOLGROWTH access required" };
 }
 
+async function authorizeVipAccess(customerId) {
+  const safeCustomerId = normalizeCustomerId(customerId);
+  if (!safeCustomerId) {
+    return { ok: false, status: 401, error: "You must be signed in to view Style Masters palettes" };
+  }
+
+  const tags = await fetchCustomerTags(safeCustomerId);
+  const tagSet = new Set(tags);
+
+  if (tagSet.has(VIP_TAG) || tagSet.has(ADMIN_TAG)) {
+    return { ok: true };
+  }
+
+  return { ok: false, status: 403, error: "Style Masters access required" };
+}
+
 function serializeColor(color) {
   return {
     id: color.id,
@@ -239,6 +256,24 @@ async function listCustomData(ownerCustomerId, search = "") {
   };
 }
 
+async function listVipPalettes() {
+  const palettes = await prisma.customPalette.findMany({
+    where: { visibleToVip: true },
+    orderBy: [{ updatedAt: "desc" }],
+    include: {
+      _count: { select: { colors: true } },
+      colors: {
+        orderBy: { displayOrder: "asc" },
+        include: { color: { include: { _count: { select: { paletteColors: true } } } } }
+      }
+    }
+  });
+
+  return {
+    palettes: palettes.map(serializePalette)
+  };
+}
+
 async function requireOwnedPalette(ownerCustomerId, paletteId) {
   const palette = await prisma.customPalette.findFirst({
     where: { id: paletteId, ownerCustomerId }
@@ -298,6 +333,20 @@ export async function loader({ request }) {
 
   try {
     const url = new URL(request.url);
+    const action = String(url.searchParams.get("action") || "list").trim();
+
+    if (action === "vipList") {
+      const auth = await authorizeVipAccess(url.searchParams.get("customerId"));
+      if (!auth.ok) {
+        return Response.json(
+          { error: auth.error },
+          { status: auth.status, headers: corsHeaders }
+        );
+      }
+
+      return Response.json(await listVipPalettes(), { headers: corsHeaders });
+    }
+
     const auth = await authorizeGrowthAccess({
       customerId: url.searchParams.get("customerId"),
       previewCustomerId: url.searchParams.get("previewCustomerId"),
@@ -311,8 +360,6 @@ export async function loader({ request }) {
         { status: auth.status, headers: corsHeaders }
       );
     }
-
-    const action = String(url.searchParams.get("action") || "list").trim();
 
     if (action === "palette") {
       const paletteId = cleanString(url.searchParams.get("paletteId"));

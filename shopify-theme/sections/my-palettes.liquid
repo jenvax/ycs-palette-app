@@ -431,32 +431,49 @@
       </div>
     </div>
 
+    {% assign show_custom_palette_section = false %}
+    {% assign custom_palette_read_only = false %}
     {% if is_catool_growth and is_catools_view %}
+      {% assign show_custom_palette_section = true %}
+    {% endif %}
+    {% if has_style_masters_access %}
+      {% unless is_catools_view %}
+        {% assign show_custom_palette_section = true %}
+        {% assign custom_palette_read_only = true %}
+      {% endunless %}
+    {% endif %}
+
+    {% if show_custom_palette_section %}
       <div
         class="ycs-my-palettes__section ycs-custom-palettes"
         id="ycs-custom-palettes"
         data-customer-id="{{ customer.id }}"
         data-preview-customer-id="{{ customer.id }}"
         data-view-as="{{ admin_view_as }}"
+        data-read-only="{% if custom_palette_read_only %}true{% else %}false{% endif %}"
         data-app-base-url="https://ycs-palette-app.vercel.app"
       >
         <div class="ycs-custom-palettes__header">
           <div>
-            <h2 class="ycs-my-palettes__section-title">My Custom Palettes</h2>
-            <p class="ycs-custom-palettes__intro">Create and organize palettes using colors from your private custom color collection.</p>
+            <h2 class="ycs-my-palettes__section-title">{% if custom_palette_read_only %}Style Masters Color Palettes{% else %}My Custom Palettes{% endif %}</h2>
+            <p class="ycs-custom-palettes__intro">{% if custom_palette_read_only %}Open your shared Style Masters custom color palettes.{% else %}Create and organize palettes using colors from your private custom color collection.{% endif %}</p>
           </div>
-          <div class="ycs-custom-palettes__actions">
-            <button type="button" class="ycs-palette-card__button" data-ycs-custom-action="create-palette">Create Palette</button>
-            <button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="manage-colors">Manage My Colors</button>
-          </div>
+          {% unless custom_palette_read_only %}
+            <div class="ycs-custom-palettes__actions">
+              <button type="button" class="ycs-palette-card__button" data-ycs-custom-action="create-palette">Create Palette</button>
+              <button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="manage-colors">Manage My Colors</button>
+            </div>
+          {% endunless %}
         </div>
 
         <div class="ycs-custom-palettes__status" data-ycs-custom-status hidden></div>
         <div class="ycs-custom-palettes__grid" data-ycs-custom-palettes-list></div>
 
         <div class="ycs-custom-palettes__empty" data-ycs-custom-empty hidden>
-          <p>You haven’t created any custom palettes yet. Create a palette using colors from your private color collection.</p>
-          <button type="button" class="ycs-palette-card__button" data-ycs-custom-action="create-palette">Create Custom Palette</button>
+          <p>{% if custom_palette_read_only %}No Style Masters custom palettes are available yet.{% else %}You haven’t created any custom palettes yet. Create a palette using colors from your private color collection.{% endif %}</p>
+          {% unless custom_palette_read_only %}
+            <button type="button" class="ycs-palette-card__button" data-ycs-custom-action="create-palette">Create Custom Palette</button>
+          {% endunless %}
         </div>
       </div>
 
@@ -1633,6 +1650,7 @@
   const modalTitle = document.getElementById('ycs-custom-modal-title');
   const modalBody = modal.querySelector('[data-ycs-custom-modal-body]');
   const apiBase = (root.dataset.appBaseUrl || '').replace(/\/$/, '') + '/api/custom-palettes';
+  const isReadOnly = root.dataset.readOnly === 'true';
   const context = {
     customerId: root.dataset.customerId || '',
     previewCustomerId: root.dataset.previewCustomerId || '',
@@ -1672,7 +1690,7 @@
 
   async function loadData() {
     const query = new URLSearchParams(context);
-    query.set('action', 'list');
+    query.set('action', isReadOnly ? 'vipList' : 'list');
     const response = await fetch(apiBase + '?' + query.toString());
     const json = await response.json();
     if (!response.ok) throw new Error(json.error || 'Unable to load custom palettes');
@@ -1694,20 +1712,24 @@
 
       const card = document.createElement('div');
       card.className = 'ycs-palette-card ycs-custom-card';
+      const visibilityLabel = isReadOnly ? '' : '<p class="ycs-palette-card__admin-label">' + (palette.visibleToVip || palette.isVisibleToVip ? 'VISIBLE TO VIP' : 'ADMIN ONLY') + '</p>';
+      const actions = isReadOnly
+        ? '<button type="button" class="ycs-palette-card__button" data-ycs-custom-action="open-palette" data-palette-id="' + escapeHtml(palette.id) + '">Open Palette</button>'
+        : '<button type="button" class="ycs-palette-card__button" data-ycs-custom-action="open-palette" data-palette-id="' + escapeHtml(palette.id) + '">Open</button>' +
+          '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="' + (palette.visibleToVip || palette.isVisibleToVip ? 'hide-from-vip' : 'show-to-vip') + '" data-palette-id="' + escapeHtml(palette.id) + '">' + (palette.visibleToVip || palette.isVisibleToVip ? 'Hide from VIP' : 'Show to VIP') + '</button>' +
+          '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="rename-palette" data-palette-id="' + escapeHtml(palette.id) + '">Rename</button>' +
+          '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="delete-palette" data-palette-id="' + escapeHtml(palette.id) + '">Delete</button>';
       card.innerHTML =
         '<div class="ycs-palette-card__top"><div class="ycs-palette-card__gradient" style="background: linear-gradient(to right, #2f2a25, #d94c6a, #f2b880, #5fb6ff);"></div></div>' +
         '<div class="ycs-palette-card__content">' +
           '<div class="ycs-palette-card__text">' +
             '<h2>' + escapeHtml(palette.name) + '</h2>' +
             '<p class="ycs-palette-card__subtitle">' + palette.colorCount + (palette.colorCount === 1 ? ' custom color' : ' custom colors') + '</p>' +
-            '<p class="ycs-palette-card__admin-label">' + (palette.visibleToVip || palette.isVisibleToVip ? 'VISIBLE TO VIP' : 'ADMIN ONLY') + '</p>' +
+            visibilityLabel +
             '<div class="ycs-custom-card__swatches">' + swatches + '</div>' +
           '</div>' +
           '<div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">' +
-            '<button type="button" class="ycs-palette-card__button" data-ycs-custom-action="open-palette" data-palette-id="' + escapeHtml(palette.id) + '">Open</button>' +
-            '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="' + (palette.visibleToVip || palette.isVisibleToVip ? 'hide-from-vip' : 'show-to-vip') + '" data-palette-id="' + escapeHtml(palette.id) + '">' + (palette.visibleToVip || palette.isVisibleToVip ? 'Hide from VIP' : 'Show to VIP') + '</button>' +
-            '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="rename-palette" data-palette-id="' + escapeHtml(palette.id) + '">Rename</button>' +
-            '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="delete-palette" data-palette-id="' + escapeHtml(palette.id) + '">Delete</button>' +
+            actions +
           '</div>' +
         '</div>';
       listEl.appendChild(card);
@@ -1805,20 +1827,24 @@
     const colors = palette.colors || [];
     const rows = colors.length ? '<div class="ycs-custom-list">' + colors.map(function (item, index) {
       const color = item.color;
-      return '<div class="ycs-custom-row">' +
-        '<div class="ycs-custom-row__main"><span class="ycs-custom-swatch" style="background:' + escapeHtml(color.hexCode) + '"></span><div><p class="ycs-custom-row__name">' + escapeHtml(color.name) + '</p><p class="ycs-custom-row__meta">' + escapeHtml(color.hexCode) + '</p></div></div>' +
-        '<div class="ycs-custom-row__actions">' +
+      const actionButtons = isReadOnly
+        ? ''
+        : '<div class="ycs-custom-row__actions">' +
           '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="move-color" data-direction="up" data-color-id="' + escapeHtml(color.id) + '"' + (index === 0 ? ' disabled' : '') + '>Move Up</button>' +
           '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="move-color" data-direction="down" data-color-id="' + escapeHtml(color.id) + '"' + (index === colors.length - 1 ? ' disabled' : '') + '>Move Down</button>' +
           '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="remove-from-palette" data-color-id="' + escapeHtml(color.id) + '">Remove</button>' +
-        '</div></div>';
-    }).join('') + '</div>' : '<p class="ycs-custom-empty-text">This palette does not have any colors yet. Add colors from My Colors.</p>';
+        '</div>';
+      return '<div class="ycs-custom-row">' +
+        '<div class="ycs-custom-row__main"><span class="ycs-custom-swatch" style="background:' + escapeHtml(color.hexCode) + '"></span><div><p class="ycs-custom-row__name">' + escapeHtml(color.name) + '</p><p class="ycs-custom-row__meta">' + escapeHtml(color.hexCode) + '</p></div></div>' +
+        actionButtons +
+        '</div>';
+    }).join('') + '</div>' : '<p class="ycs-custom-empty-text">' + (isReadOnly ? 'This palette does not have any colors yet.' : 'This palette does not have any colors yet. Add colors from My Colors.') + '</p>';
 
     openModal(palette.name,
-      '<div class="ycs-custom-form__actions" style="margin-bottom:16px">' +
+      (isReadOnly ? '' : '<div class="ycs-custom-form__actions" style="margin-bottom:16px">' +
         '<button type="button" class="ycs-palette-card__button" data-ycs-custom-action="add-colors">Add Colors</button>' +
         '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="rename-palette" data-palette-id="' + escapeHtml(palette.id) + '">Rename</button>' +
-      '</div>' + rows);
+      '</div>') + rows);
   }
 
   function renderAddColors() {
@@ -1876,16 +1902,16 @@
     if (!button) return;
     const action = button.dataset.ycsCustomAction;
     const palette = state.palettes.find(function (item) { return item.id === button.dataset.paletteId; });
-    if (action === 'create-palette') renderPaletteForm('Create Custom Palette', 'createPalette');
-    if (action === 'manage-colors') renderMyColors();
+    if (!isReadOnly && action === 'create-palette') renderPaletteForm('Create Custom Palette', 'createPalette');
+    if (!isReadOnly && action === 'manage-colors') renderMyColors();
     if (action === 'open-palette' && palette) renderPaletteDetail(palette);
-    if (action === 'rename-palette' && palette) renderPaletteForm('Rename Custom Palette', 'renamePalette', palette);
-    if ((action === 'show-to-vip' || action === 'hide-from-vip') && palette) {
+    if (!isReadOnly && action === 'rename-palette' && palette) renderPaletteForm('Rename Custom Palette', 'renamePalette', palette);
+    if (!isReadOnly && (action === 'show-to-vip' || action === 'hide-from-vip') && palette) {
       requestJson(action, { paletteId: palette.id }).then(function () {
         return refreshAfterMutation(action === 'show-to-vip' ? 'Palette is now visible to VIP users.' : 'Palette is hidden from VIP users.');
       }).catch(function (error) { setStatus(error.message, true); });
     }
-    if (action === 'delete-palette' && palette && confirm('Delete this custom palette? This will not delete its colors from My Colors.')) {
+    if (!isReadOnly && action === 'delete-palette' && palette && confirm('Delete this custom palette? This will not delete its colors from My Colors.')) {
       requestJson('deletePalette', { paletteId: palette.id }).then(function () { return refreshAfterMutation('Custom palette deleted.'); }).catch(function (error) { setStatus(error.message, true); });
     }
   });
@@ -1898,9 +1924,9 @@
     const color = state.colors.find(function (item) { return item.id === button.dataset.colorId; });
     const palette = state.palettes.find(function (item) { return item.id === button.dataset.paletteId; }) || state.activePalette;
 
-    if (action === 'manage-colors') renderMyColors();
-    if (action === 'edit-color' && color) renderColorEdit(color);
-    if (action === 'delete-color' && color) {
+    if (!isReadOnly && action === 'manage-colors') renderMyColors();
+    if (!isReadOnly && action === 'edit-color' && color) renderColorEdit(color);
+    if (!isReadOnly && action === 'delete-color' && color) {
       const message = color.paletteCount > 0
         ? 'Delete this custom color? It will also be removed from any custom palettes that use it.'
         : 'Delete this custom color?';
@@ -1908,24 +1934,24 @@
         requestJson('deleteColor', { colorId: color.id }).then(function () { return refreshAfterMutation('Custom color deleted.'); }).then(renderMyColors).catch(function (error) { renderMyColors(error.message); });
       }
     }
-    if (action === 'rename-palette' && palette) renderPaletteForm('Rename Custom Palette', 'renamePalette', palette);
+    if (!isReadOnly && action === 'rename-palette' && palette) renderPaletteForm('Rename Custom Palette', 'renamePalette', palette);
     if (action === 'open-palette' && palette) renderPaletteDetail(palette);
-    if (action === 'add-colors') {
+    if (!isReadOnly && action === 'add-colors') {
       state.addColorSelection = [];
       renderAddColors();
     }
-    if (action === 'save-add-colors' && state.activePalette) {
+    if (!isReadOnly && action === 'save-add-colors' && state.activePalette) {
       addColorsToActivePalette(state.addColorSelection || []);
     }
-    if (action === 'add-single-color' && state.activePalette && button.dataset.colorId) {
+    if (!isReadOnly && action === 'add-single-color' && state.activePalette && button.dataset.colorId) {
       addColorsToActivePalette([button.dataset.colorId]);
     }
-    if (action === 'remove-from-palette' && state.activePalette && color) {
+    if (!isReadOnly && action === 'remove-from-palette' && state.activePalette && color) {
       requestJson('removeColorFromPalette', { paletteId: state.activePalette.id, colorId: color.id }).then(function (json) {
         return refreshAfterMutation('Color removed from custom palette.').then(function () { renderPaletteDetail(json.palette); });
       }).catch(function (error) { setStatus(error.message, true); });
     }
-    if (action === 'move-color' && state.activePalette) {
+    if (!isReadOnly && action === 'move-color' && state.activePalette) {
       const colorIds = state.activePalette.colors.map(function (item) { return item.color.id; });
       const index = colorIds.indexOf(button.dataset.colorId);
       const swapIndex = button.dataset.direction === 'up' ? index - 1 : index + 1;
