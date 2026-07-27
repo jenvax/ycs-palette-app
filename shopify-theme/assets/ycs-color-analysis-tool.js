@@ -91,6 +91,20 @@
   const leftComparisonSwatches = document.getElementById('ycs-analysis-left-comparison-swatches');
   const rightComparisonSwatches = document.getElementById('ycs-analysis-right-comparison-swatches');
   const comparisonRails = Array.from(document.querySelectorAll('.ycs-analysis-comparison-rail'));
+  const customPalettesOpenBtn = document.getElementById('ycs-custom-palettes-open');
+  const customPalettesCloseBtn = document.getElementById('ycs-custom-palettes-close');
+  const customPalettesPanel = document.getElementById('ycs-custom-palettes-panel');
+  const customPalettesStatus = document.getElementById('ycs-custom-palettes-status');
+  const customColorForm = document.getElementById('ycs-custom-color-form');
+  const customColorNameInput = document.getElementById('ycs-custom-color-name');
+  const customColorHexInput = document.getElementById('ycs-custom-color-hex');
+  const customPaletteForm = document.getElementById('ycs-custom-palette-form');
+  const customPaletteNameInput = document.getElementById('ycs-custom-palette-name');
+  const customPaletteAddForm = document.getElementById('ycs-custom-palette-add-form');
+  const customPaletteTargetSelect = document.getElementById('ycs-custom-palette-target');
+  const customColorCheckboxes = document.getElementById('ycs-custom-color-checkboxes');
+  const customColorsList = document.getElementById('ycs-custom-colors-list');
+  const customPalettesList = document.getElementById('ycs-custom-palettes-list');
 
   const standardPanelEl = document.getElementById('ycs-analysis-standard-panel');
   const guidedPanelEl = document.getElementById('ycs-analysis-guided-panel');
@@ -222,6 +236,7 @@
   const MAX_SCALE = 6;
   const DRAPING_PALETTE_CODE = 'DRAPINGCOLORS';
   const DRAPING_LIP_PALETTE_CODE = 'DRAPINGLIPCOLORS';
+  const CUSTOM_PALETTE_PREFIX = 'CUSTOM_';
 
   const paletteNames = {
     DRAPINGCOLORS: 'Draping Colors',
@@ -264,6 +279,18 @@
 
   const validPaletteCodes = new Set(ALL_CUSTOMER_PALETTE_CODES);
 
+  function isCustomPaletteCode(paletteCode) {
+    return String(paletteCode || '').indexOf(CUSTOM_PALETTE_PREFIX) === 0;
+  }
+
+  function getCustomPaletteIdFromCode(paletteCode) {
+    return String(paletteCode || '').slice(CUSTOM_PALETTE_PREFIX.length);
+  }
+
+  function getCustomPaletteCode(palette) {
+    return CUSTOM_PALETTE_PREFIX + String(palette && palette.id ? palette.id : '');
+  }
+
   const state = {
   scale: 1,
   x: 0,
@@ -271,8 +298,10 @@
   dragging: false,
   activePanel: 'left',
   activeFilter: 'all',
-  currentPaletteColors: [],
-  drapingLipColors: [],
+    currentPaletteColors: [],
+    customColors: [],
+    customPalettes: [],
+    drapingLipColors: [],
   imgLoaded: false,
   loadedImageUrl: '',
   photoSessionKey: '',
@@ -396,6 +425,14 @@
   }
 
   function getPaletteDisplayName(code) {
+    if (isCustomPaletteCode(code)) {
+      const paletteId = getCustomPaletteIdFromCode(code);
+      const palette = state.customPalettes.find(function (item) {
+        return String(item.id) === paletteId;
+      });
+      return palette ? palette.name : 'Custom Palette';
+    }
+
     return paletteNames[code] || code || '—';
   }
 
@@ -538,8 +575,14 @@ function updateSignatureAnalysisLink() {
   }
 
   function getAnalystPaletteCodes(accessString) {
+    const customPaletteCodes = IS_CATOOL_GROWTH
+      ? state.customPalettes.map(getCustomPaletteCode).filter(function (code) {
+          return code !== CUSTOM_PALETTE_PREFIX;
+        })
+      : [];
+
     if (IS_ADMIN || IS_TRADE || IS_CATOOL || IS_CATOOL_GROWTH || IS_CATOOL_FREE || IS_DIY_CATOOL || IS_FREE_DIY_CATOOL) {
-      return [DRAPING_PALETTE_CODE].concat(ALL_CUSTOMER_PALETTE_CODES);
+      return [DRAPING_PALETTE_CODE].concat(ALL_CUSTOMER_PALETTE_CODES, customPaletteCodes);
     }
 
     const owned = String(accessString || '')
@@ -598,6 +641,202 @@ function updateSignatureAnalysisLink() {
 
     state.comparison.leftPaletteCode = leftPaletteSelect.value;
     state.comparison.rightPaletteCode = rightPaletteSelect.value;
+  }
+
+  function getCustomPalettesApiUrl(action) {
+    const query = new URLSearchParams();
+    if (action) query.set('action', action);
+    query.set('customerId', VIEWER_CUSTOMER_ID);
+    if (ADMIN_CUSTOMER_ID) query.set('previewCustomerId', ADMIN_CUSTOMER_ID);
+    if (ADMIN_VIEW_AS) query.set('viewAs', ADMIN_VIEW_AS);
+    return APP_BASE_URL + '/api/custom-palettes?' + query.toString();
+  }
+
+  function setCustomPalettesStatus(message, isError) {
+    if (!customPalettesStatus) return;
+    customPalettesStatus.hidden = !message;
+    customPalettesStatus.textContent = message || '';
+    customPalettesStatus.classList.toggle('is-error', !!isError);
+  }
+
+  function serializeCustomPaletteBody(action, payload) {
+    return Object.assign(
+      {
+        action: action,
+        customerId: VIEWER_CUSTOMER_ID,
+        previewCustomerId: ADMIN_CUSTOMER_ID || '',
+        viewAs: ADMIN_VIEW_AS || ''
+      },
+      payload || {}
+    );
+  }
+
+  async function fetchCustomPalettes() {
+    if (!IS_CATOOL_GROWTH || !APP_BASE_URL || !VIEWER_CUSTOMER_ID) return;
+
+    try {
+      const res = await fetch(getCustomPalettesApiUrl('list'), { credentials: 'omit' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not load custom palettes');
+
+      state.customColors = Array.isArray(data.colors) ? data.colors : [];
+      state.customPalettes = Array.isArray(data.palettes) ? data.palettes : [];
+      renderCustomPalettesManager();
+    } catch (error) {
+      console.error('Failed to load custom palettes', error);
+      setCustomPalettesStatus(error.message || 'Could not load custom palettes.', true);
+    }
+  }
+
+  async function postCustomPaletteAction(action, payload) {
+    const res = await fetch(APP_BASE_URL + '/api/custom-palettes', {
+      method: 'POST',
+      credentials: 'omit',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(serializeCustomPaletteBody(action, payload))
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not update custom palettes');
+    return data;
+  }
+
+  function refreshPaletteSelectsAfterCustomUpdate(selectedCode) {
+    const currentMain = selectedCode || (paletteSelect ? paletteSelect.value : '');
+    const currentLeft = leftPaletteSelect ? leftPaletteSelect.value : '';
+    const currentRight = rightPaletteSelect ? rightPaletteSelect.value : '';
+
+    populatePaletteSelect();
+    populateComparisonPaletteSelects();
+
+    if (paletteSelect && currentMain && Array.from(paletteSelect.options).some(function (option) {
+      return option.value === currentMain;
+    })) {
+      paletteSelect.value = currentMain;
+      updateCurrentPaletteName();
+    }
+
+    if (leftPaletteSelect && currentLeft) leftPaletteSelect.value = currentLeft;
+    if (rightPaletteSelect && currentRight) rightPaletteSelect.value = currentRight;
+  }
+
+  function renderCustomPalettesManager() {
+    if (!customPalettesPanel) return;
+
+    if (customPaletteTargetSelect) {
+      customPaletteTargetSelect.innerHTML = '';
+      state.customPalettes.forEach(function (palette) {
+        const option = document.createElement('option');
+        option.value = palette.id;
+        option.textContent = palette.name;
+        customPaletteTargetSelect.appendChild(option);
+      });
+    }
+
+    if (customColorCheckboxes) {
+      customColorCheckboxes.innerHTML = '';
+      if (!state.customColors.length) {
+        const empty = document.createElement('p');
+        empty.className = 'ycs-analysis-empty';
+        empty.textContent = 'Add a color first.';
+        customColorCheckboxes.appendChild(empty);
+      }
+
+      state.customColors.forEach(function (color) {
+        const label = document.createElement('label');
+        label.className = 'ycs-custom-color-check';
+
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.value = color.id;
+
+        const swatch = document.createElement('span');
+        swatch.className = 'ycs-custom-color-swatch';
+        swatch.style.backgroundColor = normalizeHex(color.hexCode);
+
+        const text = document.createElement('span');
+        text.textContent = color.name;
+
+        label.appendChild(input);
+        label.appendChild(swatch);
+        label.appendChild(text);
+        customColorCheckboxes.appendChild(label);
+      });
+    }
+
+    if (customColorsList) {
+      customColorsList.innerHTML = '';
+      if (!state.customColors.length) {
+        const empty = document.createElement('p');
+        empty.className = 'ycs-analysis-empty';
+        empty.textContent = 'No custom colors yet.';
+        customColorsList.appendChild(empty);
+      }
+
+      state.customColors.forEach(function (color) {
+        const row = document.createElement('div');
+        row.className = 'ycs-custom-color-row';
+
+        const swatch = document.createElement('span');
+        swatch.className = 'ycs-custom-color-swatch';
+        swatch.style.backgroundColor = normalizeHex(color.hexCode);
+
+        const meta = document.createElement('span');
+        meta.className = 'ycs-custom-color-meta';
+
+        const name = document.createElement('strong');
+        name.textContent = color.name;
+
+        const hex = document.createElement('span');
+        hex.textContent = normalizeHex(color.hexCode).toUpperCase();
+
+        meta.appendChild(name);
+        meta.appendChild(hex);
+        row.appendChild(swatch);
+        row.appendChild(meta);
+        customColorsList.appendChild(row);
+      });
+    }
+
+    if (customPalettesList) {
+      customPalettesList.innerHTML = '';
+      if (!state.customPalettes.length) {
+        const empty = document.createElement('p');
+        empty.className = 'ycs-analysis-empty';
+        empty.textContent = 'No custom palettes yet.';
+        customPalettesList.appendChild(empty);
+      }
+
+      state.customPalettes.forEach(function (palette) {
+        const row = document.createElement('div');
+        row.className = 'ycs-custom-palette-row';
+
+        const meta = document.createElement('span');
+        meta.className = 'ycs-custom-palette-meta';
+
+        const name = document.createElement('strong');
+        name.textContent = palette.name;
+
+        const count = document.createElement('span');
+        count.textContent = (palette.colorCount || 0) + ' colors';
+
+        const swatches = document.createElement('div');
+        swatches.className = 'ycs-custom-palette-swatches';
+
+        (palette.colors || []).forEach(function (join) {
+          const swatch = document.createElement('span');
+          swatch.className = 'ycs-custom-color-swatch';
+          swatch.title = join.color ? join.color.name : '';
+          swatch.style.backgroundColor = normalizeHex(join.color ? join.color.hexCode : '');
+          swatches.appendChild(swatch);
+        });
+
+        meta.appendChild(name);
+        meta.appendChild(count);
+        row.appendChild(meta);
+        row.appendChild(swatches);
+        customPalettesList.appendChild(row);
+      });
+    }
   }
 
   function populateComparisonColorSelect(selectEl, colors, panel) {
@@ -1697,6 +1936,26 @@ function refreshAllSwatchHighlights() {
 
   async function fetchPaletteColors(paletteCode) {
     try {
+      if (isCustomPaletteCode(paletteCode)) {
+        const paletteId = getCustomPaletteIdFromCode(paletteCode);
+        const url = getCustomPalettesApiUrl('palette') + '&paletteId=' + encodeURIComponent(paletteId);
+        const res = await fetch(url, { credentials: 'omit' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Could not load custom palette');
+
+        return ((data.palette && data.palette.colors) || []).map(function (join, index) {
+          const color = join.color || {};
+          return {
+            name: color.name || 'Custom Color',
+            hex: normalizeHex(color.hexCode),
+            hexCode: normalizeHex(color.hexCode),
+            sortOrder: Number(join.displayOrder) || index,
+            category: 'Custom',
+            categories: ['Custom']
+          };
+        });
+      }
+
       const url = '/apps/palette-data?palette=' + encodeURIComponent(paletteCode);
       const res = await fetch(url, { credentials: 'same-origin' });
       const data = await res.json();
@@ -3877,6 +4136,96 @@ function syncLipOpacityControl() {
   lipOpacityValue.textContent = Math.round(value * 100) + '%';
 }
 
+  if (customPalettesOpenBtn && customPalettesPanel) {
+    customPalettesOpenBtn.addEventListener('click', async function () {
+      customPalettesPanel.hidden = !customPalettesPanel.hidden;
+      if (!customPalettesPanel.hidden) {
+        setCustomPalettesStatus('');
+        await fetchCustomPalettes();
+      }
+    });
+  }
+
+  if (customPalettesCloseBtn && customPalettesPanel) {
+    customPalettesCloseBtn.addEventListener('click', function () {
+      customPalettesPanel.hidden = true;
+    });
+  }
+
+  if (customColorForm) {
+    customColorForm.addEventListener('submit', async function (event) {
+      event.preventDefault();
+      setCustomPalettesStatus('Saving color...');
+
+      try {
+        await postCustomPaletteAction('createColor', {
+          name: customColorNameInput ? customColorNameInput.value : '',
+          hexCode: customColorHexInput ? customColorHexInput.value : ''
+        });
+
+        customColorForm.reset();
+        await fetchCustomPalettes();
+        refreshPaletteSelectsAfterCustomUpdate();
+        setCustomPalettesStatus('Color added.');
+      } catch (error) {
+        setCustomPalettesStatus(error.message || 'Could not add color.', true);
+      }
+    });
+  }
+
+  if (customPaletteForm) {
+    customPaletteForm.addEventListener('submit', async function (event) {
+      event.preventDefault();
+      setCustomPalettesStatus('Creating palette...');
+
+      try {
+        const data = await postCustomPaletteAction('createPalette', {
+          name: customPaletteNameInput ? customPaletteNameInput.value : ''
+        });
+        const selectedCode = data.palette ? getCustomPaletteCode(data.palette) : '';
+
+        customPaletteForm.reset();
+        await fetchCustomPalettes();
+        refreshPaletteSelectsAfterCustomUpdate(selectedCode);
+        setCustomPalettesStatus('Palette created.');
+      } catch (error) {
+        setCustomPalettesStatus(error.message || 'Could not create palette.', true);
+      }
+    });
+  }
+
+  if (customPaletteAddForm) {
+    customPaletteAddForm.addEventListener('submit', async function (event) {
+      event.preventDefault();
+      const paletteId = customPaletteTargetSelect ? customPaletteTargetSelect.value : '';
+      const checkedColors = customColorCheckboxes
+        ? Array.from(customColorCheckboxes.querySelectorAll('input[type="checkbox"]:checked')).map(function (input) {
+            return input.value;
+          })
+        : [];
+
+      setCustomPalettesStatus('Adding colors...');
+
+      try {
+        const data = await postCustomPaletteAction('addColorsToPalette', {
+          paletteId: paletteId,
+          colorIds: checkedColors
+        });
+        const selectedCode = data.palette ? getCustomPaletteCode(data.palette) : '';
+
+        customPaletteAddForm.reset();
+        await fetchCustomPalettes();
+        refreshPaletteSelectsAfterCustomUpdate(selectedCode);
+        if (paletteSelect && selectedCode && paletteSelect.value === selectedCode) {
+          await renderPaletteUI(selectedCode);
+        }
+        setCustomPalettesStatus('Colors added to palette.');
+      } catch (error) {
+        setCustomPalettesStatus(error.message || 'Could not add colors.', true);
+      }
+    });
+  }
+
   if (lipGuidesToggleBtn) {
     lipGuidesToggleBtn.onclick = function () {
       state.lip.showGuides = !state.lip.showGuides;
@@ -4471,12 +4820,15 @@ window.addEventListener('pointercancel', endGesturePointer);
   updateLipActionButtons();
   updateDrapeShape();
   syncZoomSliderBounds();
+  await fetchCustomPalettes();
   populatePaletteSelect();
   populateComparisonPaletteSelects();
 
   const saved = loadAnalysisSession();
   if (saved && saved.paletteCode && paletteSelect) {
-    paletteSelect.value = isDrapingPalette(saved.paletteCode) ? saved.paletteCode : DRAPING_PALETTE_CODE;
+    paletteSelect.value = Array.from(paletteSelect.options).some(function (option) {
+      return option.value === saved.paletteCode;
+    }) ? saved.paletteCode : DRAPING_PALETTE_CODE;
     updateCurrentPaletteName();
   }
 
