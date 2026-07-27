@@ -128,6 +128,23 @@
   {% if is_admin or is_trade or is_catool or is_catool_growth %}
     {% assign can_manage_clients = true %}
   {% endif %}
+  {% if customer and palette_access_string contains 'YCS_ADMIN' %}
+    {% assign can_manage_clients = true %}
+  {% endif %}
+  {% if customer and palette_access_string contains 'CATOOLGROWTH' %}
+    {% assign can_manage_clients = true %}
+  {% endif %}
+  {% if customer and palette_access_string contains 'CATOOL' %}
+    {% unless palette_access_string contains 'DIYCATOOL' or palette_access_string contains 'FREEDIYCATOOL' or palette_access_string contains 'CATOOLFREE' %}
+      {% assign can_manage_clients = true %}
+    {% endunless %}
+  {% endif %}
+  {% if customer and palette_access_string contains 'TRADE' %}
+    {% assign can_manage_clients = true %}
+  {% endif %}
+  {% if is_trade_july_cohort %}
+    {% assign can_manage_clients = true %}
+  {% endif %}
 
   {% assign has_all_palette_access = false %}
   {% if is_admin or is_trade or is_catool or is_catool_growth %}
