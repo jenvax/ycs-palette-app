@@ -765,7 +765,7 @@ async function drawRealisticDrapeTexture(ctx, options) {
     const query = new URLSearchParams();
     if (action) query.set('action', action);
     query.set('customerId', VIEWER_CUSTOMER_ID);
-    if (ADMIN_CUSTOMER_ID) query.set('previewCustomerId', ADMIN_CUSTOMER_ID);
+    query.set('previewCustomerId', ADMIN_CUSTOMER_ID || VIEWER_CUSTOMER_ID);
     if (ADMIN_VIEW_AS) query.set('viewAs', ADMIN_VIEW_AS);
     return APP_BASE_URL + '/api/custom-palettes?' + query.toString();
   }
