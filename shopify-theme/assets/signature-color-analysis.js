@@ -712,11 +712,9 @@ async function drawRealisticDrapeTexture(ctx, options) {
   }
 
   function getAnalystPaletteCodes(accessString) {
-  const customPaletteCodes = IS_CATOOL_GROWTH
-    ? state.customPalettes.map(getCustomPaletteCode).filter(function (code) {
-        return code !== CUSTOM_PALETTE_PREFIX;
-      })
-    : [];
+  const customPaletteCodes = state.customPalettes.map(getCustomPaletteCode).filter(function (code) {
+    return code !== CUSTOM_PALETTE_PREFIX;
+  });
 
   if (IS_SIGNATURE_MODE) {
     return ALL_CUSTOMER_PALETTE_CODES.concat(customPaletteCodes);
@@ -773,7 +771,7 @@ async function drawRealisticDrapeTexture(ctx, options) {
   }
 
   async function fetchCustomPalettes() {
-    if (!IS_CATOOL_GROWTH || !APP_BASE_URL || !VIEWER_CUSTOMER_ID) return;
+    if (!APP_BASE_URL || !VIEWER_CUSTOMER_ID) return;
 
     try {
       const res = await fetch(getCustomPalettesApiUrl('list'), { credentials: 'omit' });
