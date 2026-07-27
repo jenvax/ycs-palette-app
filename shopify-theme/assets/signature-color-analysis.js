@@ -805,8 +805,8 @@ async function drawRealisticDrapeTexture(ctx, options) {
         hex: normalizeHex(color.hexCode),
         hexCode: normalizeHex(color.hexCode),
         sortOrder: Number(join.displayOrder) || index,
-        category: 'Custom',
-        categories: ['Custom']
+        category: '',
+        categories: []
       };
     });
   }
