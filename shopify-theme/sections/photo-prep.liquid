@@ -1838,6 +1838,12 @@ if (replaceBtn && !IS_PERSONAL_MODE && !IS_MEMBER_PHOTO_MODE) {
     return;
   }
 
+  if (IS_TRADE_MODE) {
+    backLink.textContent = '← Back to Color Analysis Tools';
+    backLink.setAttribute('href', appendAdminPreviewToHref('/pages/my-palettes'));
+    return;
+  }
+
   if (state.workspaceOpen && (state.clientRecordId || state.customerId)) {
     backLink.textContent = '← Back to Client List';
     backLink.setAttribute('href', appendAdminPreviewToHref('/pages/photo-prep?mode=trade&workflow=color-analysis'));
