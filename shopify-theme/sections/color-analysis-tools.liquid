@@ -2446,7 +2446,7 @@
     if (action === 'create-pdf' && palette) createPalettePdf(palette);
     if (action === 'rename-palette' && palette) renderPaletteForm('Rename Custom Palette', 'renamePalette', palette);
     if (action === 'toggle-vip-visibility' && palette) {
-      requestJson('setPaletteVipVisibility', { paletteId: palette.id, visibleToVip: !palette.visibleToVip }).then(function () {
+      requestJson('setVipVisibility', { paletteId: palette.id, visibleToVip: !palette.visibleToVip }).then(function () {
         return refreshAfterMutation(palette.visibleToVip ? 'Palette hidden from VIP users.' : 'Palette visible to VIP users.');
       }).catch(function (error) { setStatus(error.message, true); });
     }

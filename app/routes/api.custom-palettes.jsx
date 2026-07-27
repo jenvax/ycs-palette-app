@@ -492,7 +492,9 @@ export async function action({ request }) {
 
     if (
       actionName === "setVipVisibility" ||
+      actionName === "setPaletteVipVisibility" ||
       actionName === "toggleVipVisibility" ||
+      actionName === "togglePaletteVipVisibility" ||
       actionName === "showToVip" ||
       actionName === "hideFromVip" ||
       actionName === "show-to-vip" ||
@@ -504,7 +506,9 @@ export async function action({ request }) {
 
       const palette = await requireOwnedPalette(ownerCustomerId, paletteId);
       const nextVisibleToVip =
-        actionName === "toggleVipVisibility" || actionName === "toggle-vip-visibility"
+        actionName === "toggleVipVisibility" ||
+        actionName === "togglePaletteVipVisibility" ||
+        actionName === "toggle-vip-visibility"
           ? !palette.visibleToVip
           : actionName === "hideFromVip" || actionName === "hide-from-vip"
             ? false
