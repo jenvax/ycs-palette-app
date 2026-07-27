@@ -580,7 +580,7 @@ function updateSignatureAnalysisLink() {
     });
 
     if (IS_ADMIN || IS_TRADE || IS_CATOOL || IS_CATOOL_GROWTH || IS_CATOOL_FREE || IS_DIY_CATOOL || IS_FREE_DIY_CATOOL) {
-      return [DRAPING_PALETTE_CODE].concat(ALL_CUSTOMER_PALETTE_CODES, customPaletteCodes);
+      return customPaletteCodes.concat(DRAPING_PALETTE_CODE, ALL_CUSTOMER_PALETTE_CODES);
     }
 
     const owned = String(accessString || '')

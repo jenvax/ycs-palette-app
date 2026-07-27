@@ -503,9 +503,16 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
               Save Adjusted Photo
             </button>
 
-<a id="ycs-prep-start-analysis-btn" href="/pages/color-analysis-tool" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary">
-  Continue
-</a>
+            <div class="ycs-photo-prep-analysis-actions">
+              <a id="ycs-prep-start-analysis-btn" href="/pages/color-analysis-tool" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary">
+                Continue
+              </a>
+              {% if is_admin or is_trade or is_catool or is_catool_growth %}
+                <a id="ycs-prep-start-signature-analysis-btn" href="/pages/signature-color-analysis" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary" hidden>
+                  Lip & Draping Studio
+                </a>
+              {% endif %}
+            </div>
           </div>
 
           <p class="ycs-photo-prep-help">
@@ -1365,6 +1372,12 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
   border-color: #d7b8ad;
   color: #8c2f1f;
 }
+
+.ycs-photo-prep-analysis-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 </style>
 
 <script>
@@ -1838,6 +1851,9 @@ if (replaceBtn && !IS_PERSONAL_MODE && !IS_MEMBER_PHOTO_MODE) {
 
 function updateStartAnalysisLink() {
   if (!startAnalysisBtn) return;
+  if (startSignatureAnalysisBtn) {
+    startSignatureAnalysisBtn.hidden = true;
+  }
 
   const query = new URLSearchParams();
 
@@ -1911,10 +1927,6 @@ function updateStartAnalysisLink() {
     startAnalysisBtn.textContent = 'Continue to Lip & Draping Studio';
     startAnalysisBtn.setAttribute('href', signatureUrl.pathname + signatureUrl.search);
 
-    if (startSignatureAnalysisBtn) {
-      startSignatureAnalysisBtn.hidden = true;
-    }
-
     return;
   }
 
@@ -1952,9 +1964,6 @@ function updateStartAnalysisLink() {
     startAnalysisBtn.textContent = 'Start Color Analysis';
     startAnalysisBtn.setAttribute('href', href + (queryString ? '?' + queryString : ''));
 
-    if (startSignatureAnalysisBtn) {
-      startSignatureAnalysisBtn.hidden = true;
-    }
     return;
   }
 
@@ -1982,6 +1991,7 @@ function updateStartAnalysisLink() {
   startAnalysisBtn.setAttribute('href', href);
 
   if (startSignatureAnalysisBtn && (IS_ADMIN || IS_TRADE || IS_CATOOL || IS_CATOOL_GROWTH)) {
+    startSignatureAnalysisBtn.hidden = false;
     let signatureHref = '/pages/signature-color-analysis';
     const signatureQuery = new URLSearchParams();
 

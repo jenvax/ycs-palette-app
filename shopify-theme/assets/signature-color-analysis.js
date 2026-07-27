@@ -717,11 +717,11 @@ async function drawRealisticDrapeTexture(ctx, options) {
   });
 
   if (IS_SIGNATURE_MODE) {
-    return ALL_CUSTOMER_PALETTE_CODES.concat(customPaletteCodes);
+    return customPaletteCodes.concat(ALL_CUSTOMER_PALETTE_CODES);
   }
 
   if (IS_ADMIN || IS_TRADE || IS_CATOOL || IS_CATOOL_GROWTH) {
-    return [DRAPING_PALETTE_CODE].concat(ALL_CUSTOMER_PALETTE_CODES, customPaletteCodes);
+    return customPaletteCodes.concat(DRAPING_PALETTE_CODE, ALL_CUSTOMER_PALETTE_CODES);
   }
 
   const owned = String(accessString || '')
