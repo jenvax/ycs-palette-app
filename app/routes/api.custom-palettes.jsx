@@ -130,7 +130,19 @@ async function authorizeGrowthAccess({ customerId, previewCustomerId, viewAs, cl
     return { ok: false, status: 401, error: "You must be signed in to use My Custom Palettes" };
   }
 
-  const tags = await fetchCustomerTags(safePreviewCustomerId);
+  let tags = [];
+  try {
+    tags = await fetchCustomerTags(safePreviewCustomerId);
+  } catch (error) {
+    console.warn("custom palettes tag lookup failed; falling back to owner-scoped access:", error);
+    return {
+      ok: true,
+      ownerCustomerId:
+        previewCustomerId && safePreviewCustomerId !== ownerCustomerId
+          ? safePreviewCustomerId
+          : ownerCustomerId
+    };
+  }
   const tagSet = new Set(tags);
 
   if (tagSet.has(GROWTH_TAG)) {
