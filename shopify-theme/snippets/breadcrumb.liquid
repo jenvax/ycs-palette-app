@@ -1,0 +1,84 @@
+{% assign ycs_hide_page_breadcrumb = false %}
+{% if request.page_type == 'page' and page.handle == 'my-palettes' %}
+  {% assign ycs_hide_page_breadcrumb = true %}
+{% endif %}
+
+{% unless template == 'index' or ycs_hide_page_breadcrumb %}
+<div class="bredcrumbWrap">
+    <nav class="{% if section.settings.section_width %}fullwidth{% else %}page-width{% endif %} breadcrumbs fl" role="navigation" aria-label="breadcrumbs">
+      
+      <a href="{{routes.root_url}}" title="{{ 'general.breadcrumbs.home_link_title' | t }}">{{ 'general.breadcrumbs.home' | t }}</a>
+
+      {% if template contains 'product' %}
+
+        {% if collection %}
+          <span aria-hidden="true">›</span>
+          {% if collection.handle %}{{ collection.title | link_to: collection.url }}{% endif %}
+        {% endif %}
+        <span aria-hidden="true" class="symbol">›</span>
+        <span>{{ product.title }}</span>
+      
+      	<!-- product navigation -->
+        {% if settings.spr_navigation %}
+          {% if collection.previous_product or collection.next_product %}
+            <span class="prNav{% if settings.spr_navigation_mb %} small--hide medium--hide{% endif %}">
+              {% if collection.previous_product %}
+              <a href="{{ collection.previous_product }}" class="prev" title="{{ 'products.product.prev' | t }}"><i class="ad ad-angle-left-r" aria-hidden="true"></i></a>
+              {% endif %}
+              <a href="{{ collection.url }}" class="" title="{{collection.title}}"><i class="ad ad-th-l" aria-hidden="true"></i></a>
+              {% if collection.next_product %}
+              <a href="{{ collection.next_product }}" class="next" title="{{ 'products.product.next' | t }}"><i class="ad ad-angle-right-r" aria-hidden="true"></i></a>
+              {% endif %}
+            </span>
+          {% endif %}
+        {% endif %}
+
+      {% elsif template contains 'collection' and collection.handle %}
+
+        <span aria-hidden="true" class="symbol">›</span>
+        {% if current_tags %}
+        {% capture url %}/collections/{{ collection.handle }}{% endcapture %}
+        {{ collection.title | link_to: url }}
+        <span aria-hidden="true" class="symbol">›</span>
+        <span>{{ current_tags | join: " + " }}</span>
+        {% else %}
+        <span>{{ collection.title }}</span>
+        {% endif %}
+
+      {% elsif template == 'blog' %}
+
+        <span aria-hidden="true">›</span>
+        {% if current_tags %}
+        {{ blog.title | link_to: blog.url }}
+        <span aria-hidden="true">›</span>
+        <span>{{ current_tags | join: " + " }}</span>
+        {% else %}
+        <span>{{ blog.title }}</span>
+        {% endif %}
+
+      {% elsif template == 'article' %}
+
+        <span aria-hidden="true">›</span>
+        {{ blog.title | link_to: blog.url }}
+        <span aria-hidden="true">›</span>
+        <span>{{ article.title }}</span>
+
+      {% elsif template contains 'page' %}
+
+        <span aria-hidden="true" class="symbol">›</span>
+        <span>{{ page.title }}</span>
+
+      {% elsif template contains 'cart' %}
+
+        <span aria-hidden="true" class="symbol">›</span>
+        <span> {{ 'cart.general.title' | t }}</span>
+
+      {% else %}
+
+        <span aria-hidden="true">›</span>
+        <span>{{ page_title }}</span>
+
+      {% endif %}
+    </nav>
+</div>
+{% endunless %}

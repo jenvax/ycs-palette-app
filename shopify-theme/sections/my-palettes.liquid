@@ -24,7 +24,11 @@
   %}
 
   {% assign is_catools_view = false %}
-  {% if ycs_page_url contains 'view=catools&' %}
+  {% if ycs_page_url contains 'view=catools&'
+    or ycs_header_content contains 'view=catools'
+    or ycs_header_content contains 'view%3Dcatools'
+    or ycs_header_content contains 'view\\u003dcatools'
+  %}
     {% assign is_catools_view = true %}
   {% endif %}
 
