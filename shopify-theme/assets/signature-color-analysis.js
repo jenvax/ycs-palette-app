@@ -221,6 +221,7 @@ const lipEditShape2Btn = document.getElementById('ycs-lip-edit-shape-2');
   const REALISTIC_DRAPE_OVERLAY_OPACITY = '0.78';
   const DRAPING_PALETTE_CODE = 'DRAPINGCOLORS';
   const DRAPING_LIP_PALETTE_CODE = 'DRAPINGLIPCOLORS';
+  const CUSTOM_PALETTE_PREFIX = 'CUSTOM_';
 
   const paletteNames = {
     DRAPINGCOLORS: 'Draping Colors',
@@ -263,6 +264,18 @@ const lipEditShape2Btn = document.getElementById('ycs-lip-edit-shape-2');
 
   const validPaletteCodes = new Set(ALL_CUSTOMER_PALETTE_CODES);
 
+  function isCustomPaletteCode(paletteCode) {
+    return String(paletteCode || '').indexOf(CUSTOM_PALETTE_PREFIX) === 0;
+  }
+
+  function getCustomPaletteIdFromCode(paletteCode) {
+    return String(paletteCode || '').slice(CUSTOM_PALETTE_PREFIX.length);
+  }
+
+  function getCustomPaletteCode(palette) {
+    return CUSTOM_PALETTE_PREFIX + String(palette && palette.id ? palette.id : '');
+  }
+
   const state = {
   scale: 1,
   x: 0,
@@ -271,6 +284,8 @@ const lipEditShape2Btn = document.getElementById('ycs-lip-edit-shape-2');
   activePanel: 'left',
   activeFilter: 'all',
   currentPaletteColors: [],
+  customColors: [],
+  customPalettes: [],
   drapingLipColors: [],
   imgLoaded: false,
   loadedImageUrl: '',
@@ -635,6 +650,14 @@ async function drawRealisticDrapeTexture(ctx, options) {
   }
 
   function getPaletteDisplayName(code) {
+    if (isCustomPaletteCode(code)) {
+      const paletteId = getCustomPaletteIdFromCode(code);
+      const palette = state.customPalettes.find(function (item) {
+        return String(item.id) === paletteId;
+      });
+      return palette ? palette.name : 'Custom Palette';
+    }
+
     return paletteNames[code] || code || '—';
   }
 
@@ -689,12 +712,18 @@ async function drawRealisticDrapeTexture(ctx, options) {
   }
 
   function getAnalystPaletteCodes(accessString) {
+  const customPaletteCodes = IS_CATOOL_GROWTH
+    ? state.customPalettes.map(getCustomPaletteCode).filter(function (code) {
+        return code !== CUSTOM_PALETTE_PREFIX;
+      })
+    : [];
+
   if (IS_SIGNATURE_MODE) {
-    return ALL_CUSTOMER_PALETTE_CODES;
+    return ALL_CUSTOMER_PALETTE_CODES.concat(customPaletteCodes);
   }
 
   if (IS_ADMIN || IS_TRADE || IS_CATOOL || IS_CATOOL_GROWTH) {
-    return [DRAPING_PALETTE_CODE].concat(ALL_CUSTOMER_PALETTE_CODES);
+    return [DRAPING_PALETTE_CODE].concat(ALL_CUSTOMER_PALETTE_CODES, customPaletteCodes);
   }
 
   const owned = String(accessString || '')
@@ -732,6 +761,54 @@ async function drawRealisticDrapeTexture(ctx, options) {
   function updateCurrentPaletteName() {
     if (!currentPaletteNameEl) return;
     currentPaletteNameEl.textContent = getPaletteDisplayName(paletteSelect.value);
+  }
+
+  function getCustomPalettesApiUrl(action) {
+    const query = new URLSearchParams();
+    if (action) query.set('action', action);
+    query.set('customerId', VIEWER_CUSTOMER_ID);
+    if (ADMIN_CUSTOMER_ID) query.set('previewCustomerId', ADMIN_CUSTOMER_ID);
+    if (ADMIN_VIEW_AS) query.set('viewAs', ADMIN_VIEW_AS);
+    return APP_BASE_URL + '/api/custom-palettes?' + query.toString();
+  }
+
+  async function fetchCustomPalettes() {
+    if (!IS_CATOOL_GROWTH || !APP_BASE_URL || !VIEWER_CUSTOMER_ID) return;
+
+    try {
+      const res = await fetch(getCustomPalettesApiUrl('list'), { credentials: 'omit' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not load custom palettes');
+
+      state.customColors = Array.isArray(data.colors) ? data.colors : [];
+      state.customPalettes = Array.isArray(data.palettes) ? data.palettes : [];
+    } catch (error) {
+      console.error('Failed to load custom palettes', error);
+      state.customColors = [];
+      state.customPalettes = [];
+    }
+  }
+
+  async function fetchCustomPaletteColors(paletteCode) {
+    const paletteId = getCustomPaletteIdFromCode(paletteCode);
+    if (!paletteId) return [];
+
+    const url = getCustomPalettesApiUrl('palette') + '&paletteId=' + encodeURIComponent(paletteId);
+    const res = await fetch(url, { credentials: 'omit' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not load custom palette');
+
+    return ((data.palette && data.palette.colors) || []).map(function (join, index) {
+      const color = join.color || {};
+      return {
+        name: color.name || 'Custom Color',
+        hex: normalizeHex(color.hexCode),
+        hexCode: normalizeHex(color.hexCode),
+        sortOrder: Number(join.displayOrder) || index,
+        category: 'Custom',
+        categories: ['Custom']
+      };
+    });
   }
 
   function setActivePanel(panel) {
@@ -1380,6 +1457,10 @@ function refreshAllSwatchHighlights() {
 
   async function fetchPaletteColors(paletteCode) {
     try {
+      if (isCustomPaletteCode(paletteCode)) {
+        return await fetchCustomPaletteColors(paletteCode);
+      }
+
       const url = '/apps/palette-data?palette=' + encodeURIComponent(paletteCode);
       const res = await fetch(url, { credentials: 'same-origin' });
       const data = await res.json();
@@ -1388,9 +1469,13 @@ function refreshAllSwatchHighlights() {
       console.error('Failed to load palette colors', error);
       return [];
     }
-  }
+}
 async function fetchSignatureLipColors(paletteCode) {
   try {
+    if (isCustomPaletteCode(paletteCode)) {
+      return await fetchCustomPaletteColors(paletteCode);
+    }
+
     const url =
       '/apps/palette-data?action=getSignatureLipColors&palette=' +
       encodeURIComponent(paletteCode);
@@ -4455,12 +4540,15 @@ window.addEventListener('pointercancel', endGesturePointer);
     updateDrapeShape();
     syncZoomSliderBounds();
     syncDrapeLayers();
+    await fetchCustomPalettes();
     populatePaletteSelect();
     populateSignatureSidePaletteSelects();
 
 const saved = loadAnalysisSession();
         if (saved && saved.paletteCode && paletteSelect) {
-            paletteSelect.value = saved.paletteCode;
+            paletteSelect.value = Array.from(paletteSelect.options).some(function (option) {
+              return option.value === saved.paletteCode;
+            }) ? saved.paletteCode : paletteSelect.value;
             updateCurrentPaletteName();
         }
 
