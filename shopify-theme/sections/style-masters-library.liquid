@@ -14,12 +14,21 @@
   {% assign current_period = 'now' | date: '%Y-%m' %}
   {% assign current_period_key = current_period | remove: '-' | plus: 0 %}
 
-  {% assign current_month_start_s = 'now' | date: '%Y-%m-01' | date: '%s' %}
-  {% assign month_seconds = 2678400 %}
+  {% assign current_year_num = 'now' | date: '%Y' | plus: 0 %}
+  {% assign current_month_num = 'now' | date: '%m' | plus: 0 %}
   {% for recent_index in (0..6) %}
-    {% assign recent_offset = month_seconds | times: recent_index %}
-    {% assign recent_s = current_month_start_s | minus: recent_offset %}
-    {% assign recent_period = recent_s | date: '%Y-%m' %}
+    {% assign recent_year_num = current_year_num %}
+    {% assign recent_month_num = current_month_num | minus: recent_index %}
+    {% if recent_month_num <= 0 %}
+      {% assign recent_month_num = recent_month_num | plus: 12 %}
+      {% assign recent_year_num = recent_year_num | minus: 1 %}
+    {% endif %}
+    {% if recent_month_num < 10 %}
+      {% assign recent_month_str = '0' | append: recent_month_num %}
+    {% else %}
+      {% assign recent_month_str = recent_month_num %}
+    {% endif %}
+    {% assign recent_period = recent_year_num | append: '-' | append: recent_month_str %}
     {% assign recent_needle = ',' | append: recent_period | append: ',' %}
     {% unless recent_periods_csv contains recent_needle %}
       {% assign recent_periods_csv = recent_periods_csv | append: recent_period | append: ',' %}
@@ -58,6 +67,10 @@
           {% if issue_entitlement == blank %}
             {% assign issue_entitlement = 'STYLEMASTERS_' | append: issue_period_str | replace: '-', '_' %}
           {% endif %}
+          {% assign issue_product_url = block.settings.product_url | default: '' | strip %}
+          {% if issue_product_url == blank and block.settings.issue_product_handle != blank %}
+            {% assign issue_product_url = '/products/' | append: block.settings.issue_product_handle %}
+          {% endif %}
           {% assign issue_period_token = ',' | append: issue_period_str | append: ',' %}
 
           {% assign owns_issue = false %}
@@ -80,7 +93,7 @@
             {% assign owned_issue_count = owned_issue_count | plus: 1 %}
           {% elsif is_recent_issue %}
             {% assign locked_recent_count = locked_recent_count | plus: 1 %}
-            {% if block.settings.product_url == blank %}
+            {% if issue_product_url == blank %}
               {% assign missing_product_url_count = missing_product_url_count | plus: 1 %}
             {% endif %}
           {% endif %}
@@ -133,6 +146,10 @@
               {% assign issue_entitlement = block.settings.entitlement_code | default: '' | strip | upcase %}
               {% if issue_entitlement == blank %}
                 {% assign issue_entitlement = 'STYLEMASTERS_' | append: issue_period_str | replace: '-', '_' %}
+              {% endif %}
+              {% assign issue_product_url = block.settings.product_url | default: '' | strip %}
+              {% if issue_product_url == blank and block.settings.issue_product_handle != blank %}
+                {% assign issue_product_url = '/products/' | append: block.settings.issue_product_handle %}
               {% endif %}
               {% assign issue_period_token = ',' | append: issue_period_str | append: ',' %}
 
@@ -229,8 +246,8 @@
 
                     <div class="sm-library__locked-panel">
                       <p class="sm-library__lock-label">Locked</p>
-                      {% if block.settings.product_url != blank %}
-                        <a href="{{ block.settings.product_url }}" class="sm-btn-primary sm-btn-primary--locked">
+                      {% if issue_product_url != blank %}
+                        <a href="{{ issue_product_url }}" class="sm-btn-primary sm-btn-primary--locked">
                           Unlock This Issue
                         </a>
                       {% else %}

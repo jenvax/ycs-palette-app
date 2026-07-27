@@ -1,0 +1,497 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "page": {
+      "type": "page-template",
+      "disabled": true,
+      "settings": {
+        "section_width": false,
+        "width": 1200,
+        "hide_ttl": true,
+        "hide_hdft": false,
+        "breadcrumb": false
+      }
+    },
+    "style_masters_library_ainLLC": {
+      "type": "style-masters-library",
+      "blocks": {
+        "download_rXpbbT": {
+          "type": "download",
+          "settings": {
+            "issue_period": "2026-07",
+            "entitlement_code": "STYLEMASTERS_2026_07",
+            "issue_product_handle": "style-masters-july-2026",
+            "product_url": "/products/style-masters-july-2026",
+            "cover_image": "shopify://shop_images/YCS_July_Ezine_-_Power_of_White.png",
+            "title": "July 2026 - Power of White",
+            "description": "<p><strong>&gt;&gt;</strong><a href=\"https://hueandstripe.com/catalog/1676H&SLOdt\" title=\"https://hueandstripe.com/catalog/1676H&SLOdt\"><strong>Shop the Looks</strong></a><strong>&lt;&lt;</strong></p><p><strong>Magazine and Replay Password: </strong>WhiteSM2026<br/>(password is case sensitive)</p>",
+            "resource_1_label": "Download the Magazine (PW: WhiteSM2026)",
+            "resource_1_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/YCS_July_Ezine_-_Power_of_White_2.pdf?v=1782885808",
+            "resource_2_label": "Watch the Replay (PW: WhiteSM2026)",
+            "resource_2_url": "https://vimeo.com/1208465991?share=copy&fl=sv&fe=ci",
+            "resource_3_label": "Download the Live Call PDF",
+            "resource_3_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/July_SM_Monthly_Draping.pdf?v=1783610545"
+          }
+        },
+        "download_iwYtmw": {
+          "type": "download",
+          "settings": {
+            "issue_period": "2026-06",
+            "entitlement_code": "STYLEMASTERS_2026_06",
+            "issue_product_handle": "style-masters-june-2026",
+            "product_url": "/products/style-masters-june-2026",
+            "cover_image": "shopify://shop_images/power-of-contrast.png",
+            "title": "June 2026 – Power of Contrast",
+            "description": "<p><strong>&gt;&gt;</strong><a href=\"https://hueandstripe.com/catalog/1676H&SLOdt\" title=\"https://hueandstripe.com/catalog/1676H&SLOdt\"><strong>Shop the Looks</strong></a><strong>&lt;&lt;</strong></p><p><strong>Magazine and Replay Password: </strong>CONTRASTrules<br/>(password is case sensitive)</p>",
+            "resource_1_label": "Download the Magazine (pw: CONTRASTrules)",
+            "resource_1_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/Style_Masters_June_2026.pdf?v=1780063039",
+            "resource_2_label": "Watch the Replay (pw: CONTRASTrules)",
+            "resource_2_url": "https://vimeo.com/1200441807?share=copy&fl=sv&fe=ci",
+            "resource_3_label": "Download the Live Call PDF",
+            "resource_3_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/Style_Masters_June_2026_Draping.pdf?v=1781183651"
+          }
+        },
+        "download_VEJjgt": {
+          "type": "download",
+          "settings": {
+            "issue_period": "2026-05",
+            "entitlement_code": "STYLEMASTERS_2026_05",
+            "issue_product_handle": "style-masters-may-2026",
+            "product_url": "/products/style-masters-may-2026",
+            "cover_image": "shopify://shop_images/YCS_-_May_Ezine_3.png",
+            "title": "May 2026 – Power of Red",
+            "description": "<p><strong>&gt;&gt;</strong><a href=\"https://hueandstripe.com/catalog/1676H&SLOdt\" title=\"https://hueandstripe.com/catalog/1676H&SLOdt\"><strong>Shop the Looks</strong></a><strong>&lt;&lt;</strong></p><p><strong>Magazine and Replay Password: </strong>PowerOfRed2026</p><p></p>",
+            "resource_1_label": "Download the Magazine (pw: PowerOfRed2026)",
+            "resource_1_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/Style_Masters_Magazine_May_2026.pdf?v=1777741554",
+            "resource_2_label": "Watch the Replay (pw: PowerOfRed2026)",
+            "resource_2_url": "https://vimeo.com/1190120817?share=copy&fl=sv&fe=ci",
+            "resource_3_label": "Download the Live Call PDF",
+            "resource_3_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/StyleMasters-May-2026-call.pdf?v=1778160943"
+          }
+        },
+        "download_KCFrP7": {
+          "type": "download",
+          "settings": {
+            "issue_period": "2026-04",
+            "entitlement_code": "STYLEMASTERS_2026_04",
+            "issue_product_handle": "style-masters-april-2026",
+            "product_url": "/products/style-masters-april-2026",
+            "cover_image": "shopify://shop_images/YCS_-_April_Ezine.png",
+            "title": "April 2026 – Power of Yellow",
+            "description": "<p><a href=\"https://hueandstripe.com/catalog/1676H&SLOdt\" title=\"https://hueandstripe.com/catalog/1676H&SLOdt\"><strong>&gt;&gt; Shop the Looks &lt;&lt;</strong></a></p><p><strong>Magazine and Replay Password: </strong>Yellow4all</p>",
+            "resource_1_label": "Download the Magazine (pw:Yellow4all)",
+            "resource_1_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/StyleMasters-April-2026-Yellow.pdf?v=1775470030",
+            "resource_2_label": "Watch the Replay (pw:Yellow4all)",
+            "resource_2_url": "https://vimeo.com/1181530124?share=copy&fl=sv&fe=ci",
+            "resource_3_label": "Download the Live Call PDF",
+            "resource_3_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/Style_Masters_April_2026.pdf?v=1775731023"
+          }
+        },
+        "download_mUkmeD": {
+          "type": "download",
+          "settings": {
+            "issue_period": "2026-03",
+            "entitlement_code": "STYLEMASTERS_2026_03",
+            "issue_product_handle": "style-masters-march-2026",
+            "product_url": "/products/style-masters-march-2026",
+            "cover_image": "shopify://shop_images/Screenshot_2026-07-16_at_11.09.35_AM.png",
+            "title": "March 2026 – The Spring Edition",
+            "description": "<p><a href=\"https://hueandstripe.com/catalog/1676H&SLOdt\" title=\"https://hueandstripe.com/catalog/1676H&SLOdt\"><strong>&gt;&gt; Shop the Looks &lt;&lt;</strong></a></p><p>Password to open the magazine: <strong>spring2026</strong></p>",
+            "resource_1_label": "Download the Magazine (PW: spring2026)",
+            "resource_1_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/Style_Masters_Magazine_March_2026.pdf?v=1772657168",
+            "resource_2_label": "Watch the Replay (PW: spring2026)",
+            "resource_2_url": "https://vimeo.com/1170647317?share=copy&fl=sv&fe=ci",
+            "resource_3_label": "Download the Live Call PDF",
+            "resource_3_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/Style_Masters_March_2026.pdf?v=1772713665"
+          }
+        },
+        "download_tHkX8p": {
+          "type": "download",
+          "settings": {
+            "issue_period": "2026-02",
+            "entitlement_code": "STYLEMASTERS_2026_02",
+            "issue_product_handle": "style-masters-february-2026",
+            "product_url": "/products/style-masters-february-2026",
+            "cover_image": "shopify://shop_images/YCS_-_February_Ezine.png",
+            "title": "February 2026 – Power of Blue",
+            "description": "<p><a href=\"https://hueandstripe.com/catalog/1676H&SLOdt\" title=\"https://hueandstripe.com/catalog/1676H&SLOdt\"><strong>&gt;&gt; Shop the Looks &lt;&lt;</strong></a></p><p>Password to open the magazine: <strong>alltheblues</strong></p>",
+            "resource_1_label": "Download the Magazine (PW: alltheblues)",
+            "resource_1_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/YCS_-_February_Ezine.pdf?v=1770218653",
+            "resource_2_label": "Watch the Replay (PW: alltheblues)",
+            "resource_2_url": "https://vimeo.com/1162215987?share=copy&fl=sv&fe=ci",
+            "resource_3_label": "Download the Live Call PDF",
+            "resource_3_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/Style_Masters_February_2026.pdf?v=1770306247"
+          }
+        },
+        "download_rbJn63": {
+          "type": "download",
+          "settings": {
+            "issue_period": "2026-01",
+            "entitlement_code": "",
+            "issue_product_handle": "style-masters-january-2026",
+            "product_url": "/products/style-masters-january-2026",
+            "title": "January 2026 – Power of Pink",
+            "description": "<p>Password to open the magazine and watch the replay: <strong>prettyinpink</strong></p><p>&gt;&gt; <a href=\"https://hueandstripe.com/catalog/1676H&SLOdt\" title=\"https://hueandstripe.com/catalog/1676H&SLOdt\"><strong>Shop the Looks &lt;&lt;</strong></a></p>",
+            "resource_1_label": "Download the Magazine",
+            "resource_1_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/Power-of-Pink-January-2026.pdf?v=1767371482",
+            "resource_2_label": "Watch the Replay",
+            "resource_2_url": "https://vimeo.com/1152565432?share=copy&fl=sv&fe=ci",
+            "resource_3_label": "Download the Live Call PDF",
+            "resource_3_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/Style_Masters_January_2026.pdf?v=1767883054"
+          }
+        },
+        "download_UidbQn": {
+          "type": "download",
+          "settings": {
+            "issue_period": "2025-12",
+            "entitlement_code": "",
+            "issue_product_handle": "",
+            "product_url": "",
+            "title": "December 2025 – Dominance & Specificity",
+            "description": "<p>Password to open the magazine and watch the replay: <strong>dominance</strong></p><p>&gt;&gt; <a href=\"https://hueandstripe.com/catalog/1676H&SLOdt?s=1486733\" target=\"_blank\" title=\"https://hueandstripe.com/catalog/1676H&SLOdt?s=1486733\"><strong>Shop the looks</strong></a></p>",
+            "resource_1_label": "Download the Magazine",
+            "resource_1_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/Style_Masters_Magazine_December_2025.pdf?v=1764757715",
+            "resource_2_label": "Watch the Replay",
+            "resource_2_url": "https://vimeo.com/1145626779?share=copy&fl=sv&fe=ci",
+            "resource_3_label": "Download the Live Call PDF",
+            "resource_3_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/Style_Masters_December_2025.pdf?v=1765462593"
+          }
+        },
+        "download_3Gjcaj": {
+          "type": "download",
+          "settings": {
+            "issue_period": "2025-11",
+            "entitlement_code": "",
+            "issue_product_handle": "",
+            "product_url": "",
+            "title": "November 2025 - Power of Medium to Dark Neutrals",
+            "description": "<p>Password to open the magazine and watch the replay: <strong>darkbrown</strong></p>",
+            "resource_1_label": "Download the Magazine",
+            "resource_1_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/Style-Masters-Magazine-November-2025.pdf?v=1762214146",
+            "resource_2_label": "Watch the Replay",
+            "resource_2_url": "https://vimeo.com/1134265348?fl=ip&fe=ec",
+            "resource_3_label": "Download the Video PDF",
+            "resource_3_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/Power_of_Medium_to_Dark_Neutrals_-_November_2025.pdf?v=1762449630"
+          }
+        },
+        "download_rn96h7": {
+          "type": "download",
+          "settings": {
+            "issue_period": "2025-10",
+            "entitlement_code": "",
+            "issue_product_handle": "",
+            "product_url": "",
+            "title": "October 2025 – How To Wear Purple",
+            "description": "<p>Password to watch the replay: <strong>purples</strong></p>",
+            "resource_1_label": "Download the Magazine",
+            "resource_1_url": "",
+            "resource_2_label": "Watch the Replay",
+            "resource_2_url": "https://vimeo.com/1125952001?fl=ip&fe=ec",
+            "resource_3_label": "Download the Replay PDF",
+            "resource_3_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/How_To_Wear_Purple_Plums_-_October_2025.pdf?v=1760035430"
+          }
+        },
+        "download_XNMNfN": {
+          "type": "download",
+          "settings": {
+            "issue_period": "2025-09",
+            "entitlement_code": "",
+            "issue_product_handle": "",
+            "product_url": "",
+            "title": "September 2025 – Fall/Winter Style Trends",
+            "description": "<p>Password to watch the replay: <strong>STYLE2025</strong></p>",
+            "resource_1_label": "Download the Magazine",
+            "resource_1_url": "",
+            "resource_2_label": "Watch the Replay",
+            "resource_2_url": "https://vimeo.com/1117769469?share=copy&fl=sv&fe=ci",
+            "resource_3_label": "Download the Live Call PDF",
+            "resource_3_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/Fall_Winter_2025_Style_Trends.pdf?v=1757592805"
+          }
+        },
+        "download_mwLLWi": {
+          "type": "download",
+          "settings": {
+            "issue_period": "2025-08",
+            "entitlement_code": "",
+            "issue_product_handle": "",
+            "product_url": "",
+            "title": "August 2025 – Fall/Winter Trending Colors",
+            "description": "<p>Password to watch the replay: <strong>pantone</strong></p>",
+            "resource_1_label": "Download the Magazine",
+            "resource_1_url": "",
+            "resource_2_label": "Watch the Replay",
+            "resource_2_url": "https://vimeo.com/1108077637?fl=tl&fe=ec",
+            "resource_3_label": "Download the Live Call PDF",
+            "resource_3_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/Fall_Winter_2025_Colors.pdf?v=1754569330"
+          }
+        },
+        "download_chiQwA": {
+          "type": "download",
+          "settings": {
+            "issue_period": "2025-07",
+            "entitlement_code": "",
+            "issue_product_handle": "",
+            "product_url": "",
+            "title": "July 2025 – How To Wear Blue-Green",
+            "description": "<p>Password to watch the replay: <strong>bluegreen</strong></p>",
+            "resource_1_label": "Download the Magazine",
+            "resource_1_url": "",
+            "resource_2_label": "Watch the Replay",
+            "resource_2_url": "https://vimeo.com/1100299356?fl=tl&fe=ec",
+            "resource_3_label": "Download the Live Call PDF",
+            "resource_3_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/How_to_Wear_Blue-Greens-July_2025.pdf?v=1752153413"
+          }
+        },
+        "download_jHTEJ3": {
+          "type": "download",
+          "settings": {
+            "issue_period": "2025-06",
+            "entitlement_code": "",
+            "issue_product_handle": "",
+            "product_url": "",
+            "title": "June 2025 – How To Wear Green",
+            "description": "<p>Password to watch the replay: <strong>green2025</strong></p>",
+            "resource_1_label": "Download the Magazine",
+            "resource_1_url": "",
+            "resource_2_label": "Watch the Replay",
+            "resource_2_url": "https://vimeo.com/1090822030?share=copy&fl=sv&fe=ci",
+            "resource_3_label": "Download the Live Call PDF",
+            "resource_3_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/How_to_Wear_Green-June_2025.pdf?v=1749123215"
+          }
+        },
+        "download_3rtHQd": {
+          "type": "download",
+          "settings": {
+            "issue_period": "2025-05",
+            "entitlement_code": "",
+            "issue_product_handle": "",
+            "product_url": "",
+            "title": "May 2025 – How To Wear Orange",
+            "description": "<p>Password to watch the replay: <strong>2025orange</strong></p>",
+            "resource_1_label": "Download the Magazine",
+            "resource_1_url": "",
+            "resource_2_label": "Watch the Replay",
+            "resource_2_url": "https://vimeo.com/1082527423?share=copy&fl=sv&fe=ci",
+            "resource_3_label": "Download the Live Call PDF",
+            "resource_3_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/How_To_Wear_Orange.pdf?v=1746707190"
+          }
+        },
+        "download_4wBrhn": {
+          "type": "download",
+          "settings": {
+            "issue_period": "2025-04",
+            "entitlement_code": "",
+            "issue_product_handle": "",
+            "product_url": "",
+            "title": "April 2025 – The Secret to Spring/Summer Patterns",
+            "description": "<p>Password to watch the replay: <strong>springpatterns</strong></p>",
+            "resource_1_label": "Download the Magazine",
+            "resource_1_url": "",
+            "resource_2_label": "Watch the Replay",
+            "resource_2_url": "https://vimeo.com/1072160268?share=copy&fl=sv&fe=ci",
+            "resource_3_label": "Download the Live Call PDF",
+            "resource_3_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/Spring_Summer_Patterns.pdf?v=1743684072"
+          }
+        },
+        "download_F4RKfd": {
+          "type": "download",
+          "settings": {
+            "issue_period": "2025-03",
+            "entitlement_code": "",
+            "issue_product_handle": "",
+            "product_url": "",
+            "title": "March 2025 – Spring/Summer Colors",
+            "description": "<p>Password to watch the replay: <strong>marchcolors</strong></p>",
+            "resource_1_label": "Download the Magazine",
+            "resource_1_url": "",
+            "resource_2_label": "Watch the Replay",
+            "resource_2_url": "https://vimeo.com/1063177353?share=copy&fl=sv&fe=ci",
+            "resource_3_label": "Download the Live Call PDF",
+            "resource_3_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/Spring_Summer_2025_Colors.pdf?v=1741268375"
+          }
+        },
+        "download_ekQHpq": {
+          "type": "download",
+          "settings": {
+            "issue_period": "2025-02",
+            "entitlement_code": "",
+            "issue_product_handle": "",
+            "product_url": "",
+            "title": "February 2025 – How To Wear Pink",
+            "description": "<p>Password to watch the replay: <strong>pink2025sm</strong></p>",
+            "resource_1_label": "Download the Magazine",
+            "resource_1_url": "",
+            "resource_2_label": "Watch the Replay",
+            "resource_2_url": "https://vimeo.com/1054156455?share=copy&fl=sv&fe=ci",
+            "resource_3_label": "Download the Live Call PDF",
+            "resource_3_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/How_To_Wear_Pink_-_February_2025.pdf?v=1741017166"
+          }
+        },
+        "download_EmzXWx": {
+          "type": "download",
+          "settings": {
+            "issue_period": "2025-01",
+            "entitlement_code": "",
+            "issue_product_handle": "",
+            "product_url": "",
+            "title": "January 2025 – How To Wear Denim",
+            "description": "<p>Password to watch the replay: <strong>smdenim</strong></p>",
+            "resource_1_label": "Download the Magazine",
+            "resource_1_url": "",
+            "resource_2_label": "Watch the Replay",
+            "resource_2_url": "https://vimeo.com/1045352601?share=copy&fl=sv&fe=ci",
+            "resource_3_label": "Download the Live Call PDF",
+            "resource_3_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/How_To_Wear_Denim_-_January_2025.pdf?v=1738349141"
+          }
+        },
+        "download_HBANFJ": {
+          "type": "download",
+          "settings": {
+            "issue_period": "2024-12",
+            "entitlement_code": "",
+            "issue_product_handle": "",
+            "product_url": "",
+            "title": "December 2024 – Your Signature Color and Best Lip Color",
+            "description": "<p>Password to watch the replay: <strong>signature</strong></p>",
+            "resource_1_label": "Download the Magazine",
+            "resource_1_url": "",
+            "resource_2_label": "Watch the Replay",
+            "resource_2_url": "https://vimeo.com/1036361904?share=copy&fl=sv&fe=ci",
+            "resource_3_label": "Download the Live Call PDF",
+            "resource_3_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/Your_Signature_Color_and_Best_Lip_Color-compressed_1.pdf?v=1733407227"
+          }
+        },
+        "download_pTRgJH": {
+          "type": "download",
+          "settings": {
+            "issue_period": "2024-11",
+            "entitlement_code": "",
+            "issue_product_handle": "",
+            "product_url": "",
+            "title": "November 2024 – How To Wear Reds & Berries",
+            "description": "",
+            "resource_1_label": "Download the Magazine",
+            "resource_1_url": "",
+            "resource_2_label": "Watch the Replay",
+            "resource_2_url": "https://vimeo.com/1027328400?share=copy&fl=sv&fe=ci",
+            "resource_3_label": "Download the Live Call PDF",
+            "resource_3_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/How_To_Wear_Reds_and_Berries_-_November_2024.pdf?v=1732534749"
+          }
+        },
+        "download_mrhmjn": {
+          "type": "download",
+          "settings": {
+            "issue_period": "2024-10",
+            "entitlement_code": "",
+            "issue_product_handle": "",
+            "product_url": "",
+            "title": "October 2025 – How to Wear Dark Neutrals",
+            "description": "<p>Password to watch the replay: <strong>darkneutral</strong></p>",
+            "resource_1_label": "Download the Magazine",
+            "resource_1_url": "",
+            "resource_2_label": "Watch the Replay",
+            "resource_2_url": "https://vimeo.com/1018390603?share=copy&fl=sv&fe=ci",
+            "resource_3_label": "Download the Live Call PDF",
+            "resource_3_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/How_To_Wear_Dark_Neutrals_-_October_2024.pdf?v=1730133646"
+          }
+        },
+        "download_NTQ3TT": {
+          "type": "download",
+          "settings": {
+            "issue_period": "2024-09",
+            "entitlement_code": "",
+            "issue_product_handle": "",
+            "product_url": "",
+            "title": "September 2024 – Fall/Winter Trends",
+            "description": "<p>Password to watch the replay: <strong>2024trends</strong></p>",
+            "resource_1_label": "Download the Magazine",
+            "resource_1_url": "",
+            "resource_2_label": "Watch the Replay",
+            "resource_2_url": "https://vimeo.com/1006579280?share=copy&fl=sv&fe=ci",
+            "resource_3_label": "Download the Live Call PDF",
+            "resource_3_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/2024-25_Pantone_Fall_Winter_Colors.pdf?v=1725541375"
+          }
+        },
+        "download_VBew6r": {
+          "type": "download",
+          "settings": {
+            "issue_period": "2024-08",
+            "entitlement_code": "",
+            "issue_product_handle": "",
+            "product_url": "",
+            "title": "August 2024 – How To Wear Blue",
+            "description": "<p>Password to watch the replay: <strong>augustblue</strong></p>",
+            "resource_1_label": "Download the Magazine",
+            "resource_1_url": "",
+            "resource_2_label": "Watch the Replay",
+            "resource_2_url": "https://vimeo.com/996185386?share=copy&fl=sv&fe=ci",
+            "resource_3_label": "Download the Live Call PDF",
+            "resource_3_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/Live_Call_August_2024.pdf?v=1723121488"
+          }
+        },
+        "download_p7HMHA": {
+          "type": "download",
+          "settings": {
+            "issue_period": "2024-07",
+            "entitlement_code": "",
+            "issue_product_handle": "",
+            "product_url": "",
+            "title": "July 2024 – How To Wear Yellow",
+            "description": "<p>Password to watch the replay: <strong>yellow24</strong></p>",
+            "resource_1_label": "Download the Magazine",
+            "resource_1_url": "",
+            "resource_2_label": "Watch the Replay",
+            "resource_2_url": "https://vimeo.com/983093280?share=copy&fl=sv&fe=ci",
+            "resource_3_label": "Download the Live Call PDF",
+            "resource_3_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/Live_Call_July_2024.pdf?v=1720780980"
+          }
+        }
+      },
+      "block_order": [
+        "download_rXpbbT",
+        "download_iwYtmw",
+        "download_VEJjgt",
+        "download_KCFrP7",
+        "download_mUkmeD",
+        "download_tHkX8p",
+        "download_rbJn63",
+        "download_UidbQn",
+        "download_3Gjcaj",
+        "download_rn96h7",
+        "download_XNMNfN",
+        "download_mwLLWi",
+        "download_chiQwA",
+        "download_jHTEJ3",
+        "download_3rtHQd",
+        "download_4wBrhn",
+        "download_F4RKfd",
+        "download_ekQHpq",
+        "download_EmzXWx",
+        "download_HBANFJ",
+        "download_pTRgJH",
+        "download_mrhmjn",
+        "download_NTQ3TT",
+        "download_VBew6r",
+        "download_p7HMHA"
+      ],
+      "name": "Style Masters Library",
+      "settings": {
+        "heading": "Style Masters Hub",
+        "intro": "",
+        "locked_heading": "Style Masters Members Only"
+      }
+    }
+  },
+  "order": [
+    "page",
+    "style_masters_library_ainLLC"
+  ]
+}
