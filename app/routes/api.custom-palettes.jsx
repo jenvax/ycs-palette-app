@@ -48,7 +48,7 @@ async function shopifyAdminGraphQL({ query, variables = {} }) {
     throw new Error("Missing Shopify admin configuration");
   }
 
-  const response = await fetch(`https://${shop}/admin/api/2026-01/graphql.json`, {
+  const response = await fetch(`https://${shop}/admin/api/2026-04/graphql.json`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
