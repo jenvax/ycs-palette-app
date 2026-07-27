@@ -19,6 +19,11 @@
     | append: '&'
   %}
 
+  {% assign is_catools_view = false %}
+  {% if ycs_page_url contains 'view=catools&' %}
+    {% assign is_catools_view = true %}
+  {% endif %}
+
   {% assign is_admin = false %}
   {% if customer and palette_access_string contains ',YCS_ADMIN,' %}
     {% assign is_admin = true %}
@@ -174,11 +179,11 @@
 
     <div class="ycs-my-palettes__header">
       <p class="ycs-my-palettes__kicker">Your Color Style</p>
-      <h1>{{ section.settings.heading }}</h1>
-      <p class="ycs-my-palettes__intro">{{ section.settings.intro }}</p>
+      <h1>{% if is_catools_view %}Color Analysis Tools{% else %}My Color Palettes{% endif %}</h1>
+      <p class="ycs-my-palettes__intro">{% if is_catools_view %}Open your color analysis tools and client workflow.{% else %}Open your digital color fans below.{% endif %}</p>
     </div>
 
-    {% if actual_is_admin %}
+    {% if actual_is_admin and is_catools_view %}
       <div class="ycs-admin-preview">
         <div>
           <p class="ycs-admin-preview__kicker">Admin testing</p>
@@ -205,7 +210,7 @@
       <h2 class="ycs-my-palettes__section-title">Tools</h2>
       <div class="ycs-my-palettes__grid ycs-my-palettes__grid--2">
 
-        {% if can_use_analysis_tool %}
+        {% if is_catools_view and can_use_analysis_tool %}
           <div class="ycs-palette-card ycs-palette-card--admin">
             <div class="ycs-palette-card__top">
               <div
@@ -256,7 +261,7 @@
           </div>
         {% endif %}
 
-        {% if is_trade %}
+        {% if false %}
           <div class="ycs-palette-card ycs-palette-card--admin">
             <div class="ycs-palette-card__top">
               <div
@@ -285,6 +290,7 @@
           </div>
         {% endif %}
 
+        {% unless is_catools_view %}
         <div class="ycs-palette-card ycs-palette-card--studio">
           <div class="ycs-palette-card__top">
             <div
@@ -339,11 +345,12 @@
           </div>
           
         </div>
+        {% endunless %}
 
       </div>
     </div>
 
-    {% if is_catool_growth %}
+    {% if is_catool_growth and is_catools_view %}
       <div
         class="ycs-my-palettes__section ycs-custom-palettes"
         id="ycs-custom-palettes"
@@ -407,8 +414,14 @@
           {% assign user_owns_palette = true %}
         {% endif %}
       {% else %}
-        {% if has_all_palette_access or palette_access_string contains palette_token %}
-          {% assign user_owns_palette = true %}
+        {% if is_catools_view %}
+          {% if has_all_palette_access or palette_access_string contains palette_token %}
+            {% assign user_owns_palette = true %}
+          {% endif %}
+        {% else %}
+          {% if palette_access_string contains palette_token %}
+            {% assign user_owns_palette = true %}
+          {% endif %}
         {% endif %}
       {% endif %}
 
@@ -425,7 +438,7 @@
       </div>
     {% endif %}
 
-    {% if is_admin %}
+    {% if false %}
       <div class="ycs-my-palettes__section ycs-my-palettes__section--admin">
         <h2 class="ycs-my-palettes__section-title">Admin Views</h2>
 
@@ -531,7 +544,7 @@
 
     {% if owned_count > 0 %}
       <div class="ycs-my-palettes__section">
-        {% if is_catool_growth %}
+        {% if is_catools_view %}
           <h2 class="ycs-my-palettes__section-title">Included YCS Color Palettes</h2>
         {% endif %}
         <div class="ycs-my-palettes__grid ycs-my-palettes__grid--{{ owned_count }}">
@@ -551,8 +564,14 @@
                 {% assign user_owns_palette = true %}
               {% endif %}
             {% else %}
-              {% if has_all_palette_access or palette_access_string contains palette_token %}
-                {% assign user_owns_palette = true %}
+              {% if is_catools_view %}
+                {% if has_all_palette_access or palette_access_string contains palette_token %}
+                  {% assign user_owns_palette = true %}
+                {% endif %}
+              {% else %}
+                {% if palette_access_string contains palette_token %}
+                  {% assign user_owns_palette = true %}
+                {% endif %}
               {% endif %}
             {% endif %}
 
@@ -618,11 +637,12 @@
       </div>
     {% endif %}
 
-    {% if locked_count > 0 %}
-      <div class="ycs-my-palettes__section ycs-my-palettes__section--locked">
-        <h2 class="ycs-my-palettes__section-title">Explore More Palettes</h2>
+    {% unless is_catools_view %}
+      {% if locked_count > 0 %}
+        <div class="ycs-my-palettes__section ycs-my-palettes__section--locked">
+          <h2 class="ycs-my-palettes__section-title">Explore More Palettes</h2>
 
-        <div class="ycs-my-palettes__grid ycs-my-palettes__grid--locked">
+          <div class="ycs-my-palettes__grid ycs-my-palettes__grid--locked">
           {% for block in section.blocks %}
             {% assign palette_code = block.settings.palette_code | upcase | strip %}
             {% assign palette_token = ',' | append: palette_code | append: ',' %}
@@ -639,8 +659,14 @@
                 {% assign user_owns_palette = true %}
               {% endif %}
             {% else %}
-              {% if has_all_palette_access or palette_access_string contains palette_token %}
-                {% assign user_owns_palette = true %}
+              {% if is_catools_view %}
+                {% if has_all_palette_access or palette_access_string contains palette_token %}
+                  {% assign user_owns_palette = true %}
+                {% endif %}
+              {% else %}
+                {% if palette_access_string contains palette_token %}
+                  {% assign user_owns_palette = true %}
+                {% endif %}
               {% endif %}
             {% endif %}
 
@@ -686,9 +712,10 @@
               </div>
             {% endunless %}
           {% endfor %}
+          </div>
         </div>
-      </div>
-    {% endif %}
+      {% endif %}
+    {% endunless %}
   {% endif %}
 </div>
 
