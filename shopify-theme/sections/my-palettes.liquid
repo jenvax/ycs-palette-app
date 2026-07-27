@@ -765,8 +765,18 @@
   {% endif %}
 </div>
 
+<script>
+  document.querySelectorAll('.bredcrumbWrap, .breadcrumbWrap, nav.breadcrumbs').forEach(function (breadcrumb) {
+    breadcrumb.setAttribute('hidden', '');
+    breadcrumb.style.display = 'none';
+  });
+</script>
+
 <style>
-  .bredcrumbWrap {
+  .bredcrumbWrap,
+  .breadcrumbWrap,
+  nav.breadcrumbs,
+  .breadcrumbs {
     display: none !important;
   }
 
