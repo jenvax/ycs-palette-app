@@ -575,11 +575,9 @@ function updateSignatureAnalysisLink() {
   }
 
   function getAnalystPaletteCodes(accessString) {
-    const customPaletteCodes = IS_CATOOL_GROWTH
-      ? state.customPalettes.map(getCustomPaletteCode).filter(function (code) {
-          return code !== CUSTOM_PALETTE_PREFIX;
-        })
-      : [];
+    const customPaletteCodes = state.customPalettes.map(getCustomPaletteCode).filter(function (code) {
+      return code !== CUSTOM_PALETTE_PREFIX;
+    });
 
     if (IS_ADMIN || IS_TRADE || IS_CATOOL || IS_CATOOL_GROWTH || IS_CATOOL_FREE || IS_DIY_CATOOL || IS_FREE_DIY_CATOOL) {
       return [DRAPING_PALETTE_CODE].concat(ALL_CUSTOMER_PALETTE_CODES, customPaletteCodes);
@@ -646,8 +644,9 @@ function updateSignatureAnalysisLink() {
   function getCustomPalettesApiUrl(action) {
     const query = new URLSearchParams();
     if (action) query.set('action', action);
-    query.set('customerId', VIEWER_CUSTOMER_ID);
-    if (ADMIN_CUSTOMER_ID) query.set('previewCustomerId', ADMIN_CUSTOMER_ID);
+    query.set('customerId', SIMPLE_CUSTOMER_ID || VIEWER_CUSTOMER_ID);
+    query.set('previewCustomerId', ADMIN_CUSTOMER_ID || SIMPLE_CUSTOMER_ID || VIEWER_CUSTOMER_ID);
+    if (CLIENT_RECORD_ID) query.set('clientRecordId', CLIENT_RECORD_ID);
     if (ADMIN_VIEW_AS) query.set('viewAs', ADMIN_VIEW_AS);
     return APP_BASE_URL + '/api/custom-palettes?' + query.toString();
   }
@@ -663,8 +662,9 @@ function updateSignatureAnalysisLink() {
     return Object.assign(
       {
         action: action,
-        customerId: VIEWER_CUSTOMER_ID,
-        previewCustomerId: ADMIN_CUSTOMER_ID || '',
+        customerId: SIMPLE_CUSTOMER_ID || VIEWER_CUSTOMER_ID,
+        previewCustomerId: ADMIN_CUSTOMER_ID || SIMPLE_CUSTOMER_ID || VIEWER_CUSTOMER_ID,
+        clientRecordId: CLIENT_RECORD_ID || '',
         viewAs: ADMIN_VIEW_AS || ''
       },
       payload || {}
@@ -672,7 +672,7 @@ function updateSignatureAnalysisLink() {
   }
 
   async function fetchCustomPalettes() {
-    if (!IS_CATOOL_GROWTH || !APP_BASE_URL || !VIEWER_CUSTOMER_ID) return;
+    if (!APP_BASE_URL || (!VIEWER_CUSTOMER_ID && !SIMPLE_CUSTOMER_ID && !CLIENT_RECORD_ID)) return;
 
     try {
       const res = await fetch(getCustomPalettesApiUrl('list'), { credentials: 'omit' });

@@ -765,14 +765,15 @@ async function drawRealisticDrapeTexture(ctx, options) {
     const query = new URLSearchParams();
     if (action) query.set('action', action);
     query.set('studioVersion', 'custom-palettes-20260727');
-    query.set('customerId', VIEWER_CUSTOMER_ID);
-    query.set('previewCustomerId', ADMIN_CUSTOMER_ID || VIEWER_CUSTOMER_ID);
+    query.set('customerId', SIMPLE_CUSTOMER_ID || VIEWER_CUSTOMER_ID);
+    query.set('previewCustomerId', ADMIN_CUSTOMER_ID || SIMPLE_CUSTOMER_ID || VIEWER_CUSTOMER_ID);
+    if (CLIENT_RECORD_ID) query.set('clientRecordId', CLIENT_RECORD_ID);
     if (ADMIN_VIEW_AS) query.set('viewAs', ADMIN_VIEW_AS);
     return APP_BASE_URL + '/api/custom-palettes?' + query.toString();
   }
 
   async function fetchCustomPalettes() {
-    if (!APP_BASE_URL || !VIEWER_CUSTOMER_ID) return;
+    if (!APP_BASE_URL || (!VIEWER_CUSTOMER_ID && !SIMPLE_CUSTOMER_ID && !CLIENT_RECORD_ID)) return;
 
     try {
       const res = await fetch(getCustomPalettesApiUrl('list'), { credentials: 'omit' });

@@ -84,9 +84,45 @@ async function fetchCustomerTags(customerId) {
     : [];
 }
 
-async function authorizeGrowthAccess({ customerId, previewCustomerId, viewAs }) {
-  const ownerCustomerId = normalizeCustomerId(customerId);
-  const safePreviewCustomerId = normalizeCustomerId(previewCustomerId || customerId);
+async function fetchConsultantIdForClientRecord(clientRecordId) {
+  const safeClientRecordId = cleanString(clientRecordId);
+  if (!safeClientRecordId) return null;
+
+  const airtableBase = process.env.AIRTABLE_BASE_ID;
+  const airtableToken = process.env.AIRTABLE_TOKEN;
+
+  if (!airtableBase || !airtableToken) {
+    throw new Error("Missing Airtable configuration");
+  }
+
+  const airtableUrl =
+    `https://api.airtable.com/v0/${airtableBase}/ConsultantClients` +
+    `?filterByFormula=${encodeURIComponent(`{ClientRecordId}="${safeClientRecordId}"`)}`;
+
+  const response = await fetch(airtableUrl, {
+    headers: {
+      Authorization: `Bearer ${airtableToken}`
+    }
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error("Airtable consultant client lookup failed");
+  }
+
+  return data.records?.[0]?.fields?.ConsultantId || null;
+}
+
+async function authorizeGrowthAccess({ customerId, previewCustomerId, viewAs, clientRecordId }) {
+  const requestedOwnerCustomerId = normalizeCustomerId(customerId);
+  const clientOwnerCustomerId = requestedOwnerCustomerId
+    ? ""
+    : normalizeCustomerId(await fetchConsultantIdForClientRecord(clientRecordId));
+  const ownerCustomerId = requestedOwnerCustomerId || clientOwnerCustomerId;
+  const safePreviewCustomerId = normalizeCustomerId(
+    previewCustomerId || customerId || ownerCustomerId
+  );
 
   if (!ownerCustomerId) {
     return { ok: false, status: 401, error: "You must be signed in to use My Custom Palettes" };
@@ -248,7 +284,8 @@ export async function loader({ request }) {
     const auth = await authorizeGrowthAccess({
       customerId: url.searchParams.get("customerId"),
       previewCustomerId: url.searchParams.get("previewCustomerId"),
-      viewAs: url.searchParams.get("viewAs")
+      viewAs: url.searchParams.get("viewAs"),
+      clientRecordId: url.searchParams.get("clientRecordId")
     });
 
     if (!auth.ok) {
@@ -299,7 +336,8 @@ export async function action({ request }) {
     const auth = await authorizeGrowthAccess({
       customerId: body.customerId,
       previewCustomerId: body.previewCustomerId,
-      viewAs: body.viewAs
+      viewAs: body.viewAs,
+      clientRecordId: body.clientRecordId
     });
 
     if (!auth.ok) {
