@@ -39,7 +39,9 @@ function normalizeHex(value) {
 }
 
 async function shopifyAdminGraphQL({ query, variables = {} }) {
-  const shop = process.env.SHOPIFY_SHOP;
+  const shop = String(process.env.SHOPIFY_SYNC_SHOP || process.env.SHOPIFY_SHOP || "")
+    .replace(/^https?:\/\//, "")
+    .replace(/\/.*$/, "");
   const accessToken = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
 
   if (!shop || !accessToken) {
