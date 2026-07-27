@@ -146,6 +146,13 @@
     {% assign can_manage_clients = true %}
   {% endif %}
 
+  {% assign show_clients_card = false %}
+  {% if is_catools_view %}
+    {% if actual_is_admin or is_admin or can_manage_clients %}
+      {% assign show_clients_card = true %}
+    {% endif %}
+  {% endif %}
+
   {% assign has_all_palette_access = false %}
   {% if is_admin or is_trade or is_catool or is_catool_growth %}
     {% assign has_all_palette_access = true %}
@@ -305,7 +312,7 @@
           </div>
         {% endif %}
 
-        {% if is_catools_view and can_manage_clients %}
+        {% if show_clients_card %}
           <div class="ycs-palette-card ycs-palette-card--admin">
             <div class="ycs-palette-card__top">
               <div
