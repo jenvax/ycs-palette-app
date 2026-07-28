@@ -3085,6 +3085,9 @@ hideLoadingView();
     state.firstName = firstName;
     state.lastName = lastName;
     state.email = email || null;
+    state.paletteCode = paletteCode || null;
+    state.paletteName = paletteName || null;
+    state.notes = notes || null;
 
     if (firstNameInput) firstNameInput.value = firstName;
     if (lastNameInput) lastNameInput.value = lastName;
@@ -3183,6 +3186,9 @@ hideLoadingView();
     const firstName = editFirstNameInput ? String(editFirstNameInput.value || '').trim() : '';
     const lastName = editLastNameInput ? String(editLastNameInput.value || '').trim() : '';
     const email = editEmailInput ? String(editEmailInput.value || '').trim() : '';
+    const paletteCode = editPaletteCodeInput ? String(editPaletteCodeInput.value || '').trim().toUpperCase() : '';
+    const paletteName = paletteNameForCode(paletteCode);
+    const notes = editNotesInput ? String(editNotesInput.value || '').trim() : '';
 
     if (!firstName || !lastName) {
       alert('Please enter first name and last name.');
