@@ -1,3 +1,5 @@
+/* global process */
+
 function getCorsHeaders(origin) {
   const allowedOrigins = [
     "https://yourcolorstyle.com",
@@ -19,6 +21,42 @@ function getCorsHeaders(origin) {
 function cleanString(value) {
   const stringValue = String(value || "").trim();
   return stringValue || null;
+}
+
+function firstField(fields, fieldNames) {
+  for (const fieldName of fieldNames) {
+    const value = fields?.[fieldName];
+    if (value !== undefined && value !== null && String(value).trim() !== "") {
+      return value;
+    }
+  }
+
+  return null;
+}
+
+function isMissingIsArchivedError(data) {
+  const message = String(data?.error?.message || "").toLowerCase();
+  return (
+    data?.error?.type === "INVALID_FILTER_BY_FORMULA" &&
+    message.includes("isarchived")
+  );
+}
+
+async function fetchConsultantClients({ airtableBase, airtableTable, airtableToken, formula }) {
+  const airtableUrl =
+    `https://api.airtable.com/v0/${airtableBase}/${airtableTable}` +
+    `?filterByFormula=${encodeURIComponent(formula)}` +
+    `&sort[0][field]=CreatedAt` +
+    `&sort[0][direction]=desc`;
+
+  const response = await fetch(airtableUrl, {
+    headers: {
+      Authorization: `Bearer ${airtableToken}`
+    }
+  });
+
+  const data = await response.json();
+  return { response, data };
 }
 
 export async function loader({ request }) {
@@ -54,21 +92,24 @@ export async function loader({ request }) {
       );
     }
 
-    const formula = `{ConsultantId}="${consultantId}"`;
+    const activeFormula = `AND({ConsultantId}="${consultantId}", OR({IsArchived}=BLANK(), {IsArchived}=0, {IsArchived}=FALSE()))`;
+    const fallbackFormula = `{ConsultantId}="${consultantId}"`;
 
-    const airtableUrl =
-      `https://api.airtable.com/v0/${airtableBase}/${airtableTable}` +
-      `?filterByFormula=${encodeURIComponent(formula)}` +
-      `&sort[0][field]=CreatedAt` +
-      `&sort[0][direction]=desc`;
-
-    const response = await fetch(airtableUrl, {
-      headers: {
-        Authorization: `Bearer ${airtableToken}`
-      }
+    let { response, data } = await fetchConsultantClients({
+      airtableBase,
+      airtableTable,
+      airtableToken,
+      formula: activeFormula
     });
 
-    const data = await response.json();
+    if (!response.ok && isMissingIsArchivedError(data)) {
+      ({ response, data } = await fetchConsultantClients({
+        airtableBase,
+        airtableTable,
+        airtableToken,
+        formula: fallbackFormula
+      }));
+    }
 
     if (!response.ok) {
       console.error("Airtable get consultant clients error:", data);
@@ -79,12 +120,69 @@ export async function loader({ request }) {
       );
     }
 
-    const clients = (data.records || []).map((record) => ({
-      clientRecordId: record.fields?.ClientRecordId || "",
-      firstName: record.fields?.FirstName || "",
-      lastName: record.fields?.LastName || "",
-      email: record.fields?.Email || ""
-    }));
+    const clients = (data.records || []).map((record) => {
+      const fields = record.fields || {};
+      const originalPhotoUrl = firstField(fields, [
+        "OriginalPhotoUrl",
+        "OriginalImageUrl",
+        "OriginalPhoto",
+        "PhotoUrl"
+      ]);
+      const adjustedPhotoUrl = firstField(fields, [
+        "AdjustedPhotoUrl",
+        "PreparedPhotoUrl",
+        "TransformedPhotoUrl"
+      ]);
+      const activePhotoUrl = firstField(fields, [
+        "AdjustedPhotoUrl",
+        "PreparedPhotoUrl",
+        "PrimaryPhotoUrl",
+        "ActivePhotoUrl",
+        "PhotoUrl",
+        "OriginalPhotoUrl"
+      ]);
+      const paletteCode = firstField(fields, [
+        "AssignedPaletteCode",
+        "PaletteCode",
+        "ColorPaletteCode",
+        "FinalPaletteCode",
+        "YcsPaletteCode"
+      ]);
+      const paletteName = firstField(fields, [
+        "AssignedPaletteName",
+        "PaletteName",
+        "ColorPaletteName",
+        "FinalPaletteName",
+        "YcsPaletteName"
+      ]);
+      const status = firstField(fields, [
+        "AnalysisStatus",
+        "Status",
+        "ClientStatus"
+      ]);
+      const notes = firstField(fields, [
+        "Notes",
+        "ClientNotes",
+        "AnalysisNotes"
+      ]);
+
+      return {
+        clientRecordId: fields.ClientRecordId || "",
+        firstName: fields.FirstName || "",
+        lastName: fields.LastName || "",
+        email: fields.Email || "",
+        paletteCode: paletteCode || "",
+        paletteName: paletteName || "",
+        analysisStatus: status || "New",
+        notes: notes || "",
+        originalPhotoUrl: originalPhotoUrl || "",
+        adjustedPhotoUrl: adjustedPhotoUrl || "",
+        primaryPhotoUrl: adjustedPhotoUrl || activePhotoUrl || originalPhotoUrl || "",
+        activePhotoUrl: activePhotoUrl || "",
+        createdAt: firstField(fields, ["CreatedAt", "Created Date"]) || record.createdTime || "",
+        updatedAt: firstField(fields, ["UpdatedAt", "LastUpdated", "ModifiedAt", "Last Modified"]) || record.createdTime || ""
+      };
+    });
 
     return Response.json(
       { clients },

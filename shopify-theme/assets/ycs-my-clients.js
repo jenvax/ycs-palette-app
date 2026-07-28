@@ -55,7 +55,21 @@
   }
 
   function getPhotoUrl(client) {
-    return client.primaryPhotoUrl || client.activePhotoUrl || client.adjustedPhotoUrl || client.originalPhotoUrl || "";
+    const photos = Array.isArray(client.photos) ? client.photos : [];
+    const latestAdjustedPhoto = photos.find((photo) => photo && photo.adjustedPhotoUrl);
+    const latestPhoto = photos.find((photo) => photo && (photo.photoUrl || photo.activePhotoUrl || photo.originalPhotoUrl));
+
+    return client.adjustedPhotoUrl ||
+      latestAdjustedPhoto?.adjustedPhotoUrl ||
+      client.primaryPhotoUrl ||
+      client.activePhotoUrl ||
+      client.photoUrl ||
+      latestPhoto?.adjustedPhotoUrl ||
+      latestPhoto?.activePhotoUrl ||
+      latestPhoto?.photoUrl ||
+      client.originalPhotoUrl ||
+      latestPhoto?.originalPhotoUrl ||
+      "";
   }
 
   function paletteLabel(client) {
