@@ -212,10 +212,6 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
         <label class="ycs-photo-prep-label">{% if is_catool_free %}Free Trial Clients{% else %}Client List{% endif %}</label>
 
         {% unless is_catool_free %}
-        <p class="ycs-photo-prep-help ycs-photo-prep-help--compact">
-          Select an existing client or create a new client to begin Photo Prep.
-        </p>
-
         <div class="ycs-photo-prep-customer-row">
           <button type="button" id="ycs-prep-show-new-client" class="ycs-photo-prep-btn">
             Create New Client
