@@ -1681,7 +1681,7 @@ function updateFilterArrows() {
             hex: normalizeHex(color.hexCode),
             hexCode: normalizeHex(color.hexCode),
             sortOrder: Number(join.displayOrder) || index,
-            category: color.category || 'Custom Colors'
+            category: color.category || ''
           };
         });
       }

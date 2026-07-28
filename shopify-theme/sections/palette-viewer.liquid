@@ -985,7 +985,7 @@ const hasAccess =
           name: color.name || 'Custom Color',
           hex: normalizeHex(color.hexCode),
           hexCode: normalizeHex(color.hexCode),
-          category: color.category || 'Custom Colors',
+          category: color.category || '',
           sortOrder: Number(join.displayOrder) || index
         };
       });
@@ -1010,7 +1010,24 @@ const hasAccess =
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'No colors returned');
 
-      const palette = (data.palettes || []).find(item => String(item.id) === paletteId) || data.palette;
+      const palette =
+        (data.palettes || []).find(item => String(item.id) === paletteId) ||
+        data.palette ||
+        (Array.isArray(data.palettes) && data.palettes.length === 1 ? data.palettes[0] : null);
+
+      if (!palette && Array.isArray(data.colors)) {
+        return {
+          paletteName: 'Style Masters Palette',
+          colors: data.colors.map((color, index) => ({
+            name: color.name || 'Custom Color',
+            hex: normalizeHex(color.hex || color.hexCode),
+            hexCode: normalizeHex(color.hex || color.hexCode),
+            category: color.category || '',
+            sortOrder: Number(color.sortOrder) || index
+          }))
+        };
+      }
+
       if (!palette) throw new Error('No colors returned');
 
       return {
