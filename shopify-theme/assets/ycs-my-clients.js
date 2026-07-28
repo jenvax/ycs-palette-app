@@ -266,6 +266,7 @@
             <button class="ycs-client-card__button" type="button" data-ycs-edit-client="${escapeHtml(client.clientRecordId)}">View/Edit</button>
             <a class="ycs-client-card__button ycs-client-card__button--secondary" href="${escapeHtml(startAnalysisUrl(client))}">Start Color Analysis</a>
             <a class="ycs-client-card__button ycs-client-card__button--secondary" href="${escapeHtml(drapingStudioUrl(client))}">Lip & Draping Studio</a>
+            <button class="ycs-client-card__button ycs-client-card__button--danger" type="button" data-ycs-delete-client="${escapeHtml(client.clientRecordId)}">Delete</button>
           </div>
         </div>
       </article>
@@ -310,6 +311,7 @@
             ${editMode ? "" : `<button class="ycs-clients__button" type="button" data-ycs-edit-client="${escapeHtml(client.clientRecordId)}">View/Edit</button>`}
             <a class="ycs-clients__button ycs-clients__button--secondary" href="${escapeHtml(startAnalysisUrl(client))}">Start Color Analysis</a>
             <a class="ycs-clients__button ycs-clients__button--secondary" href="${escapeHtml(drapingStudioUrl(client))}">Lip & Draping Studio</a>
+            <button class="ycs-clients__button ycs-clients__button--danger" type="button" data-ycs-delete-client="${escapeHtml(client.clientRecordId)}">Delete</button>
           </div>
           ${editMode ? renderEditForm(client, saveMessage) : ""}
         </div>
@@ -388,6 +390,35 @@
     showClientById(payload.clientRecordId, true, "Client saved.");
   }
 
+  async function deleteClientById(clientRecordId) {
+    const client = clients.find((item) => item.clientRecordId === clientRecordId);
+    if (!client) return;
+
+    const confirmed = window.confirm(`Delete ${displayName(client)}? This will remove them from My Clients.`);
+    if (!confirmed) return;
+
+    setStatus("Deleting client...", true);
+    const response = await fetch(`${apiBase}/api/delete-consultant-client`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        clientRecordId,
+        consultantId
+      })
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Client delete failed");
+    }
+
+    clients = clients.filter((item) => item.clientRecordId !== clientRecordId);
+    const nextUrl = listUrl();
+    window.history.pushState({}, "", nextUrl);
+    renderCards();
+    setStatus("Client deleted.", true);
+  }
+
   async function loadClients() {
     if (!consultantId || !apiBase) {
       setStatus("Unable to load clients for this account.", true);
@@ -421,6 +452,7 @@
   root.addEventListener("click", (event) => {
     const viewButton = event.target.closest("[data-ycs-view-client]");
     const editButton = event.target.closest("[data-ycs-edit-client]");
+    const deleteButton = event.target.closest("[data-ycs-delete-client]");
     const backButton = event.target.closest("[data-ycs-back-to-clients]");
     const pageBackButton = event.target.closest("[data-ycs-clients-back-link]");
 
@@ -441,6 +473,11 @@
 
     if (editButton) {
       showClientById(editButton.dataset.ycsEditClient, true);
+    }
+
+    if (deleteButton) {
+      deleteClientById(deleteButton.dataset.ycsDeleteClient)
+        .catch((error) => setStatus(error.message || "Client delete failed.", true));
     }
 
     if (backButton) {
