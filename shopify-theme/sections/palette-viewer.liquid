@@ -1722,7 +1722,9 @@ const result = text ? JSON.parse(text) : {};
 }
 
     async function loadColors() {
-      titleEl.textContent = paletteNameMap[paletteCode] || paletteCode;
+      titleEl.textContent = isCustomPaletteCode
+        ? 'Loading Palette'
+        : (paletteNameMap[paletteCode] || paletteCode);
       subtitleEl.textContent = '';
 
       applyViewMode(currentViewMode);
@@ -1765,7 +1767,9 @@ const result = text ? JSON.parse(text) : {};
         }));
 
         if (!allColors.length) {
-          messageEl.textContent = `No colors found for ${paletteCode}.`;
+          messageEl.textContent = isCustomPaletteCode
+            ? 'No colors found for this palette.'
+            : `No colors found for ${paletteCode}.`;
           navEl.innerHTML = '';
           sectionsEl.innerHTML = '';
           return;
