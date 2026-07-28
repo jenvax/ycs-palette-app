@@ -810,6 +810,10 @@
               {% continue %}
             {% endif %}
 
+            {% if palette_code == 'SAMPLE' and is_sample_user == false %}
+              {% continue %}
+            {% endif %}
+
             {% assign user_owns_palette = false %}
 
             {% if palette_code == 'SAMPLE' %}
