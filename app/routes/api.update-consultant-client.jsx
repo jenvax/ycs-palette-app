@@ -21,6 +21,51 @@ function cleanString(value) {
   return stringValue || null;
 }
 
+const PALETTE_FIELD_CANDIDATES = [
+  "PaletteCode",
+  "AssignedPaletteCode",
+  "ColorPaletteCode",
+  "FinalPaletteCode",
+  "YcsPaletteCode"
+];
+
+const NOTES_FIELD_CANDIDATES = [
+  "Notes",
+  "ClientNotes",
+  "AnalysisNotes"
+];
+
+function uniqueValues(values) {
+  return values.filter((value, index) => value && values.indexOf(value) === index);
+}
+
+function existingFieldName(fields, candidates) {
+  return candidates.find((fieldName) => Object.prototype.hasOwnProperty.call(fields || {}, fieldName));
+}
+
+function isUnknownFieldError(data) {
+  const type = String(data?.error?.type || "");
+  const message = String(data?.error?.message || "").toLowerCase();
+  return type === "UNKNOWN_FIELD_NAME" || message.includes("unknown field");
+}
+
+async function patchAirtableRecord({ airtableBase, airtableTable, airtableToken, recordId, fields }) {
+  const response = await fetch(
+    `https://api.airtable.com/v0/${airtableBase}/${airtableTable}/${recordId}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${airtableToken}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ fields, typecast: true })
+    }
+  );
+
+  const data = await response.json();
+  return { response, data };
+}
+
 export async function loader({ request }) {
   const origin = request.headers.get("Origin") || "";
 
@@ -95,31 +140,61 @@ export async function action({ request }) {
       );
     }
 
-    const payload = {
-      fields: {
-        FirstName: safeFirstName,
-        LastName: safeLastName,
-        Email: safeEmail || null,
-        PaletteCode: safePaletteCode || null,
-        Notes: safeNotes || null
-      }
+    const baseFields = {
+      FirstName: safeFirstName,
+      LastName: safeLastName,
+      Email: safeEmail || null
     };
 
-    const patchRes = await fetch(
-      `https://api.airtable.com/v0/${airtableBase}/${airtableTable}/${existing.id}`,
-      {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${airtableToken}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(payload)
+    const existingFields = existing.fields || {};
+    const paletteFields = uniqueValues([
+      existingFieldName(existingFields, PALETTE_FIELD_CANDIDATES),
+      ...PALETTE_FIELD_CANDIDATES
+    ]);
+    const notesFields = uniqueValues([
+      existingFieldName(existingFields, NOTES_FIELD_CANDIDATES),
+      ...NOTES_FIELD_CANDIDATES
+    ]);
+
+    let patchRes = null;
+    let patchData = null;
+    let savedPaletteField = "";
+    let savedNotesField = "";
+
+    for (const paletteField of paletteFields) {
+      for (const notesField of notesFields) {
+        const fields = { ...baseFields };
+        fields[paletteField] = safePaletteCode || null;
+        fields[notesField] = safeNotes || null;
+
+        const result = await patchAirtableRecord({
+          airtableBase,
+          airtableTable,
+          airtableToken,
+          recordId: existing.id,
+          fields
+        });
+
+        patchRes = result.response;
+        patchData = result.data;
+
+        if (patchRes.ok) {
+          savedPaletteField = paletteField;
+          savedNotesField = notesField;
+          break;
+        }
+
+        if (!isUnknownFieldError(patchData)) {
+          break;
+        }
       }
-    );
 
-    const patchData = await patchRes.json();
+      if (patchRes?.ok || (patchRes && !isUnknownFieldError(patchData))) {
+        break;
+      }
+    }
 
-    if (!patchRes.ok) {
+    if (!patchRes?.ok) {
       console.error("Airtable patch error:", patchData);
 
       return Response.json(
@@ -136,7 +211,9 @@ export async function action({ request }) {
         lastName: safeLastName,
         email: safeEmail,
         paletteCode: safePaletteCode || "",
-        notes: safeNotes || ""
+        notes: safeNotes || "",
+        savedPaletteField,
+        savedNotesField
       },
       { status: 200, headers: corsHeaders }
     );
