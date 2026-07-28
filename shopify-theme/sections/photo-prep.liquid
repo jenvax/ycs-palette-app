@@ -209,7 +209,9 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
 
     <div class="ycs-photo-prep-customer" id="ycs-prep-create-client-panel" {% if is_personal_mode_request or is_member_mode_request %}hidden{% endif %}>
       {% if can_use_client_management and is_personal_mode_request != true %}
-        <label class="ycs-photo-prep-label">{% if is_catool_free %}Free Trial Clients{% else %}Client List{% endif %}</label>
+        {% if is_catool_free %}
+        <label class="ycs-photo-prep-label">Free Trial Clients</label>
+        {% endif %}
 
         {% unless is_catool_free %}
         <div class="ycs-photo-prep-customer-row">
