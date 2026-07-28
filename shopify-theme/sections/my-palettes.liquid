@@ -557,6 +557,10 @@
         {% continue %}
       {% endif %}
 
+      {% if palette_code == 'SAMPLE' and is_sample_user == false %}
+        {% continue %}
+      {% endif %}
+
       {% assign user_owns_palette = false %}
 
       {% if palette_code == 'SAMPLE' %}
@@ -704,6 +708,10 @@
             {% assign visibility = block.settings.visibility | default: 'customer' %}
 
             {% if visibility == 'admin' %}
+              {% continue %}
+            {% endif %}
+
+            {% if palette_code == 'SAMPLE' and is_sample_user == false %}
               {% continue %}
             {% endif %}
 
