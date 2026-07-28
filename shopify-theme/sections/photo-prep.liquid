@@ -200,6 +200,10 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
             <input type="text" id="ycs-prep-edit-first-name" class="ycs-photo-prep-input" placeholder="First name" />
             <input type="text" id="ycs-prep-edit-last-name" class="ycs-photo-prep-input" placeholder="Last name" />
             <input type="email" id="ycs-prep-edit-email" class="ycs-photo-prep-input" placeholder="Email (optional)" />
+            <select id="ycs-prep-edit-palette-code" class="ycs-photo-prep-input">
+              <option value="">Color type</option>
+            </select>
+            <textarea id="ycs-prep-edit-notes" class="ycs-photo-prep-input ycs-photo-prep-textarea" placeholder="Notes"></textarea>
           </div>
 
           <div class="ycs-photo-prep-actions">
@@ -564,6 +568,13 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
     border-radius: 12px;
     padding: 0 14px;
     font-size: 14px;
+  }
+
+  .ycs-photo-prep-textarea {
+    grid-column: 1 / -1;
+    min-height: 110px;
+    padding-top: 12px;
+    resize: vertical;
   }
 
   .ycs-photo-prep-workspace[hidden] {
@@ -1278,6 +1289,35 @@ const isToolsReturnUrl =
 const returnLabel = isToolsReturnUrl ? 'Color Analysis Tools' : 'My Color Palettes';
 const WORKFLOW = (params.get('workflow') || '').trim().toLowerCase() || '';
 const REQUESTED_PALETTE_CODE = (params.get('palette') || '').trim();
+const YCS_PALETTE_OPTIONS = [
+  ['CCL', 'Clear Cool Light'],
+  ['CCM', 'Clear Cool Medium'],
+  ['CCD', 'Clear Cool Deep'],
+  ['CWL', 'Clear Warm Light'],
+  ['CWM', 'Clear Warm Medium'],
+  ['CWD', 'Clear Warm Deep'],
+  ['SCL', 'Soft Cool Light'],
+  ['SCM', 'Soft Cool Medium'],
+  ['SCD', 'Soft Cool Deep'],
+  ['SWL', 'Soft Warm Light'],
+  ['SWM', 'Soft Warm Medium'],
+  ['SWD', 'Soft Warm Deep'],
+  ['CCLG', 'Clear Cool Light for Gray Hair'],
+  ['CCMG', 'Clear Cool Medium for Gray Hair'],
+  ['CCDG', 'Clear Cool Deep for Gray Hair'],
+  ['CWLG', 'Clear Warm Light for Gray Hair'],
+  ['CWMG', 'Clear Warm Medium for Gray Hair'],
+  ['CWDG', 'Clear Warm Deep for Gray Hair'],
+  ['SCLG', 'Soft Cool Light for Gray Hair'],
+  ['SCMG', 'Soft Cool Medium for Gray Hair'],
+  ['SCDG', 'Soft Cool Deep for Gray Hair'],
+  ['SWLG', 'Soft Warm Light for Gray Hair'],
+  ['SWMG', 'Soft Warm Medium for Gray Hair'],
+  ['SWDG', 'Soft Warm Deep for Gray Hair'],
+  ['LO', 'Light Olive'],
+  ['MO', 'Medium Olive'],
+  ['DO', 'Deep Olive']
+];
 
 const requestedMode = (params.get('mode') || '').trim().toLowerCase();
 
@@ -1378,6 +1418,8 @@ const photoPrepLoadingViewText = document.getElementById('ycs-photo-prep-loading
   const editFirstNameInput = document.getElementById('ycs-prep-edit-first-name');
   const editLastNameInput = document.getElementById('ycs-prep-edit-last-name');
   const editEmailInput = document.getElementById('ycs-prep-edit-email');
+  const editPaletteCodeInput = document.getElementById('ycs-prep-edit-palette-code');
+  const editNotesInput = document.getElementById('ycs-prep-edit-notes');
   const saveClientBtn = document.getElementById('ycs-prep-save-client-btn');
   const cancelClientBtn = document.getElementById('ycs-prep-cancel-client-btn');
   const closeEditClientBtns = document.querySelectorAll('[data-ycs-close-edit-client]');
@@ -1443,6 +1485,9 @@ const state = {
   firstName: null,
   lastName: null,
   email: null,
+  paletteCode: null,
+  paletteName: null,
+  notes: null,
 
   hasLoadedPhoto: false,
   workspaceOpen: false,
@@ -1467,6 +1512,14 @@ const DEFAULT_PAGE_SUBTITLE = IS_PERSONAL_MODE
   : 'Load or upload a customer photo, make color adjustments, then continue to the Color Analysis Tool.';
 const CLIENT_CHOOSER_PAGE_TITLE = 'Who is this color analysis for?';
 const CLIENT_CHOOSER_PAGE_SUBTITLE = 'Select an existing client or create a new client to begin.';
+
+if (editPaletteCodeInput) {
+  editPaletteCodeInput.innerHTML =
+    '<option value="">Color type</option>' +
+    YCS_PALETTE_OPTIONS.map(function (option) {
+      return '<option value="' + escapeHtml(option[0]) + '">' + escapeHtml(option[1]) + '</option>';
+    }).join('');
+}
 
   if (customerInput && initialCustomerId) {
   customerInput.value = initialCustomerId;
@@ -1527,13 +1580,12 @@ function buildMyClientsUrl() {
     return String(state.clientRecordId || state.customerId || '').trim();
   }
 
-  function escapeHtml(value) {
-    return String(value || '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
+  function paletteNameForCode(code) {
+    const normalizedCode = String(code || '').trim().toUpperCase();
+    const option = YCS_PALETTE_OPTIONS.find(function (item) {
+      return item[0] === normalizedCode;
+    });
+    return option ? option[1] : '';
   }
 
   function getFreeTrialClient(clientId) {
@@ -2185,6 +2237,9 @@ function openFreeTrialClient(clientId) {
   state.firstName = client.firstName;
   state.lastName = client.lastName;
   state.email = client.email;
+  state.paletteCode = null;
+  state.paletteName = null;
+  state.notes = null;
   state.workspaceOpen = true;
 
   const nextUrl = new URL(window.location.href);
@@ -2704,6 +2759,8 @@ state.previewOffsetY = 0;
     if (editFirstNameInput) editFirstNameInput.value = state.firstName || '';
     if (editLastNameInput) editLastNameInput.value = state.lastName || '';
     if (editEmailInput) editEmailInput.value = state.email || '';
+    if (editPaletteCodeInput) editPaletteCodeInput.value = String(state.paletteCode || '').trim().toUpperCase();
+    if (editNotesInput) editNotesInput.value = state.notes || '';
   }
 
   function closeEditClientPanel() {
@@ -2733,6 +2790,9 @@ state.previewOffsetY = 0;
     state.firstName = null;
     state.lastName = null;
     state.email = null;
+    state.paletteCode = null;
+    state.paletteName = null;
+    state.notes = null;
     state.workspaceOpen = false;
 
     if (customerInput) customerInput.value = '';
@@ -2852,6 +2912,9 @@ state.previewOffsetY = 0;
             data-first-name="${escapeHtml(client.firstName || '')}"
             data-last-name="${escapeHtml(client.lastName || '')}"
             data-email="${escapeHtml(client.email || '')}"
+            data-palette-code="${escapeHtml(client.paletteCode || '')}"
+            data-palette-name="${escapeHtml(client.paletteName || '')}"
+            data-notes="${escapeHtml(client.notes || '')}"
           >
             Open
           </button>
@@ -3010,6 +3073,9 @@ hideLoadingView();
     const firstName = editFirstNameInput ? String(editFirstNameInput.value || '').trim() : '';
     const lastName = editLastNameInput ? String(editLastNameInput.value || '').trim() : '';
     const email = editEmailInput ? String(editEmailInput.value || '').trim() : '';
+    const paletteCode = editPaletteCodeInput ? String(editPaletteCodeInput.value || '').trim().toUpperCase() : '';
+    const paletteName = paletteNameForCode(paletteCode);
+    const notes = editNotesInput ? String(editNotesInput.value || '').trim() : '';
 
     if (!firstName || !lastName) {
       alert('Please enter first name and last name.');
@@ -3133,7 +3199,10 @@ hideLoadingView();
           clientRecordId: state.clientRecordId,
           firstName: firstName,
           lastName: lastName,
-          email: email
+          email: email,
+          paletteCode: paletteCode,
+          paletteName: paletteName,
+          notes: notes
         })
       });
 
@@ -3152,6 +3221,9 @@ hideLoadingView();
       state.firstName = firstName;
       state.lastName = lastName;
       state.email = email || null;
+      state.paletteCode = paletteCode || null;
+      state.paletteName = paletteName || null;
+      state.notes = notes || null;
 
       if (firstNameInput) firstNameInput.value = firstName;
       if (lastNameInput) lastNameInput.value = lastName;
@@ -3251,6 +3323,9 @@ hideLoadingView();
     state.firstName = data.firstName || state.firstName || null;
     state.lastName = data.lastName || state.lastName || null;
     state.email = data.email || state.email || null;
+    state.paletteCode = data.paletteCode || state.paletteCode || null;
+    state.paletteName = data.paletteName || paletteNameForCode(state.paletteCode) || state.paletteName || null;
+    state.notes = data.notes || state.notes || null;
 
     if (firstNameInput) firstNameInput.value = state.firstName || '';
     if (lastNameInput) lastNameInput.value = state.lastName || '';
@@ -4318,6 +4393,9 @@ if (addMemberPhotoBtn) {
   state.firstName = String(openBtn.dataset.firstName || '').trim() || state.firstName;
   state.lastName = String(openBtn.dataset.lastName || '').trim() || state.lastName;
   state.email = String(openBtn.dataset.email || '').trim() || state.email;
+  state.paletteCode = String(openBtn.dataset.paletteCode || '').trim().toUpperCase() || state.paletteCode;
+  state.paletteName = String(openBtn.dataset.paletteName || '').trim() || paletteNameForCode(state.paletteCode) || state.paletteName;
+  state.notes = String(openBtn.dataset.notes || '').trim() || state.notes;
 
   if (firstNameInput) firstNameInput.value = state.firstName || '';
   if (lastNameInput) lastNameInput.value = state.lastName || '';
