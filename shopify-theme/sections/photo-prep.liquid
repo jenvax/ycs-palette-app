@@ -1895,7 +1895,8 @@ if (state.firstName) {
     if (state.adjustedPhotoUrl || state.originalPhotoUrl) {
       clientCreatedNote.textContent = 'Working photo loaded. Click Start New Client to upload a new photo.';
     } else {
-      clientCreatedNote.textContent = 'Upload a photo to start a new client.';
+      clientCreatedNote.textContent = '';
+      clientCreatedNote.hidden = true;
     }
     return;
   }
