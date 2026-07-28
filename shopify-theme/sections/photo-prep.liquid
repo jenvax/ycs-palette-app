@@ -160,8 +160,8 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
 
     <div class="ycs-photo-prep-header">
   <p class="ycs-photo-prep-kicker">Your Color Style</p>
-  <h1 class="ycs-photo-prep-title">Photo Prep</h1>
-  <p class="ycs-photo-prep-subtitle">
+  <h1 id="ycs-photo-prep-title" class="ycs-photo-prep-title">Photo Prep</h1>
+  <p id="ycs-photo-prep-subtitle" class="ycs-photo-prep-subtitle">
   {% if is_personal_mode_request %}
     Upload a photo, make adjustments, then continue to Draping Studio.
   {% else %}
@@ -209,7 +209,7 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
 
     <div class="ycs-photo-prep-customer" id="ycs-prep-create-client-panel" {% if is_personal_mode_request or is_member_mode_request %}hidden{% endif %}>
       {% if can_use_client_management and is_personal_mode_request != true %}
-        <label class="ycs-photo-prep-label">{% if is_catool_free %}Free Trial Clients{% else %}Who is this color analysis for?{% endif %}</label>
+        <label class="ycs-photo-prep-label">{% if is_catool_free %}Free Trial Clients{% else %}Client List{% endif %}</label>
 
         {% unless is_catool_free %}
         <p class="ycs-photo-prep-help ycs-photo-prep-help--compact">
@@ -1315,6 +1315,8 @@ const photoPrepLoadingViewText = document.getElementById('ycs-photo-prep-loading
   const lastNameInput = document.getElementById('ycs-prep-last-name');
   const emailInput = document.getElementById('ycs-prep-email');
 
+  const pageTitleEl = document.getElementById('ycs-photo-prep-title');
+  const pageSubtitleEl = document.getElementById('ycs-photo-prep-subtitle');
   const photoPrepUsageMessageEl = document.getElementById('ycs-photo-prep-usage-message');
 
   const editClientBtn = document.getElementById('ycs-prep-edit-client-btn');
@@ -1403,6 +1405,13 @@ const state = {
     temperature: 0
   }
 };//State
+
+const DEFAULT_PAGE_TITLE = 'Photo Prep';
+const DEFAULT_PAGE_SUBTITLE = IS_PERSONAL_MODE
+  ? 'Upload a photo, make adjustments, then continue to Draping Studio.'
+  : 'Load or upload a customer photo, make color adjustments, then continue to the Color Analysis Tool.';
+const CLIENT_CHOOSER_PAGE_TITLE = 'Who is this color analysis for?';
+const CLIENT_CHOOSER_PAGE_SUBTITLE = 'Select an existing client or create a new client to begin.';
 
   if (customerInput && initialCustomerId) {
   customerInput.value = initialCustomerId;
@@ -2278,12 +2287,39 @@ function syncDiyPhotoPrepVisibility() {
   updateClientStatusNote();
 }
 
+function isClientChooserPageHeaderActive() {
+  return (
+    CAN_USE_CLIENT_MANAGEMENT &&
+    !IS_PERSONAL_MODE &&
+    !IS_MEMBER_PHOTO_MODE &&
+    !IS_DIY_MODE &&
+    !IS_CATOOL_FREE_TRIAL_FLOW &&
+    !state.clientRecordId &&
+    !state.customerId &&
+    !state.workspaceOpen
+  );
+}
+
+function updatePageHeader() {
+  if (!pageTitleEl || !pageSubtitleEl) return;
+
+  if (isClientChooserPageHeaderActive()) {
+    pageTitleEl.textContent = CLIENT_CHOOSER_PAGE_TITLE;
+    pageSubtitleEl.textContent = CLIENT_CHOOSER_PAGE_SUBTITLE;
+    return;
+  }
+
+  pageTitleEl.textContent = DEFAULT_PAGE_TITLE;
+  pageSubtitleEl.textContent = DEFAULT_PAGE_SUBTITLE;
+}
+
 function syncVisibility() {
   syncTradePhotoPrepVisibility();
   syncAdminPhotoPrepVisibility();
   syncSimpleAnalystPhotoPrepVisibility();
   syncPersonalPhotoPrepVisibility();
   syncDiyPhotoPrepVisibility();
+  updatePageHeader();
 }
 
 function updateStatus() {
