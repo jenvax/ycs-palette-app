@@ -709,6 +709,7 @@
         id="ycs-style-masters-palettes"
         data-customer-id="{{ customer.id }}"
         data-app-base-url="https://ycs-palette-app.vercel.app"
+        hidden
       >
         <h2 class="ycs-my-palettes__section-title">Style Masters Color Palettes</h2>
         <div class="ycs-custom-palettes__status" data-ycs-style-masters-status hidden></div>
@@ -2198,7 +2199,14 @@
   function renderPalettes(palettes) {
     if (!listEl || !emptyEl) return;
     listEl.innerHTML = '';
-    emptyEl.hidden = palettes.length > 0;
+    if (!palettes.length) {
+      root.hidden = true;
+      emptyEl.hidden = false;
+      return;
+    }
+
+    root.hidden = false;
+    emptyEl.hidden = true;
 
     palettes.forEach(function (palette) {
       const paletteCode = 'CUSTOM_' + palette.id;
@@ -2233,7 +2241,9 @@
       renderPalettes(json.palettes || []);
     });
   }).catch(function (error) {
-    setStatus(error.message, true);
+    console.error('Failed to load VIP Style Masters palettes', error);
+    root.hidden = true;
+    setStatus('', false);
   });
 })();
 
