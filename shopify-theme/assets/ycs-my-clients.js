@@ -10,7 +10,6 @@
   const controlsEl = root.querySelector("[data-ycs-client-list-controls]");
   const searchEl = root.querySelector("[data-ycs-client-search]");
   const paletteFilterEl = root.querySelector("[data-ycs-client-palette-filter]");
-  const statusFilterEl = root.querySelector("[data-ycs-client-status-filter]");
   const sortEl = root.querySelector("[data-ycs-client-sort]");
   const pageBackLinkEl = root.querySelector("[data-ycs-clients-back-link]");
   const addClientEl = root.querySelector("[data-ycs-add-client]");
@@ -124,6 +123,21 @@
     return url.pathname + url.search;
   }
 
+  function startAnalysisUrl(client) {
+    const url = new URL("/pages/photo-prep", window.location.origin);
+    url.searchParams.set("mode", "trade");
+    url.searchParams.set("workflow", "color-analysis");
+    url.searchParams.set("clientRecordId", client.clientRecordId);
+    return url.pathname + url.search;
+  }
+
+  function drapingStudioUrl(client) {
+    const url = new URL("/pages/signature-color-analysis", window.location.origin);
+    url.searchParams.set("clientRecordId", client.clientRecordId);
+    url.searchParams.set("mode", "trade");
+    return url.pathname + url.search;
+  }
+
   function listUrl() {
     const url = new URL(window.location.href);
     url.searchParams.delete("clientRecordId");
@@ -182,7 +196,6 @@
   function filteredClients() {
     const query = normalize(searchEl.value);
     const palette = paletteFilterEl.value;
-    const status = statusFilterEl.value;
     const sort = sortEl.value;
 
     const filtered = clients.filter((client) => {
@@ -199,8 +212,7 @@
         palette === "all" ||
         (palette === "unassigned" && !code) ||
         code === palette;
-      const matchesStatus = status === "all" || normalizeStatus(client.analysisStatus) === status;
-      return matchesQuery && matchesPalette && matchesStatus;
+      return matchesQuery && matchesPalette;
     });
 
     return filtered.sort((a, b) => {
@@ -251,8 +263,9 @@
           ${palette ? `<p class="ycs-client-card__palette">${escapeHtml(palette)}</p>` : ""}
           ${status ? `<div class="ycs-client-card__badges"><span class="ycs-client-badge">${escapeHtml(status)}</span></div>` : ""}
           <div class="ycs-client-card__actions">
-            <a class="ycs-client-card__button" href="${escapeHtml(clientUrl(client))}" data-ycs-view-client="${escapeHtml(client.clientRecordId)}">View Client</a>
-            <button class="ycs-client-card__button ycs-client-card__button--secondary" type="button" data-ycs-edit-client="${escapeHtml(client.clientRecordId)}">Edit</button>
+            <button class="ycs-client-card__button ycs-client-card__button--secondary" type="button" data-ycs-edit-client="${escapeHtml(client.clientRecordId)}">View/Edit</button>
+            <a class="ycs-client-card__button" href="${escapeHtml(startAnalysisUrl(client))}">Start Color Analysis</a>
+            <a class="ycs-client-card__button" href="${escapeHtml(drapingStudioUrl(client))}">Lip & Draping Studio</a>
           </div>
         </div>
       </article>
@@ -294,9 +307,9 @@
             ${client.notes && !editMode ? `<div>Notes: ${escapeHtml(client.notes)}</div>` : ""}
           </div>
           <div class="ycs-clients__detail-actions">
-            <a class="ycs-clients__button" href="/pages/photo-prep?mode=trade&workflow=color-analysis&clientRecordId=${encodeURIComponent(client.clientRecordId)}">Prep Photo</a>
-            <a class="ycs-clients__button" href="/pages/signature-color-analysis?clientRecordId=${encodeURIComponent(client.clientRecordId)}&mode=trade">Lip & Draping Studio</a>
-            ${editMode ? "" : `<button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-edit-client="${escapeHtml(client.clientRecordId)}">Edit</button>`}
+            <a class="ycs-clients__button" href="${escapeHtml(startAnalysisUrl(client))}">Start Color Analysis</a>
+            <a class="ycs-clients__button" href="${escapeHtml(drapingStudioUrl(client))}">Lip & Draping Studio</a>
+            ${editMode ? "" : `<button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-edit-client="${escapeHtml(client.clientRecordId)}">View/Edit</button>`}
           </div>
           ${editMode ? renderEditForm(client, saveMessage) : ""}
         </div>
@@ -400,7 +413,7 @@
     }
   }
 
-  [searchEl, paletteFilterEl, statusFilterEl, sortEl].forEach((el) => {
+  [searchEl, paletteFilterEl, sortEl].forEach((el) => {
     el.addEventListener("input", renderCards);
     el.addEventListener("change", renderCards);
   });
