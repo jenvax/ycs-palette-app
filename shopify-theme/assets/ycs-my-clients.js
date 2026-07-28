@@ -242,7 +242,7 @@
     `).join("");
   }
 
-  function renderDetail(client, editMode) {
+  function renderDetail(client, editMode, saveMessage) {
     const photoUrl = getPhotoUrl(client);
     gridEl.hidden = true;
     detailEl.hidden = false;
@@ -279,7 +279,7 @@
             <a class="ycs-clients__button" href="/pages/signature-color-analysis?clientRecordId=${encodeURIComponent(client.clientRecordId)}&mode=trade">Lip & Draping Studio</a>
             <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-edit-client="${escapeHtml(client.clientRecordId)}">Edit</button>
           </div>
-          ${editMode ? renderEditForm(client) : ""}
+          ${editMode ? renderEditForm(client, saveMessage) : ""}
         </div>
       </div>
       <div class="ycs-clients__photo-list">
@@ -293,7 +293,7 @@
     `;
   }
 
-  function renderEditForm(client) {
+  function renderEditForm(client, saveMessage) {
     const selectedPaletteCode = String(client.paletteCode || "").trim().toUpperCase();
     return `
       <form class="ycs-clients__edit-form" data-ycs-client-edit-form>
@@ -308,19 +308,20 @@
           `).join("")}
         </select>
         <textarea class="ycs-clients__textarea" name="notes" placeholder="Notes">${escapeHtml(client.notes)}</textarea>
+        ${saveMessage ? `<p class="ycs-clients__save-message">${escapeHtml(saveMessage)}</p>` : ""}
         <button class="ycs-clients__button" type="submit">Save Client</button>
       </form>
     `;
   }
 
-  function showClientById(clientRecordId, editMode) {
+  function showClientById(clientRecordId, editMode, saveMessage) {
     const client = clients.find((item) => item.clientRecordId === clientRecordId);
     if (!client) {
       renderCards();
       return;
     }
 
-    renderDetail(client, editMode);
+    renderDetail(client, editMode, saveMessage);
   }
 
   async function saveClient(form) {
@@ -352,7 +353,7 @@
         ? { ...client, ...payload, updatedAt: new Date().toISOString() }
         : client
     ));
-    showClientById(payload.clientRecordId, false);
+    showClientById(payload.clientRecordId, true, "Client saved.");
   }
 
   async function loadClients() {
