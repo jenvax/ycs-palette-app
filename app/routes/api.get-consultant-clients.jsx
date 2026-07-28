@@ -176,6 +176,7 @@ export async function loader({ request }) {
         "OriginalPhotoUrl"
       ]);
       const paletteCode = firstField(fields, [
+        "AnalysisResultCode",
         "AssignedPaletteCode",
         "PaletteCode",
         "ColorPaletteCode",
@@ -183,6 +184,7 @@ export async function loader({ request }) {
         "YcsPaletteCode"
       ]);
       const paletteName = firstField(fields, [
+        "AnalysisResultLabel",
         "AssignedPaletteName",
         "PaletteName",
         "ColorPaletteName",
