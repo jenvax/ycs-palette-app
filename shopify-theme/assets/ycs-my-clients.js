@@ -263,9 +263,9 @@
           ${palette ? `<p class="ycs-client-card__palette">${escapeHtml(palette)}</p>` : ""}
           ${status ? `<div class="ycs-client-card__badges"><span class="ycs-client-badge">${escapeHtml(status)}</span></div>` : ""}
           <div class="ycs-client-card__actions">
-            <button class="ycs-client-card__button ycs-client-card__button--secondary" type="button" data-ycs-edit-client="${escapeHtml(client.clientRecordId)}">View/Edit</button>
-            <a class="ycs-client-card__button" href="${escapeHtml(startAnalysisUrl(client))}">Start Color Analysis</a>
-            <a class="ycs-client-card__button" href="${escapeHtml(drapingStudioUrl(client))}">Lip & Draping Studio</a>
+            <button class="ycs-client-card__button" type="button" data-ycs-edit-client="${escapeHtml(client.clientRecordId)}">View/Edit</button>
+            <a class="ycs-client-card__button ycs-client-card__button--secondary" href="${escapeHtml(startAnalysisUrl(client))}">Start Color Analysis</a>
+            <a class="ycs-client-card__button ycs-client-card__button--secondary" href="${escapeHtml(drapingStudioUrl(client))}">Lip & Draping Studio</a>
           </div>
         </div>
       </article>
@@ -307,9 +307,9 @@
             ${client.notes && !editMode ? `<div>Notes: ${escapeHtml(client.notes)}</div>` : ""}
           </div>
           <div class="ycs-clients__detail-actions">
-            <a class="ycs-clients__button" href="${escapeHtml(startAnalysisUrl(client))}">Start Color Analysis</a>
-            <a class="ycs-clients__button" href="${escapeHtml(drapingStudioUrl(client))}">Lip & Draping Studio</a>
-            ${editMode ? "" : `<button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-edit-client="${escapeHtml(client.clientRecordId)}">View/Edit</button>`}
+            ${editMode ? "" : `<button class="ycs-clients__button" type="button" data-ycs-edit-client="${escapeHtml(client.clientRecordId)}">View/Edit</button>`}
+            <a class="ycs-clients__button ycs-clients__button--secondary" href="${escapeHtml(startAnalysisUrl(client))}">Start Color Analysis</a>
+            <a class="ycs-clients__button ycs-clients__button--secondary" href="${escapeHtml(drapingStudioUrl(client))}">Lip & Draping Studio</a>
           </div>
           ${editMode ? renderEditForm(client, saveMessage) : ""}
         </div>
