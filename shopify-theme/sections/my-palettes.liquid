@@ -1747,8 +1747,12 @@
       const card = document.createElement('div');
       card.className = 'ycs-palette-card ycs-custom-card';
       const visibilityLabel = isReadOnly ? '' : '<p class="ycs-palette-card__admin-label">' + (palette.visibleToVip || palette.isVisibleToVip ? 'VISIBLE TO VIP' : 'ADMIN ONLY') + '</p>';
+      const customPaletteCode = 'CUSTOM_' + String(palette.id || '');
+      const paletteViewerUrl = '/pages/palette?palette=' + encodeURIComponent(customPaletteCode) + '&returnUrl=' + encodeURIComponent('/pages/my-palettes');
+      const drapingStudioUrl = '/pages/photo-prep?mode=personal&workflow=photo-draping&palette=' + encodeURIComponent(customPaletteCode) + '&returnUrl=' + encodeURIComponent('/pages/my-palettes');
       const actions = isReadOnly
-        ? '<button type="button" class="ycs-palette-card__button" data-ycs-custom-action="open-palette" data-palette-id="' + escapeHtml(palette.id) + '">Open Palette</button>'
+        ? '<a class="ycs-palette-card__button" href="' + escapeHtml(paletteViewerUrl) + '">Open Palette</a>' +
+          '<a class="ycs-palette-card__button ycs-palette-card__button--secondary" href="' + escapeHtml(drapingStudioUrl) + '">Draping Studio</a>'
         : '<button type="button" class="ycs-palette-card__button" data-ycs-custom-action="open-palette" data-palette-id="' + escapeHtml(palette.id) + '">Open</button>' +
           '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="' + (palette.visibleToVip || palette.isVisibleToVip ? 'hide-from-vip' : 'show-to-vip') + '" data-palette-id="' + escapeHtml(palette.id) + '">' + (palette.visibleToVip || palette.isVisibleToVip ? 'Hide from VIP' : 'Show to VIP') + '</button>' +
           '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="rename-palette" data-palette-id="' + escapeHtml(palette.id) + '">Rename</button>' +
