@@ -1070,7 +1070,15 @@ const hasAccess =
       return '';
     }
 
+    function cleanCategoryList(categories) {
+      return (categories || [])
+        .map(category => String(category || '').trim())
+        .filter(Boolean);
+    }
+
     function renderCategoryNav(categories, activeCategory = 'All') {
+      categories = cleanCategoryList(categories);
+
       const favoriteExists = categories.includes('Favorites');
       const regularCategories = categories.filter(category => category !== 'Favorites');
 
@@ -1158,6 +1166,7 @@ const hasAccess =
     }
 
     function setActiveCategory(activeCategory, categories) {
+      categories = cleanCategoryList(categories);
       sessionStorage.setItem(`ycsActiveCategory_${paletteCode}`, activeCategory);
 
       renderCategoryNav(categories, activeCategory);
@@ -1167,7 +1176,9 @@ const hasAccess =
       sections.forEach(section => {
         const sectionCategory = section.dataset.category;
 
-        if (activeCategory === 'All' || sectionCategory === activeCategory) {
+        if (activeCategory === 'All' && sectionCategory !== 'Favorites') {
+          section.style.display = '';
+        } else if (sectionCategory === activeCategory) {
           section.style.display = '';
         } else {
           section.style.display = 'none';
@@ -1338,6 +1349,44 @@ const hasAccess =
       if (currentViewMode === 'compact') {
         sectionsEl.innerHTML = `
           <section class="ycs-palette-section ycs-palette-section--compact" data-category="All">
+            <div class="ycs-swatch-grid">
+              ${flatColors.map(color => swatchMarkup(color)).join('')}
+            </div>
+          </section>
+        `;
+        return;
+      }
+
+      orderedCategories = cleanCategoryList(orderedCategories);
+      const regularCategories = orderedCategories.filter(category => category !== 'Favorites');
+
+      if (isCustomPaletteCode && !regularCategories.length) {
+        const favoritesSection = (grouped['Favorites'] || []).length ? `
+          <section class="ycs-palette-section ycs-palette-section--favorites" id="cat-favorites" data-category="Favorites">
+            <div class="ycs-section-header">
+              <h2 class="ycs-section-title">
+                <span style="display:inline-flex;align-items:center;gap:8px;">
+                  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" style="fill:#111;stroke:#111;stroke-width:1.6;">
+                    <path d="M12 20.2c-.2 0-.4-.1-.6-.2C10.1 19 4 14.7 4 9.6 4 6.9 5.9 5 8.5 5c1.5 0 2.8.7 3.5 1.8C12.7 5.7 14 5 15.5 5 18.1 5 20 6.9 20 9.6c0 5.1-6.1 9.4-7.4 10.4-.2.1-.4.2-.6.2z"></path>
+                  </svg>
+                  Favorites
+                </span>
+              </h2>
+              <div class="ycs-gradient-bar" style="background: ${gradientForColors(grouped['Favorites'] || [])};"></div>
+            </div>
+            <div class="ycs-swatch-grid">
+              ${(grouped['Favorites'] || []).map(color => swatchMarkup(color)).join('')}
+            </div>
+          </section>
+        ` : '';
+
+        sectionsEl.innerHTML = `
+          ${favoritesSection}
+          <section class="ycs-palette-section" id="cat-all-colors" data-category="All">
+            <div class="ycs-section-header">
+              <h2 class="ycs-section-title">All Colors</h2>
+              <div class="ycs-gradient-bar" style="background: ${gradientForColors(flatColors)};"></div>
+            </div>
             <div class="ycs-swatch-grid">
               ${flatColors.map(color => swatchMarkup(color)).join('')}
             </div>
@@ -1520,8 +1569,11 @@ const result = text ? JSON.parse(text) : {};
           regrouped['Best'].push(color);
         }
 
-        if (!regrouped[color.category]) regrouped[color.category] = [];
-        regrouped[color.category].push(color);
+        const category = String(color.category || '').trim();
+        if (category) {
+          if (!regrouped[category]) regrouped[category] = [];
+          regrouped[category].push(color);
+        }
       });
 
       Object.keys(regrouped).forEach(category => {
@@ -1595,7 +1647,9 @@ const result = text ? JSON.parse(text) : {};
       if (currentViewMode === 'compact') {
         navEl.innerHTML = '';
       } else {
-        const savedCategory = sessionStorage.getItem(`ycsActiveCategory_${paletteCode}`) || 'All';
+        const savedCategory = isCustomPaletteCode
+          ? 'All'
+          : (sessionStorage.getItem(`ycsActiveCategory_${paletteCode}`) || 'All');
         const restoredCategory =
           renderedOrderedCategories.includes(savedCategory) || savedCategory === 'All'
             ? savedCategory

@@ -1,0 +1,480 @@
+{% assign palette_access_string = '' %}
+{% if customer %}
+  {% assign palette_access_string = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
+{% endif %}
+
+{% capture ycs_header_content %}{{ content_for_header }}{% endcapture %}
+{% assign ycs_page_url = ycs_header_content
+  | split: '"pageurl":"'
+  | last
+  | split: '"'
+  | first
+  | replace: '\/', '/'
+  | replace: '\\u0026', '&'
+  | replace: '%26', '&'
+  | replace: '%3F', '?'
+  | replace: '%3D', '='
+  | append: '&'
+%}
+
+{% assign is_admin = false %}
+{% if customer and palette_access_string contains ',YCS_ADMIN,' %}
+  {% assign is_admin = true %}
+{% endif %}
+{% assign actual_is_admin = is_admin %}
+
+{% assign is_trade_july_cohort = false %}
+{% assign trade_july_cohort_expires_at = '2026-08-25 00:00:00 -0400' | date: '%s' %}
+{% assign current_timestamp = 'now' | date: '%s' %}
+{% if customer and palette_access_string contains ',TRADEJULYCOHORT,' and current_timestamp < trade_july_cohort_expires_at %}
+  {% assign is_trade_july_cohort = true %}
+{% endif %}
+
+{% assign is_trade = false %}
+{% if customer and palette_access_string contains ',TRADE,' %}
+  {% assign is_trade = true %}
+{% endif %}
+{% if is_trade_july_cohort %}
+  {% assign is_trade = true %}
+{% endif %}
+
+{% assign is_catool = false %}
+{% if customer and palette_access_string contains ',CATOOL,' %}
+  {% assign is_catool = true %}
+{% endif %}
+
+{% assign is_catool_growth = false %}
+{% if customer and palette_access_string contains ',CATOOLGROWTH,' %}
+  {% assign is_catool_growth = true %}
+{% endif %}
+
+{% assign admin_view_as = '' %}
+{% if actual_is_admin %}
+  {% if ycs_page_url contains 'viewAs=trade&' %}
+    {% assign admin_view_as = 'trade' %}
+  {% elsif ycs_page_url contains 'viewAs=catoolgrowth&' %}
+    {% assign admin_view_as = 'catoolgrowth' %}
+  {% elsif ycs_page_url contains 'viewAs=catool&' %}
+    {% assign admin_view_as = 'catool' %}
+  {% endif %}
+{% endif %}
+
+{% if admin_view_as != '' %}
+  {% assign is_admin = false %}
+  {% assign is_trade = false %}
+  {% assign is_catool = false %}
+  {% assign is_catool_growth = false %}
+
+  {% if admin_view_as == 'trade' %}
+    {% assign is_trade = true %}
+  {% elsif admin_view_as == 'catoolgrowth' %}
+    {% assign is_catool_growth = true %}
+  {% elsif admin_view_as == 'catool' %}
+    {% assign is_catool = true %}
+  {% endif %}
+{% endif %}
+
+{% assign can_manage_clients = false %}
+{% if is_admin or is_trade or is_catool or is_catool_growth %}
+  {% assign can_manage_clients = true %}
+{% endif %}
+
+<div
+  class="ycs-clients"
+  data-customer-id="{{ customer.id }}"
+  data-can-manage-clients="{{ can_manage_clients }}"
+  data-app-base-url="https://ycs-palette-app.vercel.app"
+>
+  {% if customer == nil %}
+    <div class="ycs-clients__empty">
+      <h1>Sign in to access My Clients</h1>
+      <a href="{{ routes.account_login_url }}" class="ycs-clients__button">Sign In</a>
+    </div>
+  {% elsif can_manage_clients == false %}
+    <div class="ycs-clients__empty">
+      <h1>Access denied</h1>
+      <p>This page is available with Trade, CATOOL, CATOOLGROWTH, and admin access.</p>
+    </div>
+  {% else %}
+    <div class="ycs-clients__topbar">
+      <a href="/pages/my-palettes?view=catools{% if admin_view_as != '' %}&viewAs={{ admin_view_as }}{% endif %}" class="ycs-clients__back-link">← Back to Color Analysis Tools</a>
+    </div>
+
+    <div class="ycs-clients__header">
+      <div>
+        <p class="ycs-clients__eyebrow">Your Color Style</p>
+        <h1 class="ycs-clients__title">My Clients</h1>
+        <p class="ycs-clients__subtitle">View and manage your color analysis clients.</p>
+      </div>
+      <a href="/pages/photo-prep?mode=trade&workflow=color-analysis" class="ycs-clients__button">Add Client</a>
+    </div>
+
+    <div class="ycs-clients__toolbar" data-ycs-client-list-controls>
+      <input
+        type="search"
+        class="ycs-clients__search"
+        placeholder="Search by name or email"
+        autocomplete="off"
+        data-ycs-client-search
+      />
+      <select class="ycs-clients__select" data-ycs-client-palette-filter>
+        <option value="all">All palettes</option>
+        <option value="unassigned">Unassigned</option>
+      </select>
+      <select class="ycs-clients__select" data-ycs-client-status-filter>
+        <option value="all">All statuses</option>
+        <option value="new">New</option>
+        <option value="in-progress">In Progress</option>
+        <option value="complete">Complete</option>
+      </select>
+      <select class="ycs-clients__select" data-ycs-client-sort>
+        <option value="updated-desc">Recently Updated</option>
+        <option value="newest">Newest</option>
+        <option value="oldest">Oldest</option>
+        <option value="first-name">First Name A-Z</option>
+        <option value="last-name">Last Name A-Z</option>
+      </select>
+    </div>
+
+    <div class="ycs-clients__status" data-ycs-client-status>Loading clients...</div>
+    <div class="ycs-clients__grid" data-ycs-client-grid></div>
+    <div class="ycs-clients__detail" data-ycs-client-detail hidden></div>
+  {% endif %}
+</div>
+
+{{ 'ycs-my-clients.js' | asset_url | script_tag }}
+
+<style>
+  .shopify-section-header,
+  #shopify-section-header,
+  .site-header,
+  .header-wrapper,
+  .header,
+  nav[role="navigation"],
+  #shopify-section-footer,
+  .shopify-section--footer,
+  .site-footer,
+  footer.footer,
+  footer[role="contentinfo"] {
+    display: none !important;
+  }
+
+  .bredcrumbWrap {
+    display: none !important;
+  }
+
+  .ycs-clients {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 18px;
+    color: #2f2a25;
+  }
+
+  .ycs-clients__topbar {
+    margin-bottom: 10px;
+  }
+
+  .ycs-clients__back-link {
+    color: #444;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .ycs-clients__header {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 14px;
+  }
+
+  .ycs-clients__eyebrow {
+    margin: 0 0 6px;
+    color: #8b7d6b;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .ycs-clients__title {
+    margin: 0 0 6px;
+    font-size: 28px;
+    line-height: 1.08;
+  }
+
+  .ycs-clients__subtitle {
+    margin: 0;
+    color: #5f5a54;
+    font-size: 14px;
+  }
+
+  .ycs-clients__toolbar {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+
+  .ycs-clients__search,
+  .ycs-clients__select,
+  .ycs-clients__input,
+  .ycs-clients__textarea {
+    min-height: 44px;
+    border: 1px solid #ddd3c8;
+    border-radius: 12px;
+    background: #fff;
+    color: #2f2a25;
+    font: inherit;
+    padding: 10px 14px;
+  }
+
+  .ycs-clients__search {
+    flex: 1 1 320px;
+  }
+
+  .ycs-clients__status,
+  .ycs-clients__empty {
+    border: 1px solid #ece7df;
+    background: #fffdf9;
+    border-radius: 18px;
+    padding: 24px;
+    text-align: center;
+    color: #625c55;
+  }
+
+  .ycs-clients__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+  }
+
+  .ycs-client-card {
+    border: 1px solid #ece7df;
+    border-radius: 18px;
+    background: #fff;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0,0,0,.04);
+  }
+
+  .ycs-client-card__photo {
+    position: relative;
+    height: 150px;
+    background: #f6f1ea;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .ycs-client-card__photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+
+  .ycs-client-card__placeholder {
+    width: calc(100% - 24px);
+    height: calc(100% - 24px);
+    border: 2px dashed #d8cfc3;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #8a8176;
+    font-size: 14px;
+    text-align: center;
+    padding: 12px;
+    background: #fffaf4;
+  }
+
+  .ycs-client-card__content {
+    padding: 14px;
+  }
+
+  .ycs-client-card__name {
+    margin: 0 0 5px;
+    font-size: 20px;
+    line-height: 1.15;
+  }
+
+  .ycs-client-card__email,
+  .ycs-client-card__date {
+    margin: 0 0 8px;
+    color: #746b62;
+    font-size: 13px;
+    line-height: 1.35;
+    word-break: break-word;
+  }
+
+  .ycs-client-card__badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin: 0 0 12px;
+  }
+
+  .ycs-client-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    border-radius: 999px;
+    padding: 0 9px;
+    background: #f6f1ea;
+    color: #5f5348;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .ycs-client-badge--palette {
+    background: #111;
+    color: #fff;
+  }
+
+  .ycs-client-card__actions,
+  .ycs-clients__detail-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .ycs-clients__button,
+  .ycs-client-card__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    border: 0;
+    border-radius: 999px;
+    background: #111;
+    color: #fff;
+    cursor: pointer;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 800;
+    padding: 0 16px;
+    text-decoration: none;
+  }
+
+  .ycs-client-card__button--secondary,
+  .ycs-clients__button--secondary {
+    background: #efe7dc;
+    color: #2f2a25;
+  }
+
+  .ycs-clients__detail {
+    border: 1px solid #ece7df;
+    border-radius: 18px;
+    background: #fff;
+    padding: 18px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.04);
+  }
+
+  .ycs-clients__detail-header {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 18px;
+    align-items: start;
+  }
+
+  .ycs-clients__detail-photo {
+    min-height: 260px;
+    border-radius: 14px;
+    background: #f6f1ea;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ycs-clients__detail-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .ycs-clients__detail h2 {
+    margin: 0 0 8px;
+    font-size: 30px;
+  }
+
+  .ycs-clients__detail-meta {
+    color: #625c55;
+    line-height: 1.5;
+  }
+
+  .ycs-clients__photo-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-top: 18px;
+  }
+
+  .ycs-clients__photo-list figure {
+    margin: 0;
+    border: 1px solid #ece7df;
+    border-radius: 14px;
+    overflow: hidden;
+    background: #fffdf9;
+  }
+
+  .ycs-clients__photo-list img {
+    width: 100%;
+    height: 180px;
+    object-fit: contain;
+    display: block;
+    background: #f6f1ea;
+  }
+
+  .ycs-clients__photo-list figcaption {
+    padding: 9px 10px;
+    font-size: 13px;
+    font-weight: 800;
+    color: #5f5348;
+  }
+
+  .ycs-clients__edit-form {
+    display: grid;
+    gap: 10px;
+    margin-top: 14px;
+    max-width: 480px;
+  }
+
+  .ycs-clients__textarea {
+    min-height: 90px;
+    resize: vertical;
+  }
+
+  [hidden] {
+    display: none !important;
+  }
+
+  @media (max-width: 720px) {
+    .ycs-clients__header,
+    .ycs-clients__detail-header {
+      display: block;
+    }
+
+    .ycs-clients__button {
+      margin-top: 14px;
+    }
+
+    .ycs-clients__detail-photo {
+      margin-bottom: 16px;
+    }
+  }
+</style>
+
+{% schema %}
+{
+  "name": "My Clients",
+  "settings": [],
+  "presets": [
+    {
+      "name": "My Clients"
+    }
+  ]
+}
+{% endschema %}
