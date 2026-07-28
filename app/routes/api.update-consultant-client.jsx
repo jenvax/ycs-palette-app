@@ -39,13 +39,17 @@ export async function action({ request }) {
       clientRecordId,
       firstName,
       lastName,
-      email
+      email,
+      paletteCode,
+      notes
     } = await request.json();
 
     const safeClientRecordId = cleanString(clientRecordId);
     const safeFirstName = cleanString(firstName);
     const safeLastName = cleanString(lastName);
     const safeEmail = cleanString(email);
+    const safePaletteCode = cleanString(paletteCode);
+    const safeNotes = cleanString(notes);
 
     if (!safeClientRecordId) {
       return Response.json(
@@ -95,7 +99,9 @@ export async function action({ request }) {
       fields: {
         FirstName: safeFirstName,
         LastName: safeLastName,
-        Email: safeEmail || null
+        Email: safeEmail || null,
+        PaletteCode: safePaletteCode || null,
+        Notes: safeNotes || null
       }
     };
 
@@ -128,7 +134,9 @@ export async function action({ request }) {
         clientRecordId: safeClientRecordId,
         firstName: safeFirstName,
         lastName: safeLastName,
-        email: safeEmail
+        email: safeEmail,
+        paletteCode: safePaletteCode || "",
+        notes: safeNotes || ""
       },
       { status: 200, headers: corsHeaders }
     );

@@ -13,6 +13,36 @@
   const statusFilterEl = root.querySelector("[data-ycs-client-status-filter]");
   const sortEl = root.querySelector("[data-ycs-client-sort]");
 
+  const YCS_PALETTE_OPTIONS = [
+    ["CCL", "Clear Cool Light"],
+    ["CCM", "Clear Cool Medium"],
+    ["CCD", "Clear Cool Deep"],
+    ["CWL", "Clear Warm Light"],
+    ["CWM", "Clear Warm Medium"],
+    ["CWD", "Clear Warm Deep"],
+    ["SCL", "Soft Cool Light"],
+    ["SCM", "Soft Cool Medium"],
+    ["SCD", "Soft Cool Deep"],
+    ["SWL", "Soft Warm Light"],
+    ["SWM", "Soft Warm Medium"],
+    ["SWD", "Soft Warm Deep"],
+    ["CCLG", "Clear Cool Light for Gray Hair"],
+    ["CCMG", "Clear Cool Medium for Gray Hair"],
+    ["CCDG", "Clear Cool Deep for Gray Hair"],
+    ["CWLG", "Clear Warm Light for Gray Hair"],
+    ["CWMG", "Clear Warm Medium for Gray Hair"],
+    ["CWDG", "Clear Warm Deep for Gray Hair"],
+    ["SCLG", "Soft Cool Light for Gray Hair"],
+    ["SCMG", "Soft Cool Medium for Gray Hair"],
+    ["SCDG", "Soft Cool Deep for Gray Hair"],
+    ["SWLG", "Soft Warm Light for Gray Hair"],
+    ["SWMG", "Soft Warm Medium for Gray Hair"],
+    ["SWDG", "Soft Warm Deep for Gray Hair"],
+    ["LO", "Light Olive"],
+    ["MO", "Medium Olive"],
+    ["DO", "Deep Olive"]
+  ];
+
   let clients = [];
 
   function escapeHtml(value) {
@@ -78,6 +108,12 @@
     const name = String(client.paletteName || "").trim();
     if (code && name) return `${name} (${code})`;
     return name || code || "";
+  }
+
+  function paletteNameForCode(code) {
+    const normalizedCode = String(code || "").trim().toUpperCase();
+    const option = YCS_PALETTE_OPTIONS.find(([optionCode]) => optionCode === normalizedCode);
+    return option ? option[1] : "";
   }
 
   function clientUrl(client) {
@@ -258,12 +294,20 @@
   }
 
   function renderEditForm(client) {
+    const selectedPaletteCode = String(client.paletteCode || "").trim().toUpperCase();
     return `
       <form class="ycs-clients__edit-form" data-ycs-client-edit-form>
         <input type="hidden" name="clientRecordId" value="${escapeHtml(client.clientRecordId)}">
         <input class="ycs-clients__input" name="firstName" value="${escapeHtml(client.firstName)}" placeholder="First name" required>
         <input class="ycs-clients__input" name="lastName" value="${escapeHtml(client.lastName)}" placeholder="Last name" required>
         <input class="ycs-clients__input" name="email" value="${escapeHtml(client.email)}" placeholder="Email" type="email">
+        <select class="ycs-clients__input" name="paletteCode">
+          <option value="">Color type</option>
+          ${YCS_PALETTE_OPTIONS.map(([code, label]) => `
+            <option value="${escapeHtml(code)}"${code === selectedPaletteCode ? " selected" : ""}>${escapeHtml(label)}</option>
+          `).join("")}
+        </select>
+        <textarea class="ycs-clients__textarea" name="notes" placeholder="Notes">${escapeHtml(client.notes)}</textarea>
         <button class="ycs-clients__button" type="submit">Save Client</button>
       </form>
     `;
@@ -285,8 +329,11 @@
       clientRecordId: formData.get("clientRecordId"),
       firstName: formData.get("firstName"),
       lastName: formData.get("lastName"),
-      email: formData.get("email")
+      email: formData.get("email"),
+      paletteCode: String(formData.get("paletteCode") || "").trim().toUpperCase(),
+      notes: formData.get("notes")
     };
+    payload.paletteName = paletteNameForCode(payload.paletteCode);
 
     setStatus("Saving client...", true);
     const response = await fetch(`${apiBase}/api/update-consultant-client`, {

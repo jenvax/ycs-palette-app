@@ -23,6 +23,40 @@ function cleanString(value) {
   return stringValue || null;
 }
 
+const YCS_PALETTE_NAMES = {
+  CCL: "Clear Cool Light",
+  CCM: "Clear Cool Medium",
+  CCD: "Clear Cool Deep",
+  CWL: "Clear Warm Light",
+  CWM: "Clear Warm Medium",
+  CWD: "Clear Warm Deep",
+  SCL: "Soft Cool Light",
+  SCM: "Soft Cool Medium",
+  SCD: "Soft Cool Deep",
+  SWL: "Soft Warm Light",
+  SWM: "Soft Warm Medium",
+  SWD: "Soft Warm Deep",
+  CCLG: "Clear Cool Light for Gray Hair",
+  CCMG: "Clear Cool Medium for Gray Hair",
+  CCDG: "Clear Cool Deep for Gray Hair",
+  CWLG: "Clear Warm Light for Gray Hair",
+  CWMG: "Clear Warm Medium for Gray Hair",
+  CWDG: "Clear Warm Deep for Gray Hair",
+  SCLG: "Soft Cool Light for Gray Hair",
+  SCMG: "Soft Cool Medium for Gray Hair",
+  SCDG: "Soft Cool Deep for Gray Hair",
+  SWLG: "Soft Warm Light for Gray Hair",
+  SWMG: "Soft Warm Medium for Gray Hair",
+  SWDG: "Soft Warm Deep for Gray Hair",
+  LO: "Light Olive",
+  MO: "Medium Olive",
+  DO: "Deep Olive"
+};
+
+function paletteNameForCode(code) {
+  return YCS_PALETTE_NAMES[String(code || "").trim().toUpperCase()] || "";
+}
+
 function firstField(fields, fieldNames) {
   for (const fieldName of fieldNames) {
     const value = fields?.[fieldName];
@@ -172,7 +206,7 @@ export async function loader({ request }) {
         lastName: fields.LastName || "",
         email: fields.Email || "",
         paletteCode: paletteCode || "",
-        paletteName: paletteName || "",
+        paletteName: paletteName || paletteNameForCode(paletteCode) || "",
         analysisStatus: status || "New",
         notes: notes || "",
         originalPhotoUrl: originalPhotoUrl || "",
