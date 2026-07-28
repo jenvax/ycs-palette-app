@@ -149,7 +149,7 @@
   {% endif %}
 
   {% assign can_access_all_printable_pdfs = false %}
-  {% if is_admin or is_trade or palette_access_string contains ',VIP,' %}
+  {% if is_admin or is_trade %}
     {% assign can_access_all_printable_pdfs = true %}
   {% endif %}
 
