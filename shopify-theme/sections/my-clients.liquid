@@ -97,7 +97,12 @@
     </div>
   {% else %}
     <div class="ycs-clients__topbar">
-      <a href="/pages/my-palettes?view=catools{% if admin_view_as != '' %}&viewAs={{ admin_view_as }}{% endif %}" class="ycs-clients__back-link">← Back to Color Analysis Tools</a>
+      <a
+        href="/pages/my-palettes?view=catools{% if admin_view_as != '' %}&viewAs={{ admin_view_as }}{% endif %}"
+        class="ycs-clients__back-link"
+        data-ycs-clients-back-link
+        data-tools-href="/pages/my-palettes?view=catools{% if admin_view_as != '' %}&viewAs={{ admin_view_as }}{% endif %}"
+      >← Back to Color Analysis Tools</a>
     </div>
 
     <div class="ycs-clients__header">
@@ -106,7 +111,7 @@
         <h1 class="ycs-clients__title">My Clients</h1>
         <p class="ycs-clients__subtitle">View and manage your color analysis clients.</p>
       </div>
-      <a href="/pages/photo-prep?mode=trade&workflow=color-analysis" class="ycs-clients__button">Add Client</a>
+      <a href="/pages/photo-prep?mode=trade&workflow=color-analysis" class="ycs-clients__button" data-ycs-add-client>Add Client</a>
     </div>
 
     <div class="ycs-clients__toolbar" data-ycs-client-list-controls>
@@ -308,6 +313,14 @@
     word-break: break-word;
   }
 
+  .ycs-client-card__palette {
+    margin: 0 0 10px;
+    color: #2f2a25;
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1.35;
+  }
+
   .ycs-client-card__badges {
     display: flex;
     flex-wrap: wrap;
@@ -328,8 +341,8 @@
   }
 
   .ycs-client-badge--palette {
-    background: #111;
-    color: #fff;
+    background: #f6f1ea;
+    color: #5f5348;
   }
 
   .ycs-client-card__actions,
@@ -379,6 +392,10 @@
     align-items: start;
   }
 
+  .ycs-clients__detail-header--edit {
+    gap: 14px;
+  }
+
   .ycs-clients__detail-photo {
     min-height: 260px;
     border-radius: 14px;
@@ -396,13 +413,18 @@
   }
 
   .ycs-clients__detail h2 {
-    margin: 0 0 8px;
+    margin: 0 0 6px;
     font-size: 30px;
   }
 
   .ycs-clients__detail-meta {
     color: #625c55;
     line-height: 1.5;
+  }
+
+  .ycs-clients__detail-meta--edit {
+    font-size: 13px;
+    line-height: 1.35;
   }
 
   .ycs-clients__photo-list {
@@ -437,13 +459,18 @@
 
   .ycs-clients__edit-form {
     display: grid;
-    gap: 10px;
-    margin-top: 14px;
+    gap: 7px;
+    margin-top: 10px;
     max-width: 480px;
   }
 
+  .ycs-clients__edit-form .ycs-clients__input {
+    min-height: 38px;
+    padding: 8px 12px;
+  }
+
   .ycs-clients__textarea {
-    min-height: 90px;
+    min-height: 78px;
     resize: vertical;
   }
 

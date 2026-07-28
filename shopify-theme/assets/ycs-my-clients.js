@@ -12,6 +12,8 @@
   const paletteFilterEl = root.querySelector("[data-ycs-client-palette-filter]");
   const statusFilterEl = root.querySelector("[data-ycs-client-status-filter]");
   const sortEl = root.querySelector("[data-ycs-client-sort]");
+  const pageBackLinkEl = root.querySelector("[data-ycs-clients-back-link]");
+  const addClientEl = root.querySelector("[data-ycs-add-client]");
 
   const YCS_PALETTE_OPTIONS = [
     ["CCL", "Clear Cool Light"],
@@ -122,6 +124,30 @@
     return url.pathname + url.search;
   }
 
+  function listUrl() {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("clientRecordId");
+    return url.pathname + url.search;
+  }
+
+  function updateShellMode(mode) {
+    if (pageBackLinkEl) {
+      if (mode === "list") {
+        pageBackLinkEl.href = pageBackLinkEl.dataset.toolsHref || "/pages/my-palettes?view=catools";
+        pageBackLinkEl.textContent = "← Back to Color Analysis Tools";
+        pageBackLinkEl.dataset.ycsBackMode = "tools";
+      } else {
+        pageBackLinkEl.href = listUrl();
+        pageBackLinkEl.textContent = "← Back to My Clients";
+        pageBackLinkEl.dataset.ycsBackMode = "clients";
+      }
+    }
+
+    if (addClientEl) {
+      addClientEl.hidden = mode !== "list";
+    }
+  }
+
   function setStatus(message, visible) {
     if (!statusEl) return;
     statusEl.textContent = message || "";
@@ -196,6 +222,7 @@
   }
 
   function renderCards() {
+    updateShellMode("list");
     const visibleClients = filteredClients();
     detailEl.hidden = true;
     gridEl.hidden = false;
@@ -212,8 +239,6 @@
       ${(() => {
         const palette = paletteLabel(client);
         const status = displayStatus(client.analysisStatus);
-        const created = formatDate(client.createdAt);
-        const updated = formatDate(client.updatedAt);
 
         return `
       <article class="ycs-client-card">
@@ -223,14 +248,8 @@
         <div class="ycs-client-card__content">
           <h2 class="ycs-client-card__name">${escapeHtml(displayName(client))}</h2>
           <p class="ycs-client-card__email">${escapeHtml(client.email || "No email")}</p>
-          ${palette || status ? `
-            <div class="ycs-client-card__badges">
-              ${palette ? `<span class="ycs-client-badge ycs-client-badge--palette">${escapeHtml(palette)}</span>` : ""}
-              ${status ? `<span class="ycs-client-badge">${escapeHtml(status)}</span>` : ""}
-            </div>
-          ` : ""}
-          ${created ? `<p class="ycs-client-card__date">Created ${escapeHtml(created)}</p>` : ""}
-          ${updated ? `<p class="ycs-client-card__date">Updated ${escapeHtml(updated)}</p>` : ""}
+          ${palette ? `<p class="ycs-client-card__palette">${escapeHtml(palette)}</p>` : ""}
+          ${status ? `<div class="ycs-client-card__badges"><span class="ycs-client-badge">${escapeHtml(status)}</span></div>` : ""}
           <div class="ycs-client-card__actions">
             <a class="ycs-client-card__button" href="${escapeHtml(clientUrl(client))}" data-ycs-view-client="${escapeHtml(client.clientRecordId)}">View Client</a>
             <button class="ycs-client-card__button ycs-client-card__button--secondary" type="button" data-ycs-edit-client="${escapeHtml(client.clientRecordId)}">Edit</button>
@@ -243,6 +262,7 @@
   }
 
   function renderDetail(client, editMode, saveMessage) {
+    updateShellMode(editMode ? "edit" : "detail");
     const photoUrl = getPhotoUrl(client);
     gridEl.hidden = true;
     detailEl.hidden = false;
@@ -259,25 +279,24 @@
     const updated = formatDate(client.updatedAt);
 
     detailEl.innerHTML = `
-      <div class="ycs-clients__detail-header">
+      <div class="ycs-clients__detail-header${editMode ? " ycs-clients__detail-header--edit" : ""}">
         <div class="ycs-clients__detail-photo">
           ${photoUrl ? `<img src="${escapeHtml(photoUrl)}" alt="${escapeHtml(displayName(client))}">` : '<div class="ycs-client-card__placeholder">No photo yet</div>'}
         </div>
         <div>
           <h2>${escapeHtml(displayName(client))}</h2>
-          <div class="ycs-clients__detail-meta">
+          <div class="ycs-clients__detail-meta${editMode ? " ycs-clients__detail-meta--edit" : ""}">
             <div>${escapeHtml(client.email || "No email")}</div>
             ${palette ? `<div>Palette: ${escapeHtml(palette)}</div>` : ""}
             ${status ? `<div>Status: ${escapeHtml(status)}</div>` : ""}
             ${created ? `<div>Created: ${escapeHtml(created)}</div>` : ""}
             ${updated ? `<div>Updated: ${escapeHtml(updated)}</div>` : ""}
-            ${client.notes ? `<div>Notes: ${escapeHtml(client.notes)}</div>` : ""}
+            ${client.notes && !editMode ? `<div>Notes: ${escapeHtml(client.notes)}</div>` : ""}
           </div>
           <div class="ycs-clients__detail-actions">
-            <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-back-to-clients>Back to Clients</button>
             <a class="ycs-clients__button" href="/pages/photo-prep?mode=trade&workflow=color-analysis&clientRecordId=${encodeURIComponent(client.clientRecordId)}">Prep Photo</a>
             <a class="ycs-clients__button" href="/pages/signature-color-analysis?clientRecordId=${encodeURIComponent(client.clientRecordId)}&mode=trade">Lip & Draping Studio</a>
-            <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-edit-client="${escapeHtml(client.clientRecordId)}">Edit</button>
+            ${editMode ? "" : `<button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-edit-client="${escapeHtml(client.clientRecordId)}">Edit</button>`}
           </div>
           ${editMode ? renderEditForm(client, saveMessage) : ""}
         </div>
@@ -390,6 +409,15 @@
     const viewButton = event.target.closest("[data-ycs-view-client]");
     const editButton = event.target.closest("[data-ycs-edit-client]");
     const backButton = event.target.closest("[data-ycs-back-to-clients]");
+    const pageBackButton = event.target.closest("[data-ycs-clients-back-link]");
+
+    if (pageBackButton && pageBackButton.dataset.ycsBackMode === "clients") {
+      event.preventDefault();
+      const nextUrl = listUrl();
+      window.history.pushState({}, "", nextUrl);
+      renderCards();
+      return;
+    }
 
     if (viewButton) {
       event.preventDefault();
