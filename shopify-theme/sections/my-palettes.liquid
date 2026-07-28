@@ -2178,8 +2178,7 @@
   const statusEl = root.querySelector('[data-ycs-style-masters-status]');
   const apiBase = (root.dataset.appBaseUrl || '').replace(/\/$/, '') + '/api/custom-palettes';
   const context = {
-    customerId: root.dataset.customerId || '',
-    scope: 'stylemasters'
+    customerId: root.dataset.customerId || ''
   };
 
   function escapeHtml(value) {
@@ -2227,7 +2226,7 @@
   }
 
   const query = new URLSearchParams(context);
-  query.set('action', 'list');
+  query.set('action', 'vipList');
   fetch(apiBase + '?' + query.toString()).then(function (response) {
     return response.json().then(function (json) {
       if (!response.ok) throw new Error(json.error || 'Unable to load Style Masters palettes');
