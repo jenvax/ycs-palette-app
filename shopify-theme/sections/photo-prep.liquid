@@ -209,24 +209,35 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
 
     <div class="ycs-photo-prep-customer" id="ycs-prep-create-client-panel" {% if is_personal_mode_request or is_member_mode_request %}hidden{% endif %}>
       {% if can_use_client_management and is_personal_mode_request != true %}
-        <label class="ycs-photo-prep-label">{% if is_catool_free %}Free Trial Clients{% else %}Create Client{% endif %}</label>
+        <label class="ycs-photo-prep-label">{% if is_catool_free %}Free Trial Clients{% else %}Who is this color analysis for?{% endif %}</label>
 
         {% unless is_catool_free %}
-        <div class="ycs-photo-prep-customer-details">
-          <input type="text" id="ycs-prep-first-name" class="ycs-photo-prep-input" placeholder="First name" />
-          <input type="text" id="ycs-prep-last-name" class="ycs-photo-prep-input" placeholder="Last name" />
-          <input type="email" id="ycs-prep-email" class="ycs-photo-prep-input" placeholder="Email (optional)" />
-        </div>
+        <p class="ycs-photo-prep-help ycs-photo-prep-help--compact">
+          Select an existing client or create a new client to begin Photo Prep.
+        </p>
 
-        <div class="ycs-photo-prep-customer-row" style="margin-top: 10px;">
-          <button type="button" id="ycs-prep-create-client" class="ycs-photo-prep-btn">
-            Create Client
+        <div class="ycs-photo-prep-customer-row">
+          <button type="button" id="ycs-prep-show-new-client" class="ycs-photo-prep-btn">
+            Create New Client
           </button>
         </div>
 
-        <p class="ycs-photo-prep-help">
-          Create, save, edit, and reopen client analyses from your client list.
-        </p>
+        <div id="ycs-prep-new-client-panel" class="ycs-photo-prep-new-client-panel" hidden>
+          <div class="ycs-photo-prep-customer-details">
+            <input type="text" id="ycs-prep-first-name" class="ycs-photo-prep-input" placeholder="First name" />
+            <input type="text" id="ycs-prep-last-name" class="ycs-photo-prep-input" placeholder="Last name" />
+            <input type="email" id="ycs-prep-email" class="ycs-photo-prep-input" placeholder="Email (optional)" />
+          </div>
+
+          <div class="ycs-photo-prep-customer-row" style="margin-top: 10px;">
+            <button type="button" id="ycs-prep-create-client" class="ycs-photo-prep-btn">
+              Save Client
+            </button>
+            <button type="button" id="ycs-prep-cancel-new-client" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary">
+              Cancel
+            </button>
+          </div>
+        </div>
         {% else %}
         <p class="ycs-photo-prep-help">
           Choose one of the preloaded trial clients to explore Photo Prep and the Color Analysis Tool.
@@ -235,7 +246,7 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
 
         <div id="ycs-prep-recent-clients-panel" class="ycs-photo-prep-recent-clients">
           <div class="ycs-photo-prep-recent-head">
-            <label class="ycs-photo-prep-label" style="margin-bottom: 0;">{% if is_catool_free %}Trial Clients{% else %}Recent Clients{% endif %}</label>
+            <label class="ycs-photo-prep-label" style="margin-bottom: 0;">{% if is_catool_free %}Trial Clients{% else %}Existing Clients{% endif %}</label>
             {% unless is_catool_free %}
             <button type="button" id="ycs-prep-refresh-clients" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary">
               Refresh
@@ -523,6 +534,18 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
     grid-template-columns: 1fr 1fr 1.2fr;
     gap: 10px;
     margin-top: 10px;
+  }
+
+  .ycs-photo-prep-new-client-panel {
+    margin-top: 12px;
+    padding: 12px;
+    border: 1px solid #ece7df;
+    border-radius: 14px;
+    background: #fffaf4;
+  }
+
+  .ycs-photo-prep-new-client-panel[hidden] {
+    display: none !important;
   }
 
   .ycs-photo-prep-input {
@@ -1273,6 +1296,9 @@ const addMemberPhotoBtn = document.getElementById('ycs-prep-add-member-photo-btn
 const photoQualityResultEl = document.getElementById('ycs-prep-photo-quality-result');
   const fileInput = document.getElementById('ycs-prep-file-input');
   const createClientBtn = document.getElementById('ycs-prep-create-client');
+  const showNewClientBtn = document.getElementById('ycs-prep-show-new-client');
+  const cancelNewClientBtn = document.getElementById('ycs-prep-cancel-new-client');
+  const newClientPanel = document.getElementById('ycs-prep-new-client-panel');
   const clientCreatedNote = document.getElementById('ycs-prep-client-created-note');
 const createClientPanel = document.getElementById('ycs-prep-create-client-panel');
 const personalLibraryEl = document.getElementById('ycs-prep-personal-library');
@@ -2590,6 +2616,15 @@ state.previewOffsetY = 0;
     if (editClientPanel) editClientPanel.hidden = false;
   }
 
+  function openNewClientPanel() {
+    if (newClientPanel) newClientPanel.hidden = false;
+    if (firstNameInput) firstNameInput.focus();
+  }
+
+  function closeNewClientPanel() {
+    if (newClientPanel) newClientPanel.hidden = true;
+  }
+
   function clearSelectedClient() {
     state.customerId = null;
     state.clientRecordId = null;
@@ -2604,6 +2639,7 @@ state.previewOffsetY = 0;
     if (emailInput) emailInput.value = '';
 
     closeEditClientPanel();
+    closeNewClientPanel();
     resetPreviewOnly();
     resetControls();
     updateCustomerMeta();
@@ -2692,7 +2728,7 @@ state.previewOffsetY = 0;
     }
 
     if (!Array.isArray(clients) || !clients.length) {
-      recentClientsList.innerHTML = '<p class="ycs-photo-prep-help" style="margin-top: 0;">No recent clients yet.</p>';
+      recentClientsList.innerHTML = '<p class="ycs-photo-prep-help" style="margin-top: 0;">No existing clients yet. Create a new client to begin.</p>';
       return;
     }
 
@@ -2840,6 +2876,7 @@ hideLoadingView();
     updateBackLink();
     syncVisibility();
     closeEditClientPanel();
+    closeNewClientPanel();
 
     if (customerInput) customerInput.value = '';
     if (firstNameInput) firstNameInput.value = '';
@@ -2952,6 +2989,7 @@ hideLoadingView();
       updateBackLink();
       syncVisibility();
       closeEditClientPanel();
+      closeNewClientPanel();
 
       if (firstNameInput) firstNameInput.value = '';
       if (lastNameInput) lastNameInput.value = '';
@@ -4079,6 +4117,21 @@ if (addMemberPhotoBtn) {
     });
   }
 
+  if (showNewClientBtn) {
+    showNewClientBtn.addEventListener('click', function () {
+      openNewClientPanel();
+    });
+  }
+
+  if (cancelNewClientBtn) {
+    cancelNewClientBtn.addEventListener('click', function () {
+      closeNewClientPanel();
+      if (firstNameInput) firstNameInput.value = '';
+      if (lastNameInput) lastNameInput.value = '';
+      if (emailInput) emailInput.value = '';
+    });
+  }
+
   if (editClientBtn) {
     editClientBtn.addEventListener('click', function () {
       openEditClientPanel();
@@ -4149,6 +4202,7 @@ if (addMemberPhotoBtn) {
   if (firstNameInput) firstNameInput.value = state.firstName || '';
   if (lastNameInput) lastNameInput.value = state.lastName || '';
   if (emailInput) emailInput.value = state.email || '';
+  closeNewClientPanel();
 
   updateCustomerMeta();
   fetchPhoto(clientRecordId);
