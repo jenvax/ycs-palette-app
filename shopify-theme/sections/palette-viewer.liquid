@@ -31,6 +31,7 @@
     data-customer-email="{{ customer.email | escape }}"
     data-default-palette="{{ section.settings.default_palette | escape }}"
     data-palette-access="{{ palette_access_string | escape }}"
+    data-app-base-url="https://ycs-palette-app.vercel.app"
     data-is-admin="{% if palette_access_string contains ',YCS_ADMIN,' %}true{% else %}false{% endif %}"
     data-is-trade-july-cohort="{% if is_trade_july_cohort %}true{% else %}false{% endif %}"
     data-is-style-masters="{% if palette_access_string contains ',VIP,' %}true{% else %}false{% endif %}"
@@ -817,6 +818,7 @@
     const DEFAULT_PALETTE = app.dataset.defaultPalette || 'CWL';
     const PALETTE_ACCESS = app.dataset.paletteAccess || '';
     const CUSTOMER_ID = app.dataset.customerId || '';
+    const APP_BASE_URL = (app.dataset.appBaseUrl || '').replace(/\/$/, '');
 
     const unauthorizedEl = document.getElementById('palette-unauthorized');
     const authorizedContentEl = document.getElementById('palette-authorized-content');
@@ -970,6 +972,51 @@ const hasAccess =
 
     function normalizeHex(hex) {
       return String(hex || '').trim().toLowerCase();
+    }
+
+    function getCustomPaletteIdFromCode(code) {
+      return String(code || '').replace(/^CUSTOM_/i, '');
+    }
+
+    function mapCustomPaletteColors(palette) {
+      return ((palette && palette.colors) || []).map((join, index) => {
+        const color = join.color || {};
+        return {
+          name: color.name || 'Custom Color',
+          hex: normalizeHex(color.hexCode),
+          hexCode: normalizeHex(color.hexCode),
+          category: color.category || 'Custom Colors',
+          sortOrder: Number(join.displayOrder) || index
+        };
+      });
+    }
+
+    async function fetchCustomPaletteForViewer() {
+      const paletteId = getCustomPaletteIdFromCode(paletteCode);
+      if (!APP_BASE_URL || !CUSTOMER_ID || !paletteId) {
+        throw new Error('No colors returned');
+      }
+
+      const query = new URLSearchParams({
+        action: isStyleMasters && !hasAdminAccess ? 'vipList' : 'list',
+        customerId: CUSTOMER_ID,
+        paletteId: paletteId
+      });
+      if (hasAdminAccess) query.set('scope', 'stylemasters');
+
+      const response = await fetch(APP_BASE_URL + '/api/custom-palettes?' + query.toString(), {
+        credentials: 'omit'
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'No colors returned');
+
+      const palette = (data.palettes || []).find(item => String(item.id) === paletteId) || data.palette;
+      if (!palette) throw new Error('No colors returned');
+
+      return {
+        paletteName: palette.name || 'Style Masters Palette',
+        colors: mapCustomPaletteColors(palette)
+      };
     }
 
     function normalizeText(value) {
@@ -1619,16 +1666,19 @@ const result = text ? JSON.parse(text) : {};
       `;
 
       try {
-        const [colorsResponse, loadedFavorites] = await Promise.all([
-          fetch(`/apps/palette-data?palette=${encodeURIComponent(paletteCode)}`, {
-            credentials: 'same-origin'
-          }),
-          loadFavorites()
-        ]);
+        const loadedFavorites = await loadFavorites();
 
         favoriteHexes = loadedFavorites;
 
-        const data = await colorsResponse.json();
+        let data;
+        if (isCustomPaletteCode) {
+          data = await fetchCustomPaletteForViewer();
+        } else {
+          const colorsResponse = await fetch(`/apps/palette-data?palette=${encodeURIComponent(paletteCode)}`, {
+            credentials: 'same-origin'
+          });
+          data = await colorsResponse.json();
+        }
 
         if (!data.colors) {
           throw new Error(data.error || 'No colors returned');

@@ -1283,19 +1283,22 @@ replaceButtons.forEach(function (btn) {
 
     return {
       code: 'CUSTOM_' + id,
-      name: String(palette.name || 'Style Masters Palette').trim() || 'Style Masters Palette'
+      name: String(palette.name || 'Style Masters Palette').trim() || 'Style Masters Palette',
+      colors: Array.isArray(palette.colors) ? palette.colors : []
     };
   }
 
-  async function loadAdminStyleMastersPalettes() {
-    if (!IS_ADMIN || !APP_BASE_URL || !VIEWER_CUSTOMER_ID) return [];
+  async function loadStyleMastersPalettes() {
+    if ((!IS_ADMIN && !IS_STYLE_MASTERS) || !APP_BASE_URL || !VIEWER_CUSTOMER_ID) return [];
 
     try {
-      const query = new URLSearchParams({
-        customerId: VIEWER_CUSTOMER_ID,
-        scope: 'stylemasters',
-        action: 'list'
-      });
+      const query = new URLSearchParams({ customerId: VIEWER_CUSTOMER_ID });
+      if (IS_ADMIN) {
+        query.set('scope', 'stylemasters');
+        query.set('action', 'list');
+      } else {
+        query.set('action', 'vipList');
+      }
       const response = await fetch(APP_BASE_URL.replace(/\/$/, '') + '/api/custom-palettes?' + query.toString());
       const text = await response.text();
       const data = text ? JSON.parse(text) : {};
@@ -1313,8 +1316,8 @@ replaceButtons.forEach(function (btn) {
     }
   }
 
-  function orderPalettesForAdmin(ownedPalettes) {
-    if (!IS_ADMIN || !styleMastersPaletteOptions.length) return ownedPalettes;
+  function orderPalettesWithStyleMasters(ownedPalettes) {
+    if (!styleMastersPaletteOptions.length) return ownedPalettes;
 
     const styleMastersCodes = styleMastersPaletteOptions.map(function (palette) {
       return palette.code;
@@ -1363,7 +1366,7 @@ replaceButtons.forEach(function (btn) {
     ownedPalettes.unshift(paletteFromUrl);
   }
 
-  ownedPalettes = orderPalettesForAdmin(ownedPalettes);
+  ownedPalettes = orderPalettesWithStyleMasters(ownedPalettes);
 
   ownedPaletteCodes = ownedPalettes.slice();
 
@@ -1666,6 +1669,23 @@ function updateFilterArrows() {
 
   async function fetchPaletteColors(paletteCode) {
     try {
+      if (isCustomPaletteCode(paletteCode)) {
+        const match = styleMastersPaletteOptions.find(function (palette) {
+          return palette.code === paletteCode;
+        });
+
+        return ((match && match.colors) || []).map(function (join, index) {
+          const color = join.color || {};
+          return {
+            name: color.name || 'Custom Color',
+            hex: normalizeHex(color.hexCode),
+            hexCode: normalizeHex(color.hexCode),
+            sortOrder: Number(join.displayOrder) || index,
+            category: color.category || 'Custom Colors'
+          };
+        });
+      }
+
       const url = '/apps/palette-data?palette=' + encodeURIComponent(paletteCode);
       const res = await fetch(url);
       const data = await res.json();
@@ -2409,7 +2429,7 @@ function updateFilterArrows() {
   }
 
   async function initializePaletteControls() {
-    styleMastersPaletteOptions = await loadAdminStyleMastersPalettes();
+    styleMastersPaletteOptions = await loadStyleMastersPalettes();
     populatePaletteSelect();
     renderComparisonPalettes();
     setViewMode('single');
