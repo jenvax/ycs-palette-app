@@ -189,20 +189,27 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
         </div>
       </div>
 
-      <div id="ycs-prep-edit-client-panel" class="ycs-photo-prep-edit-panel" hidden>
-        <div class="ycs-photo-prep-customer-details">
-          <input type="text" id="ycs-prep-edit-first-name" class="ycs-photo-prep-input" placeholder="First name" />
-          <input type="text" id="ycs-prep-edit-last-name" class="ycs-photo-prep-input" placeholder="Last name" />
-          <input type="email" id="ycs-prep-edit-email" class="ycs-photo-prep-input" placeholder="Email (optional)" />
-        </div>
+      <div id="ycs-prep-edit-client-panel" class="ycs-photo-prep-edit-panel" role="dialog" aria-modal="true" aria-labelledby="ycs-prep-edit-client-title" hidden>
+        <div class="ycs-photo-prep-edit-card">
+          <div class="ycs-photo-prep-edit-head">
+            <h2 id="ycs-prep-edit-client-title">Edit Client</h2>
+            <button type="button" id="ycs-prep-cancel-client-btn" class="ycs-photo-prep-icon-btn" aria-label="Close edit client">&times;</button>
+          </div>
 
-        <div class="ycs-photo-prep-actions">
-          <button type="button" id="ycs-prep-save-client-btn" class="ycs-photo-prep-btn">
-            Save Changes
-          </button>
-          <button type="button" id="ycs-prep-cancel-client-btn" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary">
-            Cancel
-          </button>
+          <div class="ycs-photo-prep-customer-details">
+            <input type="text" id="ycs-prep-edit-first-name" class="ycs-photo-prep-input" placeholder="First name" />
+            <input type="text" id="ycs-prep-edit-last-name" class="ycs-photo-prep-input" placeholder="Last name" />
+            <input type="email" id="ycs-prep-edit-email" class="ycs-photo-prep-input" placeholder="Email (optional)" />
+          </div>
+
+          <div class="ycs-photo-prep-actions">
+            <button type="button" id="ycs-prep-save-client-btn" class="ycs-photo-prep-btn">
+              Save Changes
+            </button>
+            <button type="button" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary" data-ycs-close-edit-client>
+              Cancel
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -441,6 +448,10 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
 </div>
 
 <style>
+  body.ycs-photo-prep-modal-open {
+    overflow: hidden;
+  }
+
   .ycs-photo-prep-app {
     max-width: 1240px;
     margin: 0 auto;
@@ -595,13 +606,56 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
   }
 
   .ycs-photo-prep-edit-panel {
-    margin-top: 14px;
-    padding-top: 14px;
-    border-top: 1px solid #ece7df;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(36, 32, 28, 0.42);
   }
 
   .ycs-photo-prep-edit-panel[hidden] {
     display: none !important;
+  }
+
+  .ycs-photo-prep-edit-card {
+    width: min(720px, calc(100vw - 32px));
+    padding: 22px;
+    border: 1px solid #ece7df;
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 24px 60px rgba(36, 32, 28, 0.18);
+  }
+
+  .ycs-photo-prep-edit-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .ycs-photo-prep-edit-head h2 {
+    margin: 0;
+    color: #343130;
+    font-size: 24px;
+    line-height: 1.2;
+  }
+
+  .ycs-photo-prep-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: 1px solid #ead7dd;
+    border-radius: 999px;
+    background: #fff7fa;
+    color: #b13f5d;
+    cursor: pointer;
+    font-size: 28px;
+    line-height: 1;
   }
 
   .ycs-photo-prep-recent-clients {
@@ -1215,6 +1269,8 @@ const IS_SAMPLE_TRIAL_REQUEST = appEl.dataset.isSampleTrialRequest === 'true';
 const params = new URLSearchParams(window.location.search);
 const returnUrl = params.get('returnUrl') || '/pages/my-palettes';
 const safeReturnUrl = returnUrl.startsWith('/') ? returnUrl : '/pages/my-palettes';
+const adminViewAs = (params.get('viewAs') || '').trim();
+const pageBuilderFlag = (params.get('pb') || '').trim();
 const isToolsReturnUrl =
   safeReturnUrl.includes('view=tools') ||
   safeReturnUrl.includes('view=catools') ||
@@ -1324,6 +1380,7 @@ const photoPrepLoadingViewText = document.getElementById('ycs-photo-prep-loading
   const editEmailInput = document.getElementById('ycs-prep-edit-email');
   const saveClientBtn = document.getElementById('ycs-prep-save-client-btn');
   const cancelClientBtn = document.getElementById('ycs-prep-cancel-client-btn');
+  const closeEditClientBtns = document.querySelectorAll('[data-ycs-close-edit-client]');
 
   const recentClientsList = document.getElementById('ycs-prep-recent-clients-list');
   const refreshClientsBtn = document.getElementById('ycs-prep-refresh-clients');
@@ -1457,6 +1514,13 @@ function hideLoadingView() {
   }
 
   syncVisibility();
+}
+
+function buildMyClientsUrl() {
+  const url = new URL('/pages/my-clients', window.location.origin);
+  if (adminViewAs) url.searchParams.set('viewAs', adminViewAs);
+  if (pageBuilderFlag) url.searchParams.set('pb', pageBuilderFlag);
+  return url.pathname + url.search;
 }
 
   function getActiveRecordId() {
@@ -2643,11 +2707,14 @@ state.previewOffsetY = 0;
 
   function closeEditClientPanel() {
     if (editClientPanel) editClientPanel.hidden = true;
+    document.body.classList.remove('ycs-photo-prep-modal-open');
   }
 
   function openEditClientPanel() {
     populateEditClientFields();
     if (editClientPanel) editClientPanel.hidden = false;
+    document.body.classList.add('ycs-photo-prep-modal-open');
+    if (editFirstNameInput) editFirstNameInput.focus();
   }
 
   function openNewClientPanel() {
@@ -3911,7 +3978,7 @@ async function useOriginalPhoto() {
 
   if (showClientListBtn) {
     showClientListBtn.addEventListener('click', function () {
-      clearSelectedClient();
+      window.location.href = buildMyClientsUrl();
     });
   }
 
@@ -4189,6 +4256,24 @@ if (addMemberPhotoBtn) {
       closeEditClientPanel();
     });
   }
+
+  closeEditClientBtns.forEach(function (button) {
+    button.addEventListener('click', function () {
+      closeEditClientPanel();
+    });
+  });
+
+  if (editClientPanel) {
+    editClientPanel.addEventListener('click', function (event) {
+      if (event.target === editClientPanel) closeEditClientPanel();
+    });
+  }
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape' && editClientPanel && !editClientPanel.hidden) {
+      closeEditClientPanel();
+    }
+  });
 
   if (refreshClientsBtn) {
     refreshClientsBtn.addEventListener('click', function () {
