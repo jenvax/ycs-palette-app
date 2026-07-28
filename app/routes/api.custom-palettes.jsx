@@ -532,6 +532,18 @@ export async function loader({ request }) {
     const data = await listCustomData(auth.ownerCustomerId, url.searchParams.get("search"), {
       visibleOnly: auth.visibleOnly
     });
+
+    if (action === "vipList") {
+      const requestedPaletteId = cleanString(url.searchParams.get("paletteId"));
+      const palette =
+        (requestedPaletteId
+          ? data.palettes.find((item) => String(item.id) === requestedPaletteId)
+          : null) ||
+        (data.palettes.length === 1 ? data.palettes[0] : null);
+
+      if (palette) data.palette = palette;
+    }
+
     return Response.json(data, { headers: corsHeaders });
   } catch (error) {
     console.error("custom palettes loader failed:", error);
