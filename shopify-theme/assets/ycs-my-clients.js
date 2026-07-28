@@ -141,6 +141,7 @@
   function listUrl() {
     const url = new URL(window.location.href);
     url.searchParams.delete("clientRecordId");
+    url.searchParams.delete("newClient");
     return url.pathname + url.search;
   }
 
@@ -264,9 +265,9 @@
           ${status ? `<div class="ycs-client-card__badges"><span class="ycs-client-badge">${escapeHtml(status)}</span></div>` : ""}
           <div class="ycs-client-card__actions">
             <button class="ycs-client-card__button" type="button" data-ycs-edit-client="${escapeHtml(client.clientRecordId)}">View/Edit</button>
+            <button class="ycs-client-card__button ycs-client-card__button--danger" type="button" data-ycs-delete-client="${escapeHtml(client.clientRecordId)}">Delete</button>
             <a class="ycs-client-card__button ycs-client-card__button--secondary" href="${escapeHtml(startAnalysisUrl(client))}">Start Color Analysis</a>
             <a class="ycs-client-card__button ycs-client-card__button--secondary" href="${escapeHtml(drapingStudioUrl(client))}">Lip & Draping Studio</a>
-            <button class="ycs-client-card__button ycs-client-card__button--danger" type="button" data-ycs-delete-client="${escapeHtml(client.clientRecordId)}">Delete</button>
           </div>
         </div>
       </article>
@@ -309,9 +310,9 @@
           </div>
           <div class="ycs-clients__detail-actions">
             ${editMode ? "" : `<button class="ycs-clients__button" type="button" data-ycs-edit-client="${escapeHtml(client.clientRecordId)}">View/Edit</button>`}
+            <button class="ycs-clients__button ycs-clients__button--danger" type="button" data-ycs-delete-client="${escapeHtml(client.clientRecordId)}">Delete</button>
             <a class="ycs-clients__button ycs-clients__button--secondary" href="${escapeHtml(startAnalysisUrl(client))}">Start Color Analysis</a>
             <a class="ycs-clients__button ycs-clients__button--secondary" href="${escapeHtml(drapingStudioUrl(client))}">Lip & Draping Studio</a>
-            <button class="ycs-clients__button ycs-clients__button--danger" type="button" data-ycs-delete-client="${escapeHtml(client.clientRecordId)}">Delete</button>
           </div>
           ${editMode ? renderEditForm(client, saveMessage) : ""}
         </div>
@@ -327,10 +328,39 @@
     `;
   }
 
-  function renderEditForm(client, saveMessage) {
+  function renderCreateClient(saveMessage) {
+    updateShellMode("create");
+    gridEl.hidden = true;
+    detailEl.hidden = false;
+    if (controlsEl) controlsEl.hidden = true;
+    setStatus("", false);
+
+    const client = {
+      clientRecordId: "",
+      firstName: "",
+      lastName: "",
+      email: "",
+      paletteCode: "",
+      notes: ""
+    };
+
+    detailEl.innerHTML = `
+      <div class="ycs-clients__detail-header ycs-clients__detail-header--edit">
+        <div class="ycs-clients__detail-photo">
+          <div class="ycs-client-card__placeholder">No photo yet</div>
+        </div>
+        <div>
+          <h2>Add Client</h2>
+          ${renderEditForm(client, saveMessage, true)}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderEditForm(client, saveMessage, isCreate) {
     const selectedPaletteCode = String(client.paletteCode || "").trim().toUpperCase();
     return `
-      <form class="ycs-clients__edit-form" data-ycs-client-edit-form>
+      <form class="ycs-clients__edit-form" ${isCreate ? "data-ycs-client-create-form" : "data-ycs-client-edit-form"}>
         <input type="hidden" name="clientRecordId" value="${escapeHtml(client.clientRecordId)}">
         <input class="ycs-clients__input" name="firstName" value="${escapeHtml(client.firstName)}" placeholder="First name" required>
         <input class="ycs-clients__input" name="lastName" value="${escapeHtml(client.lastName)}" placeholder="Last name" required>
@@ -343,7 +373,7 @@
         </select>
         <textarea class="ycs-clients__textarea" name="notes" placeholder="Notes">${escapeHtml(client.notes)}</textarea>
         ${saveMessage ? `<p class="ycs-clients__save-message">${escapeHtml(saveMessage)}</p>` : ""}
-        <button class="ycs-clients__button" type="submit">Save Client</button>
+        <button class="ycs-clients__button" type="submit">${isCreate ? "Create Client" : "Save Client"}</button>
       </form>
     `;
   }
@@ -388,6 +418,56 @@
         : client
     ));
     showClientById(payload.clientRecordId, true, "Client saved.");
+  }
+
+  async function createClient(form) {
+    const formData = new FormData(form);
+    const payload = {
+      consultantId,
+      firstName: formData.get("firstName"),
+      lastName: formData.get("lastName"),
+      email: formData.get("email"),
+      paletteCode: String(formData.get("paletteCode") || "").trim().toUpperCase(),
+      notes: formData.get("notes")
+    };
+    payload.paletteName = paletteNameForCode(payload.paletteCode);
+
+    setStatus("Creating client...", true);
+    const response = await fetch(`${apiBase}/api/create-consultant-client`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json();
+
+    if (!response.ok || !data.clientRecordId) {
+      throw new Error(data.error || "Client create failed");
+    }
+
+    const client = {
+      clientRecordId: data.clientRecordId,
+      firstName: data.firstName || payload.firstName,
+      lastName: data.lastName || payload.lastName,
+      email: data.email || payload.email || "",
+      paletteCode: data.paletteCode || payload.paletteCode || "",
+      paletteName: data.paletteName || payload.paletteName || "",
+      notes: data.notes || payload.notes || "",
+      analysisStatus: "New",
+      originalPhotoUrl: "",
+      adjustedPhotoUrl: "",
+      primaryPhotoUrl: "",
+      activePhotoUrl: "",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    clients = [client, ...clients];
+    buildPaletteFilter();
+    const nextUrl = new URL(window.location.href);
+    nextUrl.searchParams.delete("newClient");
+    nextUrl.searchParams.set("clientRecordId", client.clientRecordId);
+    window.history.pushState({}, "", nextUrl.pathname + nextUrl.search);
+    showClientById(client.clientRecordId, true, "Client created.");
   }
 
   async function deleteClientById(clientRecordId) {
@@ -437,7 +517,10 @@
     buildPaletteFilter();
 
     const selectedClient = new URL(window.location.href).searchParams.get("clientRecordId");
-    if (selectedClient) {
+    const isNewClient = new URL(window.location.href).searchParams.get("newClient") === "1";
+    if (isNewClient) {
+      renderCreateClient();
+    } else if (selectedClient) {
       showClientById(selectedClient, false);
     } else {
       renderCards();
@@ -455,12 +538,23 @@
     const deleteButton = event.target.closest("[data-ycs-delete-client]");
     const backButton = event.target.closest("[data-ycs-back-to-clients]");
     const pageBackButton = event.target.closest("[data-ycs-clients-back-link]");
+    const addClientButton = event.target.closest("[data-ycs-add-client]");
 
     if (pageBackButton && pageBackButton.dataset.ycsBackMode === "clients") {
       event.preventDefault();
       const nextUrl = listUrl();
       window.history.pushState({}, "", nextUrl);
       renderCards();
+      return;
+    }
+
+    if (addClientButton) {
+      event.preventDefault();
+      const nextUrl = new URL(window.location.href);
+      nextUrl.searchParams.delete("clientRecordId");
+      nextUrl.searchParams.set("newClient", "1");
+      window.history.pushState({}, "", nextUrl.pathname + nextUrl.search);
+      renderCreateClient();
       return;
     }
 
@@ -489,15 +583,25 @@
   });
 
   root.addEventListener("submit", (event) => {
-    const form = event.target.closest("[data-ycs-client-edit-form]");
-    if (!form) return;
+    const createForm = event.target.closest("[data-ycs-client-create-form]");
+    const editForm = event.target.closest("[data-ycs-client-edit-form]");
+    if (!createForm && !editForm) return;
     event.preventDefault();
-    saveClient(form).catch((error) => setStatus(error.message || "Client update failed.", true));
+
+    if (createForm) {
+      createClient(createForm).catch((error) => setStatus(error.message || "Client create failed.", true));
+      return;
+    }
+
+    saveClient(editForm).catch((error) => setStatus(error.message || "Client update failed.", true));
   });
 
   window.addEventListener("popstate", () => {
     const selectedClient = new URL(window.location.href).searchParams.get("clientRecordId");
-    if (selectedClient) {
+    const isNewClient = new URL(window.location.href).searchParams.get("newClient") === "1";
+    if (isNewClient) {
+      renderCreateClient();
+    } else if (selectedClient) {
       showClientById(selectedClient, false);
     } else {
       renderCards();

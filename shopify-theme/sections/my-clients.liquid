@@ -111,7 +111,7 @@
         <h1 class="ycs-clients__title">My Clients</h1>
         <p class="ycs-clients__subtitle">View and manage your color analysis clients.</p>
       </div>
-      <a href="/pages/photo-prep?mode=trade&workflow=color-analysis" class="ycs-clients__button" data-ycs-add-client>Add Client</a>
+      <a href="/pages/my-clients?newClient=1{% if admin_view_as != '' %}&viewAs={{ admin_view_as }}{% endif %}" class="ycs-clients__button" data-ycs-add-client>Add Client</a>
     </div>
 
     <div class="ycs-clients__toolbar" data-ycs-client-list-controls>

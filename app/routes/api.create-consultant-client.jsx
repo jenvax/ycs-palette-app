@@ -49,13 +49,19 @@ export async function action({ request }) {
       consultantId,
       firstName,
       lastName,
-      email
+      email,
+      paletteCode,
+      paletteName,
+      notes
     } = await request.json();
 
     const safeConsultantId = cleanString(consultantId);
     const safeFirstName = cleanString(firstName);
     const safeLastName = cleanString(lastName);
     const safeEmail = cleanString(email);
+    const safePaletteCode = cleanString(paletteCode);
+    const safePaletteName = cleanString(paletteName);
+    const safeNotes = cleanString(notes);
 
     if (!safeConsultantId) {
       return Response.json(
@@ -85,12 +91,15 @@ export async function action({ request }) {
     const clientRecordId = generateClientRecordId();
 
     const fields = {
-  ClientRecordId: clientRecordId,
-  ConsultantId: safeConsultantId,
-  FirstName: safeFirstName,
-  LastName: safeLastName,
-  Email: safeEmail || undefined
-};
+      ClientRecordId: clientRecordId,
+      ConsultantId: safeConsultantId,
+      FirstName: safeFirstName,
+      LastName: safeLastName,
+      Email: safeEmail || undefined,
+      AnalysisResultCode: safePaletteCode || undefined,
+      AnalysisResultLabel: safePaletteName || undefined,
+      Notes: safeNotes || undefined
+    };
 
     Object.keys(fields).forEach((key) => {
       if (fields[key] === undefined) {
@@ -128,7 +137,10 @@ export async function action({ request }) {
         consultantId: safeConsultantId,
         firstName: safeFirstName,
         lastName: safeLastName,
-        email: safeEmail
+        email: safeEmail,
+        paletteCode: safePaletteCode || "",
+        paletteName: safePaletteName || "",
+        notes: safeNotes || ""
       },
       { status: 200, headers: corsHeaders }
     );
