@@ -495,10 +495,11 @@ export async function loader({ request }) {
 
   try {
     const url = new URL(request.url);
+    const action = String(url.searchParams.get("action") || "list").trim();
     const auth = await authorizeAccess({
       customerId: url.searchParams.get("customerId"),
       hasGrowthAccess: url.searchParams.get("hasGrowthAccess"),
-      scope: url.searchParams.get("scope")
+      scope: action === "vipList" ? "stylemasters" : url.searchParams.get("scope")
     });
 
     if (!auth.ok) {
@@ -507,8 +508,6 @@ export async function loader({ request }) {
         { status: auth.status, headers: corsHeaders }
       );
     }
-
-    const action = String(url.searchParams.get("action") || "list").trim();
 
     if (action === "palette") {
       const paletteId = cleanString(url.searchParams.get("paletteId"));
