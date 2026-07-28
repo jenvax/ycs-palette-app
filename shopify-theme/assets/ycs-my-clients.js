@@ -29,7 +29,8 @@
   }
 
   function normalizeStatus(value) {
-    const status = normalize(value || "New");
+    const status = normalize(value);
+    if (!status) return "";
     if (status.includes("complete") || status === "done") return "complete";
     if (status.includes("progress")) return "in-progress";
     return "new";
@@ -39,7 +40,7 @@
     const key = normalizeStatus(value);
     if (key === "complete") return "Complete";
     if (key === "in-progress") return "In Progress";
-    return "New";
+    return "";
   }
 
   function displayName(client) {
@@ -48,9 +49,9 @@
   }
 
   function formatDate(value) {
-    if (!value) return "Not available";
+    if (!value) return "";
     const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "Not available";
+    if (Number.isNaN(date.getTime())) return "";
     return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
   }
 
@@ -76,7 +77,7 @@
     const code = String(client.paletteCode || "").trim();
     const name = String(client.paletteName || "").trim();
     if (code && name) return `${name} (${code})`;
-    return name || code || "Unassigned";
+    return name || code || "";
   }
 
   function clientUrl(client) {
@@ -172,6 +173,13 @@
 
     setStatus("", false);
     gridEl.innerHTML = visibleClients.map((client) => `
+      ${(() => {
+        const palette = paletteLabel(client);
+        const status = displayStatus(client.analysisStatus);
+        const created = formatDate(client.createdAt);
+        const updated = formatDate(client.updatedAt);
+
+        return `
       <article class="ycs-client-card">
         <div class="ycs-client-card__photo">
           ${renderPhoto(client, "ycs-client-card")}
@@ -179,18 +187,22 @@
         <div class="ycs-client-card__content">
           <h2 class="ycs-client-card__name">${escapeHtml(displayName(client))}</h2>
           <p class="ycs-client-card__email">${escapeHtml(client.email || "No email")}</p>
-          <div class="ycs-client-card__badges">
-            <span class="ycs-client-badge ycs-client-badge--palette">${escapeHtml(paletteLabel(client))}</span>
-            <span class="ycs-client-badge">${escapeHtml(displayStatus(client.analysisStatus))}</span>
-          </div>
-          <p class="ycs-client-card__date">Created ${escapeHtml(formatDate(client.createdAt))}</p>
-          <p class="ycs-client-card__date">Updated ${escapeHtml(formatDate(client.updatedAt))}</p>
+          ${palette || status ? `
+            <div class="ycs-client-card__badges">
+              ${palette ? `<span class="ycs-client-badge ycs-client-badge--palette">${escapeHtml(palette)}</span>` : ""}
+              ${status ? `<span class="ycs-client-badge">${escapeHtml(status)}</span>` : ""}
+            </div>
+          ` : ""}
+          ${created ? `<p class="ycs-client-card__date">Created ${escapeHtml(created)}</p>` : ""}
+          ${updated ? `<p class="ycs-client-card__date">Updated ${escapeHtml(updated)}</p>` : ""}
           <div class="ycs-client-card__actions">
             <a class="ycs-client-card__button" href="${escapeHtml(clientUrl(client))}" data-ycs-view-client="${escapeHtml(client.clientRecordId)}">View Client</a>
             <button class="ycs-client-card__button ycs-client-card__button--secondary" type="button" data-ycs-edit-client="${escapeHtml(client.clientRecordId)}">Edit</button>
           </div>
         </div>
       </article>
+        `;
+      })()}
     `).join("");
   }
 
@@ -205,6 +217,10 @@
       ["Prepared Photo", client.adjustedPhotoUrl],
       ["Original Photo", client.originalPhotoUrl]
     ].filter((item) => item[1]);
+    const palette = paletteLabel(client);
+    const status = displayStatus(client.analysisStatus);
+    const created = formatDate(client.createdAt);
+    const updated = formatDate(client.updatedAt);
 
     detailEl.innerHTML = `
       <div class="ycs-clients__detail-header">
@@ -215,10 +231,10 @@
           <h2>${escapeHtml(displayName(client))}</h2>
           <div class="ycs-clients__detail-meta">
             <div>${escapeHtml(client.email || "No email")}</div>
-            <div>Palette: ${escapeHtml(paletteLabel(client))}</div>
-            <div>Status: ${escapeHtml(displayStatus(client.analysisStatus))}</div>
-            <div>Created: ${escapeHtml(formatDate(client.createdAt))}</div>
-            <div>Updated: ${escapeHtml(formatDate(client.updatedAt))}</div>
+            ${palette ? `<div>Palette: ${escapeHtml(palette)}</div>` : ""}
+            ${status ? `<div>Status: ${escapeHtml(status)}</div>` : ""}
+            ${created ? `<div>Created: ${escapeHtml(created)}</div>` : ""}
+            ${updated ? `<div>Updated: ${escapeHtml(updated)}</div>` : ""}
             ${client.notes ? `<div>Notes: ${escapeHtml(client.notes)}</div>` : ""}
           </div>
           <div class="ycs-clients__detail-actions">
