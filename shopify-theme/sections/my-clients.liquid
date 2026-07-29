@@ -956,6 +956,15 @@
     display: block;
   }
 
+  .ycs-report-export .ycs-report-page {
+    display: block !important;
+    box-sizing: border-box;
+    width: var(--report-page-width);
+    height: var(--report-page-height);
+    aspect-ratio: auto;
+    box-shadow: none;
+  }
+
   .ycs-report-page h1 {
     margin: 0 0 24px;
     font-family: Georgia, "Times New Roman", serif;
@@ -1448,13 +1457,7 @@
     }
 
     .ycs-report-page {
-      display: block !important;
-      box-sizing: border-box;
-      width: var(--report-page-width);
-      height: var(--report-page-height);
       margin: 0;
-      aspect-ratio: auto;
-      box-shadow: none;
       page-break-after: auto;
       break-after: auto;
       page-break-inside: avoid;
