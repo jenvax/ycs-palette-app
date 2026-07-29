@@ -147,6 +147,16 @@
       "";
   }
 
+  function getAdjustedPhotoUrl(client) {
+    const photos = Array.isArray(client.photos) ? client.photos : [];
+    const latestAdjustedPhoto = photos.find((photo) => photo && photo.adjustedPhotoUrl);
+
+    return client.adjustedPhotoUrl ||
+      latestAdjustedPhoto?.adjustedPhotoUrl ||
+      client.primaryPhotoUrl ||
+      "";
+  }
+
   function paletteLabel(client) {
     const code = String(client.paletteCode || "").trim();
     const name = String(client.paletteName || "").trim();
@@ -258,7 +268,10 @@
       paletteCode,
       paletteName,
       colorFanImageUrl: "",
-      selectedDrapeImageUrl: getPhotoUrl(client),
+      selectedDrapeImageUrl: getAdjustedPhotoUrl(client),
+      coverPhotoScale: 1,
+      coverPhotoX: 0,
+      coverPhotoY: 0,
       colorWheelImageUrl: "",
       depthImageUrl: "",
       depthLightImageUrl: "",
@@ -296,6 +309,10 @@
     return {
       ...base,
       ...incoming,
+      selectedDrapeImageUrl: base.selectedDrapeImageUrl,
+      coverPhotoScale: Math.min(Math.max(Number(incoming.coverPhotoScale) || base.coverPhotoScale, 0.7), 2.4),
+      coverPhotoX: Math.min(Math.max(Number(incoming.coverPhotoX) || base.coverPhotoX, -120), 120),
+      coverPhotoY: Math.min(Math.max(Number(incoming.coverPhotoY) || base.coverPhotoY, -120), 120),
       text: {
         ...base.text,
         ...(incoming.text || {})
@@ -369,17 +386,28 @@
     `;
   }
 
-  function renderCoverArt(draft, extraClass, options = {}) {
+  function renderCoverArt(draft, extraClass) {
+    const scale = Math.min(Math.max(Number(draft.coverPhotoScale) || 1, 0.7), 2.4);
+    const x = Math.min(Math.max(Number(draft.coverPhotoX) || 0, -120), 120);
+    const y = Math.min(Math.max(Number(draft.coverPhotoY) || 0, -120), 120);
     const drapeHtml = draft.selectedDrapeImageUrl
-      ? `<img class="ycs-report-cover-art__drape" src="${escapeHtml(draft.selectedDrapeImageUrl)}" alt="${escapeHtml(draft.customerName || "Selected draped image")}">`
-      : `<div class="ycs-report-cover-art__drape ycs-report-preview__image--empty">Draped image</div>`;
+      ? `
+        <div class="ycs-report-cover-art__drape-frame">
+          <img
+            class="ycs-report-cover-art__drape"
+            src="${escapeHtml(draft.selectedDrapeImageUrl)}"
+            alt="${escapeHtml(draft.customerName || "Adjusted photo")}"
+            style="--cover-photo-scale:${scale};--cover-photo-x:${x}px;--cover-photo-y:${y}px;">
+        </div>
+      `
+      : `<div class="ycs-report-cover-art__drape-frame ycs-report-preview__image--empty">Adjusted photo</div>`;
 
     return `
       <div class="ycs-report-cover-art${extraClass ? ` ${extraClass}` : ""}">
         ${draft.colorFanImageUrl
           ? `<img class="ycs-report-cover-art__fan" src="${escapeHtml(draft.colorFanImageUrl)}" alt="Color fan">`
           : `<div class="ycs-report-cover-art__fan ycs-report-preview__image--empty">Color fan image</div>`}
-        ${renderPreviewImageTarget("selectedDrapeImageUrl", "Cover draped image", drapeHtml, options.interactive)}
+        ${drapeHtml}
       </div>
     `;
   }
@@ -413,7 +441,7 @@
     });
   }
 
-  function renderSavedImagePicker({ fieldName, title, selectedUrl, preferredChoice, allowRemoveBackground }) {
+  function renderSavedImagePicker({ fieldName, title, selectedUrl, preferredChoice }) {
     const images = sortSavedImagesForPicker(activeSavedDrapedImages, preferredChoice);
     const current = images.find((image) => image.imageUrl === selectedUrl);
     const currentLabel = current
@@ -462,16 +490,6 @@
           ${selectedUrl ? "" : "hidden"}>
           Clear selection
         </button>
-        ${allowRemoveBackground ? `
-          <button
-            class="ycs-report-remove-bg"
-            type="button"
-            data-ycs-report-remove-bg
-            data-report-image-field="${escapeHtml(fieldName)}"
-            ${selectedUrl ? "" : "disabled"}>
-            Remove background
-          </button>
-        ` : ""}
       </div>
     `;
   }
@@ -542,7 +560,7 @@
           <p class="ycs-report-kicker">Your</p>
           <h1>Color Analysis</h1>
         </div>
-        ${renderCoverArt(draft, "", options)}
+        ${renderCoverArt(draft, "")}
         <div class="ycs-report-cover-meta">
           <h2>${escapeHtml(name)}</h2>
           <p>${escapeHtml(reportFullDateLabel(draft))}</p>
@@ -611,7 +629,7 @@
       <section class="ycs-report-page" data-report-page="7">
         ${renderReportBrand(draft)}
         <h1>${escapeHtml(draft.paletteName)}</h1>
-        ${renderCoverArt(draft, "ycs-report-cover-art--inline", options)}
+        ${renderCoverArt(draft, "ycs-report-cover-art--inline")}
         ${renderCopyWithSubheading(`You are ${draft.paletteName}`, draft.text.paletteType, [/^you are\b/i])}
         ${renderReportFooter(draft, 7)}
       </section>
@@ -658,13 +676,15 @@
             <label>Color type<select name="paletteCode">${paletteOptions}</select></label>
             <label>Color type display name<input name="paletteName" value="${escapeHtml(draft.paletteName)}"></label>
             <input type="hidden" name="selectedDrapeImageUrl" value="${escapeHtml(draft.selectedDrapeImageUrl)}">
-            ${renderSavedImagePicker({
-              fieldName: "selectedDrapeImageUrl",
-              title: "Cover and palette type draped image",
-              selectedUrl: draft.selectedDrapeImageUrl,
-              preferredChoice: "",
-              allowRemoveBackground: true
-            })}
+            <div class="ycs-report-cover-controls">
+              <div class="ycs-report-cover-controls__head">
+                <span>Cover and palette type photo</span>
+                <small>Uses the adjusted transparent photo.</small>
+              </div>
+              <label>Zoom<input name="coverPhotoScale" type="range" min="0.7" max="2.4" step="0.05" value="${escapeHtml(draft.coverPhotoScale)}"></label>
+              <label>Move left / right<input name="coverPhotoX" type="range" min="-120" max="120" step="2" value="${escapeHtml(draft.coverPhotoX)}"></label>
+              <label>Move up / down<input name="coverPhotoY" type="range" min="-120" max="120" step="2" value="${escapeHtml(draft.coverPhotoY)}"></label>
+            </div>
             <label>Depth decision<select name="depthChoice">${renderDecisionOptions([
               { value: "light", label: "Light" },
               { value: "medium", label: "Medium" },
@@ -776,7 +796,10 @@
     draft.colorFanImageUrl = formData.has("colorFanImageUrl")
       ? String(formData.get("colorFanImageUrl") || "").trim()
       : String(draft.colorFanImageUrl || "").trim();
-    draft.selectedDrapeImageUrl = String(formData.get("selectedDrapeImageUrl") || "").trim();
+    draft.selectedDrapeImageUrl = getAdjustedPhotoUrl(client);
+    draft.coverPhotoScale = Math.min(Math.max(Number(formData.get("coverPhotoScale")) || 1, 0.7), 2.4);
+    draft.coverPhotoX = Math.min(Math.max(Number(formData.get("coverPhotoX")) || 0, -120), 120);
+    draft.coverPhotoY = Math.min(Math.max(Number(formData.get("coverPhotoY")) || 0, -120), 120);
     draft.colorWheelImageUrl = formData.has("colorWheelImageUrl")
       ? String(formData.get("colorWheelImageUrl") || "").trim()
       : String(draft.colorWheelImageUrl || "").trim();
@@ -1022,105 +1045,9 @@
         clearButton.hidden = !imageUrl;
       }
 
-      const removeBgButton = picker.querySelector("[data-ycs-report-remove-bg]");
-      if (removeBgButton) {
-        removeBgButton.disabled = !imageUrl;
-      }
     }
 
     updateReportPreview();
-  }
-
-  function imageUrlToDataUrl(imageUrl) {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => {
-        try {
-          const canvas = document.createElement("canvas");
-          canvas.width = img.naturalWidth || img.width;
-          canvas.height = img.naturalHeight || img.height;
-          const ctx = canvas.getContext("2d");
-          ctx.drawImage(img, 0, 0);
-          resolve(canvas.toDataURL("image/png"));
-        } catch (error) {
-          reject(error);
-        }
-      };
-      img.onerror = () => reject(new Error("Could not load the selected cover image."));
-      img.src = imageUrl;
-    });
-  }
-
-  async function removeReportCoverBackground(button) {
-    const form = detailEl.querySelector("[data-ycs-report-form]");
-    if (!form || !activeReportClientId || !apiBase) return;
-
-    const imageUrl = String(form.elements.selectedDrapeImageUrl?.value || "").trim();
-    if (!imageUrl) {
-      setReportStatus("Choose a cover image first.", true);
-      return;
-    }
-
-    const originalLabel = button.textContent;
-    button.disabled = true;
-    button.textContent = "Removing...";
-    setReportStatus("Removing cover image background...", true);
-
-    try {
-      const imageBase64 = await imageUrlToDataUrl(imageUrl);
-      const removeResponse = await fetch(`${apiBase}/api/remove-background`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          imageBase64,
-          customerId: consultantId,
-          clientRecordId: activeReportClientId,
-          tool: "report-cover",
-          mode: "trade",
-          isAdmin: true
-        })
-      });
-      const removeData = await removeResponse.json();
-
-      if (!removeResponse.ok || !removeData.image) {
-        throw new Error(removeData.error || "Background removal failed.");
-      }
-
-      const saveResponse = await fetch(`${apiBase}/api/save-draped-image`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          imageBase64: removeData.image,
-          clientRecordId: activeReportClientId,
-          customerId: "",
-          consultantId,
-          paletteCode: form.elements.paletteCode?.value || "",
-          panel: "cover-transparent",
-          drapeColorName: "Cover Transparent",
-          fileName: "cover-transparent"
-        })
-      });
-      const saveData = await saveResponse.json();
-
-      if (!saveResponse.ok || !saveData.image?.imageUrl) {
-        throw new Error(saveData.error || "Transparent image save failed.");
-      }
-
-      activeSavedDrapedImages = [
-        saveData.image,
-        ...activeSavedDrapedImages.filter((image) => image.imageUrl !== saveData.image.imageUrl)
-      ];
-      applyReportImageSelection("selectedDrapeImageUrl", saveData.image.imageUrl, "Cover Transparent");
-      setReportStatus("Cover background removed.", true);
-      window.setTimeout(() => setReportStatus("", false), 3000);
-    } catch (error) {
-      console.warn("Report cover background removal failed", error);
-      setReportStatus(error.message || "Could not remove the cover background.", true);
-    } finally {
-      button.disabled = false;
-      button.textContent = originalLabel;
-    }
   }
 
   function selectReportSavedImage(button) {
@@ -1742,7 +1669,6 @@
     const reportPreviewImageButton = event.target.closest("[data-ycs-report-preview-image-field]");
     const reportModalImageButton = event.target.closest("[data-ycs-report-modal-image-select]");
     const reportModalCloseButton = event.target.closest("[data-ycs-report-image-modal-close]");
-    const reportRemoveBgButton = event.target.closest("[data-ycs-report-remove-bg]");
 
     if (pageBackButton && pageBackButton.dataset.ycsBackMode === "clients") {
       event.preventDefault();
@@ -1831,12 +1757,6 @@
       closeReportImageModal();
     }
 
-    if (reportRemoveBgButton) {
-      if (!canCreateReports) return;
-      event.preventDefault();
-      removeReportCoverBackground(reportRemoveBgButton)
-        .catch((error) => setReportStatus(error.message || "Could not remove the cover background.", true));
-    }
   });
 
   root.addEventListener("input", (event) => {
