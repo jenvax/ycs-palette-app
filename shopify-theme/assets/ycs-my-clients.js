@@ -433,9 +433,9 @@
       </section>
       <section class="ycs-report-page ycs-report-page--science" data-report-page="3">
         ${renderReportBrand(draft)}
+        <h1>How Your Color Analysis Works</h1>
         <div class="ycs-report-two-column">
           <div>
-            <h1>How Your<br>Color Analysis Works</h1>
             <h3>The Science Behind Your Best Colors</h3>
             ${paragraphHtml(draft.text.howItWorks)}
             <div class="ycs-report-steps">
