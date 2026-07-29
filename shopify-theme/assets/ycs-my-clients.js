@@ -551,17 +551,18 @@
   function renderCustomPagesForm(draft) {
     const customPages = reportCustomPages(draft);
     return `
-      <div class="ycs-report-form-panel ycs-report-custom-pages">
-        <div class="ycs-report-form-panel__head">
-          <span>Blank pages</span>
-          <small>Use the + beside the page numbers to add optional pages.</small>
-        </div>
-        ${customPages.length ? customPages.map((page, index) => {
+      ${customPages.length ? customPages.map((page, index) => {
           const id = String(page.id || makeCustomReportPageId());
           const template = page.template === "photos" ? "photos" : "letter";
+          const pageNumber = BASE_REPORT_PAGE_COUNT + index + 1;
           return `
-            <fieldset class="ycs-report-custom-page" data-ycs-custom-report-page data-report-custom-page-id="${escapeHtml(id)}">
-              <legend>Page ${BASE_REPORT_PAGE_COUNT + index + 1}</legend>
+            <div class="ycs-report-form-page" data-ycs-report-controls-page="${pageNumber}"${pageNumber === activeReportPage ? "" : " hidden"}>
+              <div class="ycs-report-form-page__head">
+                <span>Page ${pageNumber}</span>
+                <small>${template === "photos" ? "Photo page" : "Letter page"}</small>
+              </div>
+              <fieldset class="ycs-report-custom-page" data-ycs-custom-report-page data-report-custom-page-id="${escapeHtml(id)}">
+                <legend>Blank page settings</legend>
               <label>Template
                 <select name="customPages.${escapeHtml(id)}.template">
                   <option value="letter"${template === "letter" ? " selected" : ""}>Intro-style letter page</option>
@@ -587,9 +588,21 @@
               ` : ""}
               <label>Copy<textarea name="customPages.${escapeHtml(id)}.copy">${escapeHtml(page.copy || "")}</textarea></label>
               <button class="ycs-report-image-clear" type="button" data-ycs-remove-custom-report-page="${escapeHtml(id)}">Remove page</button>
-            </fieldset>
+              </fieldset>
+            </div>
           `;
-        }).join("") : `<p class="ycs-report-custom-pages__empty">No blank pages added.</p>`}
+        }).join("") : ""}
+    `;
+  }
+
+  function renderReportControlsPage(pageNumber, title, html) {
+    return `
+      <div class="ycs-report-form-page" data-ycs-report-controls-page="${pageNumber}"${pageNumber === activeReportPage ? "" : " hidden"}>
+        <div class="ycs-report-form-page__head">
+          <span>Page ${pageNumber}</span>
+          <small>${escapeHtml(title)}</small>
+        </div>
+        ${html}
       </div>
     `;
   }
@@ -812,6 +825,7 @@
 
     activeReportClientId = client.clientRecordId;
     activeReportDraft = draft;
+    activeReportPage = Math.min(Math.max(Number(activeReportPage) || 1, 1), totalReportPages(draft));
 
     const paletteOptions = colorTypeOptions.map(([code, name]) => (
       `<option value="${escapeHtml(code)}"${draft.paletteCode === code ? " selected" : ""}>${escapeHtml(name)} (${escapeHtml(code)})</option>`
@@ -833,100 +847,120 @@
         <div class="ycs-report-builder__layout">
           <form class="ycs-report-form" data-ycs-report-form>
             <input type="hidden" name="clientRecordId" value="${escapeHtml(client.clientRecordId)}">
-            ${renderReportLogoControls(draft)}
-            <label>Customer name<input name="customerName" value="${escapeHtml(draft.customerName)}"></label>
-            <label>Report date<input name="reportDate" type="date" value="${escapeHtml(draft.reportDate)}"></label>
-            <label>Color type<select name="paletteCode">${paletteOptions}</select></label>
-            <label>Color type display name<input name="paletteName" value="${escapeHtml(draft.paletteName)}"></label>
             <input type="hidden" name="selectedDrapeImageUrl" value="${escapeHtml(draft.selectedDrapeImageUrl)}">
-            <div class="ycs-report-cover-controls">
-              <div class="ycs-report-cover-controls__head">
-                <span>Cover and palette type photo</span>
-                <small>Uses the adjusted transparent photo.</small>
+            ${renderReportControlsPage(1, "Cover", `
+              ${renderReportLogoControls(draft)}
+              <label>Customer name<input name="customerName" value="${escapeHtml(draft.customerName)}"></label>
+              <label>Report date<input name="reportDate" type="date" value="${escapeHtml(draft.reportDate)}"></label>
+              <label>Color type<select name="paletteCode">${paletteOptions}</select></label>
+              <label>Color type display name<input name="paletteName" value="${escapeHtml(draft.paletteName)}"></label>
+              <div class="ycs-report-cover-controls">
+                <div class="ycs-report-cover-controls__head">
+                  <span>Cover and palette type photo</span>
+                  <small>Uses the adjusted transparent photo.</small>
+                </div>
+                <label>Zoom<input name="coverPhotoScale" type="range" min="0.7" max="2.4" step="0.05" value="${escapeHtml(draft.coverPhotoScale)}"></label>
+                <label>Move left / right<input name="coverPhotoX" type="range" min="-120" max="120" step="2" value="${escapeHtml(draft.coverPhotoX)}"></label>
+                <label>Move up / down<input name="coverPhotoY" type="range" min="-120" max="120" step="2" value="${escapeHtml(draft.coverPhotoY)}"></label>
               </div>
-              <label>Zoom<input name="coverPhotoScale" type="range" min="0.7" max="2.4" step="0.05" value="${escapeHtml(draft.coverPhotoScale)}"></label>
-              <label>Move left / right<input name="coverPhotoX" type="range" min="-120" max="120" step="2" value="${escapeHtml(draft.coverPhotoX)}"></label>
-              <label>Move up / down<input name="coverPhotoY" type="range" min="-120" max="120" step="2" value="${escapeHtml(draft.coverPhotoY)}"></label>
-            </div>
-            <label>Depth decision<select name="depthChoice">${renderDecisionOptions([
-              { value: "light", label: "Light" },
-              { value: "medium", label: "Medium" },
-              { value: "deep", label: "Deep" }
-            ], draft.depthChoice)}</select></label>
-            <input type="hidden" name="depthLightImageUrl" value="${escapeHtml(draft.depthLightImageUrl || draft.depthImageUrl)}">
-            ${renderSavedImagePicker({
-              fieldName: "depthLightImageUrl",
-              title: "Depth light image",
-              selectedUrl: draft.depthLightImageUrl || draft.depthImageUrl,
-              preferredChoice: "light"
-            })}
-            <input type="hidden" name="depthMediumImageUrl" value="${escapeHtml(draft.depthMediumImageUrl)}">
-            ${renderSavedImagePicker({
-              fieldName: "depthMediumImageUrl",
-              title: "Depth medium image",
-              selectedUrl: draft.depthMediumImageUrl,
-              preferredChoice: "medium"
-            })}
-            <input type="hidden" name="depthDeepImageUrl" value="${escapeHtml(draft.depthDeepImageUrl)}">
-            ${renderSavedImagePicker({
-              fieldName: "depthDeepImageUrl",
-              title: "Depth deep image",
-              selectedUrl: draft.depthDeepImageUrl,
-              preferredChoice: "deep"
-            })}
-            <label>Undertone decision<select name="undertoneChoice">${renderDecisionOptions([
-              { value: "warm", label: "Warm" },
-              { value: "cool", label: "Cool" },
-              { value: "olive", label: "Olive" }
-            ], draft.undertoneChoice)}</select></label>
-            <label class="ycs-report-checkbox">
-              <input name="showOliveImage" type="checkbox" value="1"${draft.showOliveImage === false ? "" : " checked"}>
-              <span>Show olive image on the undertone page</span>
-            </label>
-            <input type="hidden" name="undertoneWarmImageUrl" value="${escapeHtml(draft.undertoneWarmImageUrl || draft.undertoneImageUrl)}">
-            ${renderSavedImagePicker({
-              fieldName: "undertoneWarmImageUrl",
-              title: "Undertone warm image",
-              selectedUrl: draft.undertoneWarmImageUrl || draft.undertoneImageUrl,
-              preferredChoice: "warm"
-            })}
-            <input type="hidden" name="undertoneCoolImageUrl" value="${escapeHtml(draft.undertoneCoolImageUrl)}">
-            ${renderSavedImagePicker({
-              fieldName: "undertoneCoolImageUrl",
-              title: "Undertone cool image",
-              selectedUrl: draft.undertoneCoolImageUrl,
-              preferredChoice: "cool"
-            })}
-            <input type="hidden" name="undertoneOliveImageUrl" value="${escapeHtml(draft.undertoneOliveImageUrl)}">
-            ${draft.showOliveImage === false ? "" : renderSavedImagePicker({
-              fieldName: "undertoneOliveImageUrl",
-              title: "Undertone olive image",
-              selectedUrl: draft.undertoneOliveImageUrl,
-              preferredChoice: "olive"
-            })}
-            <label>Chroma decision<select name="chromaChoice">${renderDecisionOptions([
-              { value: "soft", label: "Soft" },
-              { value: "clear", label: "Clear" }
-            ], draft.chromaChoice)}</select></label>
-            <input type="hidden" name="chromaSoftImageUrl" value="${escapeHtml(draft.chromaSoftImageUrl || draft.chromaImageUrl)}">
-            ${renderSavedImagePicker({
-              fieldName: "chromaSoftImageUrl",
-              title: "Chroma soft image",
-              selectedUrl: draft.chromaSoftImageUrl || draft.chromaImageUrl,
-              preferredChoice: "soft"
-            })}
-            <input type="hidden" name="chromaClearImageUrl" value="${escapeHtml(draft.chromaClearImageUrl)}">
-            ${renderSavedImagePicker({
-              fieldName: "chromaClearImageUrl",
-              title: "Chroma clear image",
-              selectedUrl: draft.chromaClearImageUrl,
-              preferredChoice: "clear"
-            })}
-            <label>Intro letter<textarea name="text.intro">${escapeHtml(draft.text.intro)}</textarea></label>
-            <label>Depth copy<textarea name="text.depth">${escapeHtml(draft.text.depth)}</textarea></label>
-            <label>Temperature copy<textarea name="text.undertone">${escapeHtml(draft.text.undertone)}</textarea></label>
-            <label>Chroma copy<textarea name="text.chroma">${escapeHtml(draft.text.chroma)}</textarea></label>
-            <label>Palette type copy<textarea name="text.paletteType">${escapeHtml(draft.text.paletteType)}</textarea></label>
+            `)}
+            ${renderReportControlsPage(2, "Intro Letter", `
+              <label>Intro letter<textarea name="text.intro">${escapeHtml(draft.text.intro)}</textarea></label>
+            `)}
+            ${renderReportControlsPage(3, "How It Works", `
+              <div class="ycs-report-form-panel">
+                <div class="ycs-report-form-panel__head">
+                  <span>Static page</span>
+                  <small>This page uses the template copy and selected color wheel automatically.</small>
+                </div>
+              </div>
+            `)}
+            ${renderReportControlsPage(4, "Depth", `
+              <label>Depth decision<select name="depthChoice">${renderDecisionOptions([
+                { value: "light", label: "Light" },
+                { value: "medium", label: "Medium" },
+                { value: "deep", label: "Deep" }
+              ], draft.depthChoice)}</select></label>
+              <input type="hidden" name="depthLightImageUrl" value="${escapeHtml(draft.depthLightImageUrl || draft.depthImageUrl)}">
+              ${renderSavedImagePicker({
+                fieldName: "depthLightImageUrl",
+                title: "Depth light image",
+                selectedUrl: draft.depthLightImageUrl || draft.depthImageUrl,
+                preferredChoice: "light"
+              })}
+              <input type="hidden" name="depthMediumImageUrl" value="${escapeHtml(draft.depthMediumImageUrl)}">
+              ${renderSavedImagePicker({
+                fieldName: "depthMediumImageUrl",
+                title: "Depth medium image",
+                selectedUrl: draft.depthMediumImageUrl,
+                preferredChoice: "medium"
+              })}
+              <input type="hidden" name="depthDeepImageUrl" value="${escapeHtml(draft.depthDeepImageUrl)}">
+              ${renderSavedImagePicker({
+                fieldName: "depthDeepImageUrl",
+                title: "Depth deep image",
+                selectedUrl: draft.depthDeepImageUrl,
+                preferredChoice: "deep"
+              })}
+              <label>Depth copy<textarea name="text.depth">${escapeHtml(draft.text.depth)}</textarea></label>
+            `)}
+            ${renderReportControlsPage(5, "Temperature", `
+              <label>Undertone decision<select name="undertoneChoice">${renderDecisionOptions([
+                { value: "warm", label: "Warm" },
+                { value: "cool", label: "Cool" },
+                { value: "olive", label: "Olive" }
+              ], draft.undertoneChoice)}</select></label>
+              <label class="ycs-report-checkbox">
+                <input name="showOliveImage" type="checkbox" value="1"${draft.showOliveImage === false ? "" : " checked"}>
+                <span>Show olive image on the undertone page</span>
+              </label>
+              <input type="hidden" name="undertoneWarmImageUrl" value="${escapeHtml(draft.undertoneWarmImageUrl || draft.undertoneImageUrl)}">
+              ${renderSavedImagePicker({
+                fieldName: "undertoneWarmImageUrl",
+                title: "Undertone warm image",
+                selectedUrl: draft.undertoneWarmImageUrl || draft.undertoneImageUrl,
+                preferredChoice: "warm"
+              })}
+              <input type="hidden" name="undertoneCoolImageUrl" value="${escapeHtml(draft.undertoneCoolImageUrl)}">
+              ${renderSavedImagePicker({
+                fieldName: "undertoneCoolImageUrl",
+                title: "Undertone cool image",
+                selectedUrl: draft.undertoneCoolImageUrl,
+                preferredChoice: "cool"
+              })}
+              <input type="hidden" name="undertoneOliveImageUrl" value="${escapeHtml(draft.undertoneOliveImageUrl)}">
+              ${draft.showOliveImage === false ? "" : renderSavedImagePicker({
+                fieldName: "undertoneOliveImageUrl",
+                title: "Undertone olive image",
+                selectedUrl: draft.undertoneOliveImageUrl,
+                preferredChoice: "olive"
+              })}
+              <label>Temperature copy<textarea name="text.undertone">${escapeHtml(draft.text.undertone)}</textarea></label>
+            `)}
+            ${renderReportControlsPage(6, "Chroma", `
+              <label>Chroma decision<select name="chromaChoice">${renderDecisionOptions([
+                { value: "soft", label: "Soft" },
+                { value: "clear", label: "Clear" }
+              ], draft.chromaChoice)}</select></label>
+              <input type="hidden" name="chromaSoftImageUrl" value="${escapeHtml(draft.chromaSoftImageUrl || draft.chromaImageUrl)}">
+              ${renderSavedImagePicker({
+                fieldName: "chromaSoftImageUrl",
+                title: "Chroma soft image",
+                selectedUrl: draft.chromaSoftImageUrl || draft.chromaImageUrl,
+                preferredChoice: "soft"
+              })}
+              <input type="hidden" name="chromaClearImageUrl" value="${escapeHtml(draft.chromaClearImageUrl)}">
+              ${renderSavedImagePicker({
+                fieldName: "chromaClearImageUrl",
+                title: "Chroma clear image",
+                selectedUrl: draft.chromaClearImageUrl,
+                preferredChoice: "clear"
+              })}
+              <label>Chroma copy<textarea name="text.chroma">${escapeHtml(draft.text.chroma)}</textarea></label>
+            `)}
+            ${renderReportControlsPage(7, "Palette Type", `
+              <label>Palette type copy<textarea name="text.paletteType">${escapeHtml(draft.text.paletteType)}</textarea></label>
+            `)}
             ${renderCustomPagesForm(draft)}
           </form>
           <div class="ycs-report-preview-shell">
@@ -1238,6 +1272,10 @@
 
     detailEl.querySelectorAll("[data-ycs-report-page-button]").forEach((button) => {
       button.classList.toggle("is-active", Number(button.dataset.ycsReportPageButton) === safePage);
+    });
+
+    detailEl.querySelectorAll("[data-ycs-report-controls-page]").forEach((controls) => {
+      controls.hidden = Number(controls.dataset.ycsReportControlsPage) !== safePage;
     });
   }
 
