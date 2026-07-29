@@ -1,4 +1,6 @@
-import prisma from "../db.server";
+/* global process */
+
+const REPORTS_TABLE = "ColorAnalysisReports";
 
 function getCorsHeaders(origin) {
   const allowedOrigins = [
@@ -23,6 +25,44 @@ function cleanString(value) {
   return stringValue || null;
 }
 
+function escapeFormulaValue(value) {
+  return String(value || "").replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+function parseDraft(value) {
+  if (!value || typeof value !== "string") return {};
+
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch (error) {
+    console.warn("Unable to parse color analysis report draft", error);
+    return {};
+  }
+}
+
+async function fetchReportRecord({ baseId, token, tableName, consultantId, clientRecordId, reportType }) {
+  const params = new URLSearchParams({
+    maxRecords: "1",
+    filterByFormula: `AND({ConsultantId}="${escapeFormulaValue(consultantId)}",{ClientRecordId}="${escapeFormulaValue(clientRecordId)}",{ReportType}="${escapeFormulaValue(reportType)}")`
+  });
+  const response = await fetch(
+    `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}?${params.toString()}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    }
+  );
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.error?.message || data?.error?.type || "Airtable request failed");
+  }
+
+  return data.records?.[0] || null;
+}
+
 export async function loader({ request }) {
   const origin = request.headers.get("Origin") || "";
   const corsHeaders = getCorsHeaders(origin);
@@ -39,6 +79,9 @@ export async function loader({ request }) {
     const consultantId = cleanString(url.searchParams.get("consultantId"));
     const clientRecordId = cleanString(url.searchParams.get("clientRecordId"));
     const reportType = cleanString(url.searchParams.get("reportType")) || "signature_first_section";
+    const baseId = process.env.AIRTABLE_BASE_ID;
+    const token = process.env.AIRTABLE_TOKEN;
+    const tableName = process.env.AIRTABLE_COLOR_ANALYSIS_REPORTS_TABLE || REPORTS_TABLE;
 
     if (!consultantId || !clientRecordId) {
       return Response.json(
@@ -47,27 +90,34 @@ export async function loader({ request }) {
       );
     }
 
-    const report = await prisma.colorAnalysisReport.findUnique({
-      where: {
-        consultantId_clientRecordId_reportType: {
-          consultantId,
-          clientRecordId,
-          reportType
-        }
-      }
+    if (!baseId || !token) {
+      return Response.json(
+        { error: "Airtable is not configured" },
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
+    const report = await fetchReportRecord({
+      baseId,
+      token,
+      tableName,
+      consultantId,
+      clientRecordId,
+      reportType
     });
+    const fields = report?.fields || {};
 
     return Response.json(
       {
         report: report
           ? {
               id: report.id,
-              consultantId: report.consultantId,
-              clientRecordId: report.clientRecordId,
-              reportType: report.reportType,
-              draft: JSON.parse(report.draftJson || "{}"),
-              createdAt: report.createdAt,
-              updatedAt: report.updatedAt
+              consultantId: fields.ConsultantId || consultantId,
+              clientRecordId: fields.ClientRecordId || clientRecordId,
+              reportType: fields.ReportType || reportType,
+              draft: parseDraft(fields.DraftJson),
+              createdAt: report.createdTime,
+              updatedAt: fields.UpdatedAt || report.createdTime
             }
           : null
       },

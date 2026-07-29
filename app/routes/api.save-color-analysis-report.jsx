@@ -1,4 +1,6 @@
-import prisma from "../db.server";
+/* global process */
+
+const REPORTS_TABLE = "ColorAnalysisReports";
 
 function getCorsHeaders(origin) {
   const allowedOrigins = [
@@ -23,6 +25,56 @@ function cleanString(value) {
   return stringValue || null;
 }
 
+function escapeFormulaValue(value) {
+  return String(value || "").replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+function airtableConfig() {
+  return {
+    baseId: process.env.AIRTABLE_BASE_ID,
+    token: process.env.AIRTABLE_TOKEN,
+    tableName: process.env.AIRTABLE_COLOR_ANALYSIS_REPORTS_TABLE || REPORTS_TABLE
+  };
+}
+
+async function airtableRequest({ method = "GET", recordId, searchParams, fields }) {
+  const { baseId, token, tableName } = airtableConfig();
+  const encodedTable = encodeURIComponent(tableName);
+  const url = new URL(`https://api.airtable.com/v0/${baseId}/${encodedTable}${recordId ? `/${recordId}` : ""}`);
+
+  if (searchParams) {
+    searchParams.forEach((value, key) => url.searchParams.set(key, value));
+  }
+
+  const response = await fetch(url.toString(), {
+    method,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      ...(fields ? { "Content-Type": "application/json" } : {})
+    },
+    ...(fields ? { body: JSON.stringify({ fields }) } : {})
+  });
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data?.error?.message || data?.error?.type || "Airtable request failed");
+  }
+
+  return data;
+}
+
+async function findReportRecord({ consultantId, clientRecordId, reportType }) {
+  const formula = `AND({ConsultantId}="${escapeFormulaValue(consultantId)}",{ClientRecordId}="${escapeFormulaValue(clientRecordId)}",{ReportType}="${escapeFormulaValue(reportType)}")`;
+  const data = await airtableRequest({
+    searchParams: new URLSearchParams({
+      maxRecords: "1",
+      filterByFormula: formula
+    })
+  });
+
+  return data.records?.[0] || null;
+}
+
 export async function loader({ request }) {
   const origin = request.headers.get("Origin") || "";
 
@@ -37,6 +89,14 @@ export async function action({ request }) {
   const corsHeaders = getCorsHeaders(origin);
 
   try {
+    const { baseId, token } = airtableConfig();
+    if (!baseId || !token) {
+      return Response.json(
+        { error: "Airtable is not configured" },
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
     const {
       consultantId,
       clientRecordId,
@@ -62,34 +122,30 @@ export async function action({ request }) {
       );
     }
 
-    const report = await prisma.colorAnalysisReport.upsert({
-      where: {
-        consultantId_clientRecordId_reportType: {
-          consultantId: safeConsultantId,
-          clientRecordId: safeClientRecordId,
-          reportType: safeReportType
-        }
-      },
-      create: {
-        consultantId: safeConsultantId,
-        clientRecordId: safeClientRecordId,
-        reportType: safeReportType,
-        draftJson: JSON.stringify(draft)
-      },
-      update: {
-        draftJson: JSON.stringify(draft)
-      }
+    const fields = {
+      ConsultantId: safeConsultantId,
+      ClientRecordId: safeClientRecordId,
+      ReportType: safeReportType,
+      DraftJson: JSON.stringify(draft)
+    };
+    const existing = await findReportRecord({
+      consultantId: safeConsultantId,
+      clientRecordId: safeClientRecordId,
+      reportType: safeReportType
     });
+    const report = existing
+      ? await airtableRequest({ method: "PATCH", recordId: existing.id, fields })
+      : await airtableRequest({ method: "POST", fields });
 
     return Response.json(
       {
         success: true,
         report: {
           id: report.id,
-          consultantId: report.consultantId,
-          clientRecordId: report.clientRecordId,
-          reportType: report.reportType,
-          updatedAt: report.updatedAt
+          consultantId: report.fields?.ConsultantId || safeConsultantId,
+          clientRecordId: report.fields?.ClientRecordId || safeClientRecordId,
+          reportType: report.fields?.ReportType || safeReportType,
+          updatedAt: report.fields?.UpdatedAt || report.createdTime
         }
       },
       { status: 200, headers: corsHeaders }

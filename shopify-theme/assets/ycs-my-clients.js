@@ -991,39 +991,36 @@
 
   function readReportDraftFromForm(form, client) {
     const formData = new FormData(form);
-    const paletteCode = String(formData.get("paletteCode") || "").trim().toUpperCase();
     const draft = mergeReportDraft(client, activeReportDraft);
+    const formString = (name, fallback = "") => (
+      formData.has(name) ? String(formData.get(name) || "").trim() : String(fallback || "").trim()
+    );
+    const paletteCode = formString("paletteCode", draft.paletteCode).toUpperCase();
 
-    draft.customerName = String(formData.get("customerName") || "").trim();
-    draft.reportDate = String(formData.get("reportDate") || "").trim();
-    draft.brandLogoUrl = String(formData.get("brandLogoUrl") || "").trim();
-    draft.brandName = formData.has("brandName")
-      ? String(formData.get("brandName") || "").trim()
-      : String(draft.brandName || "").trim();
+    draft.customerName = formString("customerName", draft.customerName || displayName(client));
+    draft.reportDate = formString("reportDate", draft.reportDate);
+    draft.brandLogoUrl = formString("brandLogoUrl", draft.brandLogoUrl);
+    draft.brandName = formString("brandName", draft.brandName);
     draft.paletteCode = paletteCode;
-    draft.paletteName = String(formData.get("paletteName") || "").trim() || getPaletteName(paletteCode);
-    draft.colorFanImageUrl = formData.has("colorFanImageUrl")
-      ? String(formData.get("colorFanImageUrl") || "").trim()
-      : String(draft.colorFanImageUrl || "").trim();
+    draft.paletteName = formString("paletteName", draft.paletteName) || getPaletteName(paletteCode);
+    draft.colorFanImageUrl = formString("colorFanImageUrl", draft.colorFanImageUrl);
     draft.selectedDrapeImageUrl = getAdjustedPhotoUrl(client);
-    draft.coverPhotoScale = Math.min(Math.max(Number(formData.get("coverPhotoScale")) || 1, 0.7), 2.4);
-    draft.coverPhotoX = Math.min(Math.max(Number(formData.get("coverPhotoX")) || 0, -120), 120);
-    draft.coverPhotoY = Math.min(Math.max(Number(formData.get("coverPhotoY")) || 0, -120), 120);
-    draft.colorWheelImageUrl = formData.has("colorWheelImageUrl")
-      ? String(formData.get("colorWheelImageUrl") || "").trim()
-      : String(draft.colorWheelImageUrl || "").trim();
-    draft.depthChoice = choiceKey(formData.get("depthChoice"));
-    draft.depthLightImageUrl = String(formData.get("depthLightImageUrl") || "").trim();
-    draft.depthMediumImageUrl = String(formData.get("depthMediumImageUrl") || "").trim();
-    draft.depthDeepImageUrl = String(formData.get("depthDeepImageUrl") || "").trim();
-    draft.undertoneChoice = choiceKey(formData.get("undertoneChoice"));
-    draft.undertoneWarmImageUrl = String(formData.get("undertoneWarmImageUrl") || "").trim();
-    draft.undertoneCoolImageUrl = String(formData.get("undertoneCoolImageUrl") || "").trim();
-    draft.undertoneOliveImageUrl = String(formData.get("undertoneOliveImageUrl") || "").trim();
-    draft.showOliveImage = formData.has("showOliveImage");
-    draft.chromaChoice = choiceKey(formData.get("chromaChoice"));
-    draft.chromaSoftImageUrl = String(formData.get("chromaSoftImageUrl") || "").trim();
-    draft.chromaClearImageUrl = String(formData.get("chromaClearImageUrl") || "").trim();
+    draft.coverPhotoScale = Math.min(Math.max(Number(formString("coverPhotoScale", draft.coverPhotoScale)) || 1, 0.7), 2.4);
+    draft.coverPhotoX = Math.min(Math.max(Number(formString("coverPhotoX", draft.coverPhotoX)) || 0, -120), 120);
+    draft.coverPhotoY = Math.min(Math.max(Number(formString("coverPhotoY", draft.coverPhotoY)) || 0, -120), 120);
+    draft.colorWheelImageUrl = formString("colorWheelImageUrl", draft.colorWheelImageUrl);
+    draft.depthChoice = choiceKey(formString("depthChoice", draft.depthChoice));
+    draft.depthLightImageUrl = formString("depthLightImageUrl", draft.depthLightImageUrl);
+    draft.depthMediumImageUrl = formString("depthMediumImageUrl", draft.depthMediumImageUrl);
+    draft.depthDeepImageUrl = formString("depthDeepImageUrl", draft.depthDeepImageUrl);
+    draft.undertoneChoice = choiceKey(formString("undertoneChoice", draft.undertoneChoice));
+    draft.undertoneWarmImageUrl = formString("undertoneWarmImageUrl", draft.undertoneWarmImageUrl);
+    draft.undertoneCoolImageUrl = formString("undertoneCoolImageUrl", draft.undertoneCoolImageUrl);
+    draft.undertoneOliveImageUrl = formString("undertoneOliveImageUrl", draft.undertoneOliveImageUrl);
+    draft.showOliveImage = formData.has("showOliveImage") || (!form.elements.showOliveImage && draft.showOliveImage !== false);
+    draft.chromaChoice = choiceKey(formString("chromaChoice", draft.chromaChoice));
+    draft.chromaSoftImageUrl = formString("chromaSoftImageUrl", draft.chromaSoftImageUrl);
+    draft.chromaClearImageUrl = formString("chromaClearImageUrl", draft.chromaClearImageUrl);
     draft.depthImageUrl = draft.depthLightImageUrl;
     draft.undertoneImageUrl = draft.undertoneWarmImageUrl;
     draft.chromaImageUrl = draft.chromaSoftImageUrl;
