@@ -556,8 +556,6 @@
             <label>Chroma soft image URL<input name="chromaSoftImageUrl" value="${escapeHtml(draft.chromaSoftImageUrl || draft.chromaImageUrl)}"></label>
             <label>Chroma clear image URL<input name="chromaClearImageUrl" value="${escapeHtml(draft.chromaClearImageUrl)}"></label>
             <label>Intro letter<textarea name="text.intro">${escapeHtml(draft.text.intro)}</textarea></label>
-            <label>How it works<textarea name="text.howItWorks">${escapeHtml(draft.text.howItWorks)}</textarea></label>
-            <label>Color wheel copy<textarea name="text.colorWheel">${escapeHtml(draft.text.colorWheel)}</textarea></label>
             <label>Depth copy<textarea name="text.depth">${escapeHtml(draft.text.depth)}</textarea></label>
             <label>Temperature copy<textarea name="text.undertone">${escapeHtml(draft.text.undertone)}</textarea></label>
             <label>Chroma copy<textarea name="text.chroma">${escapeHtml(draft.text.chroma)}</textarea></label>
