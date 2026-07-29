@@ -49,6 +49,8 @@
   let activeReportDraft = null;
   let activeReportClientId = "";
   let activeReportPage = 1;
+  let activeReportTemplateRequest = 0;
+  const reportTemplateCache = new Map();
 
   const REPORT_TYPE = "signature_first_section";
   const REPORT_PAGE_COUNT = 7;
@@ -620,6 +622,122 @@
     return draft;
   }
 
+  function applyPaletteDefaultsToForm(form, paletteCode) {
+    const code = String(paletteCode || "").trim().toUpperCase();
+    const paletteNameInput = form.elements.paletteName;
+    const depthChoiceSelect = form.elements.depthChoice;
+    const undertoneChoiceSelect = form.elements.undertoneChoice;
+    const chromaChoiceSelect = form.elements.chromaChoice;
+
+    if (paletteNameInput) {
+      paletteNameInput.value = getPaletteName(code);
+    }
+
+    if (depthChoiceSelect) {
+      depthChoiceSelect.value = choiceKey(getDepthFromPalette(code));
+    }
+
+    if (undertoneChoiceSelect) {
+      undertoneChoiceSelect.value = choiceKey(getTemperatureFromPalette(code));
+    }
+
+    if (chromaChoiceSelect) {
+      chromaChoiceSelect.value = choiceKey(getChromaFromPalette(code));
+    }
+  }
+
+  function applyReportTemplateToDraft(draft, template) {
+    if (!template) return draft;
+
+    const copy = template.copy || {};
+    const nextDraft = {
+      ...draft,
+      colorFanImageUrl: template.colorFanImageUrl || draft.colorFanImageUrl,
+      colorWheelImageUrl: template.colorWheelImageUrl || draft.colorWheelImageUrl,
+      reportTemplateRecordId: template.id || draft.reportTemplateRecordId,
+      text: { ...draft.text }
+    };
+
+    [
+      ["intro", copy.intro],
+      ["howItWorks", copy.howItWorks],
+      ["colorWheel", copy.colorWheel],
+      ["depth", copy.depth],
+      ["undertone", copy.undertone],
+      ["chroma", copy.chroma],
+      ["paletteType", copy.paletteType]
+    ].forEach(([key, value]) => {
+      const copyValue = String(value || "").trim();
+      if (copyValue) {
+        nextDraft.text[key] = copyValue;
+      }
+    });
+
+    return nextDraft;
+  }
+
+  async function fetchReportPaletteTemplate(paletteCode) {
+    const code = String(paletteCode || "").trim().toUpperCase();
+    if (!code || !apiBase) return null;
+
+    if (reportTemplateCache.has(code)) {
+      return reportTemplateCache.get(code);
+    }
+
+    const response = await fetch(`${apiBase}/api/get-report-palette-template?paletteCode=${encodeURIComponent(code)}`);
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Unable to load report template");
+    }
+
+    reportTemplateCache.set(code, data.template || null);
+    return data.template || null;
+  }
+
+  async function autofillReportTemplate(client, options = {}) {
+    const builder = detailEl.querySelector("[data-ycs-report-builder]");
+    const form = builder?.querySelector("[data-ycs-report-form]");
+    if (!form || !client) return;
+
+    const paletteCode = String(form.elements.paletteCode?.value || "").trim().toUpperCase();
+    const requestId = activeReportTemplateRequest + 1;
+    activeReportTemplateRequest = requestId;
+
+    applyPaletteDefaultsToForm(form, paletteCode);
+    activeReportDraft = readReportDraftFromForm(form, client);
+    updateReportPreview();
+
+    if (!paletteCode) return;
+
+    if (!options.silent) {
+      setReportStatus(`Loading ${paletteCode} report template...`, true);
+    }
+
+    const template = await fetchReportPaletteTemplate(paletteCode);
+    if (requestId !== activeReportTemplateRequest) return;
+
+    if (!template) {
+      if (!options.silent) {
+        setReportStatus(`No Airtable report template found for ${paletteCode}.`, true);
+        window.setTimeout(() => setReportStatus("", false), 3000);
+      }
+      return;
+    }
+
+    activeReportDraft = applyReportTemplateToDraft(activeReportDraft, template);
+    const currentBuilder = detailEl.querySelector("[data-ycs-report-builder]");
+    if (currentBuilder) {
+      currentBuilder.outerHTML = renderReportBuilder(client);
+      applyActiveReportPage(activeReportPage);
+    }
+
+    if (!options.silent) {
+      setReportStatus(`${paletteCode} report template applied.`, true);
+      window.setTimeout(() => setReportStatus("", false), 3000);
+    }
+  }
+
   function updateReportPreview() {
     const builder = detailEl.querySelector("[data-ycs-report-builder]");
     const form = builder?.querySelector("[data-ycs-report-form]");
@@ -687,6 +805,10 @@
       setReportStatus(loadedFromServer ? serverMessage : localMessage, true);
       applyActiveReportPage(activeReportPage);
       window.setTimeout(() => setReportStatus("", false), 3500);
+      if (!savedDraft) {
+        autofillReportTemplate(client, { silent: true })
+          .catch((error) => console.warn("Initial report template autofill failed", error));
+      }
     }
   }
 
@@ -1279,10 +1401,10 @@
     if (!reportForm) return;
 
     if (event.target.name === "paletteCode") {
-      const paletteNameInput = reportForm.elements.paletteName;
-      if (paletteNameInput) {
-        paletteNameInput.value = getPaletteName(event.target.value);
-      }
+      const client = clients.find((item) => item.clientRecordId === activeReportClientId);
+      autofillReportTemplate(client)
+        .catch((error) => setReportStatus(error.message || "Unable to load report template.", true));
+      return;
     }
 
     updateReportPreview();
