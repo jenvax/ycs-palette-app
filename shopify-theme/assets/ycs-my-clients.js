@@ -205,6 +205,31 @@
     ].join("");
   }
 
+  function choiceLabel(value, fallback) {
+    const rawValue = String(value || fallback || "").trim();
+    if (!rawValue) return "";
+    return rawValue.charAt(0).toUpperCase() + rawValue.slice(1).toLowerCase();
+  }
+
+  function copyWithoutGeneratedLead(value, leadPatterns) {
+    const paragraphs = String(value || "").split(/\n{2,}/);
+    if (paragraphs.length && leadPatterns.some((pattern) => pattern.test(paragraphs[0].trim()))) {
+      return paragraphs.slice(1).join("\n\n");
+    }
+
+    return paragraphs.join("\n\n");
+  }
+
+  function renderCopyWithSubheading(subheading, body, leadPatterns) {
+    const bodyHtml = paragraphHtml(copyWithoutGeneratedLead(body, leadPatterns));
+    return `
+      <div class="ycs-report-copy">
+        <p class="ycs-report-copy-subheading"><strong>${escapeHtml(subheading)}</strong></p>
+        ${bodyHtml}
+      </div>
+    `;
+  }
+
   function monthYear(value) {
     const date = value ? new Date(value) : new Date();
     if (Number.isNaN(date.getTime())) return "";
@@ -238,6 +263,7 @@
       undertoneImageUrl: "",
       undertoneWarmImageUrl: "",
       undertoneCoolImageUrl: "",
+      undertoneOliveImageUrl: "",
       chromaImageUrl: "",
       chromaSoftImageUrl: "",
       chromaClearImageUrl: "",
@@ -297,7 +323,10 @@
   }
 
   function paragraphHtml(value) {
-    return escapeHtml(value)
+    const copy = String(value || "").trim();
+    if (!copy) return "";
+
+    return escapeHtml(copy)
       .split(/\n{2,}/)
       .map((paragraph) => `<p>${paragraph.replace(/\n/g, "<br>")}</p>`)
       .join("");
@@ -321,9 +350,9 @@
     return `<img class="${className || "ycs-report-preview__image"}" src="${escapeHtml(url)}" alt="${escapeHtml(label)}">`;
   }
 
-  function renderCoverArt(draft) {
+  function renderCoverArt(draft, extraClass) {
     return `
-      <div class="ycs-report-cover-art">
+      <div class="ycs-report-cover-art${extraClass ? ` ${extraClass}` : ""}">
         ${draft.colorFanImageUrl
           ? `<img class="ycs-report-cover-art__fan" src="${escapeHtml(draft.colorFanImageUrl)}" alt="Color fan">`
           : `<div class="ycs-report-cover-art__fan ycs-report-preview__image--empty">Color fan image</div>`}
@@ -350,12 +379,14 @@
       <div class="${className}">
         ${items.map((item) => `
           <figure${choiceKey(item.value || item.label) === choiceKey(selectedValue) ? ` class="is-selected"` : ""}>
-            ${choiceKey(item.value || item.label) === choiceKey(selectedValue)
-              ? `<img class="ycs-report-checkmark" src="${REPORT_CHECKMARK_URL}" alt="">`
-              : ""}
-            ${item.url
-              ? `<img src="${escapeHtml(item.url)}" alt="${escapeHtml(item.label)}">`
-              : `<div class="ycs-report-preview__image--empty">${escapeHtml(item.label)} image</div>`}
+            <div class="ycs-report-comparison-image-space">
+              ${choiceKey(item.value || item.label) === choiceKey(selectedValue)
+                ? `<img class="ycs-report-checkmark" src="${REPORT_CHECKMARK_URL}" alt="">`
+                : ""}
+              ${item.url
+                ? `<img src="${escapeHtml(item.url)}" alt="${escapeHtml(item.label)}">`
+                : `<div class="ycs-report-preview__image--empty">${escapeHtml(item.label)} image</div>`}
+            </div>
             <figcaption>${escapeHtml(item.label)}</figcaption>
           </figure>
         `).join("")}
@@ -377,6 +408,9 @@
 
   function reportPagesHtml(draft) {
     const name = draft.customerName || "Client";
+    const depthLabel = choiceLabel(draft.depthChoice, draft.depth).toUpperCase();
+    const undertoneLabel = choiceLabel(draft.undertoneChoice, draft.undertone).toUpperCase();
+    const chromaLabel = choiceLabel(draft.chromaChoice, draft.chroma).toUpperCase();
 
     return `
       <section class="ycs-report-page ycs-report-page--cover" data-report-page="1">
@@ -427,7 +461,7 @@
           { label: "Medium Tones", value: "medium", url: draft.depthMediumImageUrl },
           { label: "Deep Tones", value: "deep", url: draft.depthDeepImageUrl }
         ], "ycs-report-comparison-grid ycs-report-comparison-grid--three", draft.depthChoice)}
-        <div class="ycs-report-copy">${paragraphHtml(draft.text.depth)}</div>
+        ${renderCopyWithSubheading(`Your depth is ${depthLabel}`, draft.text.depth, [/^your depth is\b/i])}
         ${renderReportFooter(draft, 4)}
       </section>
       <section class="ycs-report-page" data-report-page="5">
@@ -435,9 +469,10 @@
         <h1>Temperature</h1>
         ${renderComparisonImages([
           { label: "Warm Tones", value: "warm", url: draft.undertoneWarmImageUrl || draft.undertoneImageUrl },
-          { label: "Cool Tones", value: "cool", url: draft.undertoneCoolImageUrl }
-        ], "ycs-report-comparison-grid ycs-report-comparison-grid--two", draft.undertoneChoice)}
-        <div class="ycs-report-copy">${paragraphHtml(draft.text.undertone)}</div>
+          { label: "Cool Tones", value: "cool", url: draft.undertoneCoolImageUrl },
+          { label: "Olive Tones", value: "olive", url: draft.undertoneOliveImageUrl }
+        ], "ycs-report-comparison-grid ycs-report-comparison-grid--three", draft.undertoneChoice)}
+        ${renderCopyWithSubheading(`Your undertone is ${undertoneLabel}`, draft.text.undertone, [/^you have\b/i, /^your undertone is\b/i])}
         ${renderReportFooter(draft, 5)}
       </section>
       <section class="ycs-report-page" data-report-page="6">
@@ -447,14 +482,14 @@
           { label: "Soft Tones", value: "soft", url: draft.chromaSoftImageUrl || draft.chromaImageUrl },
           { label: "Clear Tones", value: "clear", url: draft.chromaClearImageUrl }
         ], "ycs-report-comparison-grid ycs-report-comparison-grid--two", draft.chromaChoice)}
-        <div class="ycs-report-copy">${paragraphHtml(draft.text.chroma)}</div>
+        ${renderCopyWithSubheading(`Your chroma is ${chromaLabel}`, draft.text.chroma, [/^you are\b/i, /^your chroma is\b/i])}
         ${renderReportFooter(draft, 6)}
       </section>
       <section class="ycs-report-page" data-report-page="7">
         ${renderReportBrand(draft)}
         <h1>${escapeHtml(draft.paletteName)}</h1>
-        ${renderReportImage(draft.selectedDrapeImageUrl, "Selected draped image", "ycs-report-preview__drape")}
-        <div class="ycs-report-copy">${paragraphHtml(draft.text.paletteType)}</div>
+        ${renderCoverArt(draft, "ycs-report-cover-art--inline")}
+        ${renderCopyWithSubheading(`You are ${draft.paletteName}`, draft.text.paletteType, [/^you are\b/i])}
         ${renderReportFooter(draft, 7)}
       </section>
     `;
@@ -508,10 +543,12 @@
             <label>Depth deep image URL<input name="depthDeepImageUrl" value="${escapeHtml(draft.depthDeepImageUrl)}"></label>
             <label>Undertone decision<select name="undertoneChoice">${renderDecisionOptions([
               { value: "warm", label: "Warm" },
-              { value: "cool", label: "Cool" }
+              { value: "cool", label: "Cool" },
+              { value: "olive", label: "Olive" }
             ], draft.undertoneChoice)}</select></label>
             <label>Undertone warm image URL<input name="undertoneWarmImageUrl" value="${escapeHtml(draft.undertoneWarmImageUrl || draft.undertoneImageUrl)}"></label>
             <label>Undertone cool image URL<input name="undertoneCoolImageUrl" value="${escapeHtml(draft.undertoneCoolImageUrl)}"></label>
+            <label>Undertone olive image URL<input name="undertoneOliveImageUrl" value="${escapeHtml(draft.undertoneOliveImageUrl)}"></label>
             <label>Chroma decision<select name="chromaChoice">${renderDecisionOptions([
               { value: "soft", label: "Soft" },
               { value: "clear", label: "Clear" }
@@ -563,6 +600,7 @@
     draft.undertoneChoice = choiceKey(formData.get("undertoneChoice"));
     draft.undertoneWarmImageUrl = String(formData.get("undertoneWarmImageUrl") || "").trim();
     draft.undertoneCoolImageUrl = String(formData.get("undertoneCoolImageUrl") || "").trim();
+    draft.undertoneOliveImageUrl = String(formData.get("undertoneOliveImageUrl") || "").trim();
     draft.chromaChoice = choiceKey(formData.get("chromaChoice"));
     draft.chromaSoftImageUrl = String(formData.get("chromaSoftImageUrl") || "").trim();
     draft.chromaClearImageUrl = String(formData.get("chromaClearImageUrl") || "").trim();

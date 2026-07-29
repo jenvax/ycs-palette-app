@@ -611,7 +611,7 @@
     aspect-ratio: 8.5 / 11;
     background: #fff;
     color: #050505;
-    padding: 82px 54px 58px;
+    padding: 128px 54px 58px;
     box-shadow: 0 8px 24px rgba(0,0,0,.08);
     overflow: hidden;
     font-family: Arial, Helvetica, sans-serif;
@@ -634,7 +634,7 @@
   .ycs-report-page h1 {
     margin: 0 0 24px;
     font-family: Georgia, "Times New Roman", serif;
-    font-size: 54px;
+    font-size: 42px;
     line-height: .98;
     font-weight: 400;
     text-transform: uppercase;
@@ -787,7 +787,7 @@
   }
 
   .ycs-report-copy--letter {
-    padding-top: 24px;
+    padding-top: 0;
   }
 
   .ycs-report-two-column {
@@ -803,7 +803,7 @@
   }
 
   .ycs-report-page--science {
-    padding-top: 104px;
+    padding-top: 128px;
   }
 
   .ycs-report-page--science .ycs-report-two-column {
@@ -813,7 +813,7 @@
 
   .ycs-report-page--science h1 {
     margin-bottom: 18px;
-    font-size: 40px;
+    font-size: 36px;
     line-height: 1;
   }
 
@@ -924,11 +924,14 @@
 
   .ycs-report-comparison-grid figure {
     margin: 0;
-    position: relative;
     text-align: center;
   }
 
-  .ycs-report-comparison-grid figure > img:not(.ycs-report-checkmark),
+  .ycs-report-comparison-image-space {
+    position: relative;
+  }
+
+  .ycs-report-comparison-image-space > img:not(.ycs-report-checkmark),
   .ycs-report-comparison-grid .ycs-report-preview__image--empty {
     width: 100%;
     height: 230px;
@@ -938,8 +941,8 @@
 
   .ycs-report-checkmark {
     position: absolute;
-    top: -8px;
-    left: -8px;
+    top: 8px;
+    left: 8px;
     z-index: 3;
     width: 38px;
     height: 38px;
@@ -951,6 +954,31 @@
     color: #111;
     font-size: 16px;
     line-height: 1.1;
+  }
+
+  .ycs-report-copy-subheading {
+    margin-bottom: 12px !important;
+    font-size: 19px !important;
+    line-height: 1.25 !important;
+  }
+
+  .ycs-report-cover-art--inline {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 440px;
+    height: 220px;
+    margin: 0 auto 24px;
+    transform: none;
+  }
+
+  .ycs-report-cover-art--inline .ycs-report-cover-art__fan {
+    height: 220px;
+  }
+
+  .ycs-report-cover-art--inline .ycs-report-cover-art__drape {
+    width: 216px;
+    height: 204px;
   }
 
   [hidden] {
