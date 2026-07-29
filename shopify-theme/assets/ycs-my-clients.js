@@ -754,7 +754,6 @@
             <h2>${escapeHtml(draft.paletteName)}</h2>
             ${paragraphHtml(draft.text.colorWheel)}
             ${renderReportImage(draft.colorWheelImageUrl, "Color wheel image", "ycs-report-preview__wheel")}
-            <p class="ycs-report-wheel-note">Colors on the right create harmony with your coloring and tones. Colors on the left create contrast with your coloring.</p>
           </div>
         </div>
         ${renderReportFooter(draft, 3)}
