@@ -1,10 +1,17 @@
 (function () {
   console.log('YCS PHOTO DRAPING JS LOADED');
 
-  const appEl = document.querySelector('.ycs-drape-app');
+  const photoPrepAppEl = document.querySelector('.ycs-photo-prep-app');
+  const drapeAppEl = document.querySelector('.ycs-drape-app');
+  const appEl = drapeAppEl || photoPrepAppEl;
 
-  const IS_SAMPLE_USER = appEl && appEl.dataset
-    ? (appEl.dataset.isSampleUser === 'true')
+  function readAppData(key) {
+    return (drapeAppEl && drapeAppEl.dataset ? drapeAppEl.dataset[key] : '') ||
+      (photoPrepAppEl && photoPrepAppEl.dataset ? photoPrepAppEl.dataset[key] : '');
+  }
+
+  const IS_SAMPLE_USER = appEl
+    ? (readAppData('isSampleUser') === 'true')
     : false;
 
   const uploadBtn = document.getElementById('ycs-upload-btn');
@@ -97,9 +104,9 @@
 
 
 
-  const APP_BASE_URL = appEl && appEl.dataset ? (appEl.dataset.appBaseUrl || '') : '';
-  const VIEWER_CUSTOMER_ID = appEl && appEl.dataset ? (appEl.dataset.customerId || '') : '';
-  const VIEWER_FIRST_NAME = appEl && appEl.dataset ? (appEl.dataset.customerFirstName || '') : '';
+  const APP_BASE_URL = appEl ? (readAppData('appBaseUrl') || '') : '';
+  const VIEWER_CUSTOMER_ID = appEl ? (readAppData('customerId') || '') : '';
+  const VIEWER_FIRST_NAME = appEl ? (readAppData('customerFirstName') || '') : '';
   const urlParams = new URLSearchParams(window.location.search);
   const ADMIN_TARGET_CUSTOMER_ID = (urlParams.get('adminCustomerId') || '').trim();
   const SELECTED_PHOTO_ID = (urlParams.get('photoId') || '').trim();
@@ -107,24 +114,28 @@
   const URL_FIRST_NAME = (urlParams.get('firstName') || '').trim();
   const CUSTOMER_ID = ADMIN_TARGET_CUSTOMER_ID || VIEWER_CUSTOMER_ID;
 
-  const IS_ADMIN = appEl && appEl.dataset
-    ? (appEl.dataset.isAdmin === 'true')
+  const IS_ADMIN = appEl
+    ? (readAppData('isAdmin') === 'true')
     : false;
 
-    const IS_STYLE_MASTERS = appEl && appEl.dataset
-  ? (appEl.dataset.isStyleMasters === 'true')
+    const IS_STYLE_MASTERS = appEl
+  ? (readAppData('isStyleMasters') === 'true' || readAppData('isVip') === 'true')
   : false;
 
-const HAS_DRAPING_STUDIO = appEl && appEl.dataset
-  ? (appEl.dataset.hasDrapingStudio === 'true')
+const IS_CATOOL_GROWTH = appEl
+  ? (readAppData('isCatoolGrowth') === 'true')
   : false;
 
-const HAS_DRAPING_STUDIO_STARTER = appEl && appEl.dataset
-  ? (appEl.dataset.hasDrapingStudioStarter === 'true')
+const HAS_DRAPING_STUDIO = appEl
+  ? (readAppData('hasDrapingStudio') === 'true')
   : false;
 
-const HAS_DRAPING_STUDIO_FULL = appEl && appEl.dataset
-  ? (appEl.dataset.hasDrapingStudioFull === 'true')
+const HAS_DRAPING_STUDIO_STARTER = appEl
+  ? (readAppData('hasDrapingStudioStarter') === 'true')
+  : false;
+
+const HAS_DRAPING_STUDIO_FULL = appEl
+  ? (readAppData('hasDrapingStudioFull') === 'true')
   : false;
 
   const photoLoadingTextEl = photoLoadingEl
@@ -226,6 +237,7 @@ const HAS_DRAPING_STUDIO_FULL = appEl && appEl.dataset
   let currentPaletteColors = [];
   let ownedPaletteCodes = [];
   let styleMastersPaletteOptions = [];
+  let privateCustomPaletteOptions = [];
   let selectedHex = '';
   let cachedProcessedImage = null;
   let uploadsRemaining = null;
@@ -629,10 +641,10 @@ const HAS_DRAPING_STUDIO_FULL = appEl && appEl.dataset
 
   function getPaletteDisplayName(code) {
     if (isCustomPaletteCode(code)) {
-      const match = styleMastersPaletteOptions.find(function (palette) {
+      const match = getCustomPaletteOptions().find(function (palette) {
         return palette.code === code;
       });
-      return match ? match.name : 'Style Masters Palette';
+      return match ? match.name : 'Custom Palette';
     }
     return paletteNames[code] || code || '—';
   }
@@ -1288,6 +1300,10 @@ replaceButtons.forEach(function (btn) {
     };
   }
 
+  function getCustomPaletteOptions() {
+    return styleMastersPaletteOptions.concat(privateCustomPaletteOptions);
+  }
+
   async function loadStyleMastersPalettes() {
     if ((!IS_ADMIN && !IS_STYLE_MASTERS) || !APP_BASE_URL || !VIEWER_CUSTOMER_ID) return [];
 
@@ -1316,16 +1332,43 @@ replaceButtons.forEach(function (btn) {
     }
   }
 
-  function orderPalettesWithStyleMasters(ownedPalettes) {
-    if (!styleMastersPaletteOptions.length) return ownedPalettes;
+  async function loadPrivateCustomPalettes() {
+    if (!IS_CATOOL_GROWTH || !APP_BASE_URL || !VIEWER_CUSTOMER_ID) return [];
 
-    const styleMastersCodes = styleMastersPaletteOptions.map(function (palette) {
+    try {
+      const query = new URLSearchParams({
+        customerId: VIEWER_CUSTOMER_ID,
+        hasGrowthAccess: 'true',
+        action: 'list'
+      });
+      const response = await fetch(APP_BASE_URL.replace(/\/$/, '') + '/api/custom-palettes?' + query.toString());
+      const text = await response.text();
+      const data = text ? JSON.parse(text) : {};
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Unable to load custom palettes');
+      }
+
+      return (data.palettes || [])
+        .map(normalizeCustomPaletteOption)
+        .filter(Boolean);
+    } catch (error) {
+      console.error('Failed to load private custom palettes for draping studio', error);
+      return [];
+    }
+  }
+
+  function orderPalettesWithCustomPalettes(ownedPalettes) {
+    const customPalettes = getCustomPaletteOptions();
+    if (!customPalettes.length) return ownedPalettes;
+
+    const customCodes = customPalettes.map(function (palette) {
       return palette.code;
     });
 
-    return styleMastersCodes
+    return customCodes
       .concat(ownedPalettes.filter(function (code) {
-        return styleMastersCodes.indexOf(code) === -1;
+        return customCodes.indexOf(code) === -1;
       }))
       .filter(function (code, index, allCodes) {
         return allCodes.indexOf(code) === index;
@@ -1366,7 +1409,7 @@ replaceButtons.forEach(function (btn) {
     ownedPalettes.unshift(paletteFromUrl);
   }
 
-  ownedPalettes = orderPalettesWithStyleMasters(ownedPalettes);
+  ownedPalettes = orderPalettesWithCustomPalettes(ownedPalettes);
 
   ownedPaletteCodes = ownedPalettes.slice();
 
@@ -1670,7 +1713,7 @@ function updateFilterArrows() {
   async function fetchPaletteColors(paletteCode) {
     try {
       if (isCustomPaletteCode(paletteCode)) {
-        const match = styleMastersPaletteOptions.find(function (palette) {
+        const match = getCustomPaletteOptions().find(function (palette) {
           return palette.code === paletteCode;
         });
 
@@ -2429,7 +2472,12 @@ function updateFilterArrows() {
   }
 
   async function initializePaletteControls() {
-    styleMastersPaletteOptions = await loadStyleMastersPalettes();
+    const customPaletteResults = await Promise.all([
+      loadStyleMastersPalettes(),
+      loadPrivateCustomPalettes()
+    ]);
+    styleMastersPaletteOptions = customPaletteResults[0];
+    privateCustomPaletteOptions = customPaletteResults[1];
     populatePaletteSelect();
     renderComparisonPalettes();
     setViewMode('single');
