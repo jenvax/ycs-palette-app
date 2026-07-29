@@ -216,8 +216,12 @@ export async function action({ request }) {
   } catch (error) {
     console.error("Save color analysis report failed:", error);
 
+    const schemaPermissionMessage = error?.message?.toLowerCase().includes("invalid permissions")
+      ? "Airtable could not create the ColorAnalysisReports table because the app token does not have schema permissions. Create the table manually or update the Airtable token scope, then try Save Draft again."
+      : null;
+
     return Response.json(
-      { error: error.message || "Unknown error" },
+      { error: schemaPermissionMessage || error.message || "Unknown error" },
       { status: 500, headers: corsHeaders }
     );
   }

@@ -1550,7 +1550,7 @@
       setReportStatus("Report draft saved.", true);
     } catch (error) {
       console.warn("Server report draft save failed", error);
-      setReportStatus("Draft saved in this browser.", true);
+      setReportStatus(`Draft saved in this browser. Server save failed: ${error.message || "Unknown error"}`, true);
     } finally {
       if (button) {
         button.textContent = "Saved";
