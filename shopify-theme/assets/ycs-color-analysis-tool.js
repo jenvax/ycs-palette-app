@@ -3421,9 +3421,6 @@ return null;
       const ctx = canvas.getContext('2d');
       ctx.scale(2, 2);
 
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, frameWidth, frameHeight);
-
       const uploadedImg = await loadImage(state.loadedImageUrl);
 
       const naturalWidth = uploadedImg.naturalWidth;

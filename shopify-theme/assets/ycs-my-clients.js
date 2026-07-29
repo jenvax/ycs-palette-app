@@ -270,6 +270,7 @@
       chromaImageUrl: "",
       chromaSoftImageUrl: "",
       chromaClearImageUrl: "",
+      showOliveImage: true,
       depth,
       undertone: temperature,
       chroma,
@@ -401,6 +402,9 @@
     const currentLabel = current
       ? savedImageTitle(current)
       : (selectedUrl ? "Custom image selected" : "No image selected");
+    const previewHtml = selectedUrl
+      ? `<img class="ycs-report-image-picker__preview" src="${escapeHtml(selectedUrl)}" alt="${escapeHtml(currentLabel)}">`
+      : `<div class="ycs-report-image-picker__preview ycs-report-image-picker__preview--empty">No image</div>`;
 
     return `
       <div class="ycs-report-image-picker" data-ycs-report-image-picker="${escapeHtml(fieldName)}">
@@ -408,44 +412,48 @@
           <span>${escapeHtml(title)}</span>
           <small data-ycs-report-image-current>${escapeHtml(currentLabel)}</small>
         </div>
-        <div class="ycs-report-image-picker__grid">
-          ${images.length ? images.map((image) => {
-            const isSelected = image.imageUrl === selectedUrl;
-            const label = savedImageTitle(image) || "Saved draped image";
-            return `
-              <button
-                class="ycs-report-image-option${isSelected ? " is-selected" : ""}"
-                type="button"
-                data-ycs-report-image-select
-                data-report-image-field="${escapeHtml(fieldName)}"
-                data-report-image-url="${escapeHtml(image.imageUrl || "")}"
-                data-report-image-label="${escapeHtml(label)}"
-                title="${escapeHtml(label)}">
-                <img src="${escapeHtml(image.imageUrl || "")}" alt="${escapeHtml(label)}">
-                <span>${escapeHtml(image.drapeColorName || image.panel || "Saved")}</span>
-              </button>
-            `;
-          }).join("") : `<p class="ycs-report-image-picker__empty">No saved draped images yet.</p>`}
-        </div>
-        ${selectedUrl ? `
-          <button
-            class="ycs-report-image-clear"
-            type="button"
-            data-ycs-report-image-select
-            data-report-image-field="${escapeHtml(fieldName)}"
-            data-report-image-url=""
-            data-report-image-label="No image selected">
-            Clear selection
-          </button>
-        ` : ""}
+        ${previewHtml}
+        <details class="ycs-report-image-picker__choices">
+          <summary>Choose image</summary>
+          <div class="ycs-report-image-picker__grid">
+            ${images.length ? images.map((image) => {
+              const isSelected = image.imageUrl === selectedUrl;
+              const label = savedImageTitle(image) || "Saved draped image";
+              return `
+                <button
+                  class="ycs-report-image-option${isSelected ? " is-selected" : ""}"
+                  type="button"
+                  data-ycs-report-image-select
+                  data-report-image-field="${escapeHtml(fieldName)}"
+                  data-report-image-url="${escapeHtml(image.imageUrl || "")}"
+                  data-report-image-label="${escapeHtml(label)}"
+                  title="${escapeHtml(label)}">
+                  <img src="${escapeHtml(image.imageUrl || "")}" alt="${escapeHtml(label)}">
+                  <span>${escapeHtml(image.drapeColorName || image.panel || "Saved")}</span>
+                </button>
+              `;
+            }).join("") : `<p class="ycs-report-image-picker__empty">No saved draped images yet.</p>`}
+          </div>
+        </details>
+        <button
+          class="ycs-report-image-clear"
+          type="button"
+          data-ycs-report-image-select
+          data-report-image-field="${escapeHtml(fieldName)}"
+          data-report-image-url=""
+          data-report-image-label="No image selected"
+          ${selectedUrl ? "" : "hidden"}>
+          Clear selection
+        </button>
       </div>
     `;
   }
 
   function renderComparisonImages(items, className, selectedValue) {
+    const visibleItems = items.filter((item) => item.hidden !== true);
     return `
       <div class="${className}">
-        ${items.map((item) => `
+        ${visibleItems.map((item) => `
           <figure${choiceKey(item.value || item.label) === choiceKey(selectedValue) ? ` class="is-selected"` : ""}>
             <div class="ycs-report-comparison-image-space">
               ${choiceKey(item.value || item.label) === choiceKey(selectedValue)
@@ -535,11 +543,11 @@
       <section class="ycs-report-page" data-report-page="5">
         ${renderReportBrand(draft)}
         <h1>Temperature</h1>
-        ${renderComparisonImages([
-          { label: "Warm Tones", value: "warm", url: draft.undertoneWarmImageUrl || draft.undertoneImageUrl },
-          { label: "Cool Tones", value: "cool", url: draft.undertoneCoolImageUrl },
-          { label: "Olive Tones", value: "olive", url: draft.undertoneOliveImageUrl }
-        ], "ycs-report-comparison-grid ycs-report-comparison-grid--three", draft.undertoneChoice)}
+            ${renderComparisonImages([
+              { label: "Warm Tones", value: "warm", url: draft.undertoneWarmImageUrl || draft.undertoneImageUrl },
+              { label: "Cool Tones", value: "cool", url: draft.undertoneCoolImageUrl },
+              { label: "Olive Tones", value: "olive", url: draft.undertoneOliveImageUrl, hidden: draft.showOliveImage === false }
+            ], "ycs-report-comparison-grid ycs-report-comparison-grid--three", draft.undertoneChoice)}
         ${renderCopyWithSubheading(`Your undertone is ${undertoneLabel}`, draft.text.undertone, [/^you have\b/i, /^your undertone is\b/i])}
         ${renderReportFooter(draft, 5)}
       </section>
@@ -641,6 +649,10 @@
               { value: "cool", label: "Cool" },
               { value: "olive", label: "Olive" }
             ], draft.undertoneChoice)}</select></label>
+            <label class="ycs-report-checkbox">
+              <input name="showOliveImage" type="checkbox" value="1"${draft.showOliveImage === false ? "" : " checked"}>
+              <span>Show olive image on the undertone page</span>
+            </label>
             <input type="hidden" name="undertoneWarmImageUrl" value="${escapeHtml(draft.undertoneWarmImageUrl || draft.undertoneImageUrl)}">
             ${renderSavedImagePicker({
               fieldName: "undertoneWarmImageUrl",
@@ -656,7 +668,7 @@
               preferredChoice: "cool"
             })}
             <input type="hidden" name="undertoneOliveImageUrl" value="${escapeHtml(draft.undertoneOliveImageUrl)}">
-            ${renderSavedImagePicker({
+            ${draft.showOliveImage === false ? "" : renderSavedImagePicker({
               fieldName: "undertoneOliveImageUrl",
               title: "Undertone olive image",
               selectedUrl: draft.undertoneOliveImageUrl,
@@ -728,6 +740,7 @@
     draft.undertoneWarmImageUrl = String(formData.get("undertoneWarmImageUrl") || "").trim();
     draft.undertoneCoolImageUrl = String(formData.get("undertoneCoolImageUrl") || "").trim();
     draft.undertoneOliveImageUrl = String(formData.get("undertoneOliveImageUrl") || "").trim();
+    draft.showOliveImage = formData.has("showOliveImage");
     draft.chromaChoice = choiceKey(formData.get("chromaChoice"));
     draft.chromaSoftImageUrl = String(formData.get("chromaSoftImageUrl") || "").trim();
     draft.chromaClearImageUrl = String(formData.get("chromaClearImageUrl") || "").trim();
@@ -932,6 +945,31 @@
       const current = picker.querySelector("[data-ycs-report-image-current]");
       if (current) {
         current.textContent = imageLabel;
+      }
+
+      const preview = picker.querySelector(".ycs-report-image-picker__preview");
+      if (preview) {
+        if (imageUrl) {
+          const img = preview.tagName.toLowerCase() === "img"
+            ? preview
+            : document.createElement("img");
+          img.className = "ycs-report-image-picker__preview";
+          img.src = imageUrl;
+          img.alt = imageLabel;
+          if (img !== preview) {
+            preview.replaceWith(img);
+          }
+        } else {
+          const empty = document.createElement("div");
+          empty.className = "ycs-report-image-picker__preview ycs-report-image-picker__preview--empty";
+          empty.textContent = "No image";
+          preview.replaceWith(empty);
+        }
+      }
+
+      const clearButton = picker.querySelector(".ycs-report-image-clear");
+      if (clearButton) {
+        clearButton.hidden = !imageUrl;
       }
     }
 
@@ -1584,6 +1622,18 @@
       const client = clients.find((item) => item.clientRecordId === activeReportClientId);
       autofillReportTemplate(client)
         .catch((error) => setReportStatus(error.message || "Unable to load report template.", true));
+      return;
+    }
+
+    if (event.target.name === "showOliveImage") {
+      const client = clients.find((item) => item.clientRecordId === activeReportClientId);
+      const builder = detailEl.querySelector("[data-ycs-report-builder]");
+      const form = builder?.querySelector("[data-ycs-report-form]");
+      if (client && builder && form) {
+        activeReportDraft = readReportDraftFromForm(form, client);
+        builder.outerHTML = renderReportBuilder(client);
+        applyActiveReportPage(activeReportPage);
+      }
       return;
     }
 
