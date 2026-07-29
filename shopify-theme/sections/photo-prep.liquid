@@ -427,19 +427,21 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
               Save Adjusted Photo
             </button>
 
-            <a id="ycs-prep-start-analysis-btn" href="/pages/color-analysis-tool" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary">
-  Continue
-</a>
-{% if is_admin %}
-  <a
-    id="ycs-prep-start-signature-analysis-btn"
-    href="/pages/signature-color-analysis"
-    class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary"
-    hidden
-  >
-    Lip & Draping Studio
-  </a>
-{% endif %}
+            <div class="ycs-photo-prep-analysis-actions">
+              <a id="ycs-prep-start-analysis-btn" href="/pages/color-analysis-tool" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary">
+                Continue
+              </a>
+              {% if can_use_client_management %}
+                <a
+                  id="ycs-prep-start-signature-analysis-btn"
+                  href="/pages/signature-color-analysis"
+                  class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary"
+                  hidden
+                >
+                  Lip & Draping Studio
+                </a>
+              {% endif %}
+            </div>
           </div>
 
           <p class="ycs-photo-prep-help">
@@ -913,6 +915,12 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
     gap: 10px;
     flex-wrap: wrap;
     margin-top: 14px;
+  }
+
+  .ycs-photo-prep-analysis-actions {
+    display: grid;
+    gap: 10px;
+    margin-left: auto;
   }
 
   .ycs-photo-prep-status {
@@ -1865,7 +1873,7 @@ function updateStartAnalysisLink() {
   startAnalysisBtn.textContent = 'Start Color Analysis';
   startAnalysisBtn.setAttribute('href', href);
 
-  if (startSignatureAnalysisBtn && IS_ADMIN) {
+  if (startSignatureAnalysisBtn && CAN_USE_CLIENT_MANAGEMENT) {
     let signatureHref = '/pages/signature-color-analysis';
     const signatureQuery = new URLSearchParams();
 
