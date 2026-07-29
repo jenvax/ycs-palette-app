@@ -539,11 +539,14 @@
           <small>${logoUrl ? "Image logo is active." : "Text logo is active."}</small>
         </div>
         <input type="hidden" name="brandLogoUrl" value="${escapeHtml(logoUrl)}">
-        <label>Upload logo image<input name="brandLogoFile" type="file" accept="image/*"></label>
-        <div class="ycs-report-logo-controls__actions">
-          <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-clear-report-logo>Remove Logo</button>
-        </div>
-        <label>Logo text when no image is used<input name="brandName" value="${escapeHtml(draft.brandName)}"></label>
+        ${logoUrl ? `
+          <div class="ycs-report-logo-controls__actions">
+            <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-clear-report-logo>Remove Logo</button>
+          </div>
+        ` : `
+          <label>Upload logo image<input name="brandLogoFile" type="file" accept="image/*"></label>
+          <label>Logo text when no image is used<input name="brandName" value="${escapeHtml(draft.brandName)}"></label>
+        `}
       </div>
     `;
   }
@@ -565,7 +568,7 @@
                 <legend>Blank page settings</legend>
               <label>Template
                 <select name="customPages.${escapeHtml(id)}.template">
-                  <option value="letter"${template === "letter" ? " selected" : ""}>Intro-style letter page</option>
+                  <option value="letter"${template === "letter" ? " selected" : ""}>Letter Page</option>
                   <option value="photos"${template === "photos" ? " selected" : ""}>Title, two photos, copy</option>
                 </select>
               </label>
@@ -849,10 +852,6 @@
             <input type="hidden" name="selectedDrapeImageUrl" value="${escapeHtml(draft.selectedDrapeImageUrl)}">
             ${renderReportControlsPage(1, "Cover", `
               ${renderReportLogoControls(draft)}
-              <label>Customer name<input name="customerName" value="${escapeHtml(draft.customerName)}"></label>
-              <label>Report date<input name="reportDate" type="date" value="${escapeHtml(draft.reportDate)}"></label>
-              <label>Color type<select name="paletteCode">${paletteOptions}</select></label>
-              <label>Color type display name<input name="paletteName" value="${escapeHtml(draft.paletteName)}"></label>
               <div class="ycs-report-cover-controls">
                 <div class="ycs-report-cover-controls__head">
                   <span>Cover and palette type photo</span>
@@ -862,9 +861,13 @@
                 <label>Move left / right<input name="coverPhotoX" type="range" min="-120" max="120" step="2" value="${escapeHtml(draft.coverPhotoX)}"></label>
                 <label>Move up / down<input name="coverPhotoY" type="range" min="-120" max="120" step="2" value="${escapeHtml(draft.coverPhotoY)}"></label>
               </div>
+              <label>Customer name<input name="customerName" value="${escapeHtml(draft.customerName)}"></label>
+              <label>Report date<input name="reportDate" type="date" value="${escapeHtml(draft.reportDate)}"></label>
+              <label>Color type<select name="paletteCode">${paletteOptions}</select></label>
+              <label>Color type display name<input name="paletteName" value="${escapeHtml(draft.paletteName)}"></label>
             `)}
             ${renderReportControlsPage(2, "Intro Letter", `
-              <label>Intro letter<textarea name="text.intro">${escapeHtml(draft.text.intro)}</textarea></label>
+              <label>Intro letter<textarea class="ycs-report-textarea--fill" name="text.intro">${escapeHtml(draft.text.intro)}</textarea></label>
             `)}
             ${renderReportControlsPage(3, "How It Works", `
               <div class="ycs-report-form-panel">
@@ -994,7 +997,9 @@
     draft.customerName = String(formData.get("customerName") || "").trim();
     draft.reportDate = String(formData.get("reportDate") || "").trim();
     draft.brandLogoUrl = String(formData.get("brandLogoUrl") || "").trim();
-    draft.brandName = String(formData.get("brandName") || "").trim();
+    draft.brandName = formData.has("brandName")
+      ? String(formData.get("brandName") || "").trim()
+      : String(draft.brandName || "").trim();
     draft.paletteCode = paletteCode;
     draft.paletteName = String(formData.get("paletteName") || "").trim() || getPaletteName(paletteCode);
     draft.colorFanImageUrl = formData.has("colorFanImageUrl")
@@ -1298,7 +1303,7 @@
       logoInput.value = String(url || "").trim();
     }
 
-    updateReportPreview();
+    rerenderActiveReportBuilder(activeReportPage);
   }
 
   function fileToDataUrl(file) {
@@ -2148,6 +2153,8 @@
       if (!canCreateReports) return;
       event.preventDefault();
       const removeId = removeCustomReportPageButton.dataset.ycsRemoveCustomReportPage;
+      const confirmed = window.confirm("Remove this page from the report?");
+      if (!confirmed) return;
       const client = clients.find((item) => item.clientRecordId === activeReportClientId);
       const builder = detailEl.querySelector("[data-ycs-report-builder]");
       const form = builder?.querySelector("[data-ycs-report-form]");
