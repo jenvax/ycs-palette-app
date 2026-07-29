@@ -541,7 +541,7 @@
         <input type="hidden" name="brandLogoUrl" value="${escapeHtml(logoUrl)}">
         <label>Upload logo image<input name="brandLogoFile" type="file" accept="image/*"></label>
         <div class="ycs-report-logo-controls__actions">
-          <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-clear-report-logo>Use Text Only</button>
+          <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-clear-report-logo>Remove Logo</button>
         </div>
         <label>Logo text when no image is used<input name="brandName" value="${escapeHtml(draft.brandName)}"></label>
       </div>
@@ -554,11 +554,7 @@
       <div class="ycs-report-form-panel ycs-report-custom-pages">
         <div class="ycs-report-form-panel__head">
           <span>Blank pages</span>
-          <small>Add optional pages after the palette type page.</small>
-        </div>
-        <div class="ycs-report-custom-pages__actions">
-          <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-add-custom-report-page="letter">Add Letter Page</button>
-          <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-add-custom-report-page="photos">Add Photo Page</button>
+          <small>Use the + beside the page numbers to add optional pages.</small>
         </div>
         ${customPages.length ? customPages.map((page, index) => {
           const id = String(page.id || makeCustomReportPageId());
@@ -572,9 +568,23 @@
                   <option value="photos"${template === "photos" ? " selected" : ""}>Title, two photos, copy</option>
                 </select>
               </label>
-              <label>Title<input name="customPages.${escapeHtml(id)}.title" value="${escapeHtml(page.title || "")}" placeholder="Optional for letter pages"></label>
-              <label>Left photo image URL<input name="customPages.${escapeHtml(id)}.image1Url" value="${escapeHtml(page.image1Url || "")}"></label>
-              <label>Right photo image URL<input name="customPages.${escapeHtml(id)}.image2Url" value="${escapeHtml(page.image2Url || "")}"></label>
+              <input type="hidden" name="customPages.${escapeHtml(id)}.image1Url" value="${escapeHtml(page.image1Url || "")}">
+              <input type="hidden" name="customPages.${escapeHtml(id)}.image2Url" value="${escapeHtml(page.image2Url || "")}">
+              ${template === "photos" ? `
+                <label>Title<input name="customPages.${escapeHtml(id)}.title" value="${escapeHtml(page.title || "")}"></label>
+                ${renderSavedImagePicker({
+                  fieldName: `customPages.${id}.image1Url`,
+                  title: "Left photo",
+                  selectedUrl: page.image1Url,
+                  preferredChoice: ""
+                })}
+                ${renderSavedImagePicker({
+                  fieldName: `customPages.${id}.image2Url`,
+                  title: "Right photo",
+                  selectedUrl: page.image2Url,
+                  preferredChoice: ""
+                })}
+              ` : ""}
               <label>Copy<textarea name="customPages.${escapeHtml(id)}.copy">${escapeHtml(page.copy || "")}</textarea></label>
               <button class="ycs-report-image-clear" type="button" data-ycs-remove-custom-report-page="${escapeHtml(id)}">Remove page</button>
             </fieldset>
@@ -645,7 +655,7 @@
     `;
   }
 
-  function renderCustomReportPage(draft, page, pageNumber) {
+  function renderCustomReportPage(draft, page, pageNumber, options = {}) {
     const template = page.template === "photos" ? "photos" : "letter";
 
     if (template === "photos") {
@@ -654,8 +664,18 @@
           ${renderReportBrand(draft)}
           <h1>${escapeHtml(page.title || "Custom Page")}</h1>
           <div class="ycs-report-custom-photo-grid">
-            ${renderReportImage(page.image1Url, "Custom page left image", "ycs-report-preview__custom-photo")}
-            ${renderReportImage(page.image2Url, "Custom page right image", "ycs-report-preview__custom-photo")}
+            ${renderPreviewImageTarget(
+              `customPages.${page.id}.image1Url`,
+              "Left photo",
+              renderReportImage(page.image1Url, "Left photo", "ycs-report-preview__custom-photo"),
+              options.interactive
+            )}
+            ${renderPreviewImageTarget(
+              `customPages.${page.id}.image2Url`,
+              "Right photo",
+              renderReportImage(page.image2Url, "Right photo", "ycs-report-preview__custom-photo"),
+              options.interactive
+            )}
           </div>
           <div class="ycs-report-copy ycs-report-copy--custom">${paragraphHtml(page.copy)}</div>
           ${renderReportFooter(draft, pageNumber)}
@@ -770,7 +790,7 @@
 
     reportCustomPages(draft).forEach((page, index) => {
       const pageNumber = BASE_REPORT_PAGE_COUNT + index + 1;
-      pages.push(renderCustomReportPage(draft, page, pageNumber));
+      pages.push(renderCustomReportPage(draft, page, pageNumber, options));
     });
 
     if (options.exportMode) {
@@ -915,6 +935,13 @@
                 const pageNumber = index + 1;
                 return `<button type="button" class="${pageNumber === activeReportPage ? "is-active" : ""}" data-ycs-report-page-button="${pageNumber}">${pageNumber}</button>`;
               }).join("")}
+              <details class="ycs-report-page-add">
+                <summary aria-label="Add report page">+</summary>
+                <div class="ycs-report-page-add__menu">
+                  <button type="button" data-ycs-add-custom-report-page="letter">Letter Page</button>
+                  <button type="button" data-ycs-add-custom-report-page="photos">Photo Page</button>
+                </div>
+              </details>
             </div>
             <div class="ycs-report-preview" data-ycs-report-preview data-active-report-page="${activeReportPage}">
               ${reportPagesHtml(draft, { interactive: true })}
@@ -2190,6 +2217,11 @@
         builder.outerHTML = renderReportBuilder(client);
         applyActiveReportPage(activeReportPage);
       }
+      return;
+    }
+
+    if (/^customPages\..+\.template$/.test(event.target.name || "")) {
+      rerenderActiveReportBuilder(activeReportPage);
       return;
     }
 
