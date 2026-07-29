@@ -339,9 +339,20 @@
     `;
   }
 
+  function renderReportFooter(draft, pageNumber) {
+    const name = String(draft.customerName || "Client").toUpperCase();
+    const date = String(reportDateLabel(draft) || "").toUpperCase();
+
+    return `
+      <footer>
+        <span>${pageNumber ? `${pageNumber} ` : ""}${escapeHtml(name)}</span>
+        <span>${escapeHtml(date)}</span>
+      </footer>
+    `;
+  }
+
   function reportPagesHtml(draft) {
     const name = draft.customerName || "Client";
-    const footer = `${escapeHtml(name.toUpperCase())} ${escapeHtml(reportDateLabel(draft).toUpperCase())}`;
 
     return `
       <section class="ycs-report-page ycs-report-page--cover" data-report-page="1">
@@ -355,13 +366,15 @@
           <h2>${escapeHtml(name)}</h2>
           <p>${escapeHtml(reportFullDateLabel(draft))}</p>
         </div>
-        <footer>${footer}</footer>
+        ${renderReportFooter(draft)}
       </section>
       <section class="ycs-report-page" data-report-page="2">
+        ${renderReportBrand(draft)}
         <div class="ycs-report-copy ycs-report-copy--letter">${paragraphHtml(draft.text.intro)}</div>
-        <footer>2 ${footer}</footer>
+        ${renderReportFooter(draft, 2)}
       </section>
-      <section class="ycs-report-page" data-report-page="3">
+      <section class="ycs-report-page ycs-report-page--science" data-report-page="3">
+        ${renderReportBrand(draft)}
         <div class="ycs-report-two-column">
           <div>
             <h1>How Your<br>Color Analysis Works</h1>
@@ -380,9 +393,10 @@
             ${renderReportImage(draft.colorWheelImageUrl, "Color wheel image", "ycs-report-preview__wheel")}
           </div>
         </div>
-        <footer>3 ${footer}</footer>
+        ${renderReportFooter(draft, 3)}
       </section>
       <section class="ycs-report-page" data-report-page="4">
+        ${renderReportBrand(draft)}
         <h1>Depth</h1>
         ${renderComparisonImages([
           { label: "Light Tones", url: draft.depthLightImageUrl || draft.depthImageUrl },
@@ -390,31 +404,34 @@
           { label: "Deep Tones", url: draft.depthDeepImageUrl }
         ], "ycs-report-comparison-grid ycs-report-comparison-grid--three")}
         <div class="ycs-report-copy">${paragraphHtml(draft.text.depth)}</div>
-        <footer>4 ${footer}</footer>
+        ${renderReportFooter(draft, 4)}
       </section>
       <section class="ycs-report-page" data-report-page="5">
+        ${renderReportBrand(draft)}
         <h1>Temperature</h1>
         ${renderComparisonImages([
           { label: "Warm Tones", url: draft.undertoneWarmImageUrl || draft.undertoneImageUrl },
           { label: "Cool Tones", url: draft.undertoneCoolImageUrl }
         ], "ycs-report-comparison-grid ycs-report-comparison-grid--two")}
         <div class="ycs-report-copy">${paragraphHtml(draft.text.undertone)}</div>
-        <footer>5 ${footer}</footer>
+        ${renderReportFooter(draft, 5)}
       </section>
       <section class="ycs-report-page" data-report-page="6">
+        ${renderReportBrand(draft)}
         <h1>Chroma</h1>
         ${renderComparisonImages([
           { label: "Soft Tones", url: draft.chromaSoftImageUrl || draft.chromaImageUrl },
           { label: "Clear Tones", url: draft.chromaClearImageUrl }
         ], "ycs-report-comparison-grid ycs-report-comparison-grid--two")}
         <div class="ycs-report-copy">${paragraphHtml(draft.text.chroma)}</div>
-        <footer>6 ${footer}</footer>
+        ${renderReportFooter(draft, 6)}
       </section>
       <section class="ycs-report-page" data-report-page="7">
+        ${renderReportBrand(draft)}
         <h1>${escapeHtml(draft.paletteName)}</h1>
         ${renderReportImage(draft.selectedDrapeImageUrl, "Selected draped image", "ycs-report-preview__drape")}
         <div class="ycs-report-copy">${paragraphHtml(draft.text.paletteType)}</div>
-        <footer>7 ${footer}</footer>
+        ${renderReportFooter(draft, 7)}
       </section>
     `;
   }
