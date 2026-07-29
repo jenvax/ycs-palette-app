@@ -532,9 +532,7 @@
             <label>Report date<input name="reportDate" type="date" value="${escapeHtml(draft.reportDate)}"></label>
             <label>Color type<select name="paletteCode">${paletteOptions}</select></label>
             <label>Color type display name<input name="paletteName" value="${escapeHtml(draft.paletteName)}"></label>
-            <label>Color fan image URL<input name="colorFanImageUrl" value="${escapeHtml(draft.colorFanImageUrl)}"></label>
             <label>Desired draped image URL<input name="selectedDrapeImageUrl" value="${escapeHtml(draft.selectedDrapeImageUrl)}"></label>
-            <label>Color wheel image URL<input name="colorWheelImageUrl" value="${escapeHtml(draft.colorWheelImageUrl)}"></label>
             <label>Depth decision<select name="depthChoice">${renderDecisionOptions([
               { value: "light", label: "Light" },
               { value: "medium", label: "Medium" },
@@ -592,9 +590,13 @@
     draft.brandName = String(formData.get("brandName") || "").trim();
     draft.paletteCode = paletteCode;
     draft.paletteName = String(formData.get("paletteName") || "").trim() || getPaletteName(paletteCode);
-    draft.colorFanImageUrl = String(formData.get("colorFanImageUrl") || "").trim();
+    draft.colorFanImageUrl = formData.has("colorFanImageUrl")
+      ? String(formData.get("colorFanImageUrl") || "").trim()
+      : String(draft.colorFanImageUrl || "").trim();
     draft.selectedDrapeImageUrl = String(formData.get("selectedDrapeImageUrl") || "").trim();
-    draft.colorWheelImageUrl = String(formData.get("colorWheelImageUrl") || "").trim();
+    draft.colorWheelImageUrl = formData.has("colorWheelImageUrl")
+      ? String(formData.get("colorWheelImageUrl") || "").trim()
+      : String(draft.colorWheelImageUrl || "").trim();
     draft.depthChoice = choiceKey(formData.get("depthChoice"));
     draft.depthLightImageUrl = String(formData.get("depthLightImageUrl") || "").trim();
     draft.depthMediumImageUrl = String(formData.get("depthMediumImageUrl") || "").trim();
