@@ -55,7 +55,7 @@
   const reportTemplateCache = new Map();
 
   const REPORT_TYPE = "signature_first_section";
-  const REPORT_PAGE_COUNT = 7;
+  const BASE_REPORT_PAGE_COUNT = 7;
   const DEFAULT_REPORT_LOGO_URL = "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/YourColorStyle_Logo-120.png?v=1643287573";
   const REPORT_CHECKMARK_URL = "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/green-check-mark.png?v=1740232016";
   const paletteNames = {
@@ -225,6 +225,18 @@
     return rawValue.charAt(0).toUpperCase() + rawValue.slice(1).toLowerCase();
   }
 
+  function makeCustomReportPageId() {
+    return `custom_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
+  }
+
+  function reportCustomPages(draft) {
+    return Array.isArray(draft?.customPages) ? draft.customPages : [];
+  }
+
+  function totalReportPages(draft) {
+    return BASE_REPORT_PAGE_COUNT + reportCustomPages(draft).length;
+  }
+
   function copyWithoutGeneratedLead(value, leadPatterns) {
     const paragraphs = String(value || "").split(/\n{2,}/);
     if (paragraphs.length && leadPatterns.some((pattern) => pattern.test(paragraphs[0].trim()))) {
@@ -292,6 +304,7 @@
       depthChoice: choiceKey(depth),
       undertoneChoice: choiceKey(temperature),
       chromaChoice: choiceKey(chroma),
+      customPages: [],
       text: {
         intro: `Dear ${firstName},\n\nOne of my favorite parts of creating a Signature Color Analysis is discovering the quiet beauty that makes someone unique. Your best colors reflect the natural harmony already present in your features.\n\nYou are ${paletteName}, a palette built around ${temperature.toLowerCase()} undertones, ${depth.toLowerCase()} depth, and ${chroma.toLowerCase()} color. Together, these qualities create a look that feels refined, approachable, and effortlessly polished.\n\nThe colors throughout this guide were selected because they work with your natural coloring, not against it. My hope is that this guide makes choosing colors feel simple.\n\nWarmly,\nJen Vax`,
         howItWorks: "Your best colors are based on how color interacts with your natural features. At Your Color Style, we use a simple 3-step process to identify the colors that make you look more vibrant, healthy, and put together.",
@@ -314,6 +327,16 @@
       coverPhotoScale: Math.min(Math.max(Number(incoming.coverPhotoScale) || base.coverPhotoScale, 0.7), 2.4),
       coverPhotoX: Math.min(Math.max(Number(incoming.coverPhotoX) || base.coverPhotoX, -120), 120),
       coverPhotoY: Math.min(Math.max(Number(incoming.coverPhotoY) || base.coverPhotoY, -120), 120),
+      customPages: Array.isArray(incoming.customPages)
+        ? incoming.customPages.map((page) => ({
+          id: String(page.id || makeCustomReportPageId()),
+          template: String(page.template || "letter") === "photos" ? "photos" : "letter",
+          title: String(page.title || ""),
+          copy: String(page.copy || ""),
+          image1Url: String(page.image1Url || ""),
+          image2Url: String(page.image2Url || "")
+        }))
+        : [],
       text: {
         ...base.text,
         ...(incoming.text || {})
@@ -505,6 +528,61 @@
     `;
   }
 
+  function renderReportLogoControls(draft) {
+    const logoUrl = String(draft.brandLogoUrl || "").trim();
+    return `
+      <div class="ycs-report-form-panel ycs-report-logo-controls">
+        <div class="ycs-report-form-panel__head">
+          <span>Report logo</span>
+          <small>${logoUrl ? "Image logo is active." : "Text logo is active."}</small>
+        </div>
+        <input type="hidden" name="brandLogoUrl" value="${escapeHtml(logoUrl)}">
+        <label>Upload logo image<input name="brandLogoFile" type="file" accept="image/*"></label>
+        <div class="ycs-report-logo-controls__actions">
+          <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-use-default-logo>Use YCS Logo</button>
+          <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-clear-report-logo>Use Text Only</button>
+        </div>
+        <label>Logo text when no image is used<input name="brandName" value="${escapeHtml(draft.brandName)}"></label>
+      </div>
+    `;
+  }
+
+  function renderCustomPagesForm(draft) {
+    const customPages = reportCustomPages(draft);
+    return `
+      <div class="ycs-report-form-panel ycs-report-custom-pages">
+        <div class="ycs-report-form-panel__head">
+          <span>Blank pages</span>
+          <small>Add optional pages after the palette type page.</small>
+        </div>
+        <div class="ycs-report-custom-pages__actions">
+          <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-add-custom-report-page="letter">Add Letter Page</button>
+          <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-add-custom-report-page="photos">Add Photo Page</button>
+        </div>
+        ${customPages.length ? customPages.map((page, index) => {
+          const id = String(page.id || makeCustomReportPageId());
+          const template = page.template === "photos" ? "photos" : "letter";
+          return `
+            <fieldset class="ycs-report-custom-page" data-ycs-custom-report-page data-report-custom-page-id="${escapeHtml(id)}">
+              <legend>Page ${BASE_REPORT_PAGE_COUNT + index + 1}</legend>
+              <label>Template
+                <select name="customPages.${escapeHtml(id)}.template">
+                  <option value="letter"${template === "letter" ? " selected" : ""}>Intro-style letter page</option>
+                  <option value="photos"${template === "photos" ? " selected" : ""}>Title, two photos, copy</option>
+                </select>
+              </label>
+              <label>Title<input name="customPages.${escapeHtml(id)}.title" value="${escapeHtml(page.title || "")}" placeholder="Optional for letter pages"></label>
+              <label>Left photo image URL<input name="customPages.${escapeHtml(id)}.image1Url" value="${escapeHtml(page.image1Url || "")}"></label>
+              <label>Right photo image URL<input name="customPages.${escapeHtml(id)}.image2Url" value="${escapeHtml(page.image2Url || "")}"></label>
+              <label>Copy<textarea name="customPages.${escapeHtml(id)}.copy">${escapeHtml(page.copy || "")}</textarea></label>
+              <button class="ycs-report-image-clear" type="button" data-ycs-remove-custom-report-page="${escapeHtml(id)}">Remove page</button>
+            </fieldset>
+          `;
+        }).join("") : `<p class="ycs-report-custom-pages__empty">No blank pages added.</p>`}
+      </div>
+    `;
+  }
+
   function renderReportImageModal() {
     return `
       <div class="ycs-report-image-modal" data-ycs-report-image-modal hidden>
@@ -563,6 +641,33 @@
         <span>${pageNumber ? `${pageNumber} ` : ""}${escapeHtml(name)}</span>
         <span>${escapeHtml(date)}</span>
       </footer>
+    `;
+  }
+
+  function renderCustomReportPage(draft, page, pageNumber) {
+    const template = page.template === "photos" ? "photos" : "letter";
+
+    if (template === "photos") {
+      return `
+        <section class="ycs-report-page ycs-report-page--custom-photos" data-report-page="${pageNumber}">
+          ${renderReportBrand(draft)}
+          <h1>${escapeHtml(page.title || "Custom Page")}</h1>
+          <div class="ycs-report-custom-photo-grid">
+            ${renderReportImage(page.image1Url, "Custom page left image", "ycs-report-preview__custom-photo")}
+            ${renderReportImage(page.image2Url, "Custom page right image", "ycs-report-preview__custom-photo")}
+          </div>
+          <div class="ycs-report-copy ycs-report-copy--custom">${paragraphHtml(page.copy)}</div>
+          ${renderReportFooter(draft, pageNumber)}
+        </section>
+      `;
+    }
+
+    return `
+      <section class="ycs-report-page ycs-report-page--letter ycs-report-page--custom-letter" data-report-page="${pageNumber}">
+        ${renderReportBrand(draft)}
+        <div class="ycs-report-copy ycs-report-copy--letter">${paragraphHtml(page.copy)}</div>
+        ${renderReportFooter(draft, pageNumber)}
+      </section>
     `;
   }
 
@@ -662,6 +767,11 @@
       </section>
       `];
 
+    reportCustomPages(draft).forEach((page, index) => {
+      const pageNumber = BASE_REPORT_PAGE_COUNT + index + 1;
+      pages.push(renderCustomReportPage(draft, page, pageNumber));
+    });
+
     if (options.exportMode) {
       return pages.map((page) => `<div class="ycs-report-print-sheet">${page}</div>`).join("");
     }
@@ -702,8 +812,7 @@
         <div class="ycs-report-builder__layout">
           <form class="ycs-report-form" data-ycs-report-form>
             <input type="hidden" name="clientRecordId" value="${escapeHtml(client.clientRecordId)}">
-            <label>Logo image URL<input name="brandLogoUrl" value="${escapeHtml(draft.brandLogoUrl)}"></label>
-            <label>Logo text fallback when image URL is blank<input name="brandName" value="${escapeHtml(draft.brandName)}"></label>
+            ${renderReportLogoControls(draft)}
             <label>Customer name<input name="customerName" value="${escapeHtml(draft.customerName)}"></label>
             <label>Report date<input name="reportDate" type="date" value="${escapeHtml(draft.reportDate)}"></label>
             <label>Color type<select name="paletteCode">${paletteOptions}</select></label>
@@ -797,10 +906,11 @@
             <label>Temperature copy<textarea name="text.undertone">${escapeHtml(draft.text.undertone)}</textarea></label>
             <label>Chroma copy<textarea name="text.chroma">${escapeHtml(draft.text.chroma)}</textarea></label>
             <label>Palette type copy<textarea name="text.paletteType">${escapeHtml(draft.text.paletteType)}</textarea></label>
+            ${renderCustomPagesForm(draft)}
           </form>
           <div class="ycs-report-preview-shell">
             <div class="ycs-report-page-nav" data-ycs-report-page-nav>
-              ${Array.from({ length: REPORT_PAGE_COUNT }, (_, index) => {
+              ${Array.from({ length: totalReportPages(draft) }, (_, index) => {
                 const pageNumber = index + 1;
                 return `<button type="button" class="${pageNumber === activeReportPage ? "is-active" : ""}" data-ycs-report-page-button="${pageNumber}">${pageNumber}</button>`;
               }).join("")}
@@ -859,6 +969,19 @@
     Array.from(form.elements).forEach((element) => {
       if (!element.name || !element.name.startsWith("text.")) return;
       draft.text[element.name.replace("text.", "")] = element.value;
+    });
+
+    draft.customPages = Array.from(form.querySelectorAll("[data-ycs-custom-report-page]")).map((pageEl) => {
+      const id = String(pageEl.dataset.reportCustomPageId || makeCustomReportPageId());
+      const fieldValue = (fieldName) => String(formData.get(`customPages.${id}.${fieldName}`) || "").trim();
+      return {
+        id,
+        template: fieldValue("template") === "photos" ? "photos" : "letter",
+        title: fieldValue("title"),
+        copy: String(formData.get(`customPages.${id}.copy`) || "").trim(),
+        image1Url: fieldValue("image1Url"),
+        image2Url: fieldValue("image2Url")
+      };
     });
 
     return draft;
@@ -1074,17 +1197,80 @@
   }
 
   function applyActiveReportPage(pageNumber) {
-    const safePage = Math.min(Math.max(Number(pageNumber) || 1, 1), REPORT_PAGE_COUNT);
+    const safePage = Math.min(Math.max(Number(pageNumber) || 1, 1), totalReportPages(activeReportDraft));
     activeReportPage = safePage;
 
     const preview = detailEl.querySelector("[data-ycs-report-preview]");
     if (preview) {
       preview.dataset.activeReportPage = String(safePage);
+      preview.querySelectorAll("[data-report-page]").forEach((page) => {
+        page.style.display = Number(page.dataset.reportPage) === safePage ? "block" : "none";
+      });
     }
 
     detailEl.querySelectorAll("[data-ycs-report-page-button]").forEach((button) => {
       button.classList.toggle("is-active", Number(button.dataset.ycsReportPageButton) === safePage);
     });
+  }
+
+  function rerenderActiveReportBuilder(pageNumber = activeReportPage) {
+    const client = clients.find((item) => item.clientRecordId === activeReportClientId);
+    const builder = detailEl.querySelector("[data-ycs-report-builder]");
+    const form = builder?.querySelector("[data-ycs-report-form]");
+    if (!client || !builder || !form) return;
+
+    activeReportDraft = readReportDraftFromForm(form, client);
+    builder.outerHTML = renderReportBuilder(client);
+    applyActiveReportPage(pageNumber);
+  }
+
+  function setReportLogoUrl(url) {
+    const form = detailEl.querySelector("[data-ycs-report-form]");
+    if (!form) return;
+
+    const logoInput = form.elements.brandLogoUrl;
+    if (logoInput) {
+      logoInput.value = String(url || "").trim();
+    }
+
+    updateReportPreview();
+  }
+
+  function fileToDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => reject(reader.error || new Error("Unable to read file"));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function uploadReportLogo(fileInput) {
+    const file = fileInput?.files?.[0];
+    if (!file || !apiBase || !activeReportClientId) return;
+
+    setReportStatus("Uploading logo...", true);
+    const imageBase64 = await fileToDataUrl(file);
+    const response = await fetch(`${apiBase}/api/upload-report-logo`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        imageBase64,
+        fileName: file.name,
+        clientRecordId: activeReportClientId,
+        consultantId
+      })
+    });
+    const data = await response.json();
+
+    if (!response.ok || !data.imageUrl) {
+      throw new Error(data.error || "Logo upload failed");
+    }
+
+    setReportLogoUrl(data.imageUrl);
+    fileInput.value = "";
+    setReportStatus("Logo uploaded.", true);
+    window.setTimeout(() => setReportStatus("", false), 2500);
   }
 
   function setReportStatus(message, visible) {
@@ -1798,6 +1984,10 @@
     const reportPreviewImageButton = event.target.closest("[data-ycs-report-preview-image-field]");
     const reportModalImageButton = event.target.closest("[data-ycs-report-modal-image-select]");
     const reportModalCloseButton = event.target.closest("[data-ycs-report-image-modal-close]");
+    const useDefaultLogoButton = event.target.closest("[data-ycs-use-default-logo]");
+    const clearReportLogoButton = event.target.closest("[data-ycs-clear-report-logo]");
+    const addCustomReportPageButton = event.target.closest("[data-ycs-add-custom-report-page]");
+    const removeCustomReportPageButton = event.target.closest("[data-ycs-remove-custom-report-page]");
 
     if (pageBackButton && pageBackButton.dataset.ycsBackMode === "clients") {
       event.preventDefault();
@@ -1856,6 +2046,59 @@
     if (reportPageButton) {
       if (!canCreateReports) return;
       applyActiveReportPage(reportPageButton.dataset.ycsReportPageButton);
+    }
+
+    if (useDefaultLogoButton) {
+      if (!canCreateReports) return;
+      event.preventDefault();
+      setReportLogoUrl(DEFAULT_REPORT_LOGO_URL);
+    }
+
+    if (clearReportLogoButton) {
+      if (!canCreateReports) return;
+      event.preventDefault();
+      setReportLogoUrl("");
+    }
+
+    if (addCustomReportPageButton) {
+      if (!canCreateReports) return;
+      event.preventDefault();
+      const client = clients.find((item) => item.clientRecordId === activeReportClientId);
+      const builder = detailEl.querySelector("[data-ycs-report-builder]");
+      const form = builder?.querySelector("[data-ycs-report-form]");
+      if (!client || !builder || !form) return;
+
+      activeReportDraft = readReportDraftFromForm(form, client);
+      const template = addCustomReportPageButton.dataset.ycsAddCustomReportPage === "photos" ? "photos" : "letter";
+      activeReportDraft.customPages = [
+        ...reportCustomPages(activeReportDraft),
+        {
+          id: makeCustomReportPageId(),
+          template,
+          title: template === "photos" ? "New Page" : "",
+          copy: "",
+          image1Url: "",
+          image2Url: ""
+        }
+      ];
+      const nextPage = totalReportPages(activeReportDraft);
+      builder.outerHTML = renderReportBuilder(client);
+      applyActiveReportPage(nextPage);
+    }
+
+    if (removeCustomReportPageButton) {
+      if (!canCreateReports) return;
+      event.preventDefault();
+      const removeId = removeCustomReportPageButton.dataset.ycsRemoveCustomReportPage;
+      const client = clients.find((item) => item.clientRecordId === activeReportClientId);
+      const builder = detailEl.querySelector("[data-ycs-report-builder]");
+      const form = builder?.querySelector("[data-ycs-report-form]");
+      if (!client || !builder || !form) return;
+
+      activeReportDraft = readReportDraftFromForm(form, client);
+      activeReportDraft.customPages = reportCustomPages(activeReportDraft).filter((page) => page.id !== removeId);
+      builder.outerHTML = renderReportBuilder(client);
+      applyActiveReportPage(Math.min(activeReportPage, totalReportPages(activeReportDraft)));
     }
 
     if (reportImagePickerToggle) {
@@ -1930,6 +2173,12 @@
     if (!canCreateReports) return;
     const reportForm = event.target.closest("[data-ycs-report-form]");
     if (!reportForm) return;
+
+    if (event.target.name === "brandLogoFile") {
+      uploadReportLogo(event.target)
+        .catch((error) => setReportStatus(error.message || "Unable to upload logo.", true));
+      return;
+    }
 
     if (event.target.name === "paletteCode") {
       const client = clients.find((item) => item.clientRecordId === activeReportClientId);
