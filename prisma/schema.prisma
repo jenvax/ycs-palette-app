@@ -124,3 +124,17 @@ model CustomPaletteColor {
   @@index([customPaletteId, displayOrder])
   @@index([customColorId])
 }
+
+model ColorAnalysisReport {
+  id              String   @id @default(cuid())
+  consultantId    String
+  clientRecordId  String
+  reportType      String   @default("signature_first_section")
+  draftJson       String   @default("{}")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([consultantId, clientRecordId, reportType])
+  @@index([consultantId])
+  @@index([clientRecordId])
+}
