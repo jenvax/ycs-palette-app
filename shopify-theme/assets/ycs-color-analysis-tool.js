@@ -3324,6 +3324,30 @@ return null;
     return color + '-' + firstName + '-' + lastName + '.png';
   }
 
+  async function saveDrapedImageForReport(payload) {
+    if (!APP_BASE_URL || (!CLIENT_RECORD_ID && !CUSTOMER_ID)) {
+      return null;
+    }
+
+    const response = await fetch(APP_BASE_URL + '/api/save-draped-image', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json().catch(function () {
+      return {};
+    });
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Could not save draped image');
+    }
+
+    return data.image || null;
+  }
+
   function shouldDrawExportColorLabel(panel) {
     const toggle = panel === 'right' ? exportLabelRightToggle : exportLabelLeftToggle;
     return !toggle || toggle.checked;
@@ -3382,6 +3406,8 @@ return null;
     const frameEl = isRight ? rightFrame : leftFrame;
     const drapePathEl = isRight ? rightDrapePath : leftDrapePath;
     const colorName = getExportColorName(panel);
+    const drapeColorHex = isRight ? state.rightColorHex : state.leftColorHex;
+    const lipColorHex = isRight ? state.lip.rightColor : state.lip.leftColor;
 
     try {
       const frameRect = frameEl.getBoundingClientRect();
@@ -3506,6 +3532,26 @@ return null;
 
       const fileName = buildDrapedExportFileName(colorName);
       const dataUrl = canvas.toDataURL('image/png');
+
+      try {
+        await saveDrapedImageForReport({
+          imageBase64: dataUrl,
+          clientRecordId: CLIENT_RECORD_ID,
+          customerId: CUSTOMER_ID,
+          consultantId: VIEWER_CUSTOMER_ID,
+          paletteCode: paletteSelect ? paletteSelect.value : '',
+          panel: panel,
+          drapeColorName: colorName,
+          drapeColorHex: drapeColorHex,
+          lipColorHex: lipColorHex,
+          fileName: fileName
+        });
+      } catch (saveError) {
+        console.warn('Could not save draped image for report selection:', saveError);
+        window.setTimeout(function () {
+          alert('The PNG downloaded, but it could not be saved for report selection yet.');
+        }, 0);
+      }
 
       const link = document.createElement('a');
       link.href = dataUrl;
