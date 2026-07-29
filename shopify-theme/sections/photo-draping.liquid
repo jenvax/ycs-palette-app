@@ -1,0 +1,2039 @@
+{% assign palette_access_string = '' %}
+
+{% if customer %}
+  {% assign palette_access_string = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
+{% endif %}
+
+{% assign is_style_masters = false %}
+{% if palette_access_string contains ',VIP,' %}
+  {% assign is_style_masters = true %}
+{% endif %}
+
+{% assign is_admin = false %}
+{% if palette_access_string contains ',YCS_ADMIN,' %}
+  {% assign is_admin = true %}
+{% endif %}
+
+{% assign is_catool_growth = false %}
+{% if palette_access_string contains ',CATOOLGROWTH,' %}
+  {% assign is_catool_growth = true %}
+{% endif %}
+
+{% assign has_draping_studio_starter = false %}
+{% if palette_access_string contains ',DRAPINGSTUDIOSTARTER,' %}
+  {% assign has_draping_studio_starter = true %}
+{% endif %}
+
+{% assign has_draping_studio = false %}
+{% if palette_access_string contains ',DRAPINGSTUDIO,' %}
+  {% assign has_draping_studio = true %}
+{% endif %}
+
+{% assign has_draping_studio_access = false %}
+{% if has_draping_studio_starter or has_draping_studio %}
+  {% assign has_draping_studio_access = true %}
+{% endif %}
+
+{% assign is_forced_sample_trial = false %}
+
+{% capture ycs_header_content %}{{ content_for_header }}{% endcapture %}
+{% assign ycs_page_url = ycs_header_content
+  | split: '"pageurl":"'
+  | last
+  | split: '"'
+  | first
+  | replace: '\/', '/'
+  | replace: '\\u0026', '&'
+  | replace: '%3F', '?'
+  | replace: '%3D', '='
+%}
+
+{% assign is_sample_user = false %}
+{% if has_draping_studio_access == false %}
+  {% if palette_access_string contains ',SAMPLE,' or ycs_page_url contains 'trial=sample' %}
+    {% assign is_sample_user = true %}
+  {% endif %}
+{% endif %}
+
+
+
+{% assign real_palette_codes = 'CWL,CWM,CWD,CCL,CCM,CCD,SWL,SWM,SWD,SCL,SCM,SCD,LO,MO,DO,CWLG,CWMG,CWDG,SWLG,SWMG,SWDG,SCLG,SCMG,SCDG' | split: ',' %}
+
+{% assign has_real_palette = false %}
+{% for code in real_palette_codes %}
+  {% assign palette_token = ',' | append: code | append: ',' %}
+  {% if palette_access_string contains palette_token %}
+    {% assign has_real_palette = true %}
+    {% break %}
+  {% endif %}
+{% endfor %}
+
+<div
+  class="ycs-drape-app"
+  data-is-style-masters="{{ is_style_masters }}"
+  data-has-draping-studio="{% if has_draping_studio_access %}true{% else %}false{% endif %}"
+data-has-draping-studio-starter="{% if has_draping_studio_starter %}true{% else %}false{% endif %}"
+data-has-draping-studio-full="{% if has_draping_studio %}true{% else %}false{% endif %}"
+  data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
+  data-customer-id="{{ customer.id }}"
+  data-customer-first-name="{{ customer.first_name | escape }}"
+  data-palette-access="{{ palette_access_string }}"
+  data-is-admin="{{ is_admin }}"
+  data-is-catool-growth="{% if is_catool_growth %}true{% else %}false{% endif %}"
+  data-app-base-url="https://ycs-palette-app.vercel.app"
+>
+  {% if customer == nil %}
+    <div class="ycs-drape-login">
+      <h1>Sign in to access Photo Draping Studio</h1>
+      <a href="{{ routes.account_login_url }}">Sign In</a>
+    </div>
+
+  {% elsif is_style_masters == false and has_draping_studio_access == false and is_sample_user == false and is_admin != true and is_catool_growth != true %}
+    <div class="ycs-drape-upsell ycs-drape-upsell--hero">
+      <div class="ycs-drape-upsell-grid">
+        <div class="ycs-drape-upsell-media">
+          <img
+            src="https://cdn.shopify.com/s/files/1/0623/6284/5408/files/Photo_Draping_Studio.png?v=1776007752"
+            alt="Photo Draping Studio preview"
+            class="ycs-drape-upsell-image"
+          >
+        </div>
+
+        <div class="ycs-drape-upsell-content">
+          <p class="ycs-drape-upsell-kicker">Included with Style Masters</p>
+
+          <h1 class="ycs-drape-upsell-title">
+            See Your Colors<br>Near Your Face
+          </h1>
+
+          <p class="ycs-drape-upsell-headline">
+            Upload your photo and instantly test your best colors—before you buy or get dressed.
+          </p>
+
+          <ul class="ycs-drape-upsell-list">
+            <li><span class="check">✓</span> Spot your best colors instantly</li>
+            <li><span class="check">✓</span> Stop wasting money on wrong shades</li>
+            <li><span class="check">✓</span> Get dressed faster with confidence</li>
+          </ul>
+
+          <a href="/products/style-masters-magazine" class="ycs-drape-upsell-btn">
+            Unlock Photo Draping Studio
+          </a>
+
+          <p class="ycs-drape-upsell-micro">
+            Try it on your own photo in seconds.
+          </p>
+        </div>
+      </div>
+    </div>
+
+  {% else %}
+    <div class="ycs-drape-topnav">
+      <button type="button" id="ycs-drape-back" class="ycs-drape-back-link">
+        ← Back
+      </button>
+
+      {% if is_admin %}
+        <a
+          class="ycs-drape-admin-link"
+          href="/pages/photo-prep?adminCustomerId={{ customer.id }}&returnUrl=/pages/photo-draping"
+        >
+          Prep Photo
+        </a>
+      {% endif %}
+    </div>
+
+    <div id="ycs-drape-studio-root" class="ycs-drape-studio" data-mobile-step="photo">
+      
+      <div class="ycs-drape-header">
+        <p class="ycs-drape-kicker">Your Color Style</p>
+        <h1 class="ycs-drape-title">Photo Draping Studio</h1>
+        <p class="ycs-drape-subtitle">
+          Upload a clear front-facing photo in natural light.
+        </p>
+      </div>
+
+      <div class="ycs-drape-view-toggle" role="tablist" aria-label="Photo Draping Studio view">
+        <button type="button" id="ycs-drape-view-single" class="ycs-drape-view-btn is-active">
+          Single View
+        </button>
+        <button type="button" id="ycs-drape-view-comparison" class="ycs-drape-view-btn">
+          Side-by-Side Comparison
+        </button>
+      </div>
+
+      <div class="ycs-drape-layout">
+        <div class="ycs-drape-panel ycs-drape-panel--photo">
+          <div class="ycs-drape-photo-panel-head">
+            <div class="ycs-drape-photo-panel-head-main">
+              <h2 class="ycs-drape-panel__title">Your Photo</h2>
+              <p id="ycs-upload-usage-message" class="ycs-upload-usage-message" hidden></p>
+            </div>
+
+            <button type="button" id="ycs-mobile-back" class="ycs-mobile-back-btn">
+              Adjust Photo
+            </button>
+          </div>
+
+          <div class="ycs-drape-photo-stage" id="ycs-photo-stage">
+            <input
+              type="file"
+              id="ycs-photo-input"
+              accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+              style="display:none;"
+            />
+
+            <div class="ycs-drape-upload">
+              <div class="ycs-drape-upload-inner">
+                <p class="ycs-drape-placeholder">Upload your photo to begin</p>
+                <button type="button" id="ycs-upload-btn" class="ycs-drape-btn">
+                  Upload Photo
+                </button>
+              </div>
+            </div>
+
+            <div id="ycs-drape-loading" class="ycs-drape-loading" hidden>
+              <div class="ycs-drape-loading__dots">
+                <span></span><span></span><span></span>
+              </div>
+              <p class="ycs-drape-loading__text">Loading colors…</p>
+            </div>
+
+            <div id="ycs-photo-frame" class="ycs-photo-frame">
+              <div
+                id="ycs-drape-wrap"
+                class="ycs-drape-wrap"
+                style="--drape-color: #e8dfd4; --drape-overlay-url: url('https://cdn.shopify.com/s/files/1/0623/6284/5408/files/fabric-drape-overlay-550.png?v=1778252521'); --drape-overlay-opacity: 0; --drape-texture-url: none; --drape-texture-opacity: 0;"
+              >
+                <svg
+                  id="ycs-drape-svg"
+                  class="ycs-drape-svg"
+                  viewBox="0 0 1000 500"
+                  preserveAspectRatio="none"
+                >
+                  <defs>
+                    <clipPath id="ycs-drape-clip">
+                      <path
+                        id="ycs-drape-clip-path"
+                        d="M0,235
+                          Q160,170 320,182
+                          Q500,310 680,182
+                          Q840,170 1000,235
+                          L1000,500
+                          L0,500 Z"
+                      />
+                    </clipPath>
+                  </defs>
+                  <path
+                    id="ycs-drape-path"
+                    d="M0,235
+                      Q160,170 320,182
+                      Q500,310 680,182
+                      Q840,170 1000,235
+                      L1000,500
+                      L0,500 Z"
+                    fill="#e8dfd4"
+                  />
+                  <foreignObject
+                    class="ycs-drape-texture-object"
+                    x="0"
+                    y="0"
+                    width="1000"
+                    height="500"
+                    clip-path="url(#ycs-drape-clip)"
+                  >
+                    <div xmlns="http://www.w3.org/1999/xhtml" class="ycs-drape-texture"></div>
+                  </foreignObject>
+                  <foreignObject
+                    class="ycs-drape-overlay-object"
+                    x="0"
+                    y="0"
+                    width="1000"
+                    height="500"
+                    clip-path="url(#ycs-drape-clip)"
+                  >
+                    <div xmlns="http://www.w3.org/1999/xhtml" class="ycs-drape-overlay"></div>
+                  </foreignObject>
+                </svg>
+              </div>
+
+              <img id="ycs-photo-preview" class="ycs-photo-preview" alt="Uploaded preview" />
+            </div>
+
+            <div id="ycs-replace-confirm" class="ycs-confirm-modal" hidden>
+              <div class="ycs-confirm-modal__backdrop"></div>
+              <div
+                class="ycs-confirm-modal__dialog"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="ycs-replace-confirm-title"
+                aria-describedby="ycs-replace-confirm-text"
+              >
+                <h3 id="ycs-replace-confirm-title" class="ycs-confirm-modal__title">Replace photo?</h3>
+                <p id="ycs-replace-confirm-text" class="ycs-confirm-modal__text">
+                  Replacing your photo will overwrite the current saved photo for this account.
+                </p>
+                <div class="ycs-confirm-modal__actions">
+                  <button type="button" id="ycs-replace-cancel" class="ycs-drape-btn ycs-drape-btn--secondary">
+                    Cancel
+                  </button>
+                  <button type="button" id="ycs-replace-confirm-btn" class="ycs-drape-btn">
+                    Replace Photo
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div id="ycs-usage-modal" class="ycs-confirm-modal" hidden>
+  <div class="ycs-confirm-modal__backdrop"></div>
+  <div
+    class="ycs-confirm-modal__dialog ycs-usage-modal-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="ycs-usage-modal-title"
+    aria-describedby="ycs-usage-modal-body"
+  >
+    <h3 id="ycs-usage-modal-title" class="ycs-confirm-modal__title ycs-usage-modal-title">
+      Keep Going
+    </h3>
+
+    <div id="ycs-usage-modal-body" class="ycs-confirm-modal__text ycs-usage-modal-body">
+      <p>Your free try is complete.</p>
+    </div>
+
+    <div class="ycs-usage-modal__actions">
+      <a href="/products/photo-draping-studio#order"
+         id="ycs-usage-modal-cta"
+         class="ycs-drape-btn ycs-usage-modal__primary">
+        Get More Uploads
+      </a>
+
+      <a href="/products/digital-color-palettes"
+         id="ycs-usage-modal-secondary-cta"
+         class="ycs-usage-modal__secondary-link">
+        Get My Digital Color Palette
+      </a>
+
+      <a href="/products/online-color-analysis"
+         id="ycs-usage-modal-analysis-link"
+         class="ycs-usage-modal__tertiary-link">
+        Or get a personal color analysis
+      </a>
+
+      <button type="button" id="ycs-usage-modal-close" class="ycs-drape-btn ycs-drape-btn--secondary">
+        Not Now
+      </button>
+    </div>
+  </div>
+</div>
+          </div>
+
+          <div class="ycs-mobile-photo-actions">
+  <div class="ycs-drape-control-group">
+    <label for="ycs-zoom-slider" class="ycs-drape-label">Zoom</label>
+    <input
+      type="range"
+      id="ycs-zoom-slider"
+      min="0.6"
+      max="2.5"
+      step="0.01"
+      value="1"
+      class="ycs-drape-range"
+    />
+  </div>
+
+  <div class="ycs-btn-group">
+    <button type="button" id="ycs-save-position-mobile" class="ycs-btn ycs-btn-secondary">
+      Save Photo Position
+    </button>
+
+    <button type="button" id="ycs-reset-photo-mobile" class="ycs-btn ycs-btn-outline">
+      Reset Photo
+    </button>
+
+    <button type="button" id="ycs-replace-photo-mobile" class="ycs-btn ycs-btn-outline">
+      Replace Photo
+    </button>
+
+    <button type="button" id="ycs-delete-photo-mobile" class="ycs-btn ycs-btn-danger" hidden>
+      Delete Photo
+    </button>
+
+    <button type="button" id="ycs-mobile-continue" class="ycs-btn ycs-btn-primary">
+      Continue to Colors
+    </button>
+  </div>
+
+  <p class="ycs-mobile-help">
+    Upload your photo, then drag or pinch to resize and position it before moving on to your colors.
+  </p>
+</div>
+<div class="ycs-drape-save-under-photo">
+  <button type="button" id="ycs-save-photo-under-image" class="ycs-btn ycs-btn-primary">
+    Save Draped Photo
+  </button>
+</div>
+        </div>
+
+        <div class="ycs-drape-panel ycs-drape-panel--controls">
+          <div class="ycs-desktop-photo-actions">
+            <div class="ycs-drape-control-group">
+              <label for="ycs-zoom-slider-desktop" class="ycs-drape-label">Zoom</label>
+              <input
+                type="range"
+                id="ycs-zoom-slider-desktop"
+                min="0.6"
+                max="2.5"
+                step="0.01"
+                value="1"
+                class="ycs-drape-range"
+              />
+            </div>
+
+            <div class="ycs-drape-control-actions">
+              <div class="ycs-btn-group">
+                <button id="ycs-save-position-desktop" class="ycs-btn ycs-btn-secondary">
+                  Save Photo Position
+                </button>
+
+                <button id="ycs-reset-photo-desktop" class="ycs-btn ycs-btn-outline">
+                  Reset Photo
+                </button>
+
+                <button id="ycs-replace-photo-desktop" class="ycs-btn ycs-btn-outline">
+                  Replace Photo
+                </button>
+
+                <button type="button" id="ycs-delete-photo-desktop" class="ycs-btn ycs-btn-danger" hidden>
+                  Delete Photo
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="ycs-color-header">
+            <div class="ycs-color-title" id="ycs-current-palette-name">
+              {{ palette_name }}
+            </div>
+
+            <div class="ycs-palette-select-wrap">
+              <select id="ycs-drape-palette-select" class="ycs-palette-select"></select>
+            </div>
+          </div>
+
+          <div class="ycs-filter-row">
+            <div id="ycs-drape-filters" class="ycs-drape-filters"></div>
+
+            <div class="ycs-filter-nav">
+              <button type="button" id="ycs-filter-left" class="ycs-filter-arrow" aria-label="Scroll filters left">‹</button>
+              <button type="button" id="ycs-filter-right" class="ycs-filter-arrow" aria-label="Scroll filters right">›</button>
+            </div>
+          </div>
+
+          <label class="ycs-drape-toggle">
+            <input type="checkbox" id="realisticDrapeToggle" />
+            <span>Realistic fabric drape</span>
+          </label>
+
+          <div class="ycs-drape-swatches-section">
+            <div id="ycs-selected-color" class="ycs-selected-color">
+              <button
+                type="button"
+                id="ycs-drape-fav-btn"
+                class="ycs-drape-fav-btn"
+                aria-label="Add to favorites"
+                title="Add to favorites">
+                <span class="ycs-drape-fav-btn__icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M12 20.2c-.2 0-.4-.1-.6-.2C10.1 19 4 14.7 4 9.6 4 6.9 5.9 5 8.5 5c1.5 0 2.8.7 3.5 1.8C12.7 5.7 14 5 15.5 5 18.1 5 20 6.9 20 9.6c0 5.1-6.1 9.4-7.4 10.4-.2.1-.4.2-.6.2z"></path>
+                  </svg>
+                </span>
+              </button>
+
+              <span class="ycs-selected-name">—</span>
+            </div>
+
+            <div id="ycs-swatch-loading" class="ycs-drape-loading" hidden>
+              <div class="ycs-drape-loading__dots">
+                <span></span><span></span><span></span>
+              </div>
+              <p class="ycs-drape-loading__text">Loading colors…</p>
+            </div>
+
+            <div id="ycs-drape-swatches" class="ycs-drape-swatches"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="ycs-drape-comparison-layout" class="ycs-drape-comparison-layout" hidden>
+        <div class="ycs-drape-comparison-toolbar">
+          <div class="ycs-drape-control-group">
+            <label for="ycs-zoom-slider-comparison" class="ycs-drape-label">Zoom</label>
+            <input
+              type="range"
+              id="ycs-zoom-slider-comparison"
+              min="0.6"
+              max="2.5"
+              step="0.01"
+              value="1"
+              class="ycs-drape-range"
+            />
+          </div>
+          <button type="button" id="ycs-save-position-comparison" class="ycs-btn ycs-btn-secondary">
+            Save Photo Position
+          </button>
+          <label class="ycs-drape-toggle">
+            <input type="checkbox" id="realisticDrapeToggleComparison" />
+            <span>Realistic fabric drape</span>
+          </label>
+        </div>
+
+        <aside class="ycs-drape-comparison-controls">
+          <label for="ycs-drape-left-palette-select" class="ycs-drape-label">Left Palette</label>
+          <div class="ycs-palette-select-wrap">
+            <select id="ycs-drape-left-palette-select" class="ycs-palette-select"></select>
+          </div>
+          <div id="ycs-drape-left-filters" class="ycs-drape-filters ycs-drape-comparison-filters"></div>
+          <div id="ycs-drape-left-swatches" class="ycs-drape-swatches ycs-drape-comparison-swatches"></div>
+        </aside>
+
+        <div class="ycs-drape-comparison-stage-grid">
+          <div class="ycs-drape-comparison-stage">
+            <div class="ycs-photo-frame ycs-photo-frame--comparison" id="ycs-left-photo-frame">
+              <div
+                id="ycs-left-drape-wrap"
+                class="ycs-drape-wrap"
+                style="--drape-color: #e8dfd4; --drape-overlay-url: url('https://cdn.shopify.com/s/files/1/0623/6284/5408/files/fabric-drape-overlay-550.png?v=1778252521'); --drape-overlay-opacity: 0; --drape-texture-url: none; --drape-texture-opacity: 0;"
+              >
+                <svg class="ycs-drape-svg" viewBox="0 0 1000 500" preserveAspectRatio="none">
+                  <defs>
+                    <clipPath id="ycs-left-drape-clip">
+                      <path class="ycs-comparison-drape-clip-path" d="M0,235 Q160,170 320,182 Q500,310 680,182 Q840,170 1000,235 L1000,500 L0,500 Z" />
+                    </clipPath>
+                  </defs>
+                  <path id="ycs-left-drape-path" class="ycs-comparison-drape-path" d="M0,235 Q160,170 320,182 Q500,310 680,182 Q840,170 1000,235 L1000,500 L0,500 Z" fill="#e8dfd4" />
+                  <foreignObject class="ycs-drape-texture-object" x="0" y="0" width="1000" height="500" clip-path="url(#ycs-left-drape-clip)">
+                    <div xmlns="http://www.w3.org/1999/xhtml" class="ycs-drape-texture"></div>
+                  </foreignObject>
+                  <foreignObject class="ycs-drape-overlay-object" x="0" y="0" width="1000" height="500" clip-path="url(#ycs-left-drape-clip)">
+                    <div xmlns="http://www.w3.org/1999/xhtml" class="ycs-drape-overlay"></div>
+                  </foreignObject>
+                </svg>
+              </div>
+              <img id="ycs-left-photo-preview" class="ycs-photo-preview" alt="Left draped preview" />
+            </div>
+            <div class="ycs-drape-comparison-footer">
+              <div>
+                <span class="ycs-drape-comparison-meta">Applied</span>
+                <strong id="ycs-drape-left-selected-name">—</strong>
+              </div>
+              <button type="button" id="ycs-save-left-draped-photo" class="ycs-btn ycs-btn-primary">
+                Save Left View
+              </button>
+            </div>
+          </div>
+
+          <div class="ycs-drape-comparison-stage">
+            <div class="ycs-photo-frame ycs-photo-frame--comparison" id="ycs-right-photo-frame">
+              <div
+                id="ycs-right-drape-wrap"
+                class="ycs-drape-wrap"
+                style="--drape-color: #e8dfd4; --drape-overlay-url: url('https://cdn.shopify.com/s/files/1/0623/6284/5408/files/fabric-drape-overlay-550.png?v=1778252521'); --drape-overlay-opacity: 0; --drape-texture-url: none; --drape-texture-opacity: 0;"
+              >
+                <svg class="ycs-drape-svg" viewBox="0 0 1000 500" preserveAspectRatio="none">
+                  <defs>
+                    <clipPath id="ycs-right-drape-clip">
+                      <path class="ycs-comparison-drape-clip-path" d="M0,235 Q160,170 320,182 Q500,310 680,182 Q840,170 1000,235 L1000,500 L0,500 Z" />
+                    </clipPath>
+                  </defs>
+                  <path id="ycs-right-drape-path" class="ycs-comparison-drape-path" d="M0,235 Q160,170 320,182 Q500,310 680,182 Q840,170 1000,235 L1000,500 L0,500 Z" fill="#e8dfd4" />
+                  <foreignObject class="ycs-drape-texture-object" x="0" y="0" width="1000" height="500" clip-path="url(#ycs-right-drape-clip)">
+                    <div xmlns="http://www.w3.org/1999/xhtml" class="ycs-drape-texture"></div>
+                  </foreignObject>
+                  <foreignObject class="ycs-drape-overlay-object" x="0" y="0" width="1000" height="500" clip-path="url(#ycs-right-drape-clip)">
+                    <div xmlns="http://www.w3.org/1999/xhtml" class="ycs-drape-overlay"></div>
+                  </foreignObject>
+                </svg>
+              </div>
+              <img id="ycs-right-photo-preview" class="ycs-photo-preview" alt="Right draped preview" />
+            </div>
+            <div class="ycs-drape-comparison-footer">
+              <div>
+                <span class="ycs-drape-comparison-meta">Selected</span>
+                <strong id="ycs-drape-right-selected-name">—</strong>
+              </div>
+              <button type="button" id="ycs-save-right-draped-photo" class="ycs-btn ycs-btn-primary">
+                Save Right View
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <aside class="ycs-drape-comparison-controls">
+          <label for="ycs-drape-right-palette-select" class="ycs-drape-label">Right Palette</label>
+          <div class="ycs-palette-select-wrap">
+            <select id="ycs-drape-right-palette-select" class="ycs-palette-select"></select>
+          </div>
+          <div id="ycs-drape-right-filters" class="ycs-drape-filters ycs-drape-comparison-filters"></div>
+          <div id="ycs-drape-right-swatches" class="ycs-drape-swatches ycs-drape-comparison-swatches"></div>
+        </aside>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+<style>
+  .ycs-drape-app {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 16px 18px 22px;
+  }
+
+  .ycs-drape-topnav {
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+.ycs-usage-modal-dialog {
+  max-width: 420px;
+  padding: 28px 24px 22px;
+}
+
+.ycs-usage-modal-body {
+  display: grid;
+  gap: 10px;
+}
+
+.ycs-usage-modal-body p {
+  margin: 0;
+}
+
+.ycs-usage-modal-body strong {
+  color: #2f2a25;
+}
+
+.ycs-usage-modal__actions {
+  margin-top: 18px;
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+}
+
+.ycs-usage-modal__primary {
+  min-width: 240px;
+}
+
+.ycs-usage-modal__secondary-link,
+.ycs-usage-modal__tertiary-link {
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
+  color: #d94c6a;
+}
+
+.ycs-usage-modal__secondary-link:hover,
+.ycs-usage-modal__tertiary-link:hover {
+  color: #c43f5d;
+}
+  .ycs-drape-admin-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 36px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: #e9e1d6;
+    color: #2f2a25 !important;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1;
+    text-decoration: none !important;
+    white-space: nowrap;
+  }
+
+  .ycs-drape-admin-link:hover {
+    background: #ddd2c2;
+  }
+
+  .ycs-drape-back-link {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    color: #444;
+    cursor: pointer;
+  }
+
+  .ycs-drape-login,
+  .ycs-drape-upsell {
+    max-width: 720px;
+    margin: 60px auto;
+    padding: 32px;
+    border: 1px solid #e7e3dc;
+    border-radius: 20px;
+    background: #fffdf9;
+    text-align: center;
+  }
+
+  .ycs-drape-upsell--hero {
+    max-width: 1100px;
+    margin: 40px auto;
+    padding: 24px;
+    border: 1px solid #e7e3dc;
+    border-radius: 20px;
+    background: #fffdf9;
+  }
+
+  .ycs-drape-upsell-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 28px;
+    align-items: center;
+  }
+
+  .ycs-drape-upsell-image {
+    width: 100%;
+    max-width: 520px;
+    height: auto;
+  }
+
+  .ycs-drape-upsell-content {
+    max-width: 420px;
+  }
+
+  .ycs-drape-upsell-micro {
+    margin-top: 10px;
+    font-size: 13px;
+    color: #7a746d;
+    text-align: center;
+  }
+
+  .ycs-drape-upsell-kicker {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #8b7d6b;
+    margin-bottom: 6px;
+  }
+
+  .ycs-drape-upsell-title {
+    font-size: 32px;
+    line-height: 1.1;
+    margin-bottom: 10px;
+  }
+
+  .ycs-drape-upsell-headline {
+    font-size: 16px;
+    margin-bottom: 12px;
+    color: #4c4843;
+  }
+
+  .ycs-drape-upsell-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 16px;
+    display: grid;
+    gap: 8px;
+  }
+
+  .ycs-drape-upsell-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 15px;
+    line-height: 1.4;
+    color: #4c4843;
+  }
+
+  .ycs-drape-upsell-list .check {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #1f8f74;
+    margin-top: 2px;
+  }
+
+  .ycs-drape-upsell-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 18px;
+    border-radius: 999px;
+    background: #111;
+    color: #fff !important;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none !important;
+    transition: transform .16s ease, background .16s ease;
+  }
+
+  .ycs-drape-upsell-btn:link,
+  .ycs-drape-upsell-btn:visited,
+  .ycs-drape-upsell-btn:hover,
+  .ycs-drape-upsell-btn:focus,
+  .ycs-drape-upsell-btn:active {
+    color: #fff !important;
+    text-decoration: none !important;
+  }
+
+  .ycs-drape-upsell-btn:hover {
+    background: #222;
+    transform: translateY(-1px);
+  }
+
+  .ycs-drape-login h1,
+  .ycs-drape-upsell h1,
+  .ycs-drape-title {
+    margin: 0 0 12px;
+  }
+
+  .ycs-drape-login a {
+    display: inline-block;
+    margin-top: 16px;
+    padding: 12px 18px;
+    border-radius: 999px;
+    text-decoration: none;
+    background: #111;
+    color: #fff;
+  }
+
+  .ycs-drape-header {
+    margin-bottom: 12px;
+  }
+
+  .ycs-drape-kicker {
+    margin: 0 0 6px;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #8b7d6b;
+  }
+
+  .ycs-drape-title {
+    margin: 0 0 6px;
+    font-size: 24px;
+    line-height: 1.05;
+  }
+
+  .ycs-drape-subtitle {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.25;
+    color: #5f5a54;
+  }
+
+  .ycs-drape-view-toggle {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .ycs-drape-view-btn {
+    appearance: none;
+    border: 1px solid #d8cfc3;
+    border-radius: 999px;
+    background: #fff;
+    color: #2f2a25;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 750;
+    line-height: 1;
+    min-height: 38px;
+    padding: 10px 18px;
+  }
+
+  .ycs-drape-view-btn.is-active {
+    background: #111;
+    border-color: #111;
+    color: #fff;
+  }
+
+  .ycs-drape-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(340px, 0.88fr);
+    gap: 16px;
+    align-items: start;
+  }
+
+  .ycs-drape-panel {
+    background: #ffffff;
+    border: 1px solid #ece7df;
+    border-radius: 22px;
+    padding: 16px;
+    min-width: 0;
+  }
+
+  .ycs-drape-studio.is-comparison-view .ycs-drape-layout {
+    display: none;
+  }
+
+  .ycs-drape-comparison-layout[hidden] {
+    display: none !important;
+  }
+
+  .ycs-drape-comparison-layout {
+    display: grid;
+    grid-template-columns: 210px minmax(0, 1fr) 210px;
+    gap: 12px;
+    align-items: start;
+  }
+
+  .ycs-drape-comparison-toolbar {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid #ece7df;
+    border-radius: 18px;
+    background: #fffdfb;
+  }
+
+  .ycs-btn-danger {
+    background: #fff;
+    border-color: #d7b8ad;
+    color: #8c2f1f;
+  }
+
+  .ycs-btn-danger:hover {
+    border-color: #8c2f1f;
+    color: #6f2115;
+  }
+
+  .ycs-drape-comparison-toolbar .ycs-drape-control-group {
+    width: min(280px, 100%);
+  }
+
+  .ycs-drape-comparison-controls {
+    display: grid;
+    gap: 10px;
+    min-width: 0;
+    max-height: calc(100vh - 160px);
+    overflow: auto;
+    padding: 12px;
+    border: 1px solid #ece7df;
+    border-radius: 18px;
+    background: #fffdfb;
+  }
+
+  .ycs-drape-comparison-stage-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .ycs-drape-comparison-stage {
+    min-width: 0;
+  }
+
+  .ycs-photo-frame--comparison {
+    display: block;
+    position: relative;
+    inset: auto;
+    width: 100%;
+    aspect-ratio: 0.9 / 1;
+    border: 1px solid #ece7df;
+    cursor: default;
+  }
+
+  .ycs-photo-frame--comparison .ycs-photo-preview {
+    display: block;
+  }
+
+  .ycs-drape-comparison-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 8px;
+  }
+
+  .ycs-drape-comparison-footer strong {
+    display: block;
+    color: #2f2a25;
+    font-size: 14px;
+    line-height: 1.15;
+  }
+
+  .ycs-drape-comparison-meta {
+    display: block;
+    color: #8b7d6b;
+    font-size: 11px;
+    font-weight: 750;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .ycs-drape-comparison-swatches {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .ycs-drape-comparison-swatches .ycs-drape-swatch {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+  }
+
+  .ycs-drape-panel--controls {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    background: #fffdfb;
+  }
+
+  .ycs-drape-panel__title {
+    margin: 0 0 4px 0;
+    font-size: 18px;
+  }
+
+  .ycs-drape-photo-panel-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .ycs-drape-photo-panel-head-main {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .ycs-upload-usage-message[hidden] {
+    display: none !important;
+  }
+
+  .ycs-upload-usage-message {
+    display: inline-flex;
+    align-items: center;
+    margin: 0;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: #fff4d6;
+    color: #8a5a00;
+    font-size: 12px;
+    line-height: 1;
+    font-weight: 700;
+    width: fit-content;
+  }
+
+  .ycs-mobile-back-btn {
+    display: none;
+    border: 1px solid #d8cfc3;
+    background: #fff;
+    color: #2f2a25;
+    border-radius: 999px;
+    padding: 10px 14px;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .ycs-drape-photo-stage {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    max-height: 520px;
+    border-radius: 20px;
+    background: #f6f1ea;
+    border: 1px dashed #d8cfc3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ycs-drape-upload {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    bottom: 18px;
+    left: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ycs-drape-upload-inner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    text-align: center;
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .ycs-drape-placeholder {
+    margin: 0;
+    color: #7b746c;
+    text-align: center;
+  }
+
+  .ycs-photo-frame {
+    display: none;
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    bottom: 18px;
+    left: 18px;
+    overflow: hidden;
+    border-radius: 16px;
+    cursor: grab;
+    touch-action: none;
+    background: #ffffff;
+  }
+
+  .ycs-photo-frame.is-dragging {
+    cursor: grabbing;
+  }
+
+  .ycs-photo-preview {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    transform: translate(-50%, -50%) scale(1);
+    transform-origin: center center;
+    user-select: none;
+    -webkit-user-drag: none;
+    z-index: 1;
+    border-radius: 0;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+  }
+
+  .ycs-photo-preview.is-visible {
+    opacity: 1;
+  }
+
+  .ycs-photo-frame.ycs-photo-frame--comparison {
+    display: block;
+    position: relative;
+    inset: auto;
+    width: 100%;
+    aspect-ratio: 0.9 / 1;
+    border: 1px solid #ece7df;
+    cursor: grab;
+  }
+
+  .ycs-photo-frame.ycs-photo-frame--comparison .ycs-photo-preview {
+    display: block;
+  }
+
+  .ycs-drape-wrap {
+    --drape-color: #e8dfd4;
+    --drape-overlay-url: url("https://cdn.shopify.com/s/files/1/0623/6284/5408/files/fabric-drape-overlay-550.png?v=1778252521");
+    --drape-overlay-opacity: 0;
+    --drape-texture-url: none;
+    --drape-texture-opacity: 0;
+    --drape-texture-size: 120px;
+    --drape-texture-blend: overlay;
+    --drape-texture-filter: none;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 3;
+  }
+
+  .ycs-drape-svg {
+    position: absolute;
+    bottom: -1%;
+    left: 0;
+    width: 100%;
+    height: 28%;
+    filter: blur(1.2px);
+    opacity: 1;
+  }
+
+  .ycs-drape-overlay-object {
+    mix-blend-mode: normal;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .ycs-drape-texture-object {
+    mix-blend-mode: var(--drape-texture-blend);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .ycs-drape-texture {
+    width: 100%;
+    height: 100%;
+    background-image: var(--drape-texture-url);
+    background-size: var(--drape-texture-size);
+    background-position: center;
+    background-repeat: repeat;
+    mix-blend-mode: var(--drape-texture-blend);
+    filter: var(--drape-texture-filter);
+    pointer-events: none;
+  }
+
+  .ycs-drape-wrap.drape-texture-active .ycs-drape-texture-object {
+    opacity: var(--drape-texture-opacity);
+  }
+
+  .ycs-drape-overlay {
+    width: 100%;
+    height: 100%;
+    background-color: var(--drape-color);
+    background-image: var(--drape-overlay-url);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-blend-mode: multiply;
+    mix-blend-mode: normal;
+    pointer-events: none;
+  }
+
+  .ycs-drape-wrap.drape-realistic .ycs-drape-overlay-object {
+    opacity: var(--drape-overlay-opacity);
+  }
+
+  .ycs-drape-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 650;
+    color: #4a4038;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .ycs-drape-toggle input {
+    width: 16px;
+    height: 16px;
+    accent-color: #111111;
+  }
+
+  .ycs-confirm-modal[hidden] {
+    display: none !important;
+  }
+
+  .ycs-confirm-modal {
+    position: absolute;
+    inset: 0;
+    z-index: 60;
+  }
+
+  .ycs-confirm-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(17, 17, 17, 0.45);
+  }
+
+  .ycs-confirm-modal__dialog {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: calc(100% - 32px);
+    max-width: 360px;
+    background: #fff;
+    border-radius: 18px;
+    padding: 20px;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.18);
+    text-align: center;
+  }
+
+  .ycs-confirm-modal__title {
+    margin: 0 0 8px;
+    font-size: 20px;
+    line-height: 1.15;
+    color: #2f2a25;
+  }
+
+  .ycs-confirm-modal__text {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.45;
+    color: #6b645c;
+  }
+
+  .ycs-confirm-modal__actions {
+    margin-top: 16px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .ycs-drape-loading {
+    display: grid;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .ycs-drape-loading[hidden] {
+    display: none !important;
+  }
+
+  .ycs-drape-loading__dots {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .ycs-drape-loading__dots span {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: #cfc5b8;
+    animation: ycsLoadingBounce 1s infinite ease-in-out;
+  }
+
+  .ycs-drape-loading__dots span:nth-child(2) {
+    animation-delay: 0.15s;
+  }
+
+  .ycs-drape-loading__dots span:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+
+  .ycs-drape-loading__text {
+    margin: 0;
+    font-size: 12px;
+    color: #7b746c;
+  }
+
+  @keyframes ycsLoadingBounce {
+    0%, 80%, 100% {
+      opacity: 0.35;
+      transform: scale(0.8);
+    }
+    40% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .ycs-drape-loading.is-photo-processing {
+    position: absolute;
+    inset: 18px;
+    display: grid;
+    place-items: center;
+    justify-items: center;
+    background: rgba(255,255,255,0.86);
+    z-index: 30;
+    border-radius: 16px;
+    padding: 16px;
+    text-align: center;
+  }
+
+  .ycs-mobile-photo-actions {
+    margin-top: 14px;
+    display: none;
+    gap: 12px;
+  }
+
+  .ycs-drape-save-under-photo {
+  margin-top: 14px;
+  display: flex;
+  justify-content: center;
+}
+
+.ycs-drape-save-under-photo .ycs-btn {
+  min-width: 220px;
+}
+
+  .ycs-desktop-photo-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 0;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #ece7df;
+  }
+
+  .ycs-drape-control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .ycs-drape-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: #3d3833;
+    margin: 0;
+  }
+
+  .ycs-drape-range {
+    width: 100%;
+    accent-color: #111;
+  }
+
+  .ycs-drape-control-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .ycs-mobile-help {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.45;
+    color: #6b645c;
+  }
+
+  .ycs-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 10px 16px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.18s ease;
+  }
+
+  .ycs-btn-primary {
+    background: #111;
+    color: #fff;
+  }
+
+  .ycs-btn-primary:hover {
+    background: #000;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.14);
+  }
+
+  .ycs-btn-primary:active {
+    transform: translateY(0);
+    box-shadow: none;
+  }
+
+  .ycs-btn-secondary {
+    background: #e8dfd4;
+    color: #3f3a34;
+  }
+
+  .ycs-btn-secondary:hover {
+    background: #ddd2c5;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  }
+
+  .ycs-btn-secondary:active {
+    transform: translateY(0);
+    box-shadow: none;
+  }
+
+  .ycs-btn-outline {
+    background: transparent;
+    color: #5d5650;
+    border: 1px solid #d6ccc2;
+  }
+
+  .ycs-btn-outline:hover {
+    background: #f6f1ea;
+    border-color: #c7bdb1;
+    transform: translateY(-1px);
+  }
+
+  .ycs-btn-outline:active {
+    transform: translateY(0);
+  }
+
+  .ycs-btn-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .ycs-drape-btn {
+    padding: 12px 18px;
+    border-radius: 999px;
+    border: none;
+    background: #111;
+    color: #fff;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  .ycs-drape-btn--secondary {
+    background: #e9e1d6;
+    color: #2f2a25;
+  }
+
+
+
+  /* =========================
+     COLORS HEADER
+  ========================= */
+
+  .ycs-color-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 6px;
+  }
+
+  .ycs-color-title {
+    display: flex;
+    align-items: center;
+    min-height: 40px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #2f2a26;
+  }
+
+  /* =========================
+     PALETTE SELECT
+  ========================= */
+
+  .ycs-palette-select-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .ycs-palette-select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    height: 40px;
+    min-width: 110px;
+    padding: 0 36px 0 14px;
+    border-radius: 999px;
+    border: 1px solid #d6ccc2;
+    background: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 40px;
+    color: #2f2a26;
+    cursor: pointer;
+  }
+
+  .ycs-palette-select:hover {
+    background: #faf7f2;
+  }
+
+  .ycs-palette-select:focus {
+    outline: none;
+    border-color: #c7bdb1;
+  }
+
+  .ycs-palette-select-wrap::after {
+    content: "";
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-40%);
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 6px solid #8a8176;
+    pointer-events: none;
+  }
+
+  /* =========================
+     FILTER ROW
+  ========================= */
+
+  .ycs-filter-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .ycs-drape-filters {
+    position: relative;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex: 1 1 auto;
+    min-width: 0;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .ycs-drape-filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ycs-drape-filters.is-loading {
+    opacity: 0.45;
+    pointer-events: none;
+  }
+
+  .ycs-drape-filters::before,
+  .ycs-drape-filters::after {
+    content: "";
+    position: sticky;
+    top: 0;
+    width: 18px;
+    flex: 0 0 18px;
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0;
+    transition: opacity 0.18s ease;
+  }
+
+  .ycs-drape-filters::before {
+    left: 0;
+    margin-right: -18px;
+    background: linear-gradient(to right, #fffdfb 0%, rgba(255,253,251,0) 100%);
+  }
+
+  .ycs-drape-filters::after {
+    right: 0;
+    margin-left: -18px;
+    background: linear-gradient(to left, #fffdfb 0%, rgba(255,253,251,0) 100%);
+  }
+
+  .ycs-drape-filters.has-left-fade::before,
+  .ycs-drape-filters.has-right-fade::after {
+    opacity: 1;
+  }
+
+  .ycs-filter-nav {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .ycs-filter-arrow {
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    border: 1px solid #d8cfc3;
+    background: #fff;
+    font-size: 18px;
+    color: #2f2a25;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .ycs-filter-arrow:hover {
+    background: #f6f1ea;
+    transform: translateY(-1px);
+  }
+
+  .ycs-filter-arrow.is-hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .ycs-drape-filter {
+    flex: 0 0 auto;
+    border: 1px solid #d8cfc3;
+    background: #fff;
+    color: #2f2a25;
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .ycs-drape-filter.is-active {
+    background: #111;
+    color: #fff;
+    border-color: #111;
+  }
+
+  .ycs-drape-filter--icon {
+    width: 36px;
+    min-width: 36px;
+    padding: 6px 0;
+    justify-content: center;
+  }
+
+  .ycs-drape-filter__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 0;
+  }
+
+  .ycs-drape-filter__icon svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .ycs-drape-filter.is-active .ycs-drape-filter__icon svg {
+    fill: currentColor;
+  }
+
+  .ycs-drape-swatches-section {
+    margin-top: 8px;
+  }
+
+  .ycs-selected-color {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 2px;
+    min-height: 34px;
+  }
+
+  .ycs-selected-name {
+    font-weight: 600;
+    color: #2f2a25;
+  }
+
+  .ycs-drape-fav-btn {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    min-width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 1px solid #ddd;
+    border-radius: 999px;
+    background: #fff;
+    color: #444;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .ycs-drape-fav-btn:hover {
+    border-color: #999;
+    color: #111;
+    background: #fff;
+  }
+
+  .ycs-drape-fav-btn__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 0;
+  }
+
+  .ycs-drape-fav-btn svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: transform 0.18s ease;
+  }
+
+  .ycs-drape-fav-btn.is-favorite {
+    background: #444;
+    color: #fff;
+    border-color: #444;
+  }
+
+  .ycs-drape-fav-btn.is-favorite svg {
+    fill: currentColor;
+  }
+
+  .ycs-drape-fav-btn.is-popping {
+    animation: ycsFavPop 0.32s ease;
+  }
+
+  @keyframes ycsFavPop {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.35); }
+    100% { transform: scale(1); }
+  }
+
+  .ycs-drape-swatches {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 40px);
+    gap: 6px;
+    margin-top: 6px;
+  }
+
+  .ycs-drape-swatch {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    border: 1px solid rgba(0,0,0,0.08);
+    cursor: pointer;
+  }
+
+  .ycs-drape-swatch.is-active {
+    box-shadow: 0 0 0 3px #111 inset;
+  }
+
+  @media screen and (max-width: 900px) {
+    .ycs-drape-app {
+      padding: 16px 12px 28px;
+      min-height: 100vh;
+    }
+
+    .ycs-drape-upsell-grid {
+      grid-template-columns: 1fr;
+      gap: 18px;
+    }
+
+    .ycs-drape-upsell-image {
+      max-width: 100%;
+    }
+
+    .ycs-drape-upsell-title {
+      font-size: 26px;
+    }
+
+    .ycs-drape-upsell {
+      max-width: 720px;
+      margin: 10px auto;
+    }
+
+    .ycs-drape-header {
+      margin-bottom: 14px;
+    }
+
+    .ycs-drape-kicker {
+      margin: 0 0 4px;
+      font-size: 11px;
+    }
+
+    .ycs-drape-title {
+      font-size: 24px;
+      line-height: 1.08;
+      margin: 0 0 6px;
+    }
+
+    .ycs-drape-subtitle {
+      font-size: 14px;
+      line-height: 1.35;
+      max-width: 100%;
+    }
+
+    .ycs-drape-layout {
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    .ycs-drape-panel {
+      padding: 14px;
+      border-radius: 20px;
+    }
+
+    .ycs-drape-panel__title {
+      font-size: 18px;
+      margin: 0;
+    }
+
+    .ycs-drape-photo-panel-head {
+      margin-bottom: 12px;
+    }
+
+    .ycs-mobile-back-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      font-size: 14px;
+    }
+
+    .ycs-drape-photo-stage {
+      aspect-ratio: 1 / 1;
+      max-height: none;
+      min-height: 0;
+    }
+
+    .ycs-photo-frame,
+    .ycs-drape-upload {
+      top: 14px;
+      right: 14px;
+      bottom: 10px;
+      left: 14px;
+    }
+
+    .ycs-photo-frame {
+      border-radius: 18px;
+    }
+
+    .ycs-drape-svg {
+      height: 34%;
+      bottom: -1%;
+    }
+
+    .ycs-desktop-photo-actions {
+      display: none !important;
+    }
+
+    .ycs-mobile-photo-actions {
+      display: grid;
+    }
+
+    .ycs-drape-btn,
+    .ycs-drape-btn--secondary {
+      min-height: 42px;
+      font-size: 14px;
+    }
+
+    .ycs-drape-studio[data-mobile-step="photo"] .ycs-drape-panel--controls {
+      display: none;
+    }
+
+    .ycs-drape-studio.is-comparison-view .ycs-drape-layout {
+      display: none;
+    }
+
+    .ycs-drape-comparison-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .ycs-drape-comparison-controls {
+      max-height: none;
+      overflow: visible;
+    }
+
+    .ycs-drape-comparison-stage-grid {
+      grid-template-columns: 1fr;
+      order: 2;
+    }
+
+    .ycs-drape-comparison-swatches {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+
+    .ycs-drape-studio[data-mobile-step="photo"] #ycs-mobile-back {
+      display: none;
+    }
+
+    .ycs-drape-studio[data-mobile-step="colors"] .ycs-drape-header {
+      display: none;
+    }
+
+    .ycs-drape-studio[data-mobile-step="colors"] .ycs-drape-layout {
+      gap: 10px;
+    }
+
+    .ycs-drape-studio[data-mobile-step="colors"] .ycs-mobile-photo-actions,
+    .ycs-drape-studio[data-mobile-step="colors"] .ycs-drape-upload {
+      display: none;
+    }
+
+    .ycs-drape-studio[data-mobile-step="colors"] .ycs-drape-panel--photo {
+      padding: 12px;
+    }
+
+    .ycs-drape-studio[data-mobile-step="colors"] .ycs-drape-photo-panel-head {
+      margin-bottom: 8px;
+    }
+
+    .ycs-drape-studio[data-mobile-step="colors"] .ycs-drape-panel--controls {
+      margin-top: 0;
+      padding: 12px;
+    }
+
+    .ycs-drape-studio[data-mobile-step="colors"] .ycs-drape-panel--controls .ycs-drape-panel__title {
+      display: none;
+    }
+
+    .ycs-drape-studio[data-mobile-step="colors"] .ycs-drape-filters {
+      margin-top: 0;
+      gap: 5px;
+      padding-bottom: 0;
+    }
+
+    .ycs-drape-studio[data-mobile-step="colors"] .ycs-drape-filter {
+      padding: 6px 9px;
+      font-size: 11px;
+    }
+
+    .ycs-drape-studio[data-mobile-step="colors"] .ycs-drape-swatches-section {
+      margin-top: 6px;
+    }
+
+    .ycs-drape-studio[data-mobile-step="colors"] .ycs-selected-color {
+      margin-top: 0;
+      min-height: 14px;
+      font-size: 12px;
+    }
+
+    .ycs-drape-studio[data-mobile-step="colors"] .ycs-drape-swatches {
+      margin-top: 4px;
+      gap: 7px;
+      grid-template-columns: repeat(auto-fill, 42px);
+    }
+
+    .ycs-drape-studio[data-mobile-step="colors"] .ycs-drape-swatch {
+      width: 42px;
+      height: 42px;
+    }
+
+    .ycs-drape-loading.is-photo-processing {
+      inset: 14px 14px 10px 14px;
+      border-radius: 18px;
+    }
+
+    .ycs-confirm-modal__dialog {
+      width: calc(100% - 24px);
+      padding: 18px;
+      border-radius: 16px;
+    }
+
+    
+    .ycs-filter-arrow {
+      width: 30px;
+      height: 30px;
+      font-size: 16px;
+    }
+
+    .ycs-drape-filter {
+      font-size: 11px;
+      padding: 6px 10px;
+    }
+
+    .ycs-drape-swatches {
+      grid-template-columns: repeat(auto-fill, 42px);
+      gap: 7px;
+    }
+
+    .ycs-drape-swatch {
+      width: 42px;
+      height: 42px;
+    }
+  }
+</style>
+
+{{ 'ycs-photo-draping.js' | asset_url | script_tag }}
