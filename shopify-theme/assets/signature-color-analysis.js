@@ -263,6 +263,7 @@ const lipEditShape2Btn = document.getElementById('ycs-lip-edit-shape-2');
 
   const validPaletteCodes = new Set(ALL_CUSTOMER_PALETTE_CODES);
   let styleMastersPaletteOptions = [];
+  let privateCustomPaletteOptions = [];
 
   const state = {
   scale: 1,
@@ -637,10 +638,10 @@ async function drawRealisticDrapeTexture(ctx, options) {
 
   function getPaletteDisplayName(code) {
     if (isCustomPaletteCode(code)) {
-      const match = styleMastersPaletteOptions.find(function (palette) {
+      const match = getCustomPaletteOptions().find(function (palette) {
         return palette.code === code;
       });
-      return match ? match.name : 'Style Masters Palette';
+      return match ? match.name : 'Custom Palette';
     }
     return paletteNames[code] || code || '—';
   }
@@ -705,8 +706,13 @@ async function drawRealisticDrapeTexture(ctx, options) {
 
     return {
       code: 'CUSTOM_' + id,
-      name: String(palette.name || 'Style Masters Palette').trim() || 'Style Masters Palette'
+      name: String(palette.name || 'Custom Palette').trim() || 'Custom Palette',
+      colors: Array.isArray(palette.colors) ? palette.colors : []
     };
+  }
+
+  function getCustomPaletteOptions() {
+    return styleMastersPaletteOptions.concat(privateCustomPaletteOptions);
   }
 
   async function loadAdminStyleMastersPalettes() {
@@ -734,16 +740,43 @@ async function drawRealisticDrapeTexture(ctx, options) {
     }
   }
 
-  function orderPalettesForAdmin(palettes) {
-    if (!IS_ADMIN || !styleMastersPaletteOptions.length) return palettes;
+  async function loadPrivateCustomPalettes() {
+    if (!IS_CATOOL_GROWTH || !APP_BASE_URL || !VIEWER_CUSTOMER_ID) return [];
 
-    const styleMastersCodes = styleMastersPaletteOptions.map(function (palette) {
+    try {
+      const query = new URLSearchParams({
+        customerId: VIEWER_CUSTOMER_ID,
+        hasGrowthAccess: 'true',
+        action: 'list'
+      });
+      const response = await fetch(APP_BASE_URL.replace(/\/$/, '') + '/api/custom-palettes?' + query.toString());
+      const text = await response.text();
+      const data = text ? JSON.parse(text) : {};
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Unable to load custom palettes');
+      }
+
+      return (data.palettes || [])
+        .map(normalizeCustomPaletteOption)
+        .filter(Boolean);
+    } catch (error) {
+      console.error('Failed to load private custom palettes for signature studio', error);
+      return [];
+    }
+  }
+
+  function orderPalettesWithCustomPalettes(palettes) {
+    const customPalettes = getCustomPaletteOptions();
+    if (!customPalettes.length) return palettes;
+
+    const customCodes = customPalettes.map(function (palette) {
       return palette.code;
     });
 
-    return styleMastersCodes
+    return customCodes
       .concat(palettes.filter(function (code) {
-        return styleMastersCodes.indexOf(code) === -1;
+        return customCodes.indexOf(code) === -1;
       }))
       .filter(function (code, index, allCodes) {
         return allCodes.indexOf(code) === index;
@@ -756,11 +789,11 @@ async function drawRealisticDrapeTexture(ctx, options) {
   });
 
   if (IS_SIGNATURE_MODE) {
-    return orderPalettesForAdmin(adminStyleMastersCodes.concat(ALL_CUSTOMER_PALETTE_CODES));
+    return orderPalettesWithCustomPalettes(adminStyleMastersCodes.concat(ALL_CUSTOMER_PALETTE_CODES));
   }
 
   if (IS_ADMIN || IS_TRADE || IS_CATOOL || IS_CATOOL_GROWTH) {
-    return orderPalettesForAdmin([DRAPING_PALETTE_CODE].concat(adminStyleMastersCodes, ALL_CUSTOMER_PALETTE_CODES));
+    return orderPalettesWithCustomPalettes([DRAPING_PALETTE_CODE].concat(adminStyleMastersCodes, ALL_CUSTOMER_PALETTE_CODES));
   }
 
   const owned = String(accessString || '')
@@ -1446,6 +1479,23 @@ function refreshAllSwatchHighlights() {
 
   async function fetchPaletteColors(paletteCode) {
     try {
+      if (isCustomPaletteCode(paletteCode) && !IS_ADMIN) {
+        const match = getCustomPaletteOptions().find(function (palette) {
+          return palette.code === paletteCode;
+        });
+
+        return ((match && match.colors) || []).map(function (join, index) {
+          const color = join.color || {};
+          return {
+            name: color.name || 'Custom Color',
+            hex: normalizeHex(color.hexCode),
+            hexCode: normalizeHex(color.hexCode),
+            sortOrder: Number(join.displayOrder) || index,
+            category: color.category || ''
+          };
+        });
+      }
+
       const query = new URLSearchParams({ palette: paletteCode });
       if (IS_ADMIN && isCustomPaletteCode(paletteCode)) {
         query.set('isAdmin', 'true');
@@ -4571,7 +4621,12 @@ window.addEventListener('pointercancel', endGesturePointer);
     updateDrapeShape();
     syncZoomSliderBounds();
     syncDrapeLayers();
-    styleMastersPaletteOptions = await loadAdminStyleMastersPalettes();
+    const customPaletteResults = await Promise.all([
+      loadAdminStyleMastersPalettes(),
+      loadPrivateCustomPalettes()
+    ]);
+    styleMastersPaletteOptions = customPaletteResults[0];
+    privateCustomPaletteOptions = customPaletteResults[1];
     populatePaletteSelect();
     populateSignatureSidePaletteSelects();
 
