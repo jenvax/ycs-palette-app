@@ -56,7 +56,7 @@
 
   const REPORT_TYPE = "signature_first_section";
   const BASE_REPORT_PAGE_COUNT = 7;
-  const DEFAULT_REPORT_LOGO_URL = "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/YourColorStyle_Logo-120.png?v=1643287573";
+  const YCS_REPORT_LOGO_URL = "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/YourColorStyle_Logo-120.png?v=1643287573";
   const REPORT_CHECKMARK_URL = "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/green-check-mark.png?v=1740232016";
   const paletteNames = {
     CCL: "Clear Cool Light",
@@ -276,7 +276,7 @@
       reportType: REPORT_TYPE,
       customerName: displayName(client),
       reportDate: new Date().toISOString().slice(0, 10),
-      brandLogoUrl: DEFAULT_REPORT_LOGO_URL,
+      brandLogoUrl: "",
       brandName: "Your Color Style",
       paletteCode,
       paletteName,
@@ -320,9 +320,11 @@
   function mergeReportDraft(client, savedDraft) {
     const base = defaultReportDraft(client);
     const incoming = savedDraft && typeof savedDraft === "object" ? savedDraft : {};
+    const incomingLogoUrl = String(incoming.brandLogoUrl || "").trim();
     return {
       ...base,
       ...incoming,
+      brandLogoUrl: incomingLogoUrl === YCS_REPORT_LOGO_URL ? "" : incomingLogoUrl,
       selectedDrapeImageUrl: base.selectedDrapeImageUrl,
       coverPhotoScale: Math.min(Math.max(Number(incoming.coverPhotoScale) || base.coverPhotoScale, 0.7), 2.4),
       coverPhotoX: Math.min(Math.max(Number(incoming.coverPhotoX) || base.coverPhotoX, -120), 120),
@@ -539,7 +541,6 @@
         <input type="hidden" name="brandLogoUrl" value="${escapeHtml(logoUrl)}">
         <label>Upload logo image<input name="brandLogoFile" type="file" accept="image/*"></label>
         <div class="ycs-report-logo-controls__actions">
-          <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-use-default-logo>Use YCS Logo</button>
           <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-clear-report-logo>Use Text Only</button>
         </div>
         <label>Logo text when no image is used<input name="brandName" value="${escapeHtml(draft.brandName)}"></label>
@@ -1984,7 +1985,6 @@
     const reportPreviewImageButton = event.target.closest("[data-ycs-report-preview-image-field]");
     const reportModalImageButton = event.target.closest("[data-ycs-report-modal-image-select]");
     const reportModalCloseButton = event.target.closest("[data-ycs-report-image-modal-close]");
-    const useDefaultLogoButton = event.target.closest("[data-ycs-use-default-logo]");
     const clearReportLogoButton = event.target.closest("[data-ycs-clear-report-logo]");
     const addCustomReportPageButton = event.target.closest("[data-ycs-add-custom-report-page]");
     const removeCustomReportPageButton = event.target.closest("[data-ycs-remove-custom-report-page]");
@@ -2046,12 +2046,6 @@
     if (reportPageButton) {
       if (!canCreateReports) return;
       applyActiveReportPage(reportPageButton.dataset.ycsReportPageButton);
-    }
-
-    if (useDefaultLogoButton) {
-      if (!canCreateReports) return;
-      event.preventDefault();
-      setReportLogoUrl(DEFAULT_REPORT_LOGO_URL);
     }
 
     if (clearReportLogoButton) {
