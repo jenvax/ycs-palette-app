@@ -79,11 +79,16 @@
   {% assign can_manage_clients = true %}
 {% endif %}
 
+{% assign can_create_reports = false %}
+{% if actual_is_admin or is_trade or is_catool or is_catool_growth %}
+  {% assign can_create_reports = true %}
+{% endif %}
+
 <div
   class="ycs-clients"
   data-customer-id="{{ customer.id }}"
   data-can-manage-clients="{{ can_manage_clients }}"
-  data-can-create-reports="{{ actual_is_admin }}"
+  data-can-create-reports="{{ can_create_reports }}"
   data-app-base-url="https://ycs-palette-app.vercel.app"
 >
   {% if customer == nil %}
