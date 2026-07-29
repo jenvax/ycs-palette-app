@@ -586,7 +586,7 @@
         </div>
         ${renderReportFooter(draft)}
       </section>
-      <section class="ycs-report-page" data-report-page="2">
+      <section class="ycs-report-page ycs-report-page--letter" data-report-page="2">
         ${renderReportBrand(draft)}
         <div class="ycs-report-copy ycs-report-copy--letter">${paragraphHtml(draft.text.intro)}</div>
         ${renderReportFooter(draft, 2)}

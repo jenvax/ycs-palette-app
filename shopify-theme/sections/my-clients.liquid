@@ -1146,6 +1146,20 @@
     padding-top: 0;
   }
 
+  .ycs-report-page--letter {
+    padding-top: 132px;
+  }
+
+  .ycs-report-page--letter .ycs-report-copy {
+    max-width: 500px;
+  }
+
+  .ycs-report-page--letter p {
+    margin-bottom: 12px;
+    font-size: 14px;
+    line-height: 1.28;
+  }
+
   .ycs-report-two-column {
     display: grid;
     grid-template-columns: 1fr .95fr;
@@ -1447,19 +1461,18 @@
 
     .ycs-report-export {
       display: block;
-      width: 8.5in;
+      width: var(--report-page-width);
       margin: 0 auto;
       max-height: none;
       overflow: visible;
       padding: 0;
       background: #fff;
       gap: 0;
+      zoom: 1.333333;
     }
 
     .ycs-report-page {
-      margin: 0 0 264px;
-      transform: scale(1.333333);
-      transform-origin: top left;
+      margin: 0;
       page-break-after: auto;
       break-after: auto;
       page-break-inside: avoid;
