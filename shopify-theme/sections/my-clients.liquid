@@ -566,10 +566,41 @@
     display: grid;
     gap: 18px;
     justify-items: center;
-    max-height: 860px;
-    overflow: auto;
+    overflow: hidden;
     padding: 8px;
     background: #f6f1ea;
+  }
+
+  .ycs-report-preview-shell {
+    display: grid;
+    gap: 10px;
+    align-content: start;
+  }
+
+  .ycs-report-page-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+  }
+
+  .ycs-report-page-nav button {
+    width: 34px;
+    height: 34px;
+    border: 1px solid #ddd3c8;
+    border-radius: 50%;
+    background: #fff;
+    color: #2f2a25;
+    cursor: pointer;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .ycs-report-page-nav button.is-active {
+    border-color: #111;
+    background: #111;
+    color: #fff;
   }
 
   .ycs-report-page {
@@ -582,6 +613,20 @@
     box-shadow: 0 8px 24px rgba(0,0,0,.08);
     overflow: hidden;
     font-family: Arial, Helvetica, sans-serif;
+  }
+
+  .ycs-report-preview:not(.ycs-report-export) .ycs-report-page {
+    display: none;
+  }
+
+  .ycs-report-preview[data-active-report-page="1"] [data-report-page="1"],
+  .ycs-report-preview[data-active-report-page="2"] [data-report-page="2"],
+  .ycs-report-preview[data-active-report-page="3"] [data-report-page="3"],
+  .ycs-report-preview[data-active-report-page="4"] [data-report-page="4"],
+  .ycs-report-preview[data-active-report-page="5"] [data-report-page="5"],
+  .ycs-report-preview[data-active-report-page="6"] [data-report-page="6"],
+  .ycs-report-preview[data-active-report-page="7"] [data-report-page="7"] {
+    display: block;
   }
 
   .ycs-report-page h1 {

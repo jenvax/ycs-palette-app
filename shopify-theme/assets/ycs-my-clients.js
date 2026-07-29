@@ -48,8 +48,10 @@
   let clients = [];
   let activeReportDraft = null;
   let activeReportClientId = "";
+  let activeReportPage = 1;
 
   const REPORT_TYPE = "signature_first_section";
+  const REPORT_PAGE_COUNT = 7;
   const paletteNames = {
     CCL: "Clear Cool Light",
     CCM: "Clear Cool Medium",
@@ -238,6 +240,30 @@
     };
   }
 
+  function reportStorageKey(clientRecordId) {
+    return `ycs-report-draft:${consultantId}:${clientRecordId}:${REPORT_TYPE}`;
+  }
+
+  function getLocalReportDraft(clientRecordId) {
+    try {
+      const rawDraft = window.localStorage.getItem(reportStorageKey(clientRecordId));
+      return rawDraft ? JSON.parse(rawDraft) : null;
+    } catch (error) {
+      console.warn("Unable to read local report draft", error);
+      return null;
+    }
+  }
+
+  function saveLocalReportDraft(clientRecordId, draft) {
+    try {
+      window.localStorage.setItem(reportStorageKey(clientRecordId), JSON.stringify(draft));
+      return true;
+    } catch (error) {
+      console.warn("Unable to save local report draft", error);
+      return false;
+    }
+  }
+
   function paragraphHtml(value) {
     return escapeHtml(value)
       .split(/\n{2,}/)
@@ -262,7 +288,7 @@
     const footer = `${escapeHtml(name.toUpperCase())} ${escapeHtml(reportDateLabel(draft).toUpperCase())}`;
 
     return `
-      <section class="ycs-report-page ycs-report-page--cover">
+      <section class="ycs-report-page ycs-report-page--cover" data-report-page="1">
         <div class="ycs-report-logo">Your<br>Color<br>Style</div>
         <div>
           <p class="ycs-report-kicker">Your</p>
@@ -272,11 +298,11 @@
         </div>
         <footer>${footer}</footer>
       </section>
-      <section class="ycs-report-page">
+      <section class="ycs-report-page" data-report-page="2">
         <div class="ycs-report-copy ycs-report-copy--letter">${paragraphHtml(draft.text.intro)}</div>
         <footer>2 ${footer}</footer>
       </section>
-      <section class="ycs-report-page">
+      <section class="ycs-report-page" data-report-page="3">
         <div class="ycs-report-two-column">
           <div>
             <h1>How Your<br>Color Analysis Works</h1>
@@ -297,25 +323,25 @@
         </div>
         <footer>3 ${footer}</footer>
       </section>
-      <section class="ycs-report-page">
+      <section class="ycs-report-page" data-report-page="4">
         <h1>Depth</h1>
         ${renderReportImage(draft.depthImageUrl, "Depth image", "ycs-report-preview__wide-image")}
         <div class="ycs-report-copy">${paragraphHtml(draft.text.depth)}</div>
         <footer>4 ${footer}</footer>
       </section>
-      <section class="ycs-report-page">
+      <section class="ycs-report-page" data-report-page="5">
         <h1>Temperature</h1>
         ${renderReportImage(draft.undertoneImageUrl, "Undertone image", "ycs-report-preview__wide-image")}
         <div class="ycs-report-copy">${paragraphHtml(draft.text.undertone)}</div>
         <footer>5 ${footer}</footer>
       </section>
-      <section class="ycs-report-page">
+      <section class="ycs-report-page" data-report-page="6">
         <h1>Chroma</h1>
         ${renderReportImage(draft.chromaImageUrl, "Chroma image", "ycs-report-preview__wide-image")}
         <div class="ycs-report-copy">${paragraphHtml(draft.text.chroma)}</div>
         <footer>6 ${footer}</footer>
       </section>
-      <section class="ycs-report-page">
+      <section class="ycs-report-page" data-report-page="7">
         <h1>${escapeHtml(draft.paletteName)}</h1>
         ${renderReportImage(draft.selectedDrapeImageUrl, "Selected draped image", "ycs-report-preview__drape")}
         <div class="ycs-report-copy">${paragraphHtml(draft.text.paletteType)}</div>
@@ -370,8 +396,16 @@
             <label>Chroma copy<textarea name="text.chroma">${escapeHtml(draft.text.chroma)}</textarea></label>
             <label>Palette type copy<textarea name="text.paletteType">${escapeHtml(draft.text.paletteType)}</textarea></label>
           </form>
-          <div class="ycs-report-preview" data-ycs-report-preview>
-            ${reportPagesHtml(draft)}
+          <div class="ycs-report-preview-shell">
+            <div class="ycs-report-page-nav" data-ycs-report-page-nav>
+              ${Array.from({ length: REPORT_PAGE_COUNT }, (_, index) => {
+                const pageNumber = index + 1;
+                return `<button type="button" class="${pageNumber === activeReportPage ? "is-active" : ""}" data-ycs-report-page-button="${pageNumber}">${pageNumber}</button>`;
+              }).join("")}
+            </div>
+            <div class="ycs-report-preview" data-ycs-report-preview data-active-report-page="${activeReportPage}">
+              ${reportPagesHtml(draft)}
+            </div>
           </div>
         </div>
       </section>
@@ -416,6 +450,21 @@
 
     activeReportDraft = readReportDraftFromForm(form, client);
     preview.innerHTML = reportPagesHtml(activeReportDraft);
+    applyActiveReportPage(activeReportPage);
+  }
+
+  function applyActiveReportPage(pageNumber) {
+    const safePage = Math.min(Math.max(Number(pageNumber) || 1, 1), REPORT_PAGE_COUNT);
+    activeReportPage = safePage;
+
+    const preview = detailEl.querySelector("[data-ycs-report-preview]");
+    if (preview) {
+      preview.dataset.activeReportPage = String(safePage);
+    }
+
+    detailEl.querySelectorAll("[data-ycs-report-page-button]").forEach((button) => {
+      button.classList.toggle("is-active", Number(button.dataset.ycsReportPageButton) === safePage);
+    });
   }
 
   function setReportStatus(message, visible) {
@@ -429,19 +478,33 @@
     if (!consultantId || !client.clientRecordId || !apiBase) return;
 
     setReportStatus("Loading saved draft...", true);
-    const response = await fetch(`${apiBase}/api/get-color-analysis-report?consultantId=${encodeURIComponent(consultantId)}&clientRecordId=${encodeURIComponent(client.clientRecordId)}&reportType=${encodeURIComponent(REPORT_TYPE)}`);
-    const data = await response.json();
+    let savedDraft = getLocalReportDraft(client.clientRecordId);
+    let savedAt = "";
+    let loadedFromServer = false;
 
-    if (!response.ok) {
-      throw new Error(data.error || "Report draft lookup failed");
+    try {
+      const response = await fetch(`${apiBase}/api/get-color-analysis-report?consultantId=${encodeURIComponent(consultantId)}&clientRecordId=${encodeURIComponent(client.clientRecordId)}&reportType=${encodeURIComponent(REPORT_TYPE)}`);
+      const data = await response.json();
+
+      if (response.ok && data.report?.draft) {
+        savedDraft = data.report.draft;
+        savedAt = data.report.updatedAt;
+        loadedFromServer = true;
+        saveLocalReportDraft(client.clientRecordId, savedDraft);
+      }
+    } catch (error) {
+      console.warn("Server report draft lookup failed", error);
     }
 
     activeReportClientId = client.clientRecordId;
-    activeReportDraft = mergeReportDraft(client, data.report?.draft);
+    activeReportDraft = mergeReportDraft(client, savedDraft);
     const builder = detailEl.querySelector("[data-ycs-report-builder]");
     if (builder) {
       builder.outerHTML = renderReportBuilder(client);
-      setReportStatus(data.report ? `Saved draft loaded. Last updated ${formatDate(data.report.updatedAt)}.` : "New draft ready.", true);
+      const localMessage = savedDraft ? "Saved browser draft loaded." : "New draft ready.";
+      const serverMessage = savedAt ? `Saved draft loaded. Last updated ${formatDate(savedAt)}.` : localMessage;
+      setReportStatus(loadedFromServer ? serverMessage : localMessage, true);
+      applyActiveReportPage(activeReportPage);
       window.setTimeout(() => setReportStatus("", false), 3500);
     }
   }
@@ -455,24 +518,29 @@
 
     activeReportDraft = readReportDraftFromForm(form, client);
     setReportStatus("Saving report draft...", true);
+    saveLocalReportDraft(client.clientRecordId, activeReportDraft);
 
-    const response = await fetch(`${apiBase}/api/save-color-analysis-report`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        consultantId,
-        clientRecordId: client.clientRecordId,
-        reportType: REPORT_TYPE,
-        draft: activeReportDraft
-      })
-    });
-    const data = await response.json();
+    try {
+      const response = await fetch(`${apiBase}/api/save-color-analysis-report`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          consultantId,
+          clientRecordId: client.clientRecordId,
+          reportType: REPORT_TYPE,
+          draft: activeReportDraft
+        })
+      });
 
-    if (!response.ok) {
-      throw new Error(data.error || "Report draft save failed");
+      if (!response.ok) {
+        throw new Error("Server draft save failed");
+      }
+
+      setReportStatus("Report draft saved.", true);
+    } catch (error) {
+      console.warn("Server report draft save failed", error);
+      setReportStatus("Draft saved in this browser. Server draft storage is temporarily unavailable.", true);
     }
-
-    setReportStatus("Report draft saved.", true);
     window.setTimeout(() => setReportStatus("", false), 3000);
   }
 
@@ -954,6 +1022,7 @@
     const saveReportButton = event.target.closest("[data-ycs-save-report]");
     const printReportButton = event.target.closest("[data-ycs-print-report]");
     const downloadReportButton = event.target.closest("[data-ycs-download-report-html]");
+    const reportPageButton = event.target.closest("[data-ycs-report-page-button]");
 
     if (pageBackButton && pageBackButton.dataset.ycsBackMode === "clients") {
       event.preventDefault();
@@ -1009,6 +1078,11 @@
     if (downloadReportButton) {
       if (!canCreateReports) return;
       downloadReportHtml();
+    }
+
+    if (reportPageButton) {
+      if (!canCreateReports) return;
+      applyActiveReportPage(reportPageButton.dataset.ycsReportPageButton);
     }
   });
 
