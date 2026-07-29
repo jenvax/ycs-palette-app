@@ -183,6 +183,7 @@
 
   const savePositionBtn = document.getElementById('ycs-analysis-save-position');
   const photoPrepLink = document.getElementById('ycs-analysis-photo-prep-link');
+  const manageClientLink = document.getElementById('ycs-analysis-manage-client-link');
 
   const depthStepEl = document.getElementById('ycs-analysis-depth-step');
   const depthSectionsEl = document.getElementById('ycs-analysis-depth-sections');
@@ -442,6 +443,18 @@
     return '/pages/photo-prep?' + query.toString();
   }
 
+  function buildManageClientHref() {
+    if (!CLIENT_RECORD_ID) return '/pages/my-clients';
+
+    const query = new URLSearchParams({
+      clientRecordId: CLIENT_RECORD_ID,
+      edit: '1'
+    });
+
+    addAdminPreviewParam(query);
+    return '/pages/my-clients?' + query.toString();
+  }
+
   function getFreeTrialClient(clientId) {
     return FREE_TRIAL_CLIENTS[String(clientId || '').trim().toLowerCase()] || null;
   }
@@ -581,6 +594,20 @@ function updateSignatureAnalysisLink() {
     signatureAnalysisLink.textContent = 'Lip & Draping Studio';
     signatureAnalysisLink.href = buildSignatureAnalysisHref();
   }
+}
+
+function updateManageClientLink() {
+  if (!manageClientLink) return;
+
+  if (!CLIENT_RECORD_ID) {
+    manageClientLink.hidden = true;
+    manageClientLink.style.display = 'none';
+    return;
+  }
+
+  manageClientLink.hidden = false;
+  manageClientLink.style.display = '';
+  manageClientLink.href = buildManageClientHref();
 }
   function hideSwatchLoading() {
     if (swatchLoadingEl) swatchLoadingEl.hidden = true;
@@ -4558,6 +4585,13 @@ const y = ((e.clientY - svgRect.top) / svgRect.height) * 1000;
     });
   }
 
+  if (manageClientLink) {
+    updateManageClientLink();
+    manageClientLink.addEventListener('click', function () {
+      manageClientLink.href = buildManageClientHref();
+    });
+  }
+
   if (realisticDrapeToggle) {
     realisticDrapeToggle.checked = false;
     realisticDrapeToggle.addEventListener('change', function () {
@@ -4710,6 +4744,7 @@ window.addEventListener('pointercancel', endGesturePointer);
   updatePhotoPrepLink();
   updateBackLink();
   updateSignatureAnalysisLink();
+  updateManageClientLink();
   setAnalysisMode(saved && saved.analysisMode === 'comparison' ? 'comparison' : 'structured');
 
   ensureLipEmptyModeVisible();

@@ -1238,6 +1238,8 @@
   function clientUrl(client) {
     const url = new URL(window.location.href);
     url.searchParams.set("clientRecordId", client.clientRecordId);
+    url.searchParams.delete("edit");
+    url.searchParams.delete("newClient");
     return url.pathname + url.search;
   }
 
@@ -1260,6 +1262,7 @@
     const url = new URL(window.location.href);
     url.searchParams.delete("clientRecordId");
     url.searchParams.delete("newClient");
+    url.searchParams.delete("edit");
     return url.pathname + url.search;
   }
 
@@ -1639,12 +1642,14 @@
     clients = Array.isArray(data.clients) ? data.clients : [];
     buildPaletteFilter();
 
-    const selectedClient = new URL(window.location.href).searchParams.get("clientRecordId");
-    const isNewClient = new URL(window.location.href).searchParams.get("newClient") === "1";
+    const currentParams = new URL(window.location.href).searchParams;
+    const selectedClient = currentParams.get("clientRecordId");
+    const editClient = currentParams.get("edit") === "1";
+    const isNewClient = currentParams.get("newClient") === "1";
     if (isNewClient) {
       renderCreateClient();
     } else if (selectedClient) {
-      showClientById(selectedClient, false);
+      showClientById(selectedClient, editClient);
     } else {
       renderCards();
     }
@@ -1682,6 +1687,7 @@
       event.preventDefault();
       const nextUrl = new URL(window.location.href);
       nextUrl.searchParams.delete("clientRecordId");
+      nextUrl.searchParams.delete("edit");
       nextUrl.searchParams.set("newClient", "1");
       window.history.pushState({}, "", nextUrl.pathname + nextUrl.search);
       renderCreateClient();
@@ -1707,6 +1713,7 @@
     if (backButton) {
       const url = new URL(window.location.href);
       url.searchParams.delete("clientRecordId");
+      url.searchParams.delete("edit");
       window.history.pushState({}, "", url.pathname + url.search);
       renderCards();
     }
@@ -1807,12 +1814,14 @@
   });
 
   window.addEventListener("popstate", () => {
-    const selectedClient = new URL(window.location.href).searchParams.get("clientRecordId");
-    const isNewClient = new URL(window.location.href).searchParams.get("newClient") === "1";
+    const currentParams = new URL(window.location.href).searchParams;
+    const selectedClient = currentParams.get("clientRecordId");
+    const editClient = currentParams.get("edit") === "1";
+    const isNewClient = currentParams.get("newClient") === "1";
     if (isNewClient) {
       renderCreateClient();
     } else if (selectedClient) {
-      showClientById(selectedClient, false);
+      showClientById(selectedClient, editClient);
     } else {
       renderCards();
     }
