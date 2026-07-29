@@ -835,8 +835,7 @@
       <section class="ycs-report-builder" data-ycs-report-builder>
         <div class="ycs-report-builder__header">
           <div>
-            <h3>Signature Report Draft</h3>
-            <p>Template pages: cover through color palette type.</p>
+            <h3>Color Analysis Report</h3>
           </div>
           <div class="ycs-report-builder__actions">
             <button class="ycs-clients__button" type="button" data-ycs-save-report>Save Draft</button>
