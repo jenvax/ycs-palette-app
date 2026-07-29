@@ -595,20 +595,22 @@
         ${renderReportBrand(draft)}
         <h1>How Your Color Analysis Works</h1>
         <div class="ycs-report-two-column">
-          <div>
+          <div class="ycs-report-science-left">
             <h3>The Science Behind Your Best Colors</h3>
             ${paragraphHtml(draft.text.howItWorks)}
+            <h3 class="ycs-report-system-title">The 3-Step System</h3>
             <div class="ycs-report-steps">
-              <div><span>1</span><strong>Depth</strong><p>How light or dark your overall coloring is.</p></div>
-              <div><span>2</span><strong>Temperature</strong><p>The undertone in your skin.</p></div>
-              <div><span>3</span><strong>Chroma</strong><p>How muted or vibrant your best colors are.</p></div>
+              <div><span>1</span><strong>Depth</strong><p>How light or dark your overall coloring is.</p><p class="ycs-report-step-copy">Based on your hair, skin and eyes. Wearing the right depth keeps your features balanced instead of washed out or overpowered.</p></div>
+              <div><span>2</span><strong>Temperature</strong><p>The undertone in your skin.</p><p class="ycs-report-step-copy">Determines whether warm, cool or olive-based colors harmonize with you. The right temperature makes your skin look clearer and more even.</p></div>
+              <div><span>3</span><strong>Chroma</strong><p>How muted or vibrant your best colors are.</p><p class="ycs-report-step-copy">The right level of clarity enhances your natural brightness without dulling or overwhelming your features.</p></div>
             </div>
           </div>
-          <div>
+          <div class="ycs-report-science-right">
             <h3>Your Color Wheel</h3>
             <h2>${escapeHtml(draft.paletteName)}</h2>
             ${paragraphHtml(draft.text.colorWheel)}
             ${renderReportImage(draft.colorWheelImageUrl, "Color wheel image", "ycs-report-preview__wheel")}
+            <p class="ycs-report-wheel-note">Colors on the right create harmony with your coloring and tones. Colors on the left create contrast with your coloring.</p>
           </div>
         </div>
         ${renderReportFooter(draft, 3)}
