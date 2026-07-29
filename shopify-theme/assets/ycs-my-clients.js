@@ -50,6 +50,7 @@
   let activeReportClientId = "";
   let activeReportPage = 1;
   let activeReportTemplateRequest = 0;
+  let activeSavedDrapedImages = [];
   const reportTemplateCache = new Map();
 
   const REPORT_TYPE = "signature_first_section";
@@ -376,6 +377,71 @@
     return `<div class="ycs-report-logo ycs-report-logo--text">${escapeHtml(brandName)}</div>`;
   }
 
+  function savedImageTitle(image) {
+    return [
+      image.drapeColorName,
+      image.paletteCode,
+      image.createdAt ? formatDate(image.createdAt) : ""
+    ].filter(Boolean).join(" · ");
+  }
+
+  function sortSavedImagesForPicker(images, preferredChoice) {
+    const preferredKey = choiceKey(preferredChoice);
+    return images.slice().sort((a, b) => {
+      const aMatch = preferredKey && choiceKey(a.drapeColorName) === preferredKey ? 0 : 1;
+      const bMatch = preferredKey && choiceKey(b.drapeColorName) === preferredKey ? 0 : 1;
+      if (aMatch !== bMatch) return aMatch - bMatch;
+      return String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
+    });
+  }
+
+  function renderSavedImagePicker({ fieldName, title, selectedUrl, preferredChoice }) {
+    const images = sortSavedImagesForPicker(activeSavedDrapedImages, preferredChoice);
+    const current = images.find((image) => image.imageUrl === selectedUrl);
+    const currentLabel = current
+      ? savedImageTitle(current)
+      : (selectedUrl ? "Custom image selected" : "No image selected");
+
+    return `
+      <div class="ycs-report-image-picker" data-ycs-report-image-picker="${escapeHtml(fieldName)}">
+        <div class="ycs-report-image-picker__head">
+          <span>${escapeHtml(title)}</span>
+          <small data-ycs-report-image-current>${escapeHtml(currentLabel)}</small>
+        </div>
+        <div class="ycs-report-image-picker__grid">
+          ${images.length ? images.map((image) => {
+            const isSelected = image.imageUrl === selectedUrl;
+            const label = savedImageTitle(image) || "Saved draped image";
+            return `
+              <button
+                class="ycs-report-image-option${isSelected ? " is-selected" : ""}"
+                type="button"
+                data-ycs-report-image-select
+                data-report-image-field="${escapeHtml(fieldName)}"
+                data-report-image-url="${escapeHtml(image.imageUrl || "")}"
+                data-report-image-label="${escapeHtml(label)}"
+                title="${escapeHtml(label)}">
+                <img src="${escapeHtml(image.imageUrl || "")}" alt="${escapeHtml(label)}">
+                <span>${escapeHtml(image.drapeColorName || image.panel || "Saved")}</span>
+              </button>
+            `;
+          }).join("") : `<p class="ycs-report-image-picker__empty">No saved draped images yet.</p>`}
+        </div>
+        ${selectedUrl ? `
+          <button
+            class="ycs-report-image-clear"
+            type="button"
+            data-ycs-report-image-select
+            data-report-image-field="${escapeHtml(fieldName)}"
+            data-report-image-url=""
+            data-report-image-label="No image selected">
+            Clear selection
+          </button>
+        ` : ""}
+      </div>
+    `;
+  }
+
   function renderComparisonImages(items, className, selectedValue) {
     return `
       <div class="${className}">
@@ -498,7 +564,12 @@
   }
 
   function renderReportBuilder(client) {
-    const draft = activeReportClientId === client.clientRecordId && activeReportDraft
+    const isSameReportClient = activeReportClientId === client.clientRecordId;
+    if (!isSameReportClient) {
+      activeSavedDrapedImages = [];
+    }
+
+    const draft = isSameReportClient && activeReportDraft
       ? activeReportDraft
       : defaultReportDraft(client);
 
@@ -532,29 +603,83 @@
             <label>Report date<input name="reportDate" type="date" value="${escapeHtml(draft.reportDate)}"></label>
             <label>Color type<select name="paletteCode">${paletteOptions}</select></label>
             <label>Color type display name<input name="paletteName" value="${escapeHtml(draft.paletteName)}"></label>
-            <label>Desired draped image URL<input name="selectedDrapeImageUrl" value="${escapeHtml(draft.selectedDrapeImageUrl)}"></label>
+            <input type="hidden" name="selectedDrapeImageUrl" value="${escapeHtml(draft.selectedDrapeImageUrl)}">
+            ${renderSavedImagePicker({
+              fieldName: "selectedDrapeImageUrl",
+              title: "Cover and palette type draped image",
+              selectedUrl: draft.selectedDrapeImageUrl,
+              preferredChoice: ""
+            })}
             <label>Depth decision<select name="depthChoice">${renderDecisionOptions([
               { value: "light", label: "Light" },
               { value: "medium", label: "Medium" },
               { value: "deep", label: "Deep" }
             ], draft.depthChoice)}</select></label>
-            <label>Depth light image URL<input name="depthLightImageUrl" value="${escapeHtml(draft.depthLightImageUrl || draft.depthImageUrl)}"></label>
-            <label>Depth medium image URL<input name="depthMediumImageUrl" value="${escapeHtml(draft.depthMediumImageUrl)}"></label>
-            <label>Depth deep image URL<input name="depthDeepImageUrl" value="${escapeHtml(draft.depthDeepImageUrl)}"></label>
+            <input type="hidden" name="depthLightImageUrl" value="${escapeHtml(draft.depthLightImageUrl || draft.depthImageUrl)}">
+            ${renderSavedImagePicker({
+              fieldName: "depthLightImageUrl",
+              title: "Depth light image",
+              selectedUrl: draft.depthLightImageUrl || draft.depthImageUrl,
+              preferredChoice: "light"
+            })}
+            <input type="hidden" name="depthMediumImageUrl" value="${escapeHtml(draft.depthMediumImageUrl)}">
+            ${renderSavedImagePicker({
+              fieldName: "depthMediumImageUrl",
+              title: "Depth medium image",
+              selectedUrl: draft.depthMediumImageUrl,
+              preferredChoice: "medium"
+            })}
+            <input type="hidden" name="depthDeepImageUrl" value="${escapeHtml(draft.depthDeepImageUrl)}">
+            ${renderSavedImagePicker({
+              fieldName: "depthDeepImageUrl",
+              title: "Depth deep image",
+              selectedUrl: draft.depthDeepImageUrl,
+              preferredChoice: "deep"
+            })}
             <label>Undertone decision<select name="undertoneChoice">${renderDecisionOptions([
               { value: "warm", label: "Warm" },
               { value: "cool", label: "Cool" },
               { value: "olive", label: "Olive" }
             ], draft.undertoneChoice)}</select></label>
-            <label>Undertone warm image URL<input name="undertoneWarmImageUrl" value="${escapeHtml(draft.undertoneWarmImageUrl || draft.undertoneImageUrl)}"></label>
-            <label>Undertone cool image URL<input name="undertoneCoolImageUrl" value="${escapeHtml(draft.undertoneCoolImageUrl)}"></label>
-            <label>Undertone olive image URL<input name="undertoneOliveImageUrl" value="${escapeHtml(draft.undertoneOliveImageUrl)}"></label>
+            <input type="hidden" name="undertoneWarmImageUrl" value="${escapeHtml(draft.undertoneWarmImageUrl || draft.undertoneImageUrl)}">
+            ${renderSavedImagePicker({
+              fieldName: "undertoneWarmImageUrl",
+              title: "Undertone warm image",
+              selectedUrl: draft.undertoneWarmImageUrl || draft.undertoneImageUrl,
+              preferredChoice: "warm"
+            })}
+            <input type="hidden" name="undertoneCoolImageUrl" value="${escapeHtml(draft.undertoneCoolImageUrl)}">
+            ${renderSavedImagePicker({
+              fieldName: "undertoneCoolImageUrl",
+              title: "Undertone cool image",
+              selectedUrl: draft.undertoneCoolImageUrl,
+              preferredChoice: "cool"
+            })}
+            <input type="hidden" name="undertoneOliveImageUrl" value="${escapeHtml(draft.undertoneOliveImageUrl)}">
+            ${renderSavedImagePicker({
+              fieldName: "undertoneOliveImageUrl",
+              title: "Undertone olive image",
+              selectedUrl: draft.undertoneOliveImageUrl,
+              preferredChoice: "olive"
+            })}
             <label>Chroma decision<select name="chromaChoice">${renderDecisionOptions([
               { value: "soft", label: "Soft" },
               { value: "clear", label: "Clear" }
             ], draft.chromaChoice)}</select></label>
-            <label>Chroma soft image URL<input name="chromaSoftImageUrl" value="${escapeHtml(draft.chromaSoftImageUrl || draft.chromaImageUrl)}"></label>
-            <label>Chroma clear image URL<input name="chromaClearImageUrl" value="${escapeHtml(draft.chromaClearImageUrl)}"></label>
+            <input type="hidden" name="chromaSoftImageUrl" value="${escapeHtml(draft.chromaSoftImageUrl || draft.chromaImageUrl)}">
+            ${renderSavedImagePicker({
+              fieldName: "chromaSoftImageUrl",
+              title: "Chroma soft image",
+              selectedUrl: draft.chromaSoftImageUrl || draft.chromaImageUrl,
+              preferredChoice: "soft"
+            })}
+            <input type="hidden" name="chromaClearImageUrl" value="${escapeHtml(draft.chromaClearImageUrl)}">
+            ${renderSavedImagePicker({
+              fieldName: "chromaClearImageUrl",
+              title: "Chroma clear image",
+              selectedUrl: draft.chromaClearImageUrl,
+              preferredChoice: "clear"
+            })}
             <label>Intro letter<textarea name="text.intro">${escapeHtml(draft.text.intro)}</textarea></label>
             <label>Depth copy<textarea name="text.depth">${escapeHtml(draft.text.depth)}</textarea></label>
             <label>Temperature copy<textarea name="text.undertone">${escapeHtml(draft.text.undertone)}</textarea></label>
@@ -695,6 +820,19 @@
     return data.template || null;
   }
 
+  async function fetchSavedDrapedImages(client) {
+    if (!apiBase || !client?.clientRecordId) return [];
+
+    const response = await fetch(`${apiBase}/api/get-saved-draped-images?clientRecordId=${encodeURIComponent(client.clientRecordId)}`);
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Unable to load saved draped images");
+    }
+
+    return Array.isArray(data.images) ? data.images.filter((image) => image.imageUrl) : [];
+  }
+
   async function autofillReportTemplate(client, options = {}) {
     const builder = detailEl.querySelector("[data-ycs-report-builder]");
     const form = builder?.querySelector("[data-ycs-report-form]");
@@ -773,6 +911,33 @@
     reportStatus.hidden = !visible;
   }
 
+  function selectReportSavedImage(button) {
+    const form = button.closest("[data-ycs-report-form]");
+    if (!form) return;
+
+    const fieldName = button.dataset.reportImageField || "";
+    const imageUrl = button.dataset.reportImageUrl || "";
+    const imageLabel = button.dataset.reportImageLabel || "No image selected";
+    const input = form.elements[fieldName];
+    if (!fieldName || !input) return;
+
+    input.value = imageUrl;
+
+    const picker = button.closest("[data-ycs-report-image-picker]");
+    if (picker) {
+      picker.querySelectorAll("[data-ycs-report-image-select]").forEach((option) => {
+        option.classList.toggle("is-selected", option.dataset.reportImageUrl === imageUrl && !!imageUrl);
+      });
+
+      const current = picker.querySelector("[data-ycs-report-image-current]");
+      if (current) {
+        current.textContent = imageLabel;
+      }
+    }
+
+    updateReportPreview();
+  }
+
   async function loadReportDraft(client) {
     if (!consultantId || !client.clientRecordId || !apiBase) return;
 
@@ -797,6 +962,14 @@
 
     activeReportClientId = client.clientRecordId;
     activeReportDraft = mergeReportDraft(client, savedDraft);
+
+    try {
+      activeSavedDrapedImages = await fetchSavedDrapedImages(client);
+    } catch (error) {
+      activeSavedDrapedImages = [];
+      console.warn("Saved draped image lookup failed", error);
+    }
+
     const builder = detailEl.querySelector("[data-ycs-report-builder]");
     if (builder) {
       builder.outerHTML = renderReportBuilder(client);
@@ -1326,6 +1499,7 @@
     const printReportButton = event.target.closest("[data-ycs-print-report]");
     const downloadReportButton = event.target.closest("[data-ycs-download-report-html]");
     const reportPageButton = event.target.closest("[data-ycs-report-page-button]");
+    const reportImageSelectButton = event.target.closest("[data-ycs-report-image-select]");
 
     if (pageBackButton && pageBackButton.dataset.ycsBackMode === "clients") {
       event.preventDefault();
@@ -1386,6 +1560,12 @@
     if (reportPageButton) {
       if (!canCreateReports) return;
       applyActiveReportPage(reportPageButton.dataset.ycsReportPageButton);
+    }
+
+    if (reportImageSelectButton) {
+      if (!canCreateReports) return;
+      event.preventDefault();
+      selectReportSavedImage(reportImageSelectButton);
     }
   });
 

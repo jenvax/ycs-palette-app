@@ -562,6 +562,100 @@
     line-height: 1.45;
   }
 
+  .ycs-report-image-picker {
+    display: grid;
+    gap: 8px;
+    padding: 10px;
+    border: 1px solid #e6ded5;
+    border-radius: 8px;
+    background: #fbfaf8;
+  }
+
+  .ycs-report-image-picker__head {
+    display: grid;
+    gap: 2px;
+  }
+
+  .ycs-report-image-picker__head span {
+    color: #4f463d;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .ycs-report-image-picker__head small {
+    color: #716960;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.25;
+  }
+
+  .ycs-report-image-picker__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .ycs-report-image-option {
+    display: grid;
+    gap: 5px;
+    width: 100%;
+    min-width: 0;
+    border: 2px solid transparent;
+    border-radius: 8px;
+    background: #fff;
+    padding: 5px;
+    color: #2f2a25;
+    cursor: pointer;
+    font: inherit;
+    text-align: left;
+  }
+
+  .ycs-report-image-option:hover {
+    border-color: #d8cec2;
+  }
+
+  .ycs-report-image-option.is-selected {
+    border-color: #2100b8;
+    box-shadow: 0 0 0 2px rgba(33, 0, 184, .12);
+  }
+
+  .ycs-report-image-option img {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    border-radius: 6px;
+    background: #f3eee7;
+    object-fit: cover;
+  }
+
+  .ycs-report-image-option span {
+    overflow: hidden;
+    color: #4f463d;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.15;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ycs-report-image-picker__empty {
+    grid-column: 1 / -1;
+    margin: 0;
+    color: #716960;
+    font-size: 12px;
+  }
+
+  .ycs-report-image-clear {
+    justify-self: start;
+    border: 0;
+    background: transparent;
+    color: #2100b8;
+    cursor: pointer;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 0;
+  }
+
   .ycs-report-preview {
     display: grid;
     gap: 18px;
