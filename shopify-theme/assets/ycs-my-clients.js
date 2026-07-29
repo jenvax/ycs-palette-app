@@ -51,6 +51,7 @@
   let activeReportPage = 1;
   let activeReportTemplateRequest = 0;
   let activeSavedDrapedImages = [];
+  let coverPhotoDrag = null;
   const reportTemplateCache = new Map();
 
   const REPORT_TYPE = "signature_first_section";
@@ -386,21 +387,26 @@
     `;
   }
 
-  function renderCoverArt(draft, extraClass) {
+  function renderCoverArt(draft, extraClass, options = {}) {
     const scale = Math.min(Math.max(Number(draft.coverPhotoScale) || 1, 0.7), 2.4);
     const x = Math.min(Math.max(Number(draft.coverPhotoX) || 0, -120), 120);
     const y = Math.min(Math.max(Number(draft.coverPhotoY) || 0, -120), 120);
+    const isDraggable = options.interactive && options.draggable;
+    const frameAttrs = isDraggable
+      ? ' data-ycs-report-cover-photo-drag title="Drag to reposition cover photo"'
+      : "";
     const drapeHtml = draft.selectedDrapeImageUrl
       ? `
-        <div class="ycs-report-cover-art__drape-frame">
+        <div class="ycs-report-cover-art__drape-frame${isDraggable ? " is-draggable" : ""}"${frameAttrs}>
           <img
             class="ycs-report-cover-art__drape"
             src="${escapeHtml(draft.selectedDrapeImageUrl)}"
             alt="${escapeHtml(draft.customerName || "Adjusted photo")}"
+            draggable="false"
             style="--cover-photo-scale:${scale};--cover-photo-x:${x}px;--cover-photo-y:${y}px;">
         </div>
       `
-      : `<div class="ycs-report-cover-art__drape-frame ycs-report-preview__image--empty">Adjusted photo</div>`;
+      : `<div class="ycs-report-cover-art__drape-frame ycs-report-preview__image--empty${isDraggable ? " is-draggable" : ""}"${frameAttrs}>Adjusted photo</div>`;
 
     return `
       <div class="ycs-report-cover-art${extraClass ? ` ${extraClass}` : ""}">
@@ -560,7 +566,7 @@
           <p class="ycs-report-kicker">Your</p>
           <h1>Color Analysis</h1>
         </div>
-        ${renderCoverArt(draft, "")}
+        ${renderCoverArt(draft, "", { interactive: options.interactive, draggable: true })}
         <div class="ycs-report-cover-meta">
           <h2>${escapeHtml(name)}</h2>
           <p>${escapeHtml(reportFullDateLabel(draft))}</p>
@@ -972,6 +978,72 @@
     activeReportDraft = readReportDraftFromForm(form, client);
     preview.innerHTML = reportPagesHtml(activeReportDraft, { interactive: true });
     applyActiveReportPage(activeReportPage);
+  }
+
+  function clampReportNumber(value, min, max, fallback) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return fallback;
+    return Math.min(Math.max(number, min), max);
+  }
+
+  function setCoverPhotoPosition(x, y) {
+    const form = detailEl.querySelector("[data-ycs-report-form]");
+    if (!form || !activeReportDraft) return;
+
+    const safeX = clampReportNumber(x, -120, 120, 0);
+    const safeY = clampReportNumber(y, -120, 120, 0);
+
+    if (form.elements.coverPhotoX) {
+      form.elements.coverPhotoX.value = String(safeX);
+    }
+
+    if (form.elements.coverPhotoY) {
+      form.elements.coverPhotoY.value = String(safeY);
+    }
+
+    activeReportDraft.coverPhotoX = safeX;
+    activeReportDraft.coverPhotoY = safeY;
+
+    detailEl.querySelectorAll(".ycs-report-cover-art__drape").forEach((image) => {
+      image.style.setProperty("--cover-photo-x", `${safeX}px`);
+      image.style.setProperty("--cover-photo-y", `${safeY}px`);
+    });
+  }
+
+  function startCoverPhotoDrag(event, frame) {
+    const form = detailEl.querySelector("[data-ycs-report-form]");
+    if (!form || !activeReportDraft) return;
+
+    coverPhotoDrag = {
+      pointerId: event.pointerId,
+      startClientX: event.clientX,
+      startClientY: event.clientY,
+      startX: clampReportNumber(form.elements.coverPhotoX?.value, -120, 120, 0),
+      startY: clampReportNumber(form.elements.coverPhotoY?.value, -120, 120, 0)
+    };
+
+    frame.classList.add("is-dragging");
+    frame.setPointerCapture?.(event.pointerId);
+    event.preventDefault();
+  }
+
+  function moveCoverPhotoDrag(event) {
+    if (!coverPhotoDrag || event.pointerId !== coverPhotoDrag.pointerId) return;
+    const nextX = coverPhotoDrag.startX + event.clientX - coverPhotoDrag.startClientX;
+    const nextY = coverPhotoDrag.startY + event.clientY - coverPhotoDrag.startClientY;
+    setCoverPhotoPosition(nextX, nextY);
+    event.preventDefault();
+  }
+
+  function endCoverPhotoDrag(event) {
+    if (!coverPhotoDrag || event.pointerId !== coverPhotoDrag.pointerId) return;
+
+    detailEl.querySelectorAll(".ycs-report-cover-art__drape-frame.is-dragging").forEach((frame) => {
+      frame.classList.remove("is-dragging");
+      frame.releasePointerCapture?.(event.pointerId);
+    });
+
+    coverPhotoDrag = null;
   }
 
   function applyActiveReportPage(pageNumber) {
@@ -1764,6 +1836,25 @@
       closeReportImageModal();
     }
 
+  });
+
+  root.addEventListener("pointerdown", (event) => {
+    if (!canCreateReports) return;
+    const coverFrame = event.target.closest("[data-ycs-report-cover-photo-drag]");
+    if (!coverFrame) return;
+    startCoverPhotoDrag(event, coverFrame);
+  });
+
+  root.addEventListener("pointermove", (event) => {
+    moveCoverPhotoDrag(event);
+  });
+
+  root.addEventListener("pointerup", (event) => {
+    endCoverPhotoDrag(event);
+  });
+
+  root.addEventListener("pointercancel", (event) => {
+    endCoverPhotoDrag(event);
   });
 
   root.addEventListener("input", (event) => {
