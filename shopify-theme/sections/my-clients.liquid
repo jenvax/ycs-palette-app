@@ -695,7 +695,8 @@
     font-size: 12px;
   }
 
-  .ycs-report-image-clear {
+  .ycs-report-image-clear,
+  .ycs-report-remove-bg {
     justify-self: start;
     border: 0;
     background: transparent;
@@ -705,6 +706,15 @@
     font-size: 12px;
     font-weight: 800;
     padding: 0;
+  }
+
+  .ycs-report-remove-bg {
+    color: #4f463d;
+  }
+
+  .ycs-report-remove-bg:disabled {
+    color: #aaa19a;
+    cursor: not-allowed;
   }
 
   .ycs-report-preview-image-button {
@@ -1303,6 +1313,14 @@
   }
 
   @media print {
+    html,
+    body {
+      width: 8.5in;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #fff !important;
+    }
+
     body * {
       visibility: hidden;
     }
@@ -1318,13 +1336,24 @@
       overflow: visible;
       padding: 0;
       background: #fff;
+      gap: 0;
     }
 
     .ycs-report-page {
+      display: block !important;
+      box-sizing: border-box;
       width: 8.5in;
       height: 11in;
+      margin: 0;
       aspect-ratio: auto;
       box-shadow: none;
+      page-break-after: auto;
+      break-after: auto;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .ycs-report-page:not(:last-child) {
       page-break-after: always;
       break-after: page;
     }

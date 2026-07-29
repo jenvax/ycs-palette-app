@@ -413,7 +413,7 @@
     });
   }
 
-  function renderSavedImagePicker({ fieldName, title, selectedUrl, preferredChoice }) {
+  function renderSavedImagePicker({ fieldName, title, selectedUrl, preferredChoice, allowRemoveBackground }) {
     const images = sortSavedImagesForPicker(activeSavedDrapedImages, preferredChoice);
     const current = images.find((image) => image.imageUrl === selectedUrl);
     const currentLabel = current
@@ -462,6 +462,16 @@
           ${selectedUrl ? "" : "hidden"}>
           Clear selection
         </button>
+        ${allowRemoveBackground ? `
+          <button
+            class="ycs-report-remove-bg"
+            type="button"
+            data-ycs-report-remove-bg
+            data-report-image-field="${escapeHtml(fieldName)}"
+            ${selectedUrl ? "" : "disabled"}>
+            Remove background
+          </button>
+        ` : ""}
       </div>
     `;
   }
@@ -635,7 +645,6 @@
           <div class="ycs-report-builder__actions">
             <button class="ycs-clients__button" type="button" data-ycs-save-report>Save Draft</button>
             <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-print-report>Print PDF</button>
-            <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-download-report-html>Editable HTML</button>
           </div>
         </div>
         <div class="ycs-report-builder__status" data-ycs-report-status>Loading saved draft...</div>
@@ -653,7 +662,8 @@
               fieldName: "selectedDrapeImageUrl",
               title: "Cover and palette type draped image",
               selectedUrl: draft.selectedDrapeImageUrl,
-              preferredChoice: ""
+              preferredChoice: "",
+              allowRemoveBackground: true
             })}
             <label>Depth decision<select name="depthChoice">${renderDecisionOptions([
               { value: "light", label: "Light" },
@@ -1011,9 +1021,106 @@
       if (clearButton) {
         clearButton.hidden = !imageUrl;
       }
+
+      const removeBgButton = picker.querySelector("[data-ycs-report-remove-bg]");
+      if (removeBgButton) {
+        removeBgButton.disabled = !imageUrl;
+      }
     }
 
     updateReportPreview();
+  }
+
+  function imageUrlToDataUrl(imageUrl) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.naturalWidth || img.width;
+          canvas.height = img.naturalHeight || img.height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0);
+          resolve(canvas.toDataURL("image/png"));
+        } catch (error) {
+          reject(error);
+        }
+      };
+      img.onerror = () => reject(new Error("Could not load the selected cover image."));
+      img.src = imageUrl;
+    });
+  }
+
+  async function removeReportCoverBackground(button) {
+    const form = detailEl.querySelector("[data-ycs-report-form]");
+    if (!form || !activeReportClientId || !apiBase) return;
+
+    const imageUrl = String(form.elements.selectedDrapeImageUrl?.value || "").trim();
+    if (!imageUrl) {
+      setReportStatus("Choose a cover image first.", true);
+      return;
+    }
+
+    const originalLabel = button.textContent;
+    button.disabled = true;
+    button.textContent = "Removing...";
+    setReportStatus("Removing cover image background...", true);
+
+    try {
+      const imageBase64 = await imageUrlToDataUrl(imageUrl);
+      const removeResponse = await fetch(`${apiBase}/api/remove-background`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageBase64,
+          customerId: consultantId,
+          clientRecordId: activeReportClientId,
+          tool: "report-cover",
+          mode: "trade",
+          isAdmin: true
+        })
+      });
+      const removeData = await removeResponse.json();
+
+      if (!removeResponse.ok || !removeData.image) {
+        throw new Error(removeData.error || "Background removal failed.");
+      }
+
+      const saveResponse = await fetch(`${apiBase}/api/save-draped-image`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageBase64: removeData.image,
+          clientRecordId: activeReportClientId,
+          customerId: "",
+          consultantId,
+          paletteCode: form.elements.paletteCode?.value || "",
+          panel: "cover-transparent",
+          drapeColorName: "Cover Transparent",
+          fileName: "cover-transparent"
+        })
+      });
+      const saveData = await saveResponse.json();
+
+      if (!saveResponse.ok || !saveData.image?.imageUrl) {
+        throw new Error(saveData.error || "Transparent image save failed.");
+      }
+
+      activeSavedDrapedImages = [
+        saveData.image,
+        ...activeSavedDrapedImages.filter((image) => image.imageUrl !== saveData.image.imageUrl)
+      ];
+      applyReportImageSelection("selectedDrapeImageUrl", saveData.image.imageUrl, "Cover Transparent");
+      setReportStatus("Cover background removed.", true);
+      window.setTimeout(() => setReportStatus("", false), 3000);
+    } catch (error) {
+      console.warn("Report cover background removal failed", error);
+      setReportStatus(error.message || "Could not remove the cover background.", true);
+    } finally {
+      button.disabled = false;
+      button.textContent = originalLabel;
+    }
   }
 
   function selectReportSavedImage(button) {
@@ -1630,12 +1737,12 @@
     const addClientButton = event.target.closest("[data-ycs-add-client]");
     const saveReportButton = event.target.closest("[data-ycs-save-report]");
     const printReportButton = event.target.closest("[data-ycs-print-report]");
-    const downloadReportButton = event.target.closest("[data-ycs-download-report-html]");
     const reportPageButton = event.target.closest("[data-ycs-report-page-button]");
     const reportImageSelectButton = event.target.closest("[data-ycs-report-image-select]");
     const reportPreviewImageButton = event.target.closest("[data-ycs-report-preview-image-field]");
     const reportModalImageButton = event.target.closest("[data-ycs-report-modal-image-select]");
     const reportModalCloseButton = event.target.closest("[data-ycs-report-image-modal-close]");
+    const reportRemoveBgButton = event.target.closest("[data-ycs-report-remove-bg]");
 
     if (pageBackButton && pageBackButton.dataset.ycsBackMode === "clients") {
       event.preventDefault();
@@ -1688,11 +1795,6 @@
       printReport();
     }
 
-    if (downloadReportButton) {
-      if (!canCreateReports) return;
-      downloadReportHtml();
-    }
-
     if (reportPageButton) {
       if (!canCreateReports) return;
       applyActiveReportPage(reportPageButton.dataset.ycsReportPageButton);
@@ -1727,6 +1829,13 @@
     if (reportModalCloseButton) {
       event.preventDefault();
       closeReportImageModal();
+    }
+
+    if (reportRemoveBgButton) {
+      if (!canCreateReports) return;
+      event.preventDefault();
+      removeReportCoverBackground(reportRemoveBgButton)
+        .catch((error) => setReportStatus(error.message || "Could not remove the cover background.", true));
     }
   });
 
