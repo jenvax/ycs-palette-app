@@ -2,6 +2,15 @@
 
 const REPORTS_TABLE = "ColorAnalysisReports";
 
+class AirtableRequestError extends Error {
+  constructor(message, details = {}) {
+    super(message);
+    this.name = "AirtableRequestError";
+    this.status = details.status;
+    this.type = details.type;
+  }
+}
+
 function getCorsHeaders(origin) {
   const allowedOrigins = [
     "https://yourcolorstyle.com",
@@ -57,7 +66,13 @@ async function airtableRequest({ method = "GET", recordId, searchParams, fields 
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(data?.error?.message || data?.error?.type || "Airtable request failed");
+    throw new AirtableRequestError(
+      data?.error?.message || data?.error?.type || "Airtable request failed",
+      {
+        status: response.status,
+        type: data?.error?.type
+      }
+    );
   }
 
   return data;
@@ -73,6 +88,54 @@ async function findReportRecord({ consultantId, clientRecordId, reportType }) {
   });
 
   return data.records?.[0] || null;
+}
+
+function isMissingReportsTable(error) {
+  return error?.status === 404 || ["TABLE_NOT_FOUND", "NOT_FOUND"].includes(error?.type);
+}
+
+async function ensureReportsTable() {
+  const { baseId, token, tableName } = airtableConfig();
+  const response = await fetch(`https://api.airtable.com/v0/meta/bases/${baseId}/tables`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      name: tableName,
+      description: "Saved Color Analysis Report drafts.",
+      fields: [
+        { name: "ClientRecordId", type: "singleLineText" },
+        { name: "ConsultantId", type: "singleLineText" },
+        { name: "ReportType", type: "singleLineText" },
+        { name: "DraftJson", type: "multilineText" }
+      ]
+    })
+  });
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new AirtableRequestError(
+      data?.error?.message || data?.error?.type || "Unable to create Airtable report table",
+      {
+        status: response.status,
+        type: data?.error?.type
+      }
+    );
+  }
+
+  return data;
+}
+
+async function findReportRecordWithTableSetup({ consultantId, clientRecordId, reportType }) {
+  try {
+    return await findReportRecord({ consultantId, clientRecordId, reportType });
+  } catch (error) {
+    if (!isMissingReportsTable(error)) throw error;
+    await ensureReportsTable();
+    return findReportRecord({ consultantId, clientRecordId, reportType });
+  }
 }
 
 export async function loader({ request }) {
@@ -128,7 +191,7 @@ export async function action({ request }) {
       ReportType: safeReportType,
       DraftJson: JSON.stringify(draft)
     };
-    const existing = await findReportRecord({
+    const existing = await findReportRecordWithTableSetup({
       consultantId: safeConsultantId,
       clientRecordId: safeClientRecordId,
       reportType: safeReportType

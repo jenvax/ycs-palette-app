@@ -2,6 +2,15 @@
 
 const REPORTS_TABLE = "ColorAnalysisReports";
 
+class AirtableRequestError extends Error {
+  constructor(message, details = {}) {
+    super(message);
+    this.name = "AirtableRequestError";
+    this.status = details.status;
+    this.type = details.type;
+  }
+}
+
 function getCorsHeaders(origin) {
   const allowedOrigins = [
     "https://yourcolorstyle.com",
@@ -57,10 +66,20 @@ async function fetchReportRecord({ baseId, token, tableName, consultantId, clien
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(data?.error?.message || data?.error?.type || "Airtable request failed");
+    throw new AirtableRequestError(
+      data?.error?.message || data?.error?.type || "Airtable request failed",
+      {
+        status: response.status,
+        type: data?.error?.type
+      }
+    );
   }
 
   return data.records?.[0] || null;
+}
+
+function isMissingReportsTable(error) {
+  return error?.status === 404 || ["TABLE_NOT_FOUND", "NOT_FOUND"].includes(error?.type);
 }
 
 export async function loader({ request }) {
@@ -97,14 +116,19 @@ export async function loader({ request }) {
       );
     }
 
-    const report = await fetchReportRecord({
-      baseId,
-      token,
-      tableName,
-      consultantId,
-      clientRecordId,
-      reportType
-    });
+    let report = null;
+    try {
+      report = await fetchReportRecord({
+        baseId,
+        token,
+        tableName,
+        consultantId,
+        clientRecordId,
+        reportType
+      });
+    } catch (error) {
+      if (!isMissingReportsTable(error)) throw error;
+    }
     const fields = report?.fields || {};
 
     return Response.json(
