@@ -591,6 +591,26 @@
     gap: 2px;
   }
 
+  .ycs-report-image-picker__trigger {
+    display: grid;
+    grid-template-columns: 86px minmax(0, 1fr);
+    gap: 10px;
+    align-items: center;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    padding: 0;
+    text-align: left;
+  }
+
+  .ycs-report-image-picker__trigger:hover .ycs-report-image-picker__preview {
+    border-color: #2100b8;
+    box-shadow: 0 0 0 2px rgba(33, 0, 184, .12);
+  }
+
   .ycs-report-image-picker__head span {
     color: #4f463d;
     font-size: 13px;
@@ -744,8 +764,11 @@
 
   .ycs-report-preview-image-button {
     all: unset;
-    display: contents;
+    display: inline-grid;
+    justify-items: center;
     cursor: pointer;
+    font: inherit;
+    text-align: center;
   }
 
   .ycs-report-preview-image-button:hover .ycs-report-comparison-image-space {
@@ -1294,7 +1317,9 @@
     object-fit: contain;
   }
 
-  .ycs-report-comparison-grid figcaption {
+  .ycs-report-comparison-grid figcaption,
+  .ycs-report-comparison-caption {
+    display: block;
     margin-top: 8px;
     color: #111;
     font-size: 16px;

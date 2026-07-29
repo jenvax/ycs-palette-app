@@ -459,11 +459,16 @@
 
     return `
       <div class="ycs-report-image-picker" data-ycs-report-image-picker="${escapeHtml(fieldName)}">
-        <div class="ycs-report-image-picker__head">
-          <span>${escapeHtml(title)}</span>
-          <small data-ycs-report-image-current>${escapeHtml(currentLabel)}</small>
-        </div>
-        ${previewHtml}
+        <button
+          class="ycs-report-image-picker__trigger"
+          type="button"
+          data-ycs-report-image-picker-toggle="${escapeHtml(fieldName)}">
+          ${previewHtml}
+          <span class="ycs-report-image-picker__head">
+            <span>${escapeHtml(title)}</span>
+            <small data-ycs-report-image-current>${escapeHtml(currentLabel)}</small>
+          </span>
+        </button>
         <details class="ycs-report-image-picker__choices">
           <summary>Choose image</summary>
           <div class="ycs-report-image-picker__grid">
@@ -520,23 +525,31 @@
 
   function renderComparisonImages(items, className, selectedValue, options = {}) {
     const visibleItems = items.filter((item) => item.hidden !== true);
+    const gridClass = visibleItems.length === 2 && className.includes("ycs-report-comparison-grid--three")
+      ? className.replace("ycs-report-comparison-grid--three", "ycs-report-comparison-grid--two")
+      : className;
     return `
-      <div class="${className}">
-        ${visibleItems.map((item) => `
-          <figure${choiceKey(item.value || item.label) === choiceKey(selectedValue) ? ` class="is-selected"` : ""}>
-            ${renderPreviewImageTarget(item.fieldName, item.label, `
+      <div class="${gridClass}">
+        ${visibleItems.map((item) => {
+          const isSelected = choiceKey(item.value || item.label) === choiceKey(selectedValue);
+          const figureBody = `
               <div class="ycs-report-comparison-image-space">
-              ${choiceKey(item.value || item.label) === choiceKey(selectedValue)
+              ${isSelected
                 ? `<img class="ycs-report-checkmark" src="${REPORT_CHECKMARK_URL}" alt="">`
                 : ""}
               ${item.url
                 ? `<img src="${escapeHtml(item.url)}" alt="${escapeHtml(item.label)}">`
                 : `<div class="ycs-report-preview__image--empty">${escapeHtml(item.label)} image</div>`}
               </div>
-            `, options.interactive)}
-            <figcaption>${escapeHtml(item.label)}</figcaption>
-          </figure>
-        `).join("")}
+              <span class="ycs-report-comparison-caption">${escapeHtml(item.label)}</span>
+            `;
+
+          return `
+            <figure${isSelected ? ` class="is-selected"` : ""}>
+              ${renderPreviewImageTarget(item.fieldName, item.label, figureBody, options.interactive)}
+            </figure>
+          `;
+        }).join("")}
       </div>
     `;
   }
@@ -1224,16 +1237,31 @@
     }
   }
 
-  async function saveReportDraft() {
+  async function saveReportDraft(button) {
     const form = detailEl.querySelector("[data-ycs-report-form]");
     if (!form || !activeReportClientId) return;
 
     const client = clients.find((item) => item.clientRecordId === activeReportClientId);
     if (!client) return;
 
+    const originalButtonText = button?.textContent || "Save Draft";
+    if (button) {
+      button.disabled = true;
+      button.textContent = "Saving...";
+    }
+
     activeReportDraft = readReportDraftFromForm(form, client);
     setReportStatus("Saving report draft...", true);
-    saveLocalReportDraft(client.clientRecordId, activeReportDraft);
+    const localSaved = saveLocalReportDraft(client.clientRecordId, activeReportDraft);
+
+    if (!localSaved) {
+      if (button) {
+        button.disabled = false;
+        button.textContent = originalButtonText;
+      }
+      setReportStatus("Unable to save draft in this browser.", true);
+      return;
+    }
 
     try {
       const response = await fetch(`${apiBase}/api/save-color-analysis-report`, {
@@ -1248,13 +1276,22 @@
       });
 
       if (!response.ok) {
-        throw new Error("Server draft save failed");
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Server draft save failed");
       }
 
       setReportStatus("Report draft saved.", true);
     } catch (error) {
       console.warn("Server report draft save failed", error);
-      setReportStatus("Draft saved in this browser. Server draft storage is temporarily unavailable.", true);
+      setReportStatus("Draft saved in this browser.", true);
+    } finally {
+      if (button) {
+        button.textContent = "Saved";
+        window.setTimeout(() => {
+          button.disabled = false;
+          button.textContent = originalButtonText;
+        }, 1200);
+      }
     }
     window.setTimeout(() => setReportStatus("", false), 3000);
   }
@@ -1742,6 +1779,7 @@
     const saveReportButton = event.target.closest("[data-ycs-save-report]");
     const printReportButton = event.target.closest("[data-ycs-print-report]");
     const reportPageButton = event.target.closest("[data-ycs-report-page-button]");
+    const reportImagePickerToggle = event.target.closest("[data-ycs-report-image-picker-toggle]");
     const reportImageSelectButton = event.target.closest("[data-ycs-report-image-select]");
     const reportPreviewImageButton = event.target.closest("[data-ycs-report-preview-image-field]");
     const reportModalImageButton = event.target.closest("[data-ycs-report-modal-image-select]");
@@ -1792,7 +1830,8 @@
 
     if (saveReportButton) {
       if (!canCreateReports) return;
-      saveReportDraft().catch((error) => setReportStatus(error.message || "Unable to save report draft.", true));
+      event.preventDefault();
+      saveReportDraft(saveReportButton).catch((error) => setReportStatus(error.message || "Unable to save report draft.", true));
     }
 
     if (printReportButton) {
@@ -1803,6 +1842,16 @@
     if (reportPageButton) {
       if (!canCreateReports) return;
       applyActiveReportPage(reportPageButton.dataset.ycsReportPageButton);
+    }
+
+    if (reportImagePickerToggle) {
+      if (!canCreateReports) return;
+      event.preventDefault();
+      const picker = reportImagePickerToggle.closest("[data-ycs-report-image-picker]");
+      const details = picker?.querySelector(".ycs-report-image-picker__choices");
+      if (details) {
+        details.open = !details.open;
+      }
     }
 
     if (reportImageSelectButton) {
