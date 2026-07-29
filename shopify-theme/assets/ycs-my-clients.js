@@ -217,7 +217,8 @@
   function copyWithoutGeneratedLead(value, leadPatterns) {
     const paragraphs = String(value || "").split(/\n{2,}/);
     if (paragraphs.length && leadPatterns.some((pattern) => pattern.test(paragraphs[0].trim()))) {
-      return paragraphs.slice(1).join("\n\n");
+      const copy = paragraphs.slice(1).join("\n\n").trim();
+      return copy || paragraphs.join("\n\n");
     }
 
     return paragraphs.join("\n\n");
@@ -354,15 +355,31 @@
     return `<img class="${className || "ycs-report-preview__image"}" src="${escapeHtml(url)}" alt="${escapeHtml(label)}">`;
   }
 
-  function renderCoverArt(draft, extraClass) {
+  function renderPreviewImageTarget(fieldName, label, html, interactive) {
+    if (!interactive || !fieldName) return html;
+
+    return `
+      <button
+        class="ycs-report-preview-image-button"
+        type="button"
+        data-ycs-report-preview-image-field="${escapeHtml(fieldName)}"
+        data-ycs-report-preview-image-label="${escapeHtml(label)}">
+        ${html}
+      </button>
+    `;
+  }
+
+  function renderCoverArt(draft, extraClass, options = {}) {
+    const drapeHtml = draft.selectedDrapeImageUrl
+      ? `<img class="ycs-report-cover-art__drape" src="${escapeHtml(draft.selectedDrapeImageUrl)}" alt="${escapeHtml(draft.customerName || "Selected draped image")}">`
+      : `<div class="ycs-report-cover-art__drape ycs-report-preview__image--empty">Draped image</div>`;
+
     return `
       <div class="ycs-report-cover-art${extraClass ? ` ${extraClass}` : ""}">
         ${draft.colorFanImageUrl
           ? `<img class="ycs-report-cover-art__fan" src="${escapeHtml(draft.colorFanImageUrl)}" alt="Color fan">`
           : `<div class="ycs-report-cover-art__fan ycs-report-preview__image--empty">Color fan image</div>`}
-        ${draft.selectedDrapeImageUrl
-          ? `<img class="ycs-report-cover-art__drape" src="${escapeHtml(draft.selectedDrapeImageUrl)}" alt="${escapeHtml(draft.customerName || "Selected draped image")}">`
-          : `<div class="ycs-report-cover-art__drape ycs-report-preview__image--empty">Draped image</div>`}
+        ${renderPreviewImageTarget("selectedDrapeImageUrl", "Cover draped image", drapeHtml, options.interactive)}
       </div>
     `;
   }
@@ -449,20 +466,40 @@
     `;
   }
 
-  function renderComparisonImages(items, className, selectedValue) {
+  function renderReportImageModal() {
+    return `
+      <div class="ycs-report-image-modal" data-ycs-report-image-modal hidden>
+        <div class="ycs-report-image-modal__backdrop" data-ycs-report-image-modal-close></div>
+        <div class="ycs-report-image-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="ycs-report-image-modal-title">
+          <div class="ycs-report-image-modal__head">
+            <div>
+              <h4 id="ycs-report-image-modal-title">Choose Saved Image</h4>
+              <p data-ycs-report-image-modal-subtitle></p>
+            </div>
+            <button type="button" data-ycs-report-image-modal-close aria-label="Close image chooser">Close</button>
+          </div>
+          <div class="ycs-report-image-modal__grid" data-ycs-report-image-modal-grid></div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderComparisonImages(items, className, selectedValue, options = {}) {
     const visibleItems = items.filter((item) => item.hidden !== true);
     return `
       <div class="${className}">
         ${visibleItems.map((item) => `
           <figure${choiceKey(item.value || item.label) === choiceKey(selectedValue) ? ` class="is-selected"` : ""}>
-            <div class="ycs-report-comparison-image-space">
+            ${renderPreviewImageTarget(item.fieldName, item.label, `
+              <div class="ycs-report-comparison-image-space">
               ${choiceKey(item.value || item.label) === choiceKey(selectedValue)
                 ? `<img class="ycs-report-checkmark" src="${REPORT_CHECKMARK_URL}" alt="">`
                 : ""}
               ${item.url
                 ? `<img src="${escapeHtml(item.url)}" alt="${escapeHtml(item.label)}">`
                 : `<div class="ycs-report-preview__image--empty">${escapeHtml(item.label)} image</div>`}
-            </div>
+              </div>
+            `, options.interactive)}
             <figcaption>${escapeHtml(item.label)}</figcaption>
           </figure>
         `).join("")}
@@ -482,7 +519,7 @@
     `;
   }
 
-  function reportPagesHtml(draft) {
+  function reportPagesHtml(draft, options = {}) {
     const name = draft.customerName || "Client";
     const depthLabel = choiceLabel(draft.depthChoice, draft.depth).toUpperCase();
     const undertoneLabel = choiceLabel(draft.undertoneChoice, draft.undertone).toUpperCase();
@@ -495,7 +532,7 @@
           <p class="ycs-report-kicker">Your</p>
           <h1>Color Analysis</h1>
         </div>
-        ${renderCoverArt(draft)}
+        ${renderCoverArt(draft, "", options)}
         <div class="ycs-report-cover-meta">
           <h2>${escapeHtml(name)}</h2>
           <p>${escapeHtml(reportFullDateLabel(draft))}</p>
@@ -533,10 +570,10 @@
         ${renderReportBrand(draft)}
         <h1>Depth</h1>
         ${renderComparisonImages([
-          { label: "Light Tones", value: "light", url: draft.depthLightImageUrl || draft.depthImageUrl },
-          { label: "Medium Tones", value: "medium", url: draft.depthMediumImageUrl },
-          { label: "Deep Tones", value: "deep", url: draft.depthDeepImageUrl }
-        ], "ycs-report-comparison-grid ycs-report-comparison-grid--three", draft.depthChoice)}
+          { label: "Light Tones", value: "light", url: draft.depthLightImageUrl || draft.depthImageUrl, fieldName: "depthLightImageUrl" },
+          { label: "Medium Tones", value: "medium", url: draft.depthMediumImageUrl, fieldName: "depthMediumImageUrl" },
+          { label: "Deep Tones", value: "deep", url: draft.depthDeepImageUrl, fieldName: "depthDeepImageUrl" }
+        ], "ycs-report-comparison-grid ycs-report-comparison-grid--three", draft.depthChoice, options)}
         ${renderCopyWithSubheading(`Your depth is ${depthLabel}`, draft.text.depth, [/^your depth is\b/i])}
         ${renderReportFooter(draft, 4)}
       </section>
@@ -544,10 +581,10 @@
         ${renderReportBrand(draft)}
         <h1>Temperature</h1>
             ${renderComparisonImages([
-              { label: "Warm Tones", value: "warm", url: draft.undertoneWarmImageUrl || draft.undertoneImageUrl },
-              { label: "Cool Tones", value: "cool", url: draft.undertoneCoolImageUrl },
-              { label: "Olive Tones", value: "olive", url: draft.undertoneOliveImageUrl, hidden: draft.showOliveImage === false }
-            ], "ycs-report-comparison-grid ycs-report-comparison-grid--three", draft.undertoneChoice)}
+              { label: "Warm Tones", value: "warm", url: draft.undertoneWarmImageUrl || draft.undertoneImageUrl, fieldName: "undertoneWarmImageUrl" },
+              { label: "Cool Tones", value: "cool", url: draft.undertoneCoolImageUrl, fieldName: "undertoneCoolImageUrl" },
+              { label: "Olive Tones", value: "olive", url: draft.undertoneOliveImageUrl, fieldName: "undertoneOliveImageUrl", hidden: draft.showOliveImage === false }
+            ], "ycs-report-comparison-grid ycs-report-comparison-grid--three", draft.undertoneChoice, options)}
         ${renderCopyWithSubheading(`Your undertone is ${undertoneLabel}`, draft.text.undertone, [/^you have\b/i, /^your undertone is\b/i])}
         ${renderReportFooter(draft, 5)}
       </section>
@@ -555,16 +592,16 @@
         ${renderReportBrand(draft)}
         <h1>Chroma</h1>
         ${renderComparisonImages([
-          { label: "Soft Tones", value: "soft", url: draft.chromaSoftImageUrl || draft.chromaImageUrl },
-          { label: "Clear Tones", value: "clear", url: draft.chromaClearImageUrl }
-        ], "ycs-report-comparison-grid ycs-report-comparison-grid--two", draft.chromaChoice)}
+          { label: "Soft Tones", value: "soft", url: draft.chromaSoftImageUrl || draft.chromaImageUrl, fieldName: "chromaSoftImageUrl" },
+          { label: "Clear Tones", value: "clear", url: draft.chromaClearImageUrl, fieldName: "chromaClearImageUrl" }
+        ], "ycs-report-comparison-grid ycs-report-comparison-grid--two", draft.chromaChoice, options)}
         ${renderCopyWithSubheading(`Your chroma is ${chromaLabel}`, draft.text.chroma, [/^you are\b/i, /^your chroma is\b/i])}
         ${renderReportFooter(draft, 6)}
       </section>
       <section class="ycs-report-page" data-report-page="7">
         ${renderReportBrand(draft)}
         <h1>${escapeHtml(draft.paletteName)}</h1>
-        ${renderCoverArt(draft, "ycs-report-cover-art--inline")}
+        ${renderCoverArt(draft, "ycs-report-cover-art--inline", options)}
         ${renderCopyWithSubheading(`You are ${draft.paletteName}`, draft.text.paletteType, [/^you are\b/i])}
         ${renderReportFooter(draft, 7)}
       </section>
@@ -706,10 +743,11 @@
               }).join("")}
             </div>
             <div class="ycs-report-preview" data-ycs-report-preview data-active-report-page="${activeReportPage}">
-              ${reportPagesHtml(draft)}
+              ${reportPagesHtml(draft, { interactive: true })}
             </div>
           </div>
         </div>
+        ${renderReportImageModal()}
       </section>
     `;
   }
@@ -899,7 +937,7 @@
     if (!client) return;
 
     activeReportDraft = readReportDraftFromForm(form, client);
-    preview.innerHTML = reportPagesHtml(activeReportDraft);
+    preview.innerHTML = reportPagesHtml(activeReportDraft, { interactive: true });
     applyActiveReportPage(activeReportPage);
   }
 
@@ -924,23 +962,25 @@
     reportStatus.hidden = !visible;
   }
 
-  function selectReportSavedImage(button) {
-    const form = button.closest("[data-ycs-report-form]");
+  function applyReportImageSelection(fieldName, imageUrl, imageLabel) {
+    const form = detailEl.querySelector("[data-ycs-report-form]");
     if (!form) return;
 
-    const fieldName = button.dataset.reportImageField || "";
-    const imageUrl = button.dataset.reportImageUrl || "";
-    const imageLabel = button.dataset.reportImageLabel || "No image selected";
     const input = form.elements[fieldName];
     if (!fieldName || !input) return;
 
     input.value = imageUrl;
 
-    const picker = button.closest("[data-ycs-report-image-picker]");
+    const picker = form.querySelector(`[data-ycs-report-image-picker="${fieldName}"]`);
     if (picker) {
       picker.querySelectorAll("[data-ycs-report-image-select]").forEach((option) => {
         option.classList.toggle("is-selected", option.dataset.reportImageUrl === imageUrl && !!imageUrl);
       });
+
+      const details = picker.querySelector(".ycs-report-image-picker__choices");
+      if (details) {
+        details.open = false;
+      }
 
       const current = picker.querySelector("[data-ycs-report-image-current]");
       if (current) {
@@ -974,6 +1014,61 @@
     }
 
     updateReportPreview();
+  }
+
+  function selectReportSavedImage(button) {
+    applyReportImageSelection(
+      button.dataset.reportImageField || "",
+      button.dataset.reportImageUrl || "",
+      button.dataset.reportImageLabel || "No image selected"
+    );
+  }
+
+  function renderReportModalImageButtons(fieldName) {
+    const images = sortSavedImagesForPicker(activeSavedDrapedImages, "");
+    if (!images.length) {
+      return `<p class="ycs-report-image-modal__empty">No saved draped images yet.</p>`;
+    }
+
+    return images.map((image) => {
+      const label = savedImageTitle(image) || "Saved draped image";
+      return `
+        <button
+          class="ycs-report-image-modal__option"
+          type="button"
+          data-ycs-report-modal-image-select
+          data-report-image-field="${escapeHtml(fieldName)}"
+          data-report-image-url="${escapeHtml(image.imageUrl || "")}"
+          data-report-image-label="${escapeHtml(label)}">
+          <img src="${escapeHtml(image.imageUrl || "")}" alt="${escapeHtml(label)}">
+          <span>${escapeHtml(image.drapeColorName || image.panel || "Saved")}</span>
+        </button>
+      `;
+    }).join("");
+  }
+
+  function openReportImageModal(fieldName, label) {
+    const modal = detailEl.querySelector("[data-ycs-report-image-modal]");
+    if (!modal) return;
+
+    const title = modal.querySelector("#ycs-report-image-modal-title");
+    const subtitle = modal.querySelector("[data-ycs-report-image-modal-subtitle]");
+    const grid = modal.querySelector("[data-ycs-report-image-modal-grid]");
+
+    if (title) title.textContent = "Choose Saved Image";
+    if (subtitle) subtitle.textContent = label || fieldName || "";
+    if (grid) grid.innerHTML = renderReportModalImageButtons(fieldName);
+
+    modal.dataset.reportImageField = fieldName;
+    modal.hidden = false;
+  }
+
+  function closeReportImageModal() {
+    const modal = detailEl.querySelector("[data-ycs-report-image-modal]");
+    if (modal) {
+      modal.hidden = true;
+      modal.dataset.reportImageField = "";
+    }
   }
 
   async function loadReportDraft(client) {
@@ -1538,6 +1633,9 @@
     const downloadReportButton = event.target.closest("[data-ycs-download-report-html]");
     const reportPageButton = event.target.closest("[data-ycs-report-page-button]");
     const reportImageSelectButton = event.target.closest("[data-ycs-report-image-select]");
+    const reportPreviewImageButton = event.target.closest("[data-ycs-report-preview-image-field]");
+    const reportModalImageButton = event.target.closest("[data-ycs-report-modal-image-select]");
+    const reportModalCloseButton = event.target.closest("[data-ycs-report-image-modal-close]");
 
     if (pageBackButton && pageBackButton.dataset.ycsBackMode === "clients") {
       event.preventDefault();
@@ -1604,6 +1702,31 @@
       if (!canCreateReports) return;
       event.preventDefault();
       selectReportSavedImage(reportImageSelectButton);
+    }
+
+    if (reportPreviewImageButton) {
+      if (!canCreateReports) return;
+      event.preventDefault();
+      openReportImageModal(
+        reportPreviewImageButton.dataset.ycsReportPreviewImageField || "",
+        reportPreviewImageButton.dataset.ycsReportPreviewImageLabel || ""
+      );
+    }
+
+    if (reportModalImageButton) {
+      if (!canCreateReports) return;
+      event.preventDefault();
+      applyReportImageSelection(
+        reportModalImageButton.dataset.reportImageField || "",
+        reportModalImageButton.dataset.reportImageUrl || "",
+        reportModalImageButton.dataset.reportImageLabel || "No image selected"
+      );
+      closeReportImageModal();
+    }
+
+    if (reportModalCloseButton) {
+      event.preventDefault();
+      closeReportImageModal();
     }
   });
 

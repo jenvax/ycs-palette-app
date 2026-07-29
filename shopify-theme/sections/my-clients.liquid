@@ -707,6 +707,129 @@
     padding: 0;
   }
 
+  .ycs-report-preview-image-button {
+    all: unset;
+    display: contents;
+    cursor: pointer;
+  }
+
+  .ycs-report-preview-image-button:hover .ycs-report-comparison-image-space,
+  .ycs-report-preview-image-button:hover .ycs-report-cover-art__drape {
+    outline: 2px solid #2100b8;
+    outline-offset: 3px;
+  }
+
+  .ycs-report-image-modal[hidden] {
+    display: none;
+  }
+
+  .ycs-report-image-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+  }
+
+  .ycs-report-image-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(17, 17, 17, .45);
+  }
+
+  .ycs-report-image-modal__dialog {
+    position: relative;
+    z-index: 1;
+    width: min(760px, 100%);
+    max-height: min(760px, 88vh);
+    overflow: auto;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 18px 55px rgba(0, 0, 0, .22);
+    padding: 18px;
+  }
+
+  .ycs-report-image-modal__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  .ycs-report-image-modal__head h4 {
+    margin: 0 0 4px;
+    color: #2f2a25;
+    font-size: 20px;
+    line-height: 1.2;
+  }
+
+  .ycs-report-image-modal__head p {
+    margin: 0;
+    color: #716960;
+    font-size: 13px;
+  }
+
+  .ycs-report-image-modal__head button {
+    border: 1px solid #ddd3c8;
+    border-radius: 999px;
+    background: #fff;
+    color: #2f2a25;
+    cursor: pointer;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 800;
+    padding: 8px 14px;
+  }
+
+  .ycs-report-image-modal__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+  }
+
+  .ycs-report-image-modal__option {
+    display: grid;
+    gap: 7px;
+    min-width: 0;
+    border: 2px solid transparent;
+    border-radius: 8px;
+    background: #fbfaf8;
+    color: #2f2a25;
+    cursor: pointer;
+    font: inherit;
+    padding: 7px;
+    text-align: left;
+  }
+
+  .ycs-report-image-modal__option:hover {
+    border-color: #2100b8;
+  }
+
+  .ycs-report-image-modal__option img {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    border-radius: 6px;
+    background: #f3eee7;
+    object-fit: cover;
+  }
+
+  .ycs-report-image-modal__option span {
+    overflow: hidden;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.15;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ycs-report-image-modal__empty {
+    margin: 0;
+    color: #716960;
+    font-size: 14px;
+  }
+
   .ycs-report-preview {
     display: grid;
     gap: 18px;
