@@ -688,7 +688,7 @@
 
   .ycs-report-cover-title {
     position: absolute;
-    top: 92px;
+    top: 116px;
     left: 54px;
     right: 54px;
     text-align: center;
@@ -745,7 +745,7 @@
   .ycs-report-cover-art {
     position: absolute;
     left: 50%;
-    top: 262px;
+    top: 252px;
     width: 500px;
     height: 250px;
     transform: translateX(-50%);
@@ -776,7 +776,7 @@
 
   .ycs-report-cover-meta {
     position: absolute;
-    top: 532px;
+    top: 526px;
     left: 54px;
     right: 54px;
     text-align: center;
@@ -803,7 +803,7 @@
   }
 
   .ycs-report-page--science {
-    padding-top: 80px;
+    padding-top: 104px;
   }
 
   .ycs-report-page--science .ycs-report-two-column {
@@ -924,15 +924,26 @@
 
   .ycs-report-comparison-grid figure {
     margin: 0;
+    position: relative;
     text-align: center;
   }
 
-  .ycs-report-comparison-grid img,
+  .ycs-report-comparison-grid figure > img:not(.ycs-report-checkmark),
   .ycs-report-comparison-grid .ycs-report-preview__image--empty {
     width: 100%;
     height: 230px;
     object-fit: contain;
     object-position: center bottom;
+  }
+
+  .ycs-report-checkmark {
+    position: absolute;
+    top: -8px;
+    left: -8px;
+    z-index: 3;
+    width: 38px;
+    height: 38px;
+    object-fit: contain;
   }
 
   .ycs-report-comparison-grid figcaption {

@@ -53,6 +53,7 @@
   const REPORT_TYPE = "signature_first_section";
   const REPORT_PAGE_COUNT = 7;
   const DEFAULT_REPORT_LOGO_URL = "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/YourColorStyle_Logo-120.png?v=1643287573";
+  const REPORT_CHECKMARK_URL = "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/green-check-mark.png?v=1740232016";
   const paletteNames = {
     CCL: "Clear Cool Light",
     CCM: "Clear Cool Medium",
@@ -187,6 +188,23 @@
     return String(client.firstName || "").trim() || "your client";
   }
 
+  function choiceKey(value) {
+    return String(value || "").trim().toLowerCase();
+  }
+
+  function selectedAttr(value, selected) {
+    return choiceKey(value) === choiceKey(selected) ? " selected" : "";
+  }
+
+  function renderDecisionOptions(options, selected) {
+    return [
+      `<option value=""${selectedAttr("", selected)}>No check mark</option>`,
+      ...options.map((option) => (
+        `<option value="${escapeHtml(option.value)}"${selectedAttr(option.value, selected)}>${escapeHtml(option.label)}</option>`
+      ))
+    ].join("");
+  }
+
   function monthYear(value) {
     const date = value ? new Date(value) : new Date();
     if (Number.isNaN(date.getTime())) return "";
@@ -226,6 +244,9 @@
       depth,
       undertone: temperature,
       chroma,
+      depthChoice: choiceKey(depth),
+      undertoneChoice: choiceKey(temperature),
+      chromaChoice: choiceKey(chroma),
       text: {
         intro: `Dear ${firstName},\n\nOne of my favorite parts of creating a Signature Color Analysis is discovering the quiet beauty that makes someone unique. Your best colors reflect the natural harmony already present in your features.\n\nYou are ${paletteName}, a palette built around ${temperature.toLowerCase()} undertones, ${depth.toLowerCase()} depth, and ${chroma.toLowerCase()} color. Together, these qualities create a look that feels refined, approachable, and effortlessly polished.\n\nThe colors throughout this guide were selected because they work with your natural coloring, not against it. My hope is that this guide makes choosing colors feel simple.\n\nWarmly,\nJen Vax`,
         howItWorks: "Your best colors are based on how color interacts with your natural features. At Your Color Style, we use a simple 3-step process to identify the colors that make you look more vibrant, healthy, and put together.",
@@ -324,11 +345,14 @@
     return `<div class="ycs-report-logo ycs-report-logo--text">${escapeHtml(brandName)}</div>`;
   }
 
-  function renderComparisonImages(items, className) {
+  function renderComparisonImages(items, className, selectedValue) {
     return `
       <div class="${className}">
         ${items.map((item) => `
-          <figure>
+          <figure${choiceKey(item.value || item.label) === choiceKey(selectedValue) ? ` class="is-selected"` : ""}>
+            ${choiceKey(item.value || item.label) === choiceKey(selectedValue)
+              ? `<img class="ycs-report-checkmark" src="${REPORT_CHECKMARK_URL}" alt="">`
+              : ""}
             ${item.url
               ? `<img src="${escapeHtml(item.url)}" alt="${escapeHtml(item.label)}">`
               : `<div class="ycs-report-preview__image--empty">${escapeHtml(item.label)} image</div>`}
@@ -399,10 +423,10 @@
         ${renderReportBrand(draft)}
         <h1>Depth</h1>
         ${renderComparisonImages([
-          { label: "Light Tones", url: draft.depthLightImageUrl || draft.depthImageUrl },
-          { label: "Medium Tones", url: draft.depthMediumImageUrl },
-          { label: "Deep Tones", url: draft.depthDeepImageUrl }
-        ], "ycs-report-comparison-grid ycs-report-comparison-grid--three")}
+          { label: "Light Tones", value: "light", url: draft.depthLightImageUrl || draft.depthImageUrl },
+          { label: "Medium Tones", value: "medium", url: draft.depthMediumImageUrl },
+          { label: "Deep Tones", value: "deep", url: draft.depthDeepImageUrl }
+        ], "ycs-report-comparison-grid ycs-report-comparison-grid--three", draft.depthChoice)}
         <div class="ycs-report-copy">${paragraphHtml(draft.text.depth)}</div>
         ${renderReportFooter(draft, 4)}
       </section>
@@ -410,9 +434,9 @@
         ${renderReportBrand(draft)}
         <h1>Temperature</h1>
         ${renderComparisonImages([
-          { label: "Warm Tones", url: draft.undertoneWarmImageUrl || draft.undertoneImageUrl },
-          { label: "Cool Tones", url: draft.undertoneCoolImageUrl }
-        ], "ycs-report-comparison-grid ycs-report-comparison-grid--two")}
+          { label: "Warm Tones", value: "warm", url: draft.undertoneWarmImageUrl || draft.undertoneImageUrl },
+          { label: "Cool Tones", value: "cool", url: draft.undertoneCoolImageUrl }
+        ], "ycs-report-comparison-grid ycs-report-comparison-grid--two", draft.undertoneChoice)}
         <div class="ycs-report-copy">${paragraphHtml(draft.text.undertone)}</div>
         ${renderReportFooter(draft, 5)}
       </section>
@@ -420,9 +444,9 @@
         ${renderReportBrand(draft)}
         <h1>Chroma</h1>
         ${renderComparisonImages([
-          { label: "Soft Tones", url: draft.chromaSoftImageUrl || draft.chromaImageUrl },
-          { label: "Clear Tones", url: draft.chromaClearImageUrl }
-        ], "ycs-report-comparison-grid ycs-report-comparison-grid--two")}
+          { label: "Soft Tones", value: "soft", url: draft.chromaSoftImageUrl || draft.chromaImageUrl },
+          { label: "Clear Tones", value: "clear", url: draft.chromaClearImageUrl }
+        ], "ycs-report-comparison-grid ycs-report-comparison-grid--two", draft.chromaChoice)}
         <div class="ycs-report-copy">${paragraphHtml(draft.text.chroma)}</div>
         ${renderReportFooter(draft, 6)}
       </section>
@@ -474,11 +498,24 @@
             <label>Color fan image URL<input name="colorFanImageUrl" value="${escapeHtml(draft.colorFanImageUrl)}"></label>
             <label>Desired draped image URL<input name="selectedDrapeImageUrl" value="${escapeHtml(draft.selectedDrapeImageUrl)}"></label>
             <label>Color wheel image URL<input name="colorWheelImageUrl" value="${escapeHtml(draft.colorWheelImageUrl)}"></label>
+            <label>Depth decision<select name="depthChoice">${renderDecisionOptions([
+              { value: "light", label: "Light" },
+              { value: "medium", label: "Medium" },
+              { value: "deep", label: "Deep" }
+            ], draft.depthChoice)}</select></label>
             <label>Depth light image URL<input name="depthLightImageUrl" value="${escapeHtml(draft.depthLightImageUrl || draft.depthImageUrl)}"></label>
             <label>Depth medium image URL<input name="depthMediumImageUrl" value="${escapeHtml(draft.depthMediumImageUrl)}"></label>
             <label>Depth deep image URL<input name="depthDeepImageUrl" value="${escapeHtml(draft.depthDeepImageUrl)}"></label>
+            <label>Undertone decision<select name="undertoneChoice">${renderDecisionOptions([
+              { value: "warm", label: "Warm" },
+              { value: "cool", label: "Cool" }
+            ], draft.undertoneChoice)}</select></label>
             <label>Undertone warm image URL<input name="undertoneWarmImageUrl" value="${escapeHtml(draft.undertoneWarmImageUrl || draft.undertoneImageUrl)}"></label>
             <label>Undertone cool image URL<input name="undertoneCoolImageUrl" value="${escapeHtml(draft.undertoneCoolImageUrl)}"></label>
+            <label>Chroma decision<select name="chromaChoice">${renderDecisionOptions([
+              { value: "soft", label: "Soft" },
+              { value: "clear", label: "Clear" }
+            ], draft.chromaChoice)}</select></label>
             <label>Chroma soft image URL<input name="chromaSoftImageUrl" value="${escapeHtml(draft.chromaSoftImageUrl || draft.chromaImageUrl)}"></label>
             <label>Chroma clear image URL<input name="chromaClearImageUrl" value="${escapeHtml(draft.chromaClearImageUrl)}"></label>
             <label>Intro letter<textarea name="text.intro">${escapeHtml(draft.text.intro)}</textarea></label>
@@ -519,11 +556,14 @@
     draft.colorFanImageUrl = String(formData.get("colorFanImageUrl") || "").trim();
     draft.selectedDrapeImageUrl = String(formData.get("selectedDrapeImageUrl") || "").trim();
     draft.colorWheelImageUrl = String(formData.get("colorWheelImageUrl") || "").trim();
+    draft.depthChoice = choiceKey(formData.get("depthChoice"));
     draft.depthLightImageUrl = String(formData.get("depthLightImageUrl") || "").trim();
     draft.depthMediumImageUrl = String(formData.get("depthMediumImageUrl") || "").trim();
     draft.depthDeepImageUrl = String(formData.get("depthDeepImageUrl") || "").trim();
+    draft.undertoneChoice = choiceKey(formData.get("undertoneChoice"));
     draft.undertoneWarmImageUrl = String(formData.get("undertoneWarmImageUrl") || "").trim();
     draft.undertoneCoolImageUrl = String(formData.get("undertoneCoolImageUrl") || "").trim();
+    draft.chromaChoice = choiceKey(formData.get("chromaChoice"));
     draft.chromaSoftImageUrl = String(formData.get("chromaSoftImageUrl") || "").trim();
     draft.chromaClearImageUrl = String(formData.get("chromaClearImageUrl") || "").trim();
     draft.depthImageUrl = draft.depthLightImageUrl;
