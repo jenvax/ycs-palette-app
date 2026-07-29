@@ -52,6 +52,7 @@
 
   const REPORT_TYPE = "signature_first_section";
   const REPORT_PAGE_COUNT = 7;
+  const DEFAULT_REPORT_LOGO_URL = "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/YourColorStyle_Logo-120.png?v=1643287573";
   const paletteNames = {
     CCL: "Clear Cool Light",
     CCM: "Clear Cool Medium",
@@ -205,6 +206,8 @@
       reportType: REPORT_TYPE,
       customerName: displayName(client),
       reportDate: new Date().toISOString().slice(0, 10),
+      brandLogoUrl: DEFAULT_REPORT_LOGO_URL,
+      brandName: "Your Color Style",
       paletteCode,
       paletteName,
       colorFanImageUrl: "",
@@ -310,6 +313,17 @@
     `;
   }
 
+  function renderReportBrand(draft) {
+    const logoUrl = String(draft.brandLogoUrl || "").trim();
+    const brandName = String(draft.brandName || "").trim() || "Your Color Style";
+
+    if (logoUrl) {
+      return `<img class="ycs-report-logo" src="${escapeHtml(logoUrl)}" alt="${escapeHtml(brandName)}">`;
+    }
+
+    return `<div class="ycs-report-logo ycs-report-logo--text">${escapeHtml(brandName)}</div>`;
+  }
+
   function renderComparisonImages(items, className) {
     return `
       <div class="${className}">
@@ -331,7 +345,7 @@
 
     return `
       <section class="ycs-report-page ycs-report-page--cover" data-report-page="1">
-        <div class="ycs-report-logo">Your<br>Color<br>Style</div>
+        ${renderReportBrand(draft)}
         <div class="ycs-report-cover-title">
           <p class="ycs-report-kicker">Your</p>
           <h1>Color Analysis</h1>
@@ -434,6 +448,8 @@
         <div class="ycs-report-builder__layout">
           <form class="ycs-report-form" data-ycs-report-form>
             <input type="hidden" name="clientRecordId" value="${escapeHtml(client.clientRecordId)}">
+            <label>Logo image URL<input name="brandLogoUrl" value="${escapeHtml(draft.brandLogoUrl)}"></label>
+            <label>Logo text fallback when image URL is blank<input name="brandName" value="${escapeHtml(draft.brandName)}"></label>
             <label>Customer name<input name="customerName" value="${escapeHtml(draft.customerName)}"></label>
             <label>Report date<input name="reportDate" type="date" value="${escapeHtml(draft.reportDate)}"></label>
             <label>Color type<select name="paletteCode">${paletteOptions}</select></label>
@@ -479,6 +495,8 @@
 
     draft.customerName = String(formData.get("customerName") || "").trim();
     draft.reportDate = String(formData.get("reportDate") || "").trim();
+    draft.brandLogoUrl = String(formData.get("brandLogoUrl") || "").trim();
+    draft.brandName = String(formData.get("brandName") || "").trim();
     draft.paletteCode = paletteCode;
     draft.paletteName = String(formData.get("paletteName") || "").trim() || getPaletteName(paletteCode);
     draft.colorFanImageUrl = String(formData.get("colorFanImageUrl") || "").trim();
