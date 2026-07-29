@@ -965,6 +965,23 @@
     box-shadow: none;
   }
 
+  .ycs-report-export .ycs-report-print-sheet {
+    position: relative;
+    width: 8.5in;
+    height: 11in;
+    margin: 0 auto;
+    overflow: hidden;
+    background: #fff;
+  }
+
+  .ycs-report-export .ycs-report-print-sheet .ycs-report-page {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform: scale(1.333333);
+    transform-origin: top left;
+  }
+
   .ycs-report-page h1 {
     margin: 0 0 24px;
     font-family: Georgia, "Times New Roman", serif;
@@ -1461,27 +1478,33 @@
 
     .ycs-report-export {
       display: block;
-      width: var(--report-page-width);
-      margin: 0 auto;
+      width: 8.5in;
+      margin: 0;
       max-height: none;
       overflow: visible;
       padding: 0;
       background: #fff;
       gap: 0;
-      zoom: 1.333333;
     }
 
-    .ycs-report-page {
-      margin: 0;
+    .ycs-report-print-sheet {
       page-break-after: auto;
       break-after: auto;
       page-break-inside: avoid;
       break-inside: avoid;
     }
 
-    .ycs-report-page:not(:last-child) {
+    .ycs-report-print-sheet:not(:last-child) {
       page-break-after: always;
       break-after: page;
+    }
+
+    .ycs-report-print-sheet .ycs-report-page {
+      margin: 0;
+      page-break-after: auto;
+      break-after: auto;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
 
     @page {

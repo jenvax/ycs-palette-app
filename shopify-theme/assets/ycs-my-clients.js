@@ -572,7 +572,7 @@
     const undertoneLabel = choiceLabel(draft.undertoneChoice, draft.undertone).toUpperCase();
     const chromaLabel = choiceLabel(draft.chromaChoice, draft.chroma).toUpperCase();
 
-    return `
+    const pages = [`
       <section class="ycs-report-page ycs-report-page--cover" data-report-page="1">
         ${renderReportBrand(draft)}
         <div class="ycs-report-cover-title">
@@ -586,11 +586,13 @@
         </div>
         ${renderReportFooter(draft)}
       </section>
+      `, `
       <section class="ycs-report-page ycs-report-page--letter" data-report-page="2">
         ${renderReportBrand(draft)}
         <div class="ycs-report-copy ycs-report-copy--letter">${paragraphHtml(draft.text.intro)}</div>
         ${renderReportFooter(draft, 2)}
       </section>
+      `, `
       <section class="ycs-report-page ycs-report-page--science" data-report-page="3">
         ${renderReportBrand(draft)}
         <h1>How Your Color Analysis Works</h1>
@@ -615,6 +617,7 @@
         </div>
         ${renderReportFooter(draft, 3)}
       </section>
+      `, `
       <section class="ycs-report-page" data-report-page="4">
         ${renderReportBrand(draft)}
         <h1>Depth</h1>
@@ -626,6 +629,7 @@
         ${renderCopyWithSubheading(`Your depth is ${depthLabel}`, draft.text.depth, [/^your depth is\b/i])}
         ${renderReportFooter(draft, 4)}
       </section>
+      `, `
       <section class="ycs-report-page" data-report-page="5">
         ${renderReportBrand(draft)}
         <h1>Temperature</h1>
@@ -637,6 +641,7 @@
         ${renderCopyWithSubheading(`Your undertone is ${undertoneLabel}`, draft.text.undertone, [/^you have\b/i, /^your undertone is\b/i])}
         ${renderReportFooter(draft, 5)}
       </section>
+      `, `
       <section class="ycs-report-page" data-report-page="6">
         ${renderReportBrand(draft)}
         <h1>Chroma</h1>
@@ -647,6 +652,7 @@
         ${renderCopyWithSubheading(`Your chroma is ${chromaLabel}`, draft.text.chroma, [/^you are\b/i, /^your chroma is\b/i])}
         ${renderReportFooter(draft, 6)}
       </section>
+      `, `
       <section class="ycs-report-page" data-report-page="7">
         ${renderReportBrand(draft)}
         <h1>${escapeHtml(draft.paletteName)}</h1>
@@ -654,7 +660,13 @@
         ${renderCopyWithSubheading(`You are ${draft.paletteName}`, draft.text.paletteType, [/^you are\b/i])}
         ${renderReportFooter(draft, 7)}
       </section>
-    `;
+      `];
+
+    if (options.exportMode) {
+      return pages.map((page) => `<div class="ycs-report-print-sheet">${page}</div>`).join("");
+    }
+
+    return pages.join("");
   }
 
   function renderReportBuilder(client) {
@@ -1311,7 +1323,7 @@
   <style>${styles}</style>
 </head>
 <body>
-  <main class="ycs-report-preview ycs-report-export">${reportPagesHtml(draft)}</main>
+  <main class="ycs-report-preview ycs-report-export">${reportPagesHtml(draft, { exportMode: true })}</main>
 </body>
 </html>`;
   }
