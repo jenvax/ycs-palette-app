@@ -207,11 +207,19 @@
       reportDate: new Date().toISOString().slice(0, 10),
       paletteCode,
       paletteName,
+      colorFanImageUrl: "",
       selectedDrapeImageUrl: getPhotoUrl(client),
       colorWheelImageUrl: "",
       depthImageUrl: "",
+      depthLightImageUrl: "",
+      depthMediumImageUrl: "",
+      depthDeepImageUrl: "",
       undertoneImageUrl: "",
+      undertoneWarmImageUrl: "",
+      undertoneCoolImageUrl: "",
       chromaImageUrl: "",
+      chromaSoftImageUrl: "",
+      chromaClearImageUrl: "",
       depth,
       undertone: temperature,
       chroma,
@@ -275,12 +283,46 @@
     return monthYear(draft.reportDate);
   }
 
+  function reportFullDateLabel(draft) {
+    const date = draft.reportDate ? new Date(`${draft.reportDate}T12:00:00`) : new Date();
+    if (Number.isNaN(date.getTime())) return reportDateLabel(draft);
+    return date.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" });
+  }
+
   function renderReportImage(url, label, className) {
     if (!url) {
       return `<div class="${className || "ycs-report-preview__image"} ycs-report-preview__image--empty">${escapeHtml(label)}</div>`;
     }
 
     return `<img class="${className || "ycs-report-preview__image"}" src="${escapeHtml(url)}" alt="${escapeHtml(label)}">`;
+  }
+
+  function renderCoverArt(draft) {
+    return `
+      <div class="ycs-report-cover-art">
+        ${draft.colorFanImageUrl
+          ? `<img class="ycs-report-cover-art__fan" src="${escapeHtml(draft.colorFanImageUrl)}" alt="Color fan">`
+          : `<div class="ycs-report-cover-art__fan ycs-report-preview__image--empty">Color fan image</div>`}
+        ${draft.selectedDrapeImageUrl
+          ? `<img class="ycs-report-cover-art__drape" src="${escapeHtml(draft.selectedDrapeImageUrl)}" alt="${escapeHtml(draft.customerName || "Selected draped image")}">`
+          : `<div class="ycs-report-cover-art__drape ycs-report-preview__image--empty">Draped image</div>`}
+      </div>
+    `;
+  }
+
+  function renderComparisonImages(items, className) {
+    return `
+      <div class="${className}">
+        ${items.map((item) => `
+          <figure>
+            ${item.url
+              ? `<img src="${escapeHtml(item.url)}" alt="${escapeHtml(item.label)}">`
+              : `<div class="ycs-report-preview__image--empty">${escapeHtml(item.label)} image</div>`}
+            <figcaption>${escapeHtml(item.label)}</figcaption>
+          </figure>
+        `).join("")}
+      </div>
+    `;
   }
 
   function reportPagesHtml(draft) {
@@ -290,11 +332,14 @@
     return `
       <section class="ycs-report-page ycs-report-page--cover" data-report-page="1">
         <div class="ycs-report-logo">Your<br>Color<br>Style</div>
-        <div>
+        <div class="ycs-report-cover-title">
           <p class="ycs-report-kicker">Your</p>
           <h1>Color Analysis</h1>
+        </div>
+        ${renderCoverArt(draft)}
+        <div class="ycs-report-cover-meta">
           <h2>${escapeHtml(name)}</h2>
-          <p>${escapeHtml(reportDateLabel(draft))}</p>
+          <p>${escapeHtml(reportFullDateLabel(draft))}</p>
         </div>
         <footer>${footer}</footer>
       </section>
@@ -325,19 +370,29 @@
       </section>
       <section class="ycs-report-page" data-report-page="4">
         <h1>Depth</h1>
-        ${renderReportImage(draft.depthImageUrl, "Depth image", "ycs-report-preview__wide-image")}
+        ${renderComparisonImages([
+          { label: "Light Tones", url: draft.depthLightImageUrl || draft.depthImageUrl },
+          { label: "Medium Tones", url: draft.depthMediumImageUrl },
+          { label: "Deep Tones", url: draft.depthDeepImageUrl }
+        ], "ycs-report-comparison-grid ycs-report-comparison-grid--three")}
         <div class="ycs-report-copy">${paragraphHtml(draft.text.depth)}</div>
         <footer>4 ${footer}</footer>
       </section>
       <section class="ycs-report-page" data-report-page="5">
         <h1>Temperature</h1>
-        ${renderReportImage(draft.undertoneImageUrl, "Undertone image", "ycs-report-preview__wide-image")}
+        ${renderComparisonImages([
+          { label: "Warm Tones", url: draft.undertoneWarmImageUrl || draft.undertoneImageUrl },
+          { label: "Cool Tones", url: draft.undertoneCoolImageUrl }
+        ], "ycs-report-comparison-grid ycs-report-comparison-grid--two")}
         <div class="ycs-report-copy">${paragraphHtml(draft.text.undertone)}</div>
         <footer>5 ${footer}</footer>
       </section>
       <section class="ycs-report-page" data-report-page="6">
         <h1>Chroma</h1>
-        ${renderReportImage(draft.chromaImageUrl, "Chroma image", "ycs-report-preview__wide-image")}
+        ${renderComparisonImages([
+          { label: "Soft Tones", url: draft.chromaSoftImageUrl || draft.chromaImageUrl },
+          { label: "Clear Tones", url: draft.chromaClearImageUrl }
+        ], "ycs-report-comparison-grid ycs-report-comparison-grid--two")}
         <div class="ycs-report-copy">${paragraphHtml(draft.text.chroma)}</div>
         <footer>6 ${footer}</footer>
       </section>
@@ -383,11 +438,16 @@
             <label>Report date<input name="reportDate" type="date" value="${escapeHtml(draft.reportDate)}"></label>
             <label>Color type<select name="paletteCode">${paletteOptions}</select></label>
             <label>Color type display name<input name="paletteName" value="${escapeHtml(draft.paletteName)}"></label>
+            <label>Color fan image URL<input name="colorFanImageUrl" value="${escapeHtml(draft.colorFanImageUrl)}"></label>
             <label>Desired draped image URL<input name="selectedDrapeImageUrl" value="${escapeHtml(draft.selectedDrapeImageUrl)}"></label>
             <label>Color wheel image URL<input name="colorWheelImageUrl" value="${escapeHtml(draft.colorWheelImageUrl)}"></label>
-            <label>Depth image URL<input name="depthImageUrl" value="${escapeHtml(draft.depthImageUrl)}"></label>
-            <label>Undertone image URL<input name="undertoneImageUrl" value="${escapeHtml(draft.undertoneImageUrl)}"></label>
-            <label>Chroma image URL<input name="chromaImageUrl" value="${escapeHtml(draft.chromaImageUrl)}"></label>
+            <label>Depth light image URL<input name="depthLightImageUrl" value="${escapeHtml(draft.depthLightImageUrl || draft.depthImageUrl)}"></label>
+            <label>Depth medium image URL<input name="depthMediumImageUrl" value="${escapeHtml(draft.depthMediumImageUrl)}"></label>
+            <label>Depth deep image URL<input name="depthDeepImageUrl" value="${escapeHtml(draft.depthDeepImageUrl)}"></label>
+            <label>Undertone warm image URL<input name="undertoneWarmImageUrl" value="${escapeHtml(draft.undertoneWarmImageUrl || draft.undertoneImageUrl)}"></label>
+            <label>Undertone cool image URL<input name="undertoneCoolImageUrl" value="${escapeHtml(draft.undertoneCoolImageUrl)}"></label>
+            <label>Chroma soft image URL<input name="chromaSoftImageUrl" value="${escapeHtml(draft.chromaSoftImageUrl || draft.chromaImageUrl)}"></label>
+            <label>Chroma clear image URL<input name="chromaClearImageUrl" value="${escapeHtml(draft.chromaClearImageUrl)}"></label>
             <label>Intro letter<textarea name="text.intro">${escapeHtml(draft.text.intro)}</textarea></label>
             <label>How it works<textarea name="text.howItWorks">${escapeHtml(draft.text.howItWorks)}</textarea></label>
             <label>Color wheel copy<textarea name="text.colorWheel">${escapeHtml(draft.text.colorWheel)}</textarea></label>
@@ -421,11 +481,19 @@
     draft.reportDate = String(formData.get("reportDate") || "").trim();
     draft.paletteCode = paletteCode;
     draft.paletteName = String(formData.get("paletteName") || "").trim() || getPaletteName(paletteCode);
+    draft.colorFanImageUrl = String(formData.get("colorFanImageUrl") || "").trim();
     draft.selectedDrapeImageUrl = String(formData.get("selectedDrapeImageUrl") || "").trim();
     draft.colorWheelImageUrl = String(formData.get("colorWheelImageUrl") || "").trim();
-    draft.depthImageUrl = String(formData.get("depthImageUrl") || "").trim();
-    draft.undertoneImageUrl = String(formData.get("undertoneImageUrl") || "").trim();
-    draft.chromaImageUrl = String(formData.get("chromaImageUrl") || "").trim();
+    draft.depthLightImageUrl = String(formData.get("depthLightImageUrl") || "").trim();
+    draft.depthMediumImageUrl = String(formData.get("depthMediumImageUrl") || "").trim();
+    draft.depthDeepImageUrl = String(formData.get("depthDeepImageUrl") || "").trim();
+    draft.undertoneWarmImageUrl = String(formData.get("undertoneWarmImageUrl") || "").trim();
+    draft.undertoneCoolImageUrl = String(formData.get("undertoneCoolImageUrl") || "").trim();
+    draft.chromaSoftImageUrl = String(formData.get("chromaSoftImageUrl") || "").trim();
+    draft.chromaClearImageUrl = String(formData.get("chromaClearImageUrl") || "").trim();
+    draft.depthImageUrl = draft.depthLightImageUrl;
+    draft.undertoneImageUrl = draft.undertoneWarmImageUrl;
+    draft.chromaImageUrl = draft.chromaSoftImageUrl;
     draft.depth = getDepthFromPalette(paletteCode);
     draft.undertone = getTemperatureFromPalette(paletteCode);
     draft.chroma = getChromaFromPalette(paletteCode);
