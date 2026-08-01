@@ -3457,7 +3457,9 @@ const fileName = [color, 'lip', lip, firstName, lastName].join('-');
           clientRecordId: CLIENT_RECORD_ID,
           customerId: CUSTOMER_ID,
           consultantId: VIEWER_CUSTOMER_ID,
-          paletteCode: state.customerPaletteCode || getCustomerPaletteCode(),
+          paletteCode: isRight
+            ? (signatureRightPaletteSelect && signatureRightPaletteSelect.value) || paletteSelect.value || ''
+            : (signatureLeftPaletteSelect && signatureLeftPaletteSelect.value) || paletteSelect.value || '',
           panel: panel,
           drapeColorName: colorName,
           drapeColorHex: drapeColorHex,
