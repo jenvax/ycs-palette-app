@@ -3391,6 +3391,38 @@ const fileName = [color, 'lip', lip, firstName, lastName].join('-');
 
       const dataUrl = canvas.toDataURL('image/png');
 
+      if (CLIENT_RECORD_ID && APP_BASE_URL) {
+        const saveResponse = await fetch(APP_BASE_URL + '/api/save-saved-draped-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            imageBase64: dataUrl,
+            clientRecordId: CLIENT_RECORD_ID,
+            consultantId: VIEWER_CUSTOMER_ID,
+            sourceTool: IS_SIGNATURE_MODE ? 'lip-draping-studio' : 'color-analysis-tool',
+            panel: panel,
+            paletteCode: isRight
+              ? (signatureRightPaletteSelect && signatureRightPaletteSelect.value) || paletteSelect.value || ''
+              : (signatureLeftPaletteSelect && signatureLeftPaletteSelect.value) || paletteSelect.value || '',
+            drapeColorName: colorName,
+            lipColorName: lipName,
+            lipColorHex: lipColor,
+            label: fileName,
+            exportOptions: {
+              showColorName: shouldDrawExportColorLabel(panel),
+              showCustomerName: shouldDrawExportCustomerName(panel),
+              realisticDrape: !!(realisticDrapeToggle && realisticDrapeToggle.checked)
+            }
+          })
+        });
+
+        const saveData = await saveResponse.json();
+
+        if (!saveResponse.ok || !saveData.success) {
+          throw new Error(saveData.error || 'Could not save this image to the report library');
+        }
+      }
+
       const link = document.createElement('a');
       link.href = dataUrl;
       link.download = `${fileName}.png`;
