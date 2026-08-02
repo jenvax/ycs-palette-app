@@ -51,6 +51,7 @@
   let activeReportPage = 1;
   let activeReportTemplateRequest = 0;
   let activeSavedDrapedImages = [];
+  let activeSavedDrapedImagesClientId = "";
   let coverPhotoDrag = null;
   const reportTemplateCache = new Map();
 
@@ -819,6 +820,7 @@
     const isSameReportClient = activeReportClientId === client.clientRecordId;
     if (!isSameReportClient) {
       activeSavedDrapedImages = [];
+      activeSavedDrapedImagesClientId = "";
     }
 
     const draft = isSameReportClient && activeReportDraft
@@ -1135,6 +1137,18 @@
     return Array.isArray(data.images) ? data.images.filter((image) => image.imageUrl) : [];
   }
 
+  async function ensureSavedDrapedImagesLoaded(client) {
+    if (!client?.clientRecordId) return [];
+
+    if (activeSavedDrapedImagesClientId === client.clientRecordId && activeSavedDrapedImages.length) {
+      return activeSavedDrapedImages;
+    }
+
+    activeSavedDrapedImages = await fetchSavedDrapedImages(client);
+    activeSavedDrapedImagesClientId = client.clientRecordId;
+    return activeSavedDrapedImages;
+  }
+
   async function autofillReportTemplate(client, options = {}) {
     const builder = detailEl.querySelector("[data-ycs-report-builder]");
     const form = builder?.querySelector("[data-ycs-report-form]");
@@ -1432,20 +1446,29 @@
     }).join("");
   }
 
-  function openReportImageModal(fieldName, label) {
+  async function openReportImageModal(fieldName, label) {
     const modal = detailEl.querySelector("[data-ycs-report-image-modal]");
     if (!modal) return;
 
     const title = modal.querySelector("#ycs-report-image-modal-title");
     const subtitle = modal.querySelector("[data-ycs-report-image-modal-subtitle]");
     const grid = modal.querySelector("[data-ycs-report-image-modal-grid]");
+    const client = clients.find((item) => item.clientRecordId === activeReportClientId);
 
     if (title) title.textContent = "Choose Saved Image";
     if (subtitle) subtitle.textContent = label || fieldName || "";
-    if (grid) grid.innerHTML = renderReportModalImageButtons(fieldName);
+    if (grid) grid.innerHTML = `<p class="ycs-report-image-modal__empty">Loading saved images...</p>`;
 
     modal.dataset.reportImageField = fieldName;
     modal.hidden = false;
+
+    try {
+      await ensureSavedDrapedImagesLoaded(client);
+    } catch (error) {
+      console.warn("Saved draped image modal lookup failed", error);
+    }
+
+    if (grid) grid.innerHTML = renderReportModalImageButtons(fieldName);
   }
 
   function closeReportImageModal() {
@@ -1482,9 +1505,10 @@
     activeReportDraft = mergeReportDraft(client, savedDraft);
 
     try {
-      activeSavedDrapedImages = await fetchSavedDrapedImages(client);
+      await ensureSavedDrapedImagesLoaded(client);
     } catch (error) {
       activeSavedDrapedImages = [];
+      activeSavedDrapedImagesClientId = "";
       console.warn("Saved draped image lookup failed", error);
     }
 
@@ -2184,7 +2208,7 @@
       openReportImageModal(
         reportPreviewImageButton.dataset.ycsReportPreviewImageField || "",
         reportPreviewImageButton.dataset.ycsReportPreviewImageLabel || ""
-      );
+      ).catch((error) => console.warn("Unable to open saved image picker", error));
     }
 
     if (reportModalImageButton) {
