@@ -146,11 +146,7 @@ function getCustomerPaletteCode() {
       url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SWDG.png?v=1785779014'
     }
   };
-  const REFERENCE_COLOR_WHEEL_ALIASES = {
-    CCLG: 'CCL',
-    CCMG: 'CCM',
-    CCDG: 'CCD'
-  };
+  const REFERENCE_COLOR_WHEEL_ALIASES = {};
 
   function addAdminPreviewParam(query) {
     if (ADMIN_VIEW_AS && query && typeof query.set === 'function') {
