@@ -52,6 +52,16 @@ function getCustomerPaletteCode() {
   const HAS_NEW_PHOTO_FLAG = urlParams.get('newPhoto') === '1';
 
   const paletteAccessString = appEl.dataset.paletteAccess || '';
+  const REFERENCE_COLOR_WHEELS = {
+    clear: {
+      name: 'Clear Color Wheel',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_Clear_Color_Wheel.png?v=1785778070'
+    },
+    soft: {
+      name: 'Soft Color Wheel',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_Soft_Color_Wheel.png?v=1785778080'
+    }
+  };
 
   function addAdminPreviewParam(query) {
     if (ADMIN_VIEW_AS && query && typeof query.set === 'function') {
@@ -65,6 +75,14 @@ function getCustomerPaletteCode() {
     const nextUrl = new URL(href, window.location.origin);
     nextUrl.searchParams.set('viewAs', ADMIN_VIEW_AS);
     return nextUrl.pathname + nextUrl.search;
+  }
+
+  function syncSignatureReferenceWheel() {
+    if (!signatureReferenceWheelSelect || !signatureReferenceWheelImage) return;
+
+    const wheel = REFERENCE_COLOR_WHEELS[signatureReferenceWheelSelect.value] || REFERENCE_COLOR_WHEELS.clear;
+    signatureReferenceWheelImage.src = wheel.url;
+    signatureReferenceWheelImage.alt = wheel.name;
   }
 
   const backBtn = document.getElementById('ycs-analysis-back');
@@ -81,6 +99,8 @@ function getCustomerPaletteCode() {
   const signatureRightDrapeSwatches = document.getElementById('ycs-signature-right-drape-swatches');
   const signatureLeftLipSwatches = document.getElementById('ycs-signature-left-lip-swatches');
   const signatureRightLipSwatches = document.getElementById('ycs-signature-right-lip-swatches');
+  const signatureReferenceWheelSelect = document.getElementById('ycs-signature-reference-wheel-select');
+  const signatureReferenceWheelImage = document.getElementById('ycs-signature-reference-wheel-image');
 
   const standardPanelEl = document.getElementById('ycs-analysis-standard-panel');
   const guidedPanelEl = document.getElementById('ycs-analysis-guided-panel');
@@ -4362,6 +4382,11 @@ const y = ((e.clientY - svgRect.top) / svgRect.height) * 1000;
       setActivePanel(btn.dataset.panel);
     });
   });
+
+  if (signatureReferenceWheelSelect) {
+    signatureReferenceWheelSelect.addEventListener('change', syncSignatureReferenceWheel);
+    syncSignatureReferenceWheel();
+  }
 
   document.addEventListener('click', function (event) {
     const copyBtn = event.target.closest('.ycs-hex-copy');

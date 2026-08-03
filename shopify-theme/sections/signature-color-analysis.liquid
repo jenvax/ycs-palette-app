@@ -448,6 +448,23 @@
             </div>
           </div>
         </aside>
+
+        <section class="ycs-signature-reference-wheel" aria-label="Reference color wheel">
+          <div class="ycs-signature-reference-wheel__controls">
+            <label for="ycs-signature-reference-wheel-select" class="ycs-analysis-toolbar-label">Color Type</label>
+            <select id="ycs-signature-reference-wheel-select" class="ycs-analysis-palette-select">
+              <option value="clear">Clear Color Wheel</option>
+              <option value="soft">Soft Color Wheel</option>
+            </select>
+          </div>
+          <img
+            id="ycs-signature-reference-wheel-image"
+            class="ycs-signature-reference-wheel__image"
+            src="https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_Clear_Color_Wheel.png?v=1785778070"
+            alt="Clear Color Wheel"
+            loading="lazy"
+          >
+        </section>
 <!-- RIGHT PANEL -->
 <!-- RIGHT PANEL -->
 <div id="ycs-analysis-guided-panel" class="ycs-analysis-guided-panel" hidden>
@@ -2052,11 +2069,12 @@
 
     
   }
-  .ycs-signature-analysis-app .ycs-analysis-main-grid {
+.ycs-signature-analysis-app .ycs-analysis-main-grid {
   display: grid;
   grid-template-columns: 240px minmax(0, 1fr) minmax(0, 1fr) 240px;
   gap: 12px;
   align-items: start;
+  height: auto;
 }
 
 .ycs-signature-analysis-app #ycs-analysis-guided-panel[hidden] {
@@ -2078,6 +2096,38 @@
 
 .ycs-signature-analysis-app .ycs-analysis-toolbar-right {
   align-self: center;
+}
+
+.ycs-signature-reference-wheel {
+  grid-column: 2 / 4;
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid #ece7df;
+  border-radius: 14px;
+  background: #fffdfb;
+}
+
+.ycs-signature-reference-wheel__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.ycs-signature-reference-wheel__controls .ycs-analysis-palette-select {
+  max-width: 280px;
+}
+
+.ycs-signature-reference-wheel__image {
+  display: block;
+  width: min(100%, 560px);
+  max-height: 520px;
+  object-fit: contain;
 }
 
 .ycs-signature-side-rail {
@@ -2316,8 +2366,13 @@ footer[role="contentinfo"] {
     order: 4;
   }
 
-  .ycs-signature-analysis-app #ycs-analysis-standard-panel {
+  .ycs-signature-reference-wheel {
+    grid-column: 1 / -1;
     order: 5;
+  }
+
+  .ycs-signature-analysis-app #ycs-analysis-standard-panel {
+    order: 6;
   }
 }
 .ycs-signature-analysis-app .ycs-analysis-swatches,

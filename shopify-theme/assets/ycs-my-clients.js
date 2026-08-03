@@ -54,6 +54,14 @@
   let activeSavedDrapedImagesClientId = "";
   let coverPhotoDrag = null;
   const reportTemplateCache = new Map();
+  const reportFanTemplatePaletteCodeMap = {
+    CWLG: "CWL",
+    CWMG: "CWM",
+    CWDG: "CWD",
+    SWLG: "SWL",
+    SWMG: "SWM",
+    SWDG: "SWD"
+  };
 
   const REPORT_TYPE = "signature_first_section";
   const BASE_REPORT_PAGE_COUNT = 7;
@@ -1105,7 +1113,16 @@
     return nextDraft;
   }
 
-  async function fetchReportPaletteTemplate(paletteCode) {
+  function normalizeReportPaletteCode(paletteCode) {
+    return String(paletteCode || "").trim().toUpperCase();
+  }
+
+  function getReportFanTemplatePaletteCode(paletteCode) {
+    const code = normalizeReportPaletteCode(paletteCode);
+    return reportFanTemplatePaletteCodeMap[code] || code;
+  }
+
+  async function fetchReportPaletteTemplateByCode(paletteCode) {
     const code = String(paletteCode || "").trim().toUpperCase();
     if (!code || !apiBase) return null;
 
@@ -1122,6 +1139,29 @@
 
     reportTemplateCache.set(code, data.template || null);
     return data.template || null;
+  }
+
+  async function fetchReportPaletteTemplate(paletteCode) {
+    const code = normalizeReportPaletteCode(paletteCode);
+    if (!code || !apiBase) return null;
+
+    const fanCode = getReportFanTemplatePaletteCode(code);
+    if (fanCode === code) {
+      return fetchReportPaletteTemplateByCode(code);
+    }
+
+    const [template, fanTemplate] = await Promise.all([
+      fetchReportPaletteTemplateByCode(code),
+      fetchReportPaletteTemplateByCode(fanCode)
+    ]);
+    const fallbackTemplate = template || fanTemplate;
+
+    if (!fallbackTemplate) return null;
+
+    return {
+      ...fallbackTemplate,
+      colorFanImageUrl: fanTemplate?.colorFanImageUrl || fallbackTemplate.colorFanImageUrl
+    };
   }
 
   async function fetchSavedDrapedImages(client) {
