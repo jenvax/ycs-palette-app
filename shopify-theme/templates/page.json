@@ -178,6 +178,45 @@
             "gradient": "linear-gradient(to right, #743d5b, #584671, #3c5b78, #3d6462, #4b4d78)"
           }
         },
+        "palette_lo": {
+          "type": "palette",
+          "settings": {
+            "title": "Light Olive",
+            "subtitle": "Olive • Light",
+            "palette_code": "LO",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/expanded-digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #c96d6a, #d79562, #c5b86a, #9aaa62, #6f8b6d)"
+          }
+        },
+        "palette_mo": {
+          "type": "palette",
+          "settings": {
+            "title": "Medium Olive",
+            "subtitle": "Olive • Medium",
+            "palette_code": "MO",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/expanded-digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #9f4d4d, #b07342, #8d8542, #667b43, #456c5b)"
+          }
+        },
+        "palette_do": {
+          "type": "palette",
+          "settings": {
+            "title": "Deep Olive",
+            "subtitle": "Olive • Deep",
+            "palette_code": "DO",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/expanded-digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #6f2733, #7c4933, #635d2e, #3f582c, #25483f)"
+          }
+        },
         "palette_sample": {
           "type": "palette",
           "settings": {
@@ -289,6 +328,9 @@
         "palette_scl",
         "palette_scm",
         "palette_scd",
+        "palette_lo",
+        "palette_mo",
+        "palette_do",
         "palette_sample"
       ],
       "settings": {
