@@ -60,7 +60,81 @@ function getCustomerPaletteCode() {
     soft: {
       name: 'Soft Color Wheel',
       url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_Soft_Color_Wheel.png?v=1785778080'
+    },
+    CWL: {
+      name: 'Clear Warm Light',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CWL.png?v=1785334385'
+    },
+    CWM: {
+      name: 'Clear Warm Medium',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CWM.png?v=1785334385'
+    },
+    CWD: {
+      name: 'Clear Warm Deep',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CWD.png?v=1785334385'
+    },
+    CCL: {
+      name: 'Clear Cool Light',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CCL.png?v=1785334385'
+    },
+    CCM: {
+      name: 'Clear Cool Medium',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CCM.png?v=1785334384'
+    },
+    CCD: {
+      name: 'Clear Cool Deep',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CCD.png?v=1785334385'
+    },
+    SWL: {
+      name: 'Soft Warm Light',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SWL.png?v=1785334379'
+    },
+    SWM: {
+      name: 'Soft Warm Medium',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SWM.png?v=1785334379'
+    },
+    SWD: {
+      name: 'Soft Warm Deep',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SWD.png?v=1785334379'
+    },
+    SCL: {
+      name: 'Soft Cool Light',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SCL.png?v=1785334379'
+    },
+    SCM: {
+      name: 'Soft Cool Medium',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SCM.png?v=1785334379'
+    },
+    SCD: {
+      name: 'Soft Cool Deep',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SCD.png?v=1785333787'
+    },
+    LO: {
+      name: 'Light Olive',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_LO.png?v=1785334379'
+    },
+    MO: {
+      name: 'Medium Olive',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_MO.png?v=1785334379'
+    },
+    DO: {
+      name: 'Deep Olive',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_DO.png?v=1785334379'
     }
+  };
+  const REFERENCE_COLOR_WHEEL_ALIASES = {
+    CWLG: 'CWL',
+    CWMG: 'CWM',
+    CWDG: 'CWD',
+    CCLG: 'CCL',
+    CCMG: 'CCM',
+    CCDG: 'CCD',
+    SWLG: 'SWL',
+    SWMG: 'SWM',
+    SWDG: 'SWD',
+    SCLG: 'SCL',
+    SCMG: 'SCM',
+    SCDG: 'SCD'
   };
 
   function addAdminPreviewParam(query) {
@@ -80,7 +154,9 @@ function getCustomerPaletteCode() {
   function syncSignatureReferenceWheel() {
     if (!signatureReferenceWheelSelect || !signatureReferenceWheelImage) return;
 
-    const wheel = REFERENCE_COLOR_WHEELS[signatureReferenceWheelSelect.value] || REFERENCE_COLOR_WHEELS.clear;
+    const selectedValue = signatureReferenceWheelSelect.value;
+    const wheelKey = REFERENCE_COLOR_WHEEL_ALIASES[selectedValue] || selectedValue;
+    const wheel = REFERENCE_COLOR_WHEELS[wheelKey] || REFERENCE_COLOR_WHEELS.clear;
     signatureReferenceWheelImage.src = wheel.url;
     signatureReferenceWheelImage.alt = wheel.name;
   }
