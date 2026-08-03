@@ -682,6 +682,12 @@
                       Open Palette
                     </a>
 
+                    {% if can_use_analysis_tool %}
+                      <a href="/pages/color-palette-prints" class="ycs-palette-card__button ycs-palette-card__button--secondary">
+                        Order Postcards
+                      </a>
+                    {% endif %}
+
                     {% assign palette_pdf_url = block.settings.printable_pdf_url | default: block.settings.mobile_pdf_url %}
                     {% if palette_pdf_url != blank %}
                       {% if can_access_all_printable_pdfs or palette_access_string contains palette_token %}
@@ -1747,6 +1753,7 @@
           '</div>' +
           '<div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">' +
             '<button type="button" class="ycs-palette-card__button" data-ycs-custom-action="open-palette" data-palette-id="' + escapeHtml(palette.id) + '">Open</button>' +
+            '<a href="/pages/color-palette-prints" class="ycs-palette-card__button ycs-palette-card__button--secondary">Order Postcards</a>' +
             visibilityButton +
             viewLinks +
             '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="rename-palette" data-palette-id="' + escapeHtml(palette.id) + '">Rename</button>' +
@@ -2226,6 +2233,7 @@
           '</div>' +
           '<div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">' +
             '<a href="/pages/palette?palette=' + encodeURIComponent(paletteCode) + '" class="ycs-palette-card__button">Open Palette</a>' +
+            '<a href="/pages/color-palette-prints" class="ycs-palette-card__button ycs-palette-card__button--secondary">Order Postcards</a>' +
             '<a href="/pages/photo-prep?mode=personal&workflow=photo-draping&palette=' + encodeURIComponent(paletteCode) + '" class="ycs-palette-card__button ycs-palette-card__button--secondary">Draping Studio</a>' +
           '</div>' +
         '</div>';
