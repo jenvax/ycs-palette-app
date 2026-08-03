@@ -196,6 +196,7 @@
                 <div class="ycs-signature-lip-actions">
                   <button type="button" id="ycs-signature-left-lip-edit">Edit</button>
                   <button type="button" id="ycs-signature-left-lip-visibility">Hide Lips</button>
+                  <button type="button" id="ycs-signature-left-lip-collapse">Collapse</button>
                 </div>
                 <label class="ycs-signature-lip-opacity">
                   <span>Left opacity <strong id="ycs-signature-left-lip-opacity-value">45%</strong></span>
@@ -435,6 +436,7 @@
                 <div class="ycs-signature-lip-actions">
                   <button type="button" id="ycs-signature-right-lip-edit">Edit</button>
                   <button type="button" id="ycs-signature-right-lip-visibility">Hide Lips</button>
+                  <button type="button" id="ycs-signature-right-lip-collapse">Collapse</button>
                 </div>
                 <label class="ycs-signature-lip-opacity">
                   <span>Right opacity <strong id="ycs-signature-right-lip-opacity-value">45%</strong></span>
@@ -2266,6 +2268,15 @@
   width: 100%;
 }
 
+.ycs-signature-analysis-app .ycs-signature-side-section--lip.is-lip-collapsed .ycs-signature-lip-opacity,
+.ycs-signature-analysis-app .ycs-signature-side-section--lip.is-lip-collapsed .ycs-signature-side-swatches--lip {
+  display: none !important;
+}
+
+.ycs-signature-analysis-app .ycs-signature-side-section--lip.is-lip-collapsed {
+  padding-bottom: 10px;
+}
+
 .ycs-signature-side-swatch {
   width: 100%;
   aspect-ratio: 1;
@@ -2333,7 +2344,8 @@
 
 .ycs-signature-analysis-app .ycs-signature-side-section--lip:not(.has-lip-shape) .ycs-signature-lip-opacity,
 .ycs-signature-analysis-app .ycs-signature-side-section--lip:not(.has-lip-shape) .ycs-signature-side-swatches--lip,
-.ycs-signature-analysis-app .ycs-signature-side-section--lip:not(.has-lip-shape) .ycs-signature-lip-actions button[id$="-visibility"] {
+.ycs-signature-analysis-app .ycs-signature-side-section--lip:not(.has-lip-shape) .ycs-signature-lip-actions button[id$="-visibility"],
+.ycs-signature-analysis-app .ycs-signature-side-section--lip:not(.has-lip-shape) .ycs-signature-lip-actions button[id$="-collapse"] {
   display: none !important;
 }
 
