@@ -8,8 +8,7 @@ const PALETTE_TAGS = new Set([
   "SCL", "SCM", "SCD",
   "LO", "MO", "DO",
   "CWLG", "CWMG", "CWDG",
-  "SWLG", "SWMG", "SWDG",
-  "SCLG", "SCMG", "SCDG"
+  "SWLG", "SWMG", "SWDG"
 ]);
 
 function normalizeCustomerId(value) {

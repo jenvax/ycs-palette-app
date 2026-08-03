@@ -149,10 +149,7 @@ function getCustomerPaletteCode() {
   const REFERENCE_COLOR_WHEEL_ALIASES = {
     CCLG: 'CCL',
     CCMG: 'CCM',
-    CCDG: 'CCD',
-    SCLG: 'SCL',
-    SCMG: 'SCM',
-    SCDG: 'SCD'
+    CCDG: 'CCD'
   };
 
   function addAdminPreviewParam(query) {
@@ -358,10 +355,7 @@ const lipEditShape2Btn = document.getElementById('ycs-lip-edit-shape-2');
     CWDG: 'Clear Warm Deep Gray Hair',
     SWLG: 'Soft Warm Light Gray Hair',
     SWMG: 'Soft Warm Medium Gray Hair',
-    SWDG: 'Soft Warm Deep Gray Hair',
-    SCLG: 'Soft Cool Light Gray Hair',
-    SCMG: 'Soft Cool Medium Gray Hair',
-    SCDG: 'Soft Cool Deep Gray Hair'
+    SWDG: 'Soft Warm Deep Gray Hair'
   };
 
   const ALL_CUSTOMER_PALETTE_CODES = [
@@ -371,8 +365,7 @@ const lipEditShape2Btn = document.getElementById('ycs-lip-edit-shape-2');
     'SCL', 'SCM', 'SCD',
     'LO', 'MO', 'DO',
     'CWLG', 'CWMG', 'CWDG',
-    'SWLG', 'SWMG', 'SWDG',
-    'SCLG', 'SCMG', 'SCDG'
+    'SWLG', 'SWMG', 'SWDG'
   ];
 
   const validPaletteCodes = new Set(ALL_CUSTOMER_PALETTE_CODES);

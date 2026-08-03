@@ -212,10 +212,7 @@ const HAS_DRAPING_STUDIO_FULL = appEl
     CWDG: 'Clear Warm Deep Gray Hair',
     SWLG: 'Soft Warm Light Gray Hair',
     SWMG: 'Soft Warm Medium Gray Hair',
-    SWDG: 'Soft Warm Deep Gray Hair',
-    SCLG: 'Soft Cool Light Gray Hair',
-    SCMG: 'Soft Cool Medium Gray Hair',
-    SCDG: 'Soft Cool Deep Gray Hair'
+    SWDG: 'Soft Warm Deep Gray Hair'
   };
 
   const state = {
@@ -1256,8 +1253,7 @@ replaceButtons.forEach(function (btn) {
       'SCL', 'SCM', 'SCD',
       'LO', 'MO', 'DO',
       'CWLG', 'CWMG', 'CWDG',
-      'SWLG', 'SWMG', 'SWDG',
-      'SCLG', 'SCMG', 'SCDG'
+      'SWLG', 'SWMG', 'SWDG'
     ]);
 
     return accessString
@@ -1392,8 +1388,7 @@ replaceButtons.forEach(function (btn) {
       'SCL','SCM','SCD',
       'LO','MO','DO',
       'CWLG','CWMG','CWDG',
-      'SWLG','SWMG','SWDG',
-      'SCLG','SCMG','SCDG'
+      'SWLG','SWMG','SWDG'
     ];
   }
 
