@@ -682,7 +682,7 @@
                       Open Palette
                     </a>
 
-                    {% if can_use_analysis_tool %}
+                    {% if can_use_analysis_tool and palette_code != 'SAMPLE' %}
                       <a href="/pages/color-palette-prints" class="ycs-palette-card__button ycs-palette-card__button--secondary">
                         Order Postcards
                       </a>
