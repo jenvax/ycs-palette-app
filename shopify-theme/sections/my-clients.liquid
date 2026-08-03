@@ -1105,8 +1105,8 @@
   .ycs-report-export .ycs-report-page {
     display: block !important;
     box-sizing: border-box;
-    width: 8.5in;
-    height: 11in;
+    width: 612px;
+    height: 792px;
     aspect-ratio: auto;
     box-shadow: none;
   }
@@ -1124,93 +1124,8 @@
     position: relative;
     top: 0;
     left: 0;
-    transform: none;
+    transform: scale(1.3333333333);
     transform-origin: top left;
-  }
-
-  .ycs-report-export .ycs-report-page--letter {
-    padding: 122px 90px 84px;
-  }
-
-  .ycs-report-export .ycs-report-page--letter .ycs-report-copy {
-    max-width: 610px;
-  }
-
-  .ycs-report-export .ycs-report-page--letter p {
-    margin-bottom: 16px;
-    font-size: 18px;
-    line-height: 1.35;
-  }
-
-  .ycs-report-export .ycs-report-page--science {
-    padding: 124px 82px 84px;
-  }
-
-  .ycs-report-export .ycs-report-page--science h1 {
-    margin-bottom: 34px;
-    font-size: 46px;
-  }
-
-  .ycs-report-export .ycs-report-page--science .ycs-report-two-column {
-    grid-template-columns: 1fr 1fr;
-    gap: 34px;
-  }
-
-  .ycs-report-export .ycs-report-page--science h2 {
-    margin-bottom: 10px;
-    font-size: 24px;
-  }
-
-  .ycs-report-export .ycs-report-page--science h3 {
-    margin-bottom: 12px;
-    font-size: 18px;
-  }
-
-  .ycs-report-export .ycs-report-page--science p {
-    margin-bottom: 13px;
-    font-size: 16px;
-    line-height: 1.28;
-  }
-
-  .ycs-report-export .ycs-report-page--science .ycs-report-preview__wheel {
-    width: min(100%, 300px);
-    height: 330px;
-    margin-top: 26px;
-  }
-
-  .ycs-report-export .ycs-report-page--science .ycs-report-system-title {
-    margin-top: 36px !important;
-    margin-bottom: 18px !important;
-    font-size: 18px !important;
-  }
-
-  .ycs-report-export .ycs-report-page--science .ycs-report-steps {
-    gap: 22px;
-  }
-
-  .ycs-report-export .ycs-report-page--science .ycs-report-steps div {
-    grid-template-columns: 50px 1fr;
-    column-gap: 14px;
-  }
-
-  .ycs-report-export .ycs-report-page--science .ycs-report-steps span {
-    width: 44px;
-    height: 44px;
-    font-size: 16px;
-  }
-
-  .ycs-report-export .ycs-report-page--science .ycs-report-steps strong {
-    font-size: 22px;
-  }
-
-  .ycs-report-export .ycs-report-page--science .ycs-report-steps p {
-    font-size: 14px;
-    line-height: 1.22;
-  }
-
-  .ycs-report-export .ycs-report-page--science .ycs-report-steps .ycs-report-step-copy {
-    font-size: 13px;
-    line-height: 1.24;
   }
 
   .ycs-report-page h1 {
@@ -1671,67 +1586,6 @@
     height: 204px;
   }
 
-  .ycs-report-export .ycs-report-preview__wheel {
-    width: min(100%, 293px);
-    height: 327px;
-  }
-
-  .ycs-report-export .ycs-report-preview__wide-image {
-    height: 480px;
-    margin-bottom: 34px;
-  }
-
-  .ycs-report-export .ycs-report-preview__drape {
-    height: 333px;
-    margin-bottom: 28px;
-  }
-
-  .ycs-report-export .ycs-report-comparison-grid {
-    gap: 18px;
-    margin: 8px 0 30px;
-  }
-
-  .ycs-report-export .ycs-report-comparison-grid--two {
-    max-width: 590px;
-  }
-
-  .ycs-report-export .ycs-report-comparison-image-space {
-    width: 213px;
-    max-width: 213px;
-    height: 256px;
-  }
-
-  .ycs-report-export .ycs-report-comparison-grid .ycs-report-preview__image--empty {
-    width: 213px;
-    height: 256px;
-  }
-
-  .ycs-report-export .ycs-report-checkmark {
-    width: 50px;
-    height: 50px;
-  }
-
-  .ycs-report-export .ycs-report-comparison-grid figcaption,
-  .ycs-report-export .ycs-report-comparison-caption {
-    margin-top: 10px;
-    font-size: 19px;
-  }
-
-  .ycs-report-export .ycs-report-cover-art--inline {
-    width: 587px;
-    height: 293px;
-    margin-bottom: 30px;
-  }
-
-  .ycs-report-export .ycs-report-cover-art--inline .ycs-report-cover-art__fan {
-    height: 293px;
-  }
-
-  .ycs-report-export .ycs-report-cover-art--inline .ycs-report-cover-art__drape-frame {
-    width: 288px;
-    height: 272px;
-  }
-
   [hidden] {
     display: none !important;
   }
@@ -1806,11 +1660,11 @@
 
     .ycs-report-print-sheet .ycs-report-page {
       margin: 0;
-      width: 8.5in;
-      height: 11in;
-      max-height: 11in;
+      width: 612px;
+      height: 792px;
+      max-height: 792px;
       overflow: hidden;
-      transform: none !important;
+      transform: scale(1.3333333333) !important;
       page-break-after: auto;
       break-after: auto;
       page-break-inside: avoid;
