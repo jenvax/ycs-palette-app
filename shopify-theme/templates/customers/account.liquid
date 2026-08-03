@@ -18,23 +18,25 @@
   {% assign palette_access_string = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
 
   {% assign has_consumer_palette_access = false %}
+  {% assign has_real_consumer_palette = false %}
   {% assign consumer_palette_codes = 'CWL,CWM,CWD,CWLG,CWMG,CWDG,CCL,CCM,CCD,SWL,SWM,SWD,SWLG,SWMG,SWDG,SCL,SCM,SCD,LO,MO,DO' | split: ',' %}
   {% if palette_access_string contains ',VIP,' or palette_access_string contains ',DRAPINGSTUDIO,' or palette_access_string contains ',DRAPINGSTUDIOSTARTER,' or palette_access_string contains ',SAMPLE,' %}
     {% assign has_consumer_palette_access = true %}
   {% endif %}
-  {% if has_consumer_palette_access == false %}
-    {% for consumer_palette_code in consumer_palette_codes %}
-      {% assign consumer_palette_token = ',' | append: consumer_palette_code | append: ',' %}
-      {% if palette_access_string contains consumer_palette_token %}
+  {% for consumer_palette_code in consumer_palette_codes %}
+    {% assign consumer_palette_token = ',' | append: consumer_palette_code | append: ',' %}
+    {% if palette_access_string contains consumer_palette_token %}
+      {% assign has_real_consumer_palette = true %}
+      {% if has_consumer_palette_access == false %}
         {% assign has_consumer_palette_access = true %}
-        {% break %}
       {% endif %}
-    {% endfor %}
-  {% endif %}
+      {% break %}
+    {% endif %}
+  {% endfor %}
 
   {% if has_consumer_palette_access %}
     <a href="/pages/my-palettes" class="account-tool">
-      My Color Palettes
+      {% if palette_access_string contains ',SAMPLE,' and has_real_consumer_palette == false %}Draping Studio{% else %}My Color Palettes{% endif %}
     </a>
   {% endif %}
 
