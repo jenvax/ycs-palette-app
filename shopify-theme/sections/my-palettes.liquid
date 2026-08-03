@@ -186,6 +186,17 @@
   {% assign has_draping_studio_access = true %}
 {% endif %}
 
+{% assign real_palette_codes = 'CWL,CWM,CWD,CCL,CCM,CCD,SWL,SWM,SWD,SCL,SCM,SCD,LO,MO,DO,CWLG,CWMG,CWDG,SWLG,SWMG,SWDG,SCLG,SCMG,SCDG' | split: ',' %}
+
+{% assign has_real_palette = false %}
+{% for code in real_palette_codes %}
+  {% assign palette_token = ',' | append: code | append: ',' %}
+  {% if palette_access_string contains palette_token %}
+    {% assign has_real_palette = true %}
+    {% break %}
+  {% endif %}
+{% endfor %}
+
 {% assign is_sample_user = false %}
 {% if has_draping_studio_access == false and palette_access_string contains ',SAMPLE,' %}
   {% assign is_sample_user = true %}
@@ -352,6 +363,37 @@
         {% endif %}
 
         {% unless is_color_analysis_tools_page %}
+        {% if has_real_palette %}
+        <div class="ycs-palette-card ycs-palette-card--studio">
+          <div class="ycs-palette-card__top">
+            <div
+              class="ycs-palette-card__gradient ycs-palette-card__gradient--studio"
+              style="background: linear-gradient(to right, #2f2a25, #8b7d6b, #d94c6a);">
+            </div>
+          </div>
+
+          <div class="ycs-palette-card__content">
+            <div class="ycs-palette-card__text">
+              <h2>My Photos</h2>
+              <p class="ycs-palette-card__subtitle">
+                Upload and manage photos for Draping Studio.
+              </p>
+              {% unless palette_access_string contains ',VIP,' or is_admin or has_draping_studio_access or is_sample_user %}
+                <p class="ycs-palette-card__studio-note">
+                  Free trial • 1 photo upload • Sample colors
+                </p>
+              {% endunless %}
+            </div>
+
+            <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
+              <a href="{% if palette_access_string contains ',VIP,' or is_admin or has_draping_studio_access or is_sample_user %}/pages/photo-prep?mode=personal&workflow=photo-draping{% else %}/pages/photo-prep?mode=personal&workflow=photo-draping&trial=sample{% endif %}" class="ycs-palette-card__button">
+                Open My Photos
+              </a>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
         <div class="ycs-palette-card ycs-palette-card--studio">
           <div class="ycs-palette-card__top">
             <div

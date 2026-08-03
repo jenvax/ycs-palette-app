@@ -860,14 +860,18 @@
     const rawPaletteCode = (params.get('palette') || DEFAULT_PALETTE).trim();
     const isCustomPaletteCode = /^CUSTOM_/i.test(rawPaletteCode);
     const paletteCode = isCustomPaletteCode ? rawPaletteCode : rawPaletteCode.toUpperCase();
-    if (openPhotoDrapingEl) {
-  const hasPaidAccess =
+    const hasPaidDrapingAccess =
     paletteAccessString.includes(',DRAPINGSTUDIOSTARTER,') ||
     paletteAccessString.includes(',DRAPINGSTUDIO,') ||
     paletteAccessString.includes(',VIP,') ||
     paletteAccessString.includes(',YCS_ADMIN,');
+    const hasSampleTrialAccess =
+      paletteCode === 'SAMPLE' &&
+      isLoggedIn &&
+      !hasPaidDrapingAccess;
 
-  if (hasPaidAccess) {
+    if (openPhotoDrapingEl) {
+  if (hasPaidDrapingAccess) {
     openPhotoDrapingEl.href =
       `/pages/photo-prep?mode=personal&workflow=photo-draping&palette=${encodeURIComponent(paletteCode)}`;
   } else {
@@ -895,6 +899,7 @@ const isStyleMastersCustomPalette = isCustomPaletteCode && (
 
 const hasAccess =
   PALETTE_ACCESS.includes(paletteToken) ||
+  hasSampleTrialAccess ||
   hasAllPaletteAccess ||
   (hasAdminAccess && isAdminPalette) ||
   isStyleMastersCustomPalette;
