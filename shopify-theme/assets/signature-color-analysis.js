@@ -120,18 +120,36 @@ function getCustomerPaletteCode() {
     DO: {
       name: 'Deep Olive',
       url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_DO.png?v=1785334379'
+    },
+    CWLG: {
+      name: 'Clear Warm Light for Gray Hair',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CWLG.png?v=1785779014'
+    },
+    CWMG: {
+      name: 'Clear Warm Medium for Gray Hair',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CWMG.png?v=1785779014'
+    },
+    CWDG: {
+      name: 'Clear Warm Deep for Gray Hair',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CWDG.png?v=1785779014'
+    },
+    SWLG: {
+      name: 'Soft Warm Light for Gray Hair',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SWLG.png?v=1785779014'
+    },
+    SWMG: {
+      name: 'Soft Warm Medium for Gray Hair',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SWMG.png?v=1785779014'
+    },
+    SWDG: {
+      name: 'Soft Warm Deep for Gray Hair',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SWDG.png?v=1785779014'
     }
   };
   const REFERENCE_COLOR_WHEEL_ALIASES = {
-    CWLG: 'CWL',
-    CWMG: 'CWM',
-    CWDG: 'CWD',
     CCLG: 'CCL',
     CCMG: 'CCM',
     CCDG: 'CCD',
-    SWLG: 'SWL',
-    SWMG: 'SWM',
-    SWDG: 'SWD',
     SCLG: 'SCL',
     SCMG: 'SCM',
     SCDG: 'SCD'

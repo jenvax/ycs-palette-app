@@ -62,6 +62,14 @@
     SWMG: "SWM",
     SWDG: "SWD"
   };
+  const reportColorWheelImageUrlMap = {
+    CWLG: "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CWLG.png?v=1785779014",
+    CWMG: "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CWMG.png?v=1785779014",
+    CWDG: "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CWDG.png?v=1785779014",
+    SWLG: "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SWLG.png?v=1785779014",
+    SWMG: "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SWMG.png?v=1785779014",
+    SWDG: "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SWDG.png?v=1785779014"
+  };
 
   const REPORT_TYPE = "signature_first_section";
   const BASE_REPORT_PAGE_COUNT = 7;
@@ -1160,7 +1168,8 @@
 
     return {
       ...fallbackTemplate,
-      colorFanImageUrl: fanTemplate?.colorFanImageUrl || fallbackTemplate.colorFanImageUrl
+      colorFanImageUrl: fanTemplate?.colorFanImageUrl || fallbackTemplate.colorFanImageUrl,
+      colorWheelImageUrl: reportColorWheelImageUrlMap[code] || fallbackTemplate.colorWheelImageUrl
     };
   }
 
