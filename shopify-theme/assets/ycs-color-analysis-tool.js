@@ -182,6 +182,7 @@
   const chromaResultTextEl = document.getElementById('ycs-analysis-chroma-result-text');
 
   const savePositionBtn = document.getElementById('ycs-analysis-save-position');
+  const restorePositionBtn = document.getElementById('ycs-analysis-restore-position');
   const photoPrepLink = document.getElementById('ycs-analysis-photo-prep-link');
   const manageClientLink = document.getElementById('ycs-analysis-manage-client-link');
 
@@ -1802,6 +1803,67 @@ function applySharedLipState(shared) {
       if (!silent) hideLoading();
       console.error(error);
       if (!silent) alert(error.message || 'Could not save position.');
+    }
+  }
+
+  async function restoreSavedPhotoPosition() {
+    if (IS_FREE_ANALYSIS_DEMO) {
+      const storedTransform = getStoredFreeTrialValue(DEMO_CLIENT_ID, 'transform');
+
+      if (!storedTransform) {
+        alert('No saved position found.');
+        return;
+      }
+
+      try {
+        const parsed = JSON.parse(storedTransform);
+        if (!parsed.photoTransform) {
+          alert('No saved position found.');
+          return;
+        }
+
+        applySavedTransform(parsed.photoTransform);
+        alert('Saved position restored.');
+      } catch (error) {
+        console.warn('Could not restore trial transform', error);
+        alert('Could not restore saved position.');
+      }
+      return;
+    }
+
+    if (!ACTIVE_RECORD_ID) {
+      alert(IS_DIY_MODE ? 'No saved photo found.' : 'No client record ID found.');
+      return;
+    }
+
+    try {
+      showLoading('Restoring saved position...');
+
+      const response = await fetch(
+        CLIENT_RECORD_ID
+          ? APP_BASE_URL + '/api/get-photo?clientRecordId=' + encodeURIComponent(CLIENT_RECORD_ID)
+          : APP_BASE_URL +
+            '/api/get-photo?customerId=' + encodeURIComponent(CUSTOMER_ID) +
+            (PHOTO_ID ? '&photoId=' + encodeURIComponent(PHOTO_ID) : '') +
+            (PHOTO_SOURCE ? '&photoSource=' + encodeURIComponent(PHOTO_SOURCE) : '')
+      );
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Could not restore saved position');
+      }
+
+      if (!data || !data.photoTransform) {
+        throw new Error('No saved position found.');
+      }
+
+      applySavedTransform(data.photoTransform);
+      hideLoading();
+      alert('Saved position restored.');
+    } catch (error) {
+      hideLoading();
+      console.error(error);
+      alert(error.message || 'Could not restore saved position.');
     }
   }
 
@@ -4553,6 +4615,10 @@ const y = ((e.clientY - svgRect.top) / svgRect.height) * 1000;
     savePositionBtn.addEventListener('click', function () {
       savePhotoTransform();
     });
+  }
+
+  if (restorePositionBtn) {
+    restorePositionBtn.addEventListener('click', restoreSavedPhotoPosition);
   }
 
   if (resetUndertoneBtn) {
