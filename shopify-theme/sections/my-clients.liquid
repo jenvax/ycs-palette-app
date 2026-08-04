@@ -464,6 +464,115 @@
     color: #5f5348;
   }
 
+  .ycs-client-photo-manager {
+    margin-top: 18px;
+  }
+
+  .ycs-client-photo-manager[hidden] {
+    display: none;
+  }
+
+  .ycs-client-photo-manager__panel {
+    border: 1px solid #ece7df;
+    border-radius: 16px;
+    background: #fffdf9;
+    padding: 16px;
+  }
+
+  .ycs-client-photo-manager__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .ycs-client-photo-manager__head h3 {
+    margin: 0 0 4px;
+    font-size: 20px;
+  }
+
+  .ycs-client-photo-manager__head p,
+  .ycs-client-photo-manager__status {
+    margin: 0;
+    color: #625c55;
+    font-size: 13px;
+  }
+
+  .ycs-client-photo-manager__status {
+    margin-top: 10px;
+  }
+
+  .ycs-client-photo-manager__status--error {
+    color: #bd3155;
+    font-weight: 800;
+  }
+
+  .ycs-client-photo-manager__select-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+    color: #5f5348;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .ycs-client-photo-manager__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .ycs-client-photo-manager__card {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid #ece7df;
+    border-radius: 14px;
+    background: #fff;
+  }
+
+  .ycs-client-photo-manager__card img {
+    display: block;
+    width: 100%;
+    height: 180px;
+    object-fit: contain;
+    background: #f6f1ea;
+  }
+
+  .ycs-client-photo-manager__check {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .92);
+    color: #2f2a25;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 5px 8px;
+  }
+
+  .ycs-client-photo-manager__body {
+    display: grid;
+    gap: 7px;
+    padding: 10px;
+  }
+
+  .ycs-client-photo-manager__body strong {
+    color: #2f2a25;
+    font-size: 13px;
+    line-height: 1.25;
+  }
+
+  .ycs-client-photo-manager__body small {
+    color: #7a6e63;
+    font-size: 12px;
+  }
+
   .ycs-clients__edit-form {
     display: grid;
     gap: 7px;

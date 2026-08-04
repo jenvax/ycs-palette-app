@@ -3,6 +3,7 @@ import {
   getDrapingRecencyBuckets,
   isDueForDraping
 } from "../services/draping-stats.server.js";
+import { authenticate } from "../shopify.server";
 
 function normalizeField(value) {
   if (Array.isArray(value)) return value[0] || "";
@@ -278,6 +279,30 @@ async function deleteAirtableRecord({ baseId, tableName, token, recordId }) {
   return airtableFetchJson(url, token, {
     method: "DELETE",
   });
+}
+
+async function getAirtableRecord({ baseId, tableName, token, recordId }) {
+  const url = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(
+    tableName
+  )}/${recordId}`;
+
+  return airtableFetchJson(url, token);
+}
+
+function normalizeAirtableIdList(value) {
+  const list = Array.isArray(value) ? value : [value];
+  return [...new Set(list.map((item) => String(item || "").trim()).filter(Boolean))];
+}
+
+function firstSavedDrapedField(fields, names) {
+  for (const name of names) {
+    const value = fields?.[name];
+    if (value !== undefined && value !== null && String(value).trim() !== "") {
+      return String(value).trim();
+    }
+  }
+
+  return "";
 }
 
 async function getFavorites({ customerId, paletteCode, baseId, tableName, token }) {
@@ -1367,6 +1392,95 @@ export async function action({ request }) {
       { error: "Missing Airtable server configuration" },
       { status: 500 }
     );
+  }
+
+  if (actionName === "deleteSavedDrapedImages") {
+    try {
+      await authenticate.public.appProxy(request);
+
+      const loggedInCustomerId = normalizeCustomerId(url.searchParams.get("logged_in_customer_id"));
+      const body = await request.json();
+      const clientRecordId = String(body.clientRecordId || "").trim();
+      const imageIds = normalizeAirtableIdList(body.imageIds || body.imageId);
+
+      if (!loggedInCustomerId) {
+        return Response.json(
+          { error: "You must be signed in to manage client photos" },
+          { status: 401 }
+        );
+      }
+
+      if (!clientRecordId || !imageIds.length) {
+        return Response.json(
+          { error: "Missing clientRecordId or imageIds" },
+          { status: 400 }
+        );
+      }
+
+      const matchingClients = await fetchAllAirtableRecords({
+        baseId: AIRTABLE_BASE_ID,
+        tableName: "ConsultantClients",
+        token: AIRTABLE_TOKEN,
+        formula: `AND({ClientRecordId}="${escapeFormulaValue(clientRecordId)}", {ConsultantId}="${escapeFormulaValue(loggedInCustomerId)}")`
+      });
+
+      if (!matchingClients.length) {
+        return Response.json(
+          { error: "Client record not found for this account" },
+          { status: 404 }
+        );
+      }
+
+      const records = [];
+
+      for (const recordId of imageIds) {
+        const record = await getAirtableRecord({
+          baseId: AIRTABLE_BASE_ID,
+          tableName: "SavedDrapedImages",
+          token: AIRTABLE_TOKEN,
+          recordId
+        });
+        const fields = record?.fields || {};
+        const savedClientRecordId = firstSavedDrapedField(fields, ["ClientRecordId", "Client Record ID"]);
+        const savedConsultantId = firstSavedDrapedField(fields, ["ConsultantId", "Consultant ID"]);
+
+        if (
+          savedClientRecordId !== clientRecordId ||
+          (savedConsultantId && savedConsultantId !== loggedInCustomerId)
+        ) {
+          return Response.json(
+            { error: "Saved draped photo does not belong to this client" },
+            { status: 403 }
+          );
+        }
+
+        records.push(record);
+      }
+
+      const deletedIds = [];
+
+      for (const record of records) {
+        await deleteAirtableRecord({
+          baseId: AIRTABLE_BASE_ID,
+          tableName: "SavedDrapedImages",
+          token: AIRTABLE_TOKEN,
+          recordId: record.id
+        });
+        deletedIds.push(record.id);
+      }
+
+      return Response.json({
+        success: true,
+        deletedIds
+      });
+    } catch (error) {
+      if (error instanceof Response) throw error;
+      console.error("deleteSavedDrapedImages failed:", error);
+      return Response.json(
+        { error: error.message || "Failed to delete saved draped photos" },
+        { status: 500 }
+      );
+    }
   }
 
   if (actionName === "syncCustomerDirectory") {

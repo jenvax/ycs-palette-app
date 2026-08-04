@@ -475,6 +475,80 @@
     ].filter(Boolean).join(" · ");
   }
 
+  function clientPhotoSourceLabel(image) {
+    const source = String(image.sourceTool || "").trim();
+    if (source === "color-analysis") return "Color Analysis Tool";
+    if (source === "lip-draping") return "Lip & Draping Studio";
+    return source || "Saved draped photo";
+  }
+
+  function renderClientPhotoManager(client, images, options = {}) {
+    const imageList = Array.isArray(images) ? sortSavedImagesForPicker(images, "") : [];
+    const statusHtml = options.loading
+      ? `<p class="ycs-client-photo-manager__status">Loading saved draped photos...</p>`
+      : options.error
+        ? `<p class="ycs-client-photo-manager__status ycs-client-photo-manager__status--error">${escapeHtml(options.error)}</p>`
+        : "";
+
+    return `
+      <section class="ycs-client-photo-manager__panel" data-ycs-client-photo-manager-panel data-client-record-id="${escapeHtml(client.clientRecordId)}">
+        <div class="ycs-client-photo-manager__head">
+          <div>
+            <h3>Saved Draped Photos</h3>
+            <p>${imageList.length ? `${imageList.length} saved photo${imageList.length === 1 ? "" : "s"}` : "No saved draped photos found for this client."}</p>
+          </div>
+          ${imageList.length ? `
+            <button class="ycs-clients__button ycs-clients__button--danger" type="button" data-ycs-bulk-delete-client-photos disabled>Delete Selected</button>
+          ` : ""}
+        </div>
+        ${statusHtml}
+        ${imageList.length ? `
+          <label class="ycs-client-photo-manager__select-all">
+            <input type="checkbox" data-ycs-client-photo-select-all>
+            <span>Select all</span>
+          </label>
+          <div class="ycs-client-photo-manager__grid">
+            ${imageList.map((image) => {
+              const label = savedImageTitle(image) || image.fileName || "Saved draped photo";
+              return `
+                <article class="ycs-client-photo-manager__card">
+                  <label class="ycs-client-photo-manager__check">
+                    <input type="checkbox" value="${escapeHtml(image.id)}" data-ycs-client-photo-select>
+                    <span>Select</span>
+                  </label>
+                  <img src="${escapeHtml(image.imageUrl)}" alt="${escapeHtml(label)}">
+                  <div class="ycs-client-photo-manager__body">
+                    <strong>${escapeHtml(label)}</strong>
+                    <small>${escapeHtml(clientPhotoSourceLabel(image))}</small>
+                    <button class="ycs-clients__button ycs-clients__button--danger" type="button" data-ycs-delete-client-photo="${escapeHtml(image.id)}">Delete</button>
+                  </div>
+                </article>
+              `;
+            }).join("")}
+          </div>
+        ` : ""}
+      </section>
+    `;
+  }
+
+  function updateClientPhotoBulkState(panel) {
+    if (!panel) return;
+    const selectedCount = panel.querySelectorAll("[data-ycs-client-photo-select]:checked").length;
+    const bulkButton = panel.querySelector("[data-ycs-bulk-delete-client-photos]");
+    const selectAll = panel.querySelector("[data-ycs-client-photo-select-all]");
+    const checkboxes = panel.querySelectorAll("[data-ycs-client-photo-select]");
+
+    if (bulkButton) {
+      bulkButton.disabled = selectedCount === 0;
+      bulkButton.textContent = selectedCount ? `Delete Selected (${selectedCount})` : "Delete Selected";
+    }
+
+    if (selectAll) {
+      selectAll.checked = checkboxes.length > 0 && selectedCount === checkboxes.length;
+      selectAll.indeterminate = selectedCount > 0 && selectedCount < checkboxes.length;
+    }
+  }
+
   function sortSavedImagesForPicker(images, preferredChoice) {
     const preferredKey = choiceKey(preferredChoice);
     return images.slice().sort((a, b) => {
@@ -1269,6 +1343,30 @@
     return activeSavedDrapedImages;
   }
 
+  async function deleteSavedDrapedImages(client, imageIds) {
+    const ids = (Array.isArray(imageIds) ? imageIds : [imageIds]).map((id) => String(id || "").trim()).filter(Boolean);
+    if (!client?.clientRecordId || !ids.length) return;
+
+    const response = await fetch("/apps/palette-data?action=deleteSavedDrapedImages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({
+        clientRecordId: client.clientRecordId,
+        imageIds: ids
+      })
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Unable to delete saved draped photos");
+    }
+
+    activeSavedDrapedImages = activeSavedDrapedImages.filter((image) => !ids.includes(image.id));
+    activeSavedDrapedImagesClientId = client.clientRecordId;
+    return data;
+  }
+
   async function autofillReportTemplate(client, options = {}) {
     const builder = detailEl.querySelector("[data-ycs-report-builder]");
     const form = builder?.querySelector("[data-ycs-report-form]");
@@ -1924,10 +2022,6 @@
     if (controlsEl) controlsEl.hidden = true;
     setStatus("", false);
 
-    const photoFigures = [
-      ["Prepared Photo", client.adjustedPhotoUrl],
-      ["Original Photo", client.originalPhotoUrl]
-    ].filter((item) => item[1]);
     const palette = paletteLabel(client);
     const status = displayStatus(client.analysisStatus);
     const created = formatDate(client.createdAt);
@@ -1953,18 +2047,12 @@
             <button class="ycs-clients__button ycs-clients__button--danger" type="button" data-ycs-delete-client="${escapeHtml(client.clientRecordId)}">Delete</button>
             <a class="ycs-clients__button ycs-clients__button--secondary" href="${escapeHtml(startAnalysisUrl(client))}">Start Color Analysis</a>
             <a class="ycs-clients__button ycs-clients__button--secondary" href="${escapeHtml(drapingStudioUrl(client))}">Lip & Draping Studio</a>
+            <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-manage-client-photos="${escapeHtml(client.clientRecordId)}">Manage Client Photos</button>
           </div>
           ${editMode ? renderEditForm(client, saveMessage) : ""}
         </div>
       </div>
-      <div class="ycs-clients__photo-list">
-        ${photoFigures.length ? photoFigures.map(([label, url]) => `
-          <figure>
-            <img src="${escapeHtml(url)}" alt="${escapeHtml(label)}">
-            <figcaption>${escapeHtml(label)}</figcaption>
-          </figure>
-        `).join("") : ""}
-      </div>
+      <div class="ycs-client-photo-manager" data-ycs-client-photo-manager hidden></div>
       ${canCreateReports ? renderReportBuilder(client) : ""}
     `;
 
@@ -2031,6 +2119,48 @@
     }
 
     renderDetail(client, editMode, saveMessage);
+  }
+
+  async function showClientPhotoManager(clientRecordId) {
+    const client = clients.find((item) => item.clientRecordId === clientRecordId);
+    const manager = detailEl.querySelector("[data-ycs-client-photo-manager]");
+    if (!client || !manager) return;
+
+    manager.hidden = false;
+    manager.innerHTML = renderClientPhotoManager(client, [], { loading: true });
+
+    try {
+      activeSavedDrapedImages = await fetchSavedDrapedImages(client);
+      activeSavedDrapedImagesClientId = client.clientRecordId;
+      manager.innerHTML = renderClientPhotoManager(client, activeSavedDrapedImages);
+    } catch (error) {
+      manager.innerHTML = renderClientPhotoManager(client, [], {
+        error: error.message || "Unable to load saved draped photos."
+      });
+    }
+  }
+
+  async function deleteClientPhotos(panel, imageIds) {
+    const clientRecordId = panel?.dataset.clientRecordId;
+    const client = clients.find((item) => item.clientRecordId === clientRecordId);
+    const ids = (Array.isArray(imageIds) ? imageIds : [imageIds]).map((id) => String(id || "").trim()).filter(Boolean);
+    if (!client || !ids.length) return;
+
+    const confirmed = window.confirm(ids.length === 1
+      ? "Delete this saved draped photo?"
+      : `Delete ${ids.length} saved draped photos?`);
+    if (!confirmed) return;
+
+    const manager = detailEl.querySelector("[data-ycs-client-photo-manager]");
+    if (manager) {
+      manager.innerHTML = renderClientPhotoManager(client, activeSavedDrapedImages, { loading: true });
+    }
+
+    await deleteSavedDrapedImages(client, ids);
+
+    if (manager) {
+      manager.innerHTML = renderClientPhotoManager(client, activeSavedDrapedImages);
+    }
   }
 
   async function saveClient(form) {
@@ -2186,6 +2316,11 @@
     const backButton = event.target.closest("[data-ycs-back-to-clients]");
     const pageBackButton = event.target.closest("[data-ycs-clients-back-link]");
     const addClientButton = event.target.closest("[data-ycs-add-client]");
+    const manageClientPhotosButton = event.target.closest("[data-ycs-manage-client-photos]");
+    const clientPhotoDeleteButton = event.target.closest("[data-ycs-delete-client-photo]");
+    const clientPhotoBulkDeleteButton = event.target.closest("[data-ycs-bulk-delete-client-photos]");
+    const clientPhotoSelectAll = event.target.closest("[data-ycs-client-photo-select-all]");
+    const clientPhotoSelect = event.target.closest("[data-ycs-client-photo-select]");
     const saveReportButton = event.target.closest("[data-ycs-save-report]");
     const printReportButton = event.target.closest("[data-ycs-print-report]");
     const reportPageButton = event.target.closest("[data-ycs-report-page-button]");
@@ -2231,6 +2366,37 @@
     if (deleteButton) {
       deleteClientById(deleteButton.dataset.ycsDeleteClient)
         .catch((error) => setStatus(error.message || "Client delete failed.", true));
+    }
+
+    if (manageClientPhotosButton) {
+      event.preventDefault();
+      showClientPhotoManager(manageClientPhotosButton.dataset.ycsManageClientPhotos)
+        .catch((error) => setStatus(error.message || "Unable to load saved draped photos.", true));
+    }
+
+    if (clientPhotoDeleteButton) {
+      event.preventDefault();
+      const panel = clientPhotoDeleteButton.closest("[data-ycs-client-photo-manager-panel]");
+      deleteClientPhotos(panel, clientPhotoDeleteButton.dataset.ycsDeleteClientPhoto)
+        .catch((error) => setStatus(error.message || "Unable to delete saved draped photo.", true));
+    }
+
+    if (clientPhotoBulkDeleteButton) {
+      event.preventDefault();
+      const panel = clientPhotoBulkDeleteButton.closest("[data-ycs-client-photo-manager-panel]");
+      const selectedIds = Array.from(panel?.querySelectorAll("[data-ycs-client-photo-select]:checked") || []).map((input) => input.value);
+      deleteClientPhotos(panel, selectedIds)
+        .catch((error) => setStatus(error.message || "Unable to delete saved draped photos.", true));
+    }
+
+    if (clientPhotoSelectAll) {
+      const panel = clientPhotoSelectAll.closest("[data-ycs-client-photo-manager-panel]");
+      panel?.querySelectorAll("[data-ycs-client-photo-select]").forEach((checkbox) => {
+        checkbox.checked = clientPhotoSelectAll.checked;
+      });
+      updateClientPhotoBulkState(panel);
+    } else if (clientPhotoSelect) {
+      updateClientPhotoBulkState(clientPhotoSelect.closest("[data-ycs-client-photo-manager-panel]"));
     }
 
     if (backButton) {
