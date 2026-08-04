@@ -1037,6 +1037,23 @@
             <div class="ycs-report-page-nav" data-ycs-report-page-nav>
               ${Array.from({ length: totalReportPages(draft) }, (_, index) => {
                 const pageNumber = index + 1;
+                const customPage = pageNumber > BASE_REPORT_PAGE_COUNT
+                  ? reportCustomPages(draft)[pageNumber - BASE_REPORT_PAGE_COUNT - 1]
+                  : null;
+                if (customPage) {
+                  return `
+                    <span class="ycs-report-page-nav__item">
+                      <button type="button" class="${pageNumber === activeReportPage ? "is-active" : ""}" data-ycs-report-page-button="${pageNumber}">${pageNumber}</button>
+                      <button
+                        type="button"
+                        class="ycs-report-page-nav__remove"
+                        data-ycs-remove-custom-report-page="${escapeHtml(customPage.id)}"
+                        aria-label="Remove page ${pageNumber}">
+                        ×
+                      </button>
+                    </span>
+                  `;
+                }
                 return `<button type="button" class="${pageNumber === activeReportPage ? "is-active" : ""}" data-ycs-report-page-button="${pageNumber}">${pageNumber}</button>`;
               }).join("")}
               <details class="ycs-report-page-add">
