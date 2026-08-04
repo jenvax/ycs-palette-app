@@ -83,13 +83,13 @@ async function shopifyAdminGraphQL({ shop, accessToken, query, variables = {} })
   return json.data;
 }
 
-async function fetchShopifyCustomers({ shop, accessToken }) {
+async function fetchShopifyCustomersByQuery({ shop, accessToken, customerQuery }) {
   const query = `
-    query getCustomers($cursor: String) {
+    query getCustomers($cursor: String, $customerQuery: String!) {
       customers(
         first: 100,
         after: $cursor,
-        query: "tag:VIP OR tag:YCS_ADMIN"
+        query: $customerQuery
       ) {
         edges {
           cursor
@@ -120,7 +120,7 @@ async function fetchShopifyCustomers({ shop, accessToken }) {
       shop,
       accessToken,
       query,
-      variables: { cursor }
+      variables: { cursor, customerQuery }
     });
 
     const edges = data.customers?.edges || [];
@@ -131,6 +131,21 @@ async function fetchShopifyCustomers({ shop, accessToken }) {
   }
 
   return customers
+}
+
+async function fetchShopifyCustomers({ shop, accessToken }) {
+  const customersById = new Map();
+  const customerGroups = await Promise.all([
+    fetchShopifyCustomersByQuery({ shop, accessToken, customerQuery: "tag:VIP" }),
+    fetchShopifyCustomersByQuery({ shop, accessToken, customerQuery: "tag:YCS_ADMIN" })
+  ]);
+
+  customerGroups.flat().forEach((customer) => {
+    const customerId = normalizeCustomerId(customer.id);
+    if (customerId) customersById.set(customerId, customer);
+  });
+
+  return Array.from(customersById.values())
   .map((customer) => {
     const customerId = normalizeCustomerId(customer.id);
     const tags = Array.isArray(customer.tags) ? customer.tags : [];
