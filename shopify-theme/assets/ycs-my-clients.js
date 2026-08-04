@@ -322,6 +322,12 @@
     };
   }
 
+  function normalizeCustomPageTemplate(template) {
+    const value = String(template || "").trim();
+    if (value === "photos" || value === "photos4") return value;
+    return "letter";
+  }
+
   function mergeReportDraft(client, savedDraft) {
     const base = defaultReportDraft(client);
     const incoming = savedDraft && typeof savedDraft === "object" ? savedDraft : {};
@@ -337,11 +343,13 @@
       customPages: Array.isArray(incoming.customPages)
         ? incoming.customPages.map((page) => ({
           id: String(page.id || makeCustomReportPageId()),
-          template: String(page.template || "letter") === "photos" ? "photos" : "letter",
+          template: normalizeCustomPageTemplate(page.template),
           title: String(page.title || ""),
           copy: String(page.copy || ""),
           image1Url: String(page.image1Url || ""),
-          image2Url: String(page.image2Url || "")
+          image2Url: String(page.image2Url || ""),
+          image3Url: String(page.image3Url || ""),
+          image4Url: String(page.image4Url || "")
         }))
         : [],
       text: {
@@ -561,13 +569,15 @@
     return `
       ${customPages.length ? customPages.map((page, index) => {
           const id = String(page.id || makeCustomReportPageId());
-          const template = page.template === "photos" ? "photos" : "letter";
+          const template = normalizeCustomPageTemplate(page.template);
           const pageNumber = BASE_REPORT_PAGE_COUNT + index + 1;
+          const isPhotoTemplate = template === "photos" || template === "photos4";
+          const templateLabel = template === "photos4" ? "Four-photo page" : (template === "photos" ? "Photo page" : "Letter page");
           return `
             <div class="ycs-report-form-page" data-ycs-report-controls-page="${pageNumber}"${pageNumber === activeReportPage ? "" : " hidden"}>
               <div class="ycs-report-form-page__head">
                 <span>Page ${pageNumber}</span>
-                <small>${template === "photos" ? "Photo page" : "Letter page"}</small>
+                <small>${templateLabel}</small>
               </div>
               <fieldset class="ycs-report-custom-page" data-ycs-custom-report-page data-report-custom-page-id="${escapeHtml(id)}">
                 <legend>Blank page settings</legend>
@@ -575,26 +585,43 @@
                 <select name="customPages.${escapeHtml(id)}.template">
                   <option value="letter"${template === "letter" ? " selected" : ""}>Letter Page</option>
                   <option value="photos"${template === "photos" ? " selected" : ""}>Title, two photos, copy</option>
+                  <option value="photos4"${template === "photos4" ? " selected" : ""}>Title, four photos</option>
                 </select>
               </label>
               <input type="hidden" name="customPages.${escapeHtml(id)}.image1Url" value="${escapeHtml(page.image1Url || "")}">
               <input type="hidden" name="customPages.${escapeHtml(id)}.image2Url" value="${escapeHtml(page.image2Url || "")}">
-              ${template === "photos" ? `
+              <input type="hidden" name="customPages.${escapeHtml(id)}.image3Url" value="${escapeHtml(page.image3Url || "")}">
+              <input type="hidden" name="customPages.${escapeHtml(id)}.image4Url" value="${escapeHtml(page.image4Url || "")}">
+              ${isPhotoTemplate ? `
                 <label>Title<input name="customPages.${escapeHtml(id)}.title" value="${escapeHtml(page.title || "")}"></label>
                 ${renderSavedImagePicker({
                   fieldName: `customPages.${id}.image1Url`,
-                  title: "Left photo",
+                  title: template === "photos4" ? "Top left photo" : "Left photo",
                   selectedUrl: page.image1Url,
                   preferredChoice: ""
                 })}
                 ${renderSavedImagePicker({
                   fieldName: `customPages.${id}.image2Url`,
-                  title: "Right photo",
+                  title: template === "photos4" ? "Top right photo" : "Right photo",
                   selectedUrl: page.image2Url,
                   preferredChoice: ""
                 })}
+                ${template === "photos4" ? `
+                  ${renderSavedImagePicker({
+                    fieldName: `customPages.${id}.image3Url`,
+                    title: "Bottom left photo",
+                    selectedUrl: page.image3Url,
+                    preferredChoice: ""
+                  })}
+                  ${renderSavedImagePicker({
+                    fieldName: `customPages.${id}.image4Url`,
+                    title: "Bottom right photo",
+                    selectedUrl: page.image4Url,
+                    preferredChoice: ""
+                  })}
+                ` : ""}
               ` : ""}
-              <label>Copy<textarea name="customPages.${escapeHtml(id)}.copy">${escapeHtml(page.copy || "")}</textarea></label>
+              ${template !== "photos4" ? `<label>Copy<textarea name="customPages.${escapeHtml(id)}.copy">${escapeHtml(page.copy || "")}</textarea></label>` : ""}
               <button class="ycs-report-image-clear" type="button" data-ycs-remove-custom-report-page="${escapeHtml(id)}">Remove page</button>
               </fieldset>
             </div>
@@ -677,7 +704,43 @@
   }
 
   function renderCustomReportPage(draft, page, pageNumber, options = {}) {
-    const template = page.template === "photos" ? "photos" : "letter";
+    const template = normalizeCustomPageTemplate(page.template);
+
+    if (template === "photos4") {
+      return `
+        <section class="ycs-report-page ycs-report-page--custom-photos ycs-report-page--custom-photos-four" data-report-page="${pageNumber}">
+          ${renderReportBrand(draft)}
+          <h1>${escapeHtml(page.title || "Custom Page")}</h1>
+          <div class="ycs-report-custom-photo-grid ycs-report-custom-photo-grid--four">
+            ${renderPreviewImageTarget(
+              `customPages.${page.id}.image1Url`,
+              "Top left photo",
+              renderReportImage(page.image1Url, "Top left photo", "ycs-report-preview__custom-photo"),
+              options.interactive
+            )}
+            ${renderPreviewImageTarget(
+              `customPages.${page.id}.image2Url`,
+              "Top right photo",
+              renderReportImage(page.image2Url, "Top right photo", "ycs-report-preview__custom-photo"),
+              options.interactive
+            )}
+            ${renderPreviewImageTarget(
+              `customPages.${page.id}.image3Url`,
+              "Bottom left photo",
+              renderReportImage(page.image3Url, "Bottom left photo", "ycs-report-preview__custom-photo"),
+              options.interactive
+            )}
+            ${renderPreviewImageTarget(
+              `customPages.${page.id}.image4Url`,
+              "Bottom right photo",
+              renderReportImage(page.image4Url, "Bottom right photo", "ycs-report-preview__custom-photo"),
+              options.interactive
+            )}
+          </div>
+          ${renderReportFooter(draft, pageNumber)}
+        </section>
+      `;
+    }
 
     if (template === "photos") {
       return `
@@ -981,6 +1044,7 @@
                 <div class="ycs-report-page-add__menu">
                   <button type="button" data-ycs-add-custom-report-page="letter">Letter Page</button>
                   <button type="button" data-ycs-add-custom-report-page="photos">Photo Page</button>
+                  <button type="button" data-ycs-add-custom-report-page="photos4">Four Photos</button>
                 </div>
               </details>
             </div>
@@ -1044,11 +1108,13 @@
       const fieldValue = (fieldName) => String(formData.get(`customPages.${id}.${fieldName}`) || "").trim();
       return {
         id,
-        template: fieldValue("template") === "photos" ? "photos" : "letter",
+        template: normalizeCustomPageTemplate(fieldValue("template")),
         title: fieldValue("title"),
         copy: String(formData.get(`customPages.${id}.copy`) || "").trim(),
         image1Url: fieldValue("image1Url"),
-        image2Url: fieldValue("image2Url")
+        image2Url: fieldValue("image2Url"),
+        image3Url: fieldValue("image3Url"),
+        image4Url: fieldValue("image4Url")
       };
     });
 
@@ -2189,16 +2255,18 @@
       if (!client || !builder || !form) return;
 
       activeReportDraft = readReportDraftFromForm(form, client);
-      const template = addCustomReportPageButton.dataset.ycsAddCustomReportPage === "photos" ? "photos" : "letter";
+      const template = normalizeCustomPageTemplate(addCustomReportPageButton.dataset.ycsAddCustomReportPage);
       activeReportDraft.customPages = [
         ...reportCustomPages(activeReportDraft),
         {
           id: makeCustomReportPageId(),
           template,
-          title: template === "photos" ? "New Page" : "",
+          title: template === "letter" ? "" : "New Page",
           copy: "",
           image1Url: "",
-          image2Url: ""
+          image2Url: "",
+          image3Url: "",
+          image4Url: ""
         }
       ];
       const nextPage = totalReportPages(activeReportDraft);
