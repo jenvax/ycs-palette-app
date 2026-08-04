@@ -481,7 +481,7 @@ async function shopifyAdminGraphQL({ shop, accessToken, query, variables = {} })
 async function fetchShopifyCustomersForDirectory({ shop, accessToken }) {
   const query = `
     query getCustomers($cursor: String) {
-      customers(first: 100, after: $cursor, query: "tag:VIP") {
+      customers(first: 100, after: $cursor, query: "tag:VIP OR tag:YCS_ADMIN") {
         edges {
           cursor
           node {
@@ -528,6 +528,7 @@ async function fetchShopifyCustomersForDirectory({ shop, accessToken }) {
 
     const paletteTags = tags.filter((tag) => PALETTE_TAGS.has(String(tag).toUpperCase().trim()));
     const isVIP = tags.includes("VIP");
+    const isAdmin = tags.some((tag) => String(tag).trim().toUpperCase() === "YCS_ADMIN");
 
     let name = `${customer.firstName || ""} ${customer.lastName || ""}`.trim();
     if (!name && customer.email) name = customer.email.split("@")[0];
@@ -542,6 +543,7 @@ async function fetchShopifyCustomersForDirectory({ shop, accessToken }) {
   tags,
   paletteTags,
   isVIP,
+  isAdmin,
   joinedDate
 };
   });
@@ -587,8 +589,10 @@ async function syncCustomerDirectoryFromShopify({ shop, accessToken, baseId, tok
     const previousIsVIP = parseTruthy(existingFields.IsVIP);
     const currentIsVIP = customer.isVIP;
 
+    const currentIsAdmin = Boolean(customer.isAdmin);
     let membershipStatus = "Unknown";
-    if (currentIsVIP && customer.joinedDate) membershipStatus = "Active";
+    if (currentIsAdmin) membershipStatus = "Active";
+    else if (currentIsVIP && customer.joinedDate) membershipStatus = "Active";
     else if (currentIsVIP && !customer.joinedDate) membershipStatus = "Legacy";
     else membershipStatus = "Inactive";
 

@@ -89,7 +89,7 @@ async function fetchShopifyCustomers({ shop, accessToken }) {
       customers(
         first: 100,
         after: $cursor,
-        query: "tag:VIP"
+        query: "tag:VIP OR tag:YCS_ADMIN"
       ) {
         edges {
           cursor
@@ -137,11 +137,6 @@ async function fetchShopifyCustomers({ shop, accessToken }) {
     const normalizedTags = tags.map((tag) => String(tag).trim());
     const upperTags = normalizedTags.map((tag) => tag.toUpperCase());
 
-    // 🚫 EXCLUDE ADMINS
-    if (upperTags.includes("YCS_ADMIN")) {
-      return null;
-    }
-
     const paletteTags = normalizedTags.filter((tag) =>
       PALETTE_TAGS.has(String(tag).toUpperCase())
     );
@@ -157,6 +152,7 @@ async function fetchShopifyCustomers({ shop, accessToken }) {
       email: String(customer.email || "").trim(),
       tags: normalizedTags,
       paletteTags,
+      isAdmin: upperTags.includes("YCS_ADMIN"),
       isVIP: upperTags.includes("VIP"),
       joinedDate
     };
@@ -287,7 +283,8 @@ async function syncCustomerDirectory({ shop, accessToken, baseId, token }) {
     const previousIsVIP = String(existingFields.IsVIP) === "1";
     const currentIsVIP = Boolean(customer.isVIP);
 
-    let membershipStatus = currentIsVIP ? "Active" : "Inactive";
+    const currentIsAdmin = Boolean(customer.isAdmin);
+    let membershipStatus = currentIsVIP || currentIsAdmin ? "Active" : "Inactive";
 
 const fieldsToWrite = {
   CustomerId: customer.customerId,
