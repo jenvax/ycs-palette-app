@@ -289,6 +289,7 @@ function getCustomerPaletteCode() {
   const savePositionBtn = document.getElementById('ycs-analysis-save-position');
   const restorePositionBtn = document.getElementById('ycs-analysis-restore-position');
   const photoPrepLink = document.getElementById('ycs-analysis-photo-prep-link');
+  const manageClientLink = document.getElementById('ycs-analysis-manage-client-link');
 
   const depthStepEl = document.getElementById('ycs-analysis-depth-step');
   const depthSectionsEl = document.getElementById('ycs-analysis-depth-sections');
@@ -2316,6 +2317,32 @@ function updateBackLink() {
 
   signatureBackLink.textContent = 'Back to Client List';
   signatureBackLink.href = appendAdminPreviewToHref('/pages/photo-prep?mode=trade&workflow=color-analysis');
+}
+
+function buildManageClientHref() {
+  if (!CLIENT_RECORD_ID) return appendAdminPreviewToHref('/pages/my-clients');
+
+  const query = new URLSearchParams({
+    clientRecordId: CLIENT_RECORD_ID,
+    edit: '1'
+  });
+
+  addAdminPreviewParam(query);
+  return '/pages/my-clients?' + query.toString();
+}
+
+function updateManageClientLink() {
+  if (!manageClientLink) return;
+
+  if (!CLIENT_RECORD_ID) {
+    manageClientLink.hidden = true;
+    manageClientLink.style.display = 'none';
+    return;
+  }
+
+  manageClientLink.hidden = false;
+  manageClientLink.style.display = '';
+  manageClientLink.href = buildManageClientHref();
 }
 
 function buildStandardAnalysisHref() {
@@ -4745,6 +4772,13 @@ const y = ((e.clientY - svgRect.top) / svgRect.height) * 1000;
     });
   }
 
+  if (manageClientLink) {
+    updateManageClientLink();
+    manageClientLink.addEventListener('click', function () {
+      manageClientLink.href = buildManageClientHref();
+    });
+  }
+
   attachSharedDrag(leftFrame);
   attachSharedDrag(rightFrame);
 
@@ -4920,6 +4954,8 @@ const saved = loadAnalysisSession();
 
         updatePhotoPrepLink();
         updateBackLink();
+        updateStandardAnalysisLink();
+        updateManageClientLink();
         syncLipOpacityControl();
         return;
 }
@@ -4952,6 +4988,7 @@ const saved = loadAnalysisSession();
   updatePhotoPrepLink();
   updateBackLink();
   updateStandardAnalysisLink();
+  updateManageClientLink();
 
   ensureLipEmptyModeVisible();
   requestAnimationFrame(function () {
