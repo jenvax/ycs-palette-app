@@ -1356,7 +1356,8 @@
         imageIds: ids
       })
     });
-    const data = await response.json();
+    const responseText = await response.text();
+    const data = responseText ? JSON.parse(responseText) : {};
 
     if (!response.ok) {
       throw new Error(data.error || "Unable to delete saved draped photos");
@@ -2048,6 +2049,7 @@
             <a class="ycs-clients__button ycs-clients__button--secondary" href="${escapeHtml(startAnalysisUrl(client))}">Start Color Analysis</a>
             <a class="ycs-clients__button ycs-clients__button--secondary" href="${escapeHtml(drapingStudioUrl(client))}">Lip & Draping Studio</a>
             <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-manage-client-photos="${escapeHtml(client.clientRecordId)}">Manage Client Photos</button>
+            ${canCreateReports ? `<button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-show-report-builder>Report Builder</button>` : ""}
           </div>
           ${editMode ? renderEditForm(client, saveMessage) : ""}
         </div>
@@ -2156,10 +2158,19 @@
       manager.innerHTML = renderClientPhotoManager(client, activeSavedDrapedImages, { loading: true });
     }
 
-    await deleteSavedDrapedImages(client, ids);
+    try {
+      await deleteSavedDrapedImages(client, ids);
 
-    if (manager) {
-      manager.innerHTML = renderClientPhotoManager(client, activeSavedDrapedImages);
+      if (manager) {
+        manager.innerHTML = renderClientPhotoManager(client, activeSavedDrapedImages);
+      }
+    } catch (error) {
+      if (manager) {
+        manager.innerHTML = renderClientPhotoManager(client, activeSavedDrapedImages, {
+          error: error.message || "Unable to delete saved draped photos."
+        });
+      }
+      throw error;
     }
   }
 
@@ -2321,6 +2332,7 @@
     const clientPhotoBulkDeleteButton = event.target.closest("[data-ycs-bulk-delete-client-photos]");
     const clientPhotoSelectAll = event.target.closest("[data-ycs-client-photo-select-all]");
     const clientPhotoSelect = event.target.closest("[data-ycs-client-photo-select]");
+    const showReportBuilderButton = event.target.closest("[data-ycs-show-report-builder]");
     const saveReportButton = event.target.closest("[data-ycs-save-report]");
     const printReportButton = event.target.closest("[data-ycs-print-report]");
     const reportPageButton = event.target.closest("[data-ycs-report-page-button]");
@@ -2397,6 +2409,14 @@
       updateClientPhotoBulkState(panel);
     } else if (clientPhotoSelect) {
       updateClientPhotoBulkState(clientPhotoSelect.closest("[data-ycs-client-photo-manager-panel]"));
+    }
+
+    if (showReportBuilderButton) {
+      event.preventDefault();
+      const builder = detailEl.querySelector("[data-ycs-report-builder]");
+      if (builder) {
+        builder.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
     }
 
     if (backButton) {

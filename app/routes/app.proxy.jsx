@@ -1396,7 +1396,15 @@ export async function action({ request }) {
 
   if (actionName === "deleteSavedDrapedImages") {
     try {
-      await authenticate.public.appProxy(request);
+      try {
+        await authenticate.public.appProxy(request);
+      } catch (authError) {
+        console.error("deleteSavedDrapedImages proxy authentication failed:", authError);
+        return Response.json(
+          { error: "Signed storefront request required to delete saved photos" },
+          { status: 401 }
+        );
+      }
 
       const loggedInCustomerId = normalizeCustomerId(url.searchParams.get("logged_in_customer_id"));
       const body = await request.json();
