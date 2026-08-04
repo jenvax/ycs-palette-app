@@ -2271,12 +2271,12 @@ function updateBackLink() {
   if (!backBtn) return;
 
   if (IS_DIY_MODE) {
-    backBtn.textContent = '← Back to Photo Prep';
+    backBtn.textContent = 'Back to Photo Prep';
     backBtn.href = photoPrepLink ? photoPrepLink.href : appendAdminPreviewToHref('/pages/photo-prep?mode=diy&workflow=color-analysis');
     return;
   }
 
-  backBtn.textContent = '← Back to Client List';
+  backBtn.textContent = 'Back to Client List';
   backBtn.href = buildClientListHref();
 }
 

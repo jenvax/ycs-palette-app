@@ -142,9 +142,27 @@
     
 
     <div class="ycs-analysis-shell">
-      <div class="ycs-analysis-topnav">
+      <div class="ycs-analysis-topnav" role="navigation" aria-label="Color analysis navigation">
         <a href="/pages/photo-prep?mode=trade&workflow=color-analysis" id="ycs-analysis-back" class="ycs-analysis-back-link">
-          ← Back to Client List
+          Back to Client List
+        </a>
+        <button type="button" id="ycs-analysis-mode-structured" class="ycs-analysis-mode-btn is-active">
+          Structured Analysis
+        </button>
+        {% if is_admin or is_trade or is_catool or is_catool_growth %}
+          <a
+            id="ycs-analysis-signature-link"
+            href="/pages/signature-color-analysis"
+            class="ycs-analysis-toolbar-link"
+          >
+            Lip & Draping Studio
+          </a>
+        {% endif %}
+        <a id="ycs-analysis-photo-prep-link" href="/pages/photo-prep" class="ycs-analysis-toolbar-link">
+          Back to Photo Prep
+        </a>
+        <a id="ycs-analysis-manage-client-link" href="/pages/my-clients" class="ycs-analysis-toolbar-link" hidden>
+          Manage Client
         </a>
       </div>
       <div class="ycs-analysis-header">
@@ -181,29 +199,6 @@
             </a>
           </div>
         {% endif %}
-      </div>
-
-      <div class="ycs-analysis-mode-switch" role="tablist" aria-label="Analysis mode">
-        <button type="button" id="ycs-analysis-mode-structured" class="ycs-analysis-mode-btn is-active">
-          Structured Analysis
-        </button>
-        <div class="ycs-analysis-mode-actions">
-          {% if is_admin or is_trade or is_catool or is_catool_growth %}
-            <a
-              id="ycs-analysis-signature-link"
-              href="/pages/signature-color-analysis"
-              class="ycs-analysis-toolbar-link"
-            >
-              Lip & Draping Studio
-            </a>
-          {% endif %}
-          <a id="ycs-analysis-photo-prep-link" href="/pages/photo-prep" class="ycs-analysis-toolbar-link">
-            Back to Photo Prep
-          </a>
-          <a id="ycs-analysis-manage-client-link" href="/pages/my-clients" class="ycs-analysis-toolbar-link" hidden>
-            Manage Client
-          </a>
-        </div>
       </div>
 
       <div class="ycs-analysis-toolbar">
@@ -729,22 +724,33 @@
   }
 
   .ycs-analysis-topnav {
-    margin-bottom: 8px;
+    margin-bottom: 20px;
     display: flex;
     align-items: center;
     justify-content: flex-start;
+    gap: 12px;
+    flex-wrap: wrap;
   }
 
   .ycs-analysis-back-link {
-    appearance: none;
-    border: 0;
-    background: transparent;
-    padding: 0;
-    font: inherit;
-    font-size: 14px;
-    font-weight: 600;
-    color: #444;
-    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid #d8cfc3;
+    background: #fff;
+    color: #2f2a25;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.15;
+    text-decoration: none;
+    transition: all 0.15s ease;
+  }
+
+  .ycs-analysis-back-link:hover {
+    background: #f6f1ea;
   }
 
   /* LIP PANEL */

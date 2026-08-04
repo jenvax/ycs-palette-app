@@ -110,11 +110,27 @@
     
 
     <div class="ycs-analysis-shell">
-      <div class="ycs-signature-topbar">
-  <a href="/pages/photo-prep?mode=trade&workflow=color-analysis" id="ycs-signature-back-link" class="ycs-signature-back-link">
-  ← Back to Client List
-</a>
-</div>
+      <div class="ycs-analysis-topnav ycs-signature-topbar" role="navigation" aria-label="Lip and draping navigation">
+        <a href="/pages/photo-prep?mode=trade&workflow=color-analysis" id="ycs-signature-back-link" class="ycs-signature-back-link">
+          Back to Client List
+        </a>
+        <a
+          id="ycs-signature-standard-analysis-link"
+          href="/pages/color-analysis-tool"
+          class="ycs-analysis-toolbar-link"
+        >
+          Structured Analysis
+        </a>
+        <button type="button" class="ycs-analysis-mode-btn is-active">
+          Lip & Draping Studio
+        </button>
+        <a id="ycs-analysis-photo-prep-link" href="/pages/photo-prep" class="ycs-analysis-toolbar-link">
+          Back to Photo Prep
+        </a>
+        <a id="ycs-analysis-manage-client-link" href="/pages/my-clients" class="ycs-analysis-toolbar-link" hidden>
+          Manage Client
+        </a>
+      </div>
       <div class="ycs-analysis-header">
         <p class="ycs-analysis-kicker">Your Color Style</p>
         <h1 class="ycs-analysis-title">Lip & Draping Studio</h1>
@@ -146,20 +162,6 @@
       <button type="button" id="ycs-analysis-restore-position" class="ycs-analysis-save-btn">
         Restore Saved Position
       </button>
-      <a
-  id="ycs-signature-standard-analysis-link"
-  href="/pages/color-analysis-tool"
-  class="ycs-analysis-toolbar-link"
->
-  Switch to Color Analysis Tool
-</a>
-
-      <a id="ycs-analysis-photo-prep-link" href="/pages/photo-prep" class="ycs-analysis-toolbar-link">
-        Back to Photo Prep
-      </a>
-      <a id="ycs-analysis-manage-client-link" href="/pages/my-clients" class="ycs-analysis-toolbar-link" hidden>
-        Manage Client
-      </a>
     </div>
   </div>
 
@@ -618,22 +620,35 @@
   }
 
   .ycs-analysis-topnav {
-    margin-bottom: 8px;
+    margin-bottom: 20px;
     display: flex;
     align-items: center;
     justify-content: flex-start;
+    gap: 12px;
+    flex-wrap: wrap;
   }
 
-  .ycs-analysis-back-link {
-    appearance: none;
-    border: 0;
-    background: transparent;
-    padding: 0;
-    font: inherit;
-    font-size: 14px;
-    font-weight: 600;
-    color: #444;
-    cursor: pointer;
+  .ycs-analysis-back-link,
+  .ycs-signature-back-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid #d8cfc3;
+    background: #fff;
+    color: #2f2a25;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.15;
+    text-decoration: none;
+    transition: all 0.15s ease;
+  }
+
+  .ycs-analysis-back-link:hover,
+  .ycs-signature-back-link:hover {
+    background: #f6f1ea;
   }
 
   /* LIP PANEL */
@@ -1664,6 +1679,26 @@
   background: #f6f1ea;
 }
 
+.ycs-analysis-mode-btn {
+  min-height: 38px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid #d8cfc3;
+  background: #fff;
+  color: #2f2a25;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.15;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ycs-analysis-mode-btn.is-active {
+  background: #111;
+  border-color: #111;
+  color: #fff;
+}
+
  .ycs-analysis-colors-panel {
   background: #fffdfb;
   border: 1px solid #ece7df;
@@ -2434,22 +2469,6 @@ nav[role="navigation"] {
 body {
   margin-top: 0 !important;
   padding-top: 0 !important;
-}
-.ycs-signature-topbar {
-  padding: 12px 16px 4px;
-}
-
-.ycs-signature-back-link {
-  display: inline-flex;
-  align-items: center;
-  font-size: 14px;
-  font-weight: 700;
-  color: #2f2a25;
-  text-decoration: none;
-}
-
-.ycs-signature-back-link:hover {
-  text-decoration: underline;
 }
 /* Base */
 .ycs-signature-analysis-app .ycs-signature-photo-label {

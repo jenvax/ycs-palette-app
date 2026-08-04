@@ -2309,12 +2309,12 @@ function updateBackLink() {
   const mode = (urlParams.get('mode') || '').trim().toLowerCase();
 
   if (mode === 'member' && (ADMIN_CUSTOMER_ID || CLIENT_RECORD_ID)) {
-    signatureBackLink.textContent = '← Back to Member Photos';
+    signatureBackLink.textContent = 'Back to Member Photos';
     signatureBackLink.href = '/pages/member-photos';
     return;
   }
 
-  signatureBackLink.textContent = '← Back to Client List';
+  signatureBackLink.textContent = 'Back to Client List';
   signatureBackLink.href = appendAdminPreviewToHref('/pages/photo-prep?mode=trade&workflow=color-analysis');
 }
 
