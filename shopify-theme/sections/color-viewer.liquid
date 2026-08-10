@@ -14,6 +14,11 @@
   data-is-style-masters="{% if palette_access_string contains ',VIP,' %}true{% else %}false{% endif %}"
   data-app-base-url="https://ycs-palette-app.vercel.app"
 >
+  <nav class="ycs-color-page__nav" aria-label="Palette navigation">
+    <a href="/pages/my-palettes">My Color Palettes</a>
+    <a href="/pages/my-wardrobes">My Wardrobes</a>
+  </nav>
+
   <button type="button" class="ycs-color-close" id="ycs-color-close" aria-label="Close">✕</button>
 
   <button type="button" class="ycs-color-arrow ycs-color-arrow--left" id="ycs-color-prev" aria-label="Previous color">
@@ -236,8 +241,17 @@
 	  .ycs-wardrobe-color-pill { display: inline-flex; align-items: center; gap: 7px; border: 1px solid #ddd3c8; border-radius: 999px; background: #fff; padding: 6px 8px; color: #2f2a25; font-size: 12px; font-weight: 800; }
 	  .ycs-wardrobe-color-pill__swatch { width: 22px; height: 22px; border-radius: 999px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); }
 	  .ycs-wardrobe-color-pill button { border: 0; background: transparent; cursor: pointer; font: inherit; font-size: 16px; line-height: 1; padding: 0; }
-	  .ycs-wardrobe-add-color { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: end; }
+	  .ycs-wardrobe-palette-swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; max-height: 176px; overflow: auto; padding: 2px; }
+	  .ycs-wardrobe-swatch-option { display: grid; gap: 6px; min-width: 0; border: 1px solid #ddd3c8; border-radius: 12px; background: #fff; color: #2f2a25; cursor: pointer; font: inherit; padding: 7px; text-align: left; }
+	  .ycs-wardrobe-swatch-option:hover { border-color: #111; }
+	  .ycs-wardrobe-swatch-option.is-selected { border-color: #111; background: #f7f3ee; }
+	  .ycs-wardrobe-swatch-option__chip { width: 100%; height: 34px; border-radius: 8px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); }
+	  .ycs-wardrobe-swatch-option__name { overflow: hidden; font-size: 11px; font-weight: 800; line-height: 1.12; text-overflow: ellipsis; white-space: nowrap; }
+	  .ycs-wardrobe-primary-action { background: #111 !important; color: #fff !important; min-width: 150px; box-shadow: 0 10px 24px rgba(0,0,0,.16); }
 	  .ycs-wardrobe-form__actions { display: flex; justify-content: flex-end; gap: 8px; }
+	  .ycs-color-page__nav { position: fixed; top: 18px; left: 18px; z-index: 10012; display: flex; flex-wrap: wrap; gap: 8px; }
+	  .ycs-color-page__nav a { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 9px 15px; border: 1px solid rgba(216,207,195,.95); border-radius: 999px; background: rgba(255,255,255,.94); color: #111; font-size: 14px; font-weight: 800; line-height: 1; text-decoration: none; box-shadow: 0 6px 18px rgba(0,0,0,.08); }
+	  .ycs-color-page__nav a:hover { background: #fff; text-decoration: none; }
 
 	  @media (min-width: 900px) {
 	    .ycs-combo-drawer__grid { grid-template-columns: repeat(3, 1fr); align-items: start; }
@@ -246,6 +260,8 @@
 
   @media (max-width: 768px) {
     .ycs-color-close { top: 12px; right: 12px; width: 46px; height: 46px; font-size: 24px; }
+    .ycs-color-page__nav { top: 12px; left: 12px; right: 68px; }
+    .ycs-color-page__nav a { min-height: 38px; padding: 8px 11px; font-size: 12px; }
     .ycs-color-arrow { width: 44px; height: 44px; font-size: 28px; top: 50%; }
     .ycs-color-arrow--left { left: 12px; }
     .ycs-color-arrow--right { right: 12px; }
@@ -268,7 +284,8 @@
 	    .ycs-wardrobe-drawer__panel { width: 100vw; max-height: 82vh; border-radius: 22px 22px 0 0; }
 	    .ycs-wardrobe-drawer__header { flex-direction: column; align-items: stretch; gap: 10px; padding: 4px 14px 8px; }
 	    .ycs-wardrobe-drawer__body { padding: 0 14px 14px; }
-	    .ycs-wardrobe-form__row, .ycs-wardrobe-add-color { grid-template-columns: 1fr; }
+	    .ycs-wardrobe-form__row { grid-template-columns: 1fr; }
+	    .ycs-wardrobe-palette-swatches { grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); }
 	    .ycs-wardrobe-form__actions .ycs-color-combos-btn { width: 100%; }
 	  }
 
@@ -439,18 +456,36 @@ const hasPaidDrapingAccess =
       `).join('');
     }
 
+    function renderPaletteSwatches() {
+      const swatches = document.getElementById('ycs-wardrobe-palette-swatches');
+      if (!swatches) return;
+
+      swatches.innerHTML = colors
+        .map((color, index) => ({ color, index }))
+        .filter(({ color }) => normalizeHex(color.hex))
+        .map(({ color, index }) => {
+          const hex = normalizeHex(color.hex);
+          const name = color.name || hex;
+          const selected = wardrobeState.selectedColors.some((item) => normalizeHex(item.hex) === hex);
+          return `
+            <button
+              type="button"
+              class="ycs-wardrobe-swatch-option${selected ? ' is-selected' : ''}"
+              data-ycs-wardrobe-color-option="${index}"
+              title="${escapeHtml(name)}">
+              <span class="ycs-wardrobe-swatch-option__chip" style="background:${escapeHtml(hex)}"></span>
+              <span class="ycs-wardrobe-swatch-option__name">${escapeHtml(name)}</span>
+            </button>
+          `;
+        })
+        .join('');
+    }
+
     function renderWardrobeForm() {
       if (!wardrobeBodyEl) return;
       const wardrobeOptions = wardrobeState.wardrobes.map((wardrobe) =>
         `<option value="${escapeHtml(wardrobe.id)}">${escapeHtml(wardrobe.name)}</option>`
       ).join('');
-      const availableOptions = colors
-        .filter((color) => normalizeHex(color.hex))
-        .map((color, index) =>
-          `<option value="${index}">${escapeHtml(color.name || normalizeHex(color.hex))}</option>`
-        )
-        .join('');
-
       wardrobeBodyEl.innerHTML = `
         <form class="ycs-wardrobe-form" id="ycs-wardrobe-form">
           <div class="ycs-wardrobe-form__row">
@@ -482,20 +517,17 @@ const hasPaidDrapingAccess =
             <label>Colors</label>
             <div class="ycs-wardrobe-selected-colors" id="ycs-wardrobe-selected-colors"></div>
           </div>
-          <div class="ycs-wardrobe-add-color">
-            <label>Add Color
-              <select name="additionalColor">
-                ${availableOptions}
-              </select>
-            </label>
-            <button type="button" class="ycs-color-combos-btn" id="ycs-wardrobe-add-color">+ Add Color</button>
+          <div>
+            <label>Add another palette color</label>
+            <div class="ycs-wardrobe-palette-swatches" id="ycs-wardrobe-palette-swatches"></div>
           </div>
           <div class="ycs-wardrobe-form__actions">
-            <button type="submit" class="ycs-color-combos-btn">Add Item</button>
+            <button type="submit" class="ycs-color-combos-btn ycs-wardrobe-primary-action">Add Item</button>
           </div>
         </form>
       `;
       renderWardrobeColorPills();
+      renderPaletteSwatches();
     }
 
     async function openWardrobeDrawer() {
@@ -1238,14 +1270,14 @@ photoStudioUrl = `${baseUrl}&${params.toString()}`;
 
     if (wardrobeBodyEl) {
       wardrobeBodyEl.addEventListener('click', function (event) {
-        const addButton = event.target.closest('#ycs-wardrobe-add-color');
-        if (addButton) {
-          const form = document.getElementById('ycs-wardrobe-form');
-          const index = Number(form?.elements.additionalColor?.value || -1);
+        const swatchButton = event.target.closest('[data-ycs-wardrobe-color-option]');
+        if (swatchButton) {
+          const index = Number(swatchButton.dataset.ycsWardrobeColorOption || -1);
           const color = colors[index];
           if (color) {
             addWardrobeColor({ ...color, paletteCode });
             renderWardrobeColorPills();
+            renderPaletteSwatches();
           }
           return;
         }
@@ -1254,6 +1286,7 @@ photoStudioUrl = `${baseUrl}&${params.toString()}`;
         if (removeButton) {
           wardrobeState.selectedColors.splice(Number(removeButton.dataset.ycsWardrobeRemoveColor), 1);
           renderWardrobeColorPills();
+          renderPaletteSwatches();
         }
       });
 
