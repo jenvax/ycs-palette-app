@@ -1,0 +1,775 @@
+{% assign palette_access_string = '' %}
+{% if customer %}
+  {% assign palette_access_string = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
+{% endif %}
+
+{% assign is_admin = false %}
+{% if customer and palette_access_string contains ',YCS_ADMIN,' %}
+  {% assign is_admin = true %}
+{% endif %}
+
+{% if customer == nil %}
+  <div class="ycs-wardrobes ycs-wardrobes--center">
+    <p class="ycs-wardrobes__kicker">Your Color Style</p>
+    <h1>Sign in to view wardrobes</h1>
+    <a href="{{ routes.account_login_url }}" class="ycs-wardrobes__button">Sign In</a>
+  </div>
+{% elsif is_admin %}
+  <div
+    class="ycs-wardrobes"
+    id="ycs-wardrobes"
+    data-customer-id="{{ customer.id }}"
+    data-app-base-url="https://ycs-palette-app.vercel.app"
+  >
+    <nav class="ycs-wardrobes__nav" aria-label="Wardrobe navigation">
+      <a href="/pages/my-palettes" class="ycs-wardrobes__nav-link">My Palettes</a>
+      <a href="/pages/my-palettes?view=catools" class="ycs-wardrobes__nav-link">Tools</a>
+    </nav>
+
+    <header class="ycs-wardrobes__header">
+      <div>
+        <p class="ycs-wardrobes__kicker">Your Color Style</p>
+        <h1>My Wardrobes</h1>
+        <p class="ycs-wardrobes__intro">Organize real wardrobe pieces by the palette colors they use.</p>
+      </div>
+      <button type="button" class="ycs-wardrobes__button" data-ycs-wardrobe-action="create-wardrobe">Create Wardrobe</button>
+    </header>
+
+    <section class="ycs-wardrobes__controls" data-ycs-wardrobe-controls hidden>
+      <label>
+        <span>Wardrobe</span>
+        <select data-ycs-wardrobe-select></select>
+      </label>
+      <div class="ycs-wardrobes__control-actions">
+        <button type="button" class="ycs-wardrobes__button ycs-wardrobes__button--secondary" data-ycs-wardrobe-action="rename-wardrobe">Rename</button>
+        <button type="button" class="ycs-wardrobes__button ycs-wardrobes__button--danger" data-ycs-wardrobe-action="delete-wardrobe">Delete</button>
+      </div>
+    </section>
+
+    <p class="ycs-wardrobes__status" data-ycs-wardrobe-status hidden></p>
+    <div class="ycs-wardrobes__body" data-ycs-wardrobe-body></div>
+
+    <div class="ycs-wardrobes-modal" data-ycs-wardrobe-modal hidden>
+      <div class="ycs-wardrobes-modal__backdrop" data-ycs-wardrobe-close></div>
+      <div class="ycs-wardrobes-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="ycs-wardrobe-modal-title">
+        <div class="ycs-wardrobes-modal__head">
+          <h2 id="ycs-wardrobe-modal-title">Wardrobe Item</h2>
+          <button type="button" class="ycs-wardrobes__icon-button" data-ycs-wardrobe-close aria-label="Close">×</button>
+        </div>
+        <div data-ycs-wardrobe-modal-body></div>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+<style>
+  .ycs-wardrobes {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 20px 16px 48px;
+    color: #2f2a25;
+  }
+
+  .ycs-wardrobes--center {
+    text-align: center;
+  }
+
+  .ycs-wardrobes__nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+
+  .ycs-wardrobes__nav-link,
+  .ycs-wardrobes__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    padding: 9px 14px;
+    border: 1px solid #d8cfc3;
+    border-radius: 999px;
+    background: #111;
+    color: #fff !important;
+    cursor: pointer;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1;
+    text-decoration: none !important;
+    white-space: nowrap;
+  }
+
+  .ycs-wardrobes__nav-link,
+  .ycs-wardrobes__button--secondary {
+    background: #fff;
+    color: #2f2a25 !important;
+  }
+
+  .ycs-wardrobes__button--danger {
+    background: #fff5f7;
+    color: #bd3155 !important;
+    border-color: #f2c8d3;
+  }
+
+  .ycs-wardrobes__header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .ycs-wardrobes__kicker {
+    margin: 0 0 6px;
+    color: #8b8177;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+
+  .ycs-wardrobes h1 {
+    margin: 0;
+    font-size: clamp(32px, 5vw, 54px);
+    line-height: 1.04;
+  }
+
+  .ycs-wardrobes__intro {
+    margin: 8px 0 0;
+    color: #625c55;
+    font-size: 15px;
+    line-height: 1.45;
+  }
+
+  .ycs-wardrobes__controls {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 18px;
+    padding: 14px;
+    border: 1px solid #ece7df;
+    border-radius: 8px;
+    background: #fbfaf8;
+  }
+
+  .ycs-wardrobes__controls label {
+    display: grid;
+    gap: 6px;
+    min-width: min(100%, 300px);
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .ycs-wardrobes__controls select,
+  .ycs-wardrobes-form input,
+  .ycs-wardrobes-form select {
+    width: 100%;
+    min-height: 42px;
+    border: 1px solid #ddd3c8;
+    border-radius: 8px;
+    background: #fff;
+    color: #2f2a25;
+    font: inherit;
+    padding: 9px 12px;
+  }
+
+  .ycs-wardrobes__control-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .ycs-wardrobes__status {
+    margin: 0 0 16px;
+    border: 1px dashed #e4c7ce;
+    border-radius: 8px;
+    padding: 12px;
+    background: #fffafb;
+    color: #6b5359;
+    font-size: 14px;
+  }
+
+  .ycs-wardrobes__status[hidden],
+  .ycs-wardrobes__controls[hidden],
+  .ycs-wardrobes-modal[hidden] {
+    display: none;
+  }
+
+  .ycs-wardrobes__empty {
+    border: 1px dashed #ddd3c8;
+    border-radius: 8px;
+    padding: 22px;
+    background: #fbfaf8;
+    color: #625c55;
+  }
+
+  .ycs-wardrobes-row {
+    margin-bottom: 24px;
+  }
+
+  .ycs-wardrobes-row__head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .ycs-wardrobes-row__head h2 {
+    margin: 0;
+    font-size: 20px;
+    line-height: 1.15;
+  }
+
+  .ycs-wardrobes-row__count {
+    color: #8b8177;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .ycs-wardrobes-row__scroller {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding: 2px 2px 12px;
+    scrollbar-width: thin;
+  }
+
+  .ycs-wardrobe-card {
+    flex: 0 0 132px;
+    width: 132px;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    padding: 0;
+    text-align: left;
+  }
+
+  .ycs-wardrobe-card__swatch {
+    display: grid;
+    width: 132px;
+    height: 132px;
+    overflow: hidden;
+    border-radius: 8px;
+    background: #f6f1ea;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.08), 0 5px 16px rgba(0,0,0,.06);
+  }
+
+  .ycs-wardrobe-card__swatch span {
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .ycs-wardrobe-card__name {
+    display: block;
+    margin-top: 7px;
+    color: #2f2a25;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1.22;
+  }
+
+  .ycs-wardrobes-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10040;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+  }
+
+  .ycs-wardrobes-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(17,17,17,.42);
+  }
+
+  .ycs-wardrobes-modal__dialog {
+    position: relative;
+    z-index: 1;
+    width: min(560px, 100%);
+    max-height: min(760px, 88vh);
+    overflow: auto;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 18px 55px rgba(0,0,0,.22);
+    padding: 18px;
+  }
+
+  .ycs-wardrobes-modal__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .ycs-wardrobes-modal__head h2 {
+    margin: 0;
+    font-size: 22px;
+    line-height: 1.15;
+  }
+
+  .ycs-wardrobes__icon-button {
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 999px;
+    background: #f6f1ea;
+    cursor: pointer;
+    font-size: 24px;
+    line-height: 1;
+  }
+
+  .ycs-wardrobes-form {
+    display: grid;
+    gap: 12px;
+  }
+
+  .ycs-wardrobes-form label {
+    display: grid;
+    gap: 6px;
+    color: #4f463d;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .ycs-wardrobes-color-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .ycs-wardrobes-color-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    border: 1px solid #ddd3c8;
+    border-radius: 999px;
+    background: #fff;
+    padding: 6px 8px;
+    color: #2f2a25;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .ycs-wardrobes-color-pill__swatch {
+    width: 20px;
+    height: 20px;
+    border-radius: 999px;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.12);
+  }
+
+  .ycs-wardrobes-color-pill button {
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    font: inherit;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0;
+  }
+
+  .ycs-wardrobes-color-add {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 120px auto;
+    gap: 8px;
+    align-items: end;
+  }
+
+  .ycs-wardrobes-form__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  @media (max-width: 720px) {
+    .ycs-wardrobes__header,
+    .ycs-wardrobes__controls {
+      display: grid;
+    }
+
+    .ycs-wardrobes__control-actions,
+    .ycs-wardrobes__button {
+      width: 100%;
+    }
+
+    .ycs-wardrobe-card {
+      flex-basis: 112px;
+      width: 112px;
+    }
+
+    .ycs-wardrobe-card__swatch {
+      width: 112px;
+      height: 112px;
+    }
+
+    .ycs-wardrobes-color-add {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const root = document.getElementById('ycs-wardrobes');
+    if (!root) return;
+
+    const customerId = root.dataset.customerId || '';
+    const apiBase = (root.dataset.appBaseUrl || '').replace(/\/$/, '') + '/api/wardrobes';
+    const controlsEl = root.querySelector('[data-ycs-wardrobe-controls]');
+    const selectEl = root.querySelector('[data-ycs-wardrobe-select]');
+    const bodyEl = root.querySelector('[data-ycs-wardrobe-body]');
+    const statusEl = root.querySelector('[data-ycs-wardrobe-status]');
+    const modalEl = root.querySelector('[data-ycs-wardrobe-modal]');
+    const modalBodyEl = root.querySelector('[data-ycs-wardrobe-modal-body]');
+    const modalTitleEl = root.querySelector('#ycs-wardrobe-modal-title');
+
+    const typeLabels = {
+      top: 'Tops',
+      bottom: 'Bottoms',
+      dress_jumpsuit: 'Dresses & Jumpsuits',
+      outer_layer: 'Outer Layers',
+      shoe: 'Shoes',
+      bag: 'Bags'
+    };
+    const typeOrder = ['top', 'bottom', 'dress_jumpsuit', 'outer_layer', 'shoe', 'bag'];
+    const itemTypeOptions = [
+      ['top', 'Top'],
+      ['bottom', 'Bottom'],
+      ['dress_jumpsuit', 'Dress / Jumpsuit'],
+      ['outer_layer', 'Outer Layer'],
+      ['shoe', 'Shoe'],
+      ['bag', 'Bag']
+    ];
+
+    let state = {
+      wardrobes: [],
+      activeWardrobeId: localStorage.getItem('ycsActiveWardrobeId') || '',
+      editingItem: null,
+      editingColors: []
+    };
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function setStatus(message, isError) {
+      statusEl.hidden = !message;
+      statusEl.textContent = message || '';
+      statusEl.style.borderColor = isError ? '#f2c8d3' : '#cfe3d4';
+      statusEl.style.background = isError ? '#fff5f7' : '#f7fff9';
+      statusEl.style.color = isError ? '#bd3155' : '#3f6f4d';
+    }
+
+    function activeWardrobe() {
+      return state.wardrobes.find((wardrobe) => wardrobe.id === state.activeWardrobeId) || state.wardrobes[0] || null;
+    }
+
+    function normalizeHex(value) {
+      const raw = String(value || '').trim().replace(/^#/, '');
+      return /^[0-9a-fA-F]{6}$/.test(raw) ? '#' + raw.toUpperCase() : '';
+    }
+
+    function mosaicStyle(colors) {
+      const count = Math.max(1, colors.length);
+      if (count <= 1) return 'grid-template-columns:1fr;grid-template-rows:1fr;';
+      if (count === 2) return 'grid-template-columns:1fr 1fr;grid-template-rows:1fr;';
+      if (count <= 4) return 'grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;';
+      return 'grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);';
+    }
+
+    function cardMarkup(item) {
+      const colors = item.colors && item.colors.length ? item.colors : [{ hex: '#eee', name: 'Color' }];
+      return `
+        <button type="button" class="ycs-wardrobe-card" data-ycs-item-id="${escapeHtml(item.id)}">
+          <span class="ycs-wardrobe-card__swatch" style="${mosaicStyle(colors)}">
+            ${colors.map((color) => `<span style="background:${escapeHtml(color.hex || color.hexCode || '#eee')}"></span>`).join('')}
+          </span>
+          <span class="ycs-wardrobe-card__name">${escapeHtml(item.description)}</span>
+        </button>
+      `;
+    }
+
+    function render() {
+      const wardrobe = activeWardrobe();
+
+      if (!state.wardrobes.length) {
+        controlsEl.hidden = true;
+        bodyEl.innerHTML = `
+          <div class="ycs-wardrobes__empty">
+            Create your first wardrobe to start organizing the colors you already own.
+          </div>
+        `;
+        return;
+      }
+
+      controlsEl.hidden = false;
+      selectEl.innerHTML = state.wardrobes
+        .map((item) => `<option value="${escapeHtml(item.id)}"${item.id === wardrobe.id ? ' selected' : ''}>${escapeHtml(item.name)}</option>`)
+        .join('');
+
+      const rows = typeOrder.map((type) => {
+        const items = (wardrobe.items || []).filter((item) => item.itemType === type);
+        if (!items.length) return '';
+        return `
+          <section class="ycs-wardrobes-row">
+            <div class="ycs-wardrobes-row__head">
+              <h2>${typeLabels[type]}</h2>
+              <span class="ycs-wardrobes-row__count">${items.length}</span>
+            </div>
+            <div class="ycs-wardrobes-row__scroller">
+              ${items.map(cardMarkup).join('')}
+            </div>
+          </section>
+        `;
+      }).join('');
+
+      bodyEl.innerHTML = rows || `
+        <div class="ycs-wardrobes__empty">
+          This wardrobe is empty. Add an item from an open palette color.
+        </div>
+      `;
+    }
+
+    async function apiPost(payload) {
+      const response = await fetch(apiBase, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'omit',
+        body: JSON.stringify({ customerId, ...payload })
+      });
+      const json = await response.json();
+      if (!response.ok) throw new Error(json.error || 'Wardrobe request failed');
+      return json;
+    }
+
+    async function loadWardrobes() {
+      setStatus('Loading wardrobes...', false);
+      try {
+        const query = new URLSearchParams({ customerId });
+        const response = await fetch(apiBase + '?' + query.toString(), { credentials: 'omit' });
+        const json = await response.json();
+        if (!response.ok) throw new Error(json.error || 'Could not load wardrobes');
+        state.wardrobes = json.wardrobes || [];
+        if (!state.wardrobes.some((wardrobe) => wardrobe.id === state.activeWardrobeId)) {
+          state.activeWardrobeId = state.wardrobes[0]?.id || '';
+        }
+        setStatus('', false);
+        render();
+      } catch (error) {
+        console.error(error);
+        setStatus(error.message || 'Could not load wardrobes.', true);
+      }
+    }
+
+    async function refreshAfter(message) {
+      await loadWardrobes();
+      setStatus(message, false);
+      window.setTimeout(() => setStatus('', false), 1800);
+    }
+
+    function closeModal() {
+      modalEl.hidden = true;
+      state.editingItem = null;
+      state.editingColors = [];
+    }
+
+    function renderColorPills() {
+      const list = modalBodyEl.querySelector('[data-ycs-wardrobe-color-list]');
+      if (!list) return;
+      list.innerHTML = state.editingColors.map((color, index) => `
+        <span class="ycs-wardrobes-color-pill">
+          <span class="ycs-wardrobes-color-pill__swatch" style="background:${escapeHtml(color.hex || color.hexCode)}"></span>
+          ${escapeHtml(color.name || color.colorName)}
+          <button type="button" data-ycs-remove-color="${index}" aria-label="Remove color">×</button>
+        </span>
+      `).join('');
+    }
+
+    function openItemModal(item) {
+      state.editingItem = item;
+      state.editingColors = (item.colors || []).map((color) => ({
+        name: color.name || color.colorName,
+        hex: color.hex || color.hexCode,
+        paletteCode: color.paletteCode || ''
+      }));
+      modalTitleEl.textContent = 'Edit Wardrobe Item';
+      modalBodyEl.innerHTML = `
+        <form class="ycs-wardrobes-form" data-ycs-item-form>
+          <label>Description
+            <input name="description" value="${escapeHtml(item.description)}" required>
+          </label>
+          <label>Item Type
+            <select name="itemType">
+              ${itemTypeOptions.map(([value, label]) => `<option value="${value}"${value === item.itemType ? ' selected' : ''}>${label}</option>`).join('')}
+            </select>
+          </label>
+          <div>
+            <label>Colors</label>
+            <div class="ycs-wardrobes-color-list" data-ycs-wardrobe-color-list></div>
+          </div>
+          <div class="ycs-wardrobes-color-add">
+            <label>Color name
+              <input name="newColorName" placeholder="Navy">
+            </label>
+            <label>Hex
+              <input name="newColorHex" placeholder="#1B2A44">
+            </label>
+            <button type="button" class="ycs-wardrobes__button ycs-wardrobes__button--secondary" data-ycs-add-manual-color>Add Color</button>
+          </div>
+          <div class="ycs-wardrobes-form__actions">
+            <button type="button" class="ycs-wardrobes__button ycs-wardrobes__button--danger" data-ycs-remove-from-wardrobe>Remove from Wardrobe</button>
+            <button type="submit" class="ycs-wardrobes__button">Save Item</button>
+          </div>
+        </form>
+      `;
+      modalEl.hidden = false;
+      renderColorPills();
+    }
+
+    root.addEventListener('click', async function (event) {
+      const actionButton = event.target.closest('[data-ycs-wardrobe-action]');
+      if (actionButton) {
+        const action = actionButton.dataset.ycsWardrobeAction;
+        try {
+          if (action === 'create-wardrobe') {
+            const name = window.prompt('Wardrobe name', 'Fall Wardrobe');
+            if (!name) return;
+            const json = await apiPost({ action: 'createWardrobe', name });
+            state.activeWardrobeId = json.wardrobe?.id || state.activeWardrobeId;
+            localStorage.setItem('ycsActiveWardrobeId', state.activeWardrobeId);
+            await refreshAfter('Wardrobe created.');
+          }
+          if (action === 'rename-wardrobe') {
+            const wardrobe = activeWardrobe();
+            if (!wardrobe) return;
+            const name = window.prompt('Rename wardrobe', wardrobe.name);
+            if (!name) return;
+            await apiPost({ action: 'renameWardrobe', wardrobeId: wardrobe.id, name });
+            await refreshAfter('Wardrobe renamed.');
+          }
+          if (action === 'delete-wardrobe') {
+            const wardrobe = activeWardrobe();
+            if (!wardrobe) return;
+            if (!window.confirm(`Delete ${wardrobe.name}? This will not delete any palette colors.`)) return;
+            await apiPost({ action: 'deleteWardrobe', wardrobeId: wardrobe.id });
+            state.activeWardrobeId = '';
+            localStorage.removeItem('ycsActiveWardrobeId');
+            await refreshAfter('Wardrobe deleted.');
+          }
+        } catch (error) {
+          console.error(error);
+          setStatus(error.message || 'Wardrobe update failed.', true);
+        }
+        return;
+      }
+
+      const card = event.target.closest('[data-ycs-item-id]');
+      if (card) {
+        const wardrobe = activeWardrobe();
+        const item = (wardrobe?.items || []).find((entry) => entry.id === card.dataset.ycsItemId);
+        if (item) openItemModal(item);
+      }
+    });
+
+    modalEl.addEventListener('click', async function (event) {
+      if (event.target.closest('[data-ycs-wardrobe-close]')) {
+        closeModal();
+        return;
+      }
+
+      const removeColorButton = event.target.closest('[data-ycs-remove-color]');
+      if (removeColorButton) {
+        state.editingColors.splice(Number(removeColorButton.dataset.ycsRemoveColor), 1);
+        renderColorPills();
+        return;
+      }
+
+      if (event.target.closest('[data-ycs-add-manual-color]')) {
+        const form = modalEl.querySelector('[data-ycs-item-form]');
+        const name = String(form.elements.newColorName.value || '').trim();
+        const hex = normalizeHex(form.elements.newColorHex.value);
+        if (!name || !hex) {
+          setStatus('Enter a color name and six-character hex.', true);
+          return;
+        }
+        state.editingColors.push({ name, hex, paletteCode: '' });
+        form.elements.newColorName.value = '';
+        form.elements.newColorHex.value = '';
+        renderColorPills();
+        return;
+      }
+
+      if (event.target.closest('[data-ycs-remove-from-wardrobe]')) {
+        const wardrobe = activeWardrobe();
+        if (!wardrobe || !state.editingItem) return;
+        if (!window.confirm('Remove this item from the current wardrobe?')) return;
+        try {
+          await apiPost({ action: 'removeFromWardrobe', wardrobeId: wardrobe.id, itemId: state.editingItem.id });
+          closeModal();
+          await refreshAfter('Item removed from wardrobe.');
+        } catch (error) {
+          console.error(error);
+          setStatus(error.message || 'Could not remove item.', true);
+        }
+      }
+    });
+
+    modalEl.addEventListener('submit', async function (event) {
+      const form = event.target.closest('[data-ycs-item-form]');
+      if (!form) return;
+      event.preventDefault();
+
+      const wardrobe = activeWardrobe();
+      if (!wardrobe || !state.editingItem) return;
+      if (!state.editingColors.length) {
+        setStatus('Select at least one color.', true);
+        return;
+      }
+
+      try {
+        await apiPost({
+          action: 'updateItem',
+          wardrobeId: wardrobe.id,
+          itemId: state.editingItem.id,
+          description: form.elements.description.value,
+          itemType: form.elements.itemType.value,
+          colors: state.editingColors
+        });
+        closeModal();
+        await refreshAfter('Item saved.');
+      } catch (error) {
+        console.error(error);
+        setStatus(error.message || 'Could not save item.', true);
+      }
+    });
+
+    selectEl.addEventListener('change', function () {
+      state.activeWardrobeId = selectEl.value;
+      localStorage.setItem('ycsActiveWardrobeId', state.activeWardrobeId);
+      render();
+    });
+
+    loadWardrobes();
+  });
+</script>
+
+{% schema %}
+{
+  "name": "My Wardrobes",
+  "settings": []
+}
+{% endschema %}

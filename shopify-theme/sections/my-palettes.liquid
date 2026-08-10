@@ -613,6 +613,35 @@
         {% endif %}
         {% endunless %}
 
+        {% if actual_is_admin %}
+        <div class="ycs-palette-card ycs-palette-card--studio">
+          <div class="ycs-palette-card__top">
+            <div
+              class="ycs-palette-card__gradient ycs-palette-card__gradient--studio"
+              style="background: linear-gradient(to right, #0f766e, #f7f0d5, #1f2937);">
+            </div>
+          </div>
+
+          <div class="ycs-palette-card__content">
+            <div class="ycs-palette-card__text">
+              <h2>Wardrobe Builder</h2>
+              <p class="ycs-palette-card__subtitle">
+                Organize real wardrobe pieces by the palette colors they use.
+              </p>
+              <p class="ycs-palette-card__studio-note ycs-palette-card__studio-note--open">
+                Admin only
+              </p>
+            </div>
+
+            <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
+              <a href="/pages/my-wardrobes" class="ycs-palette-card__button">
+                My Wardrobes
+              </a>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
       </div>
     </div>
 

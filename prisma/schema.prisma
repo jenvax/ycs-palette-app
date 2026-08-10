@@ -136,3 +136,57 @@ model ColorAnalysisReport {
   @@index([consultantId])
   @@index([clientRecordId])
 }
+
+model Wardrobe {
+  id              String                 @id @default(cuid())
+  ownerCustomerId String
+  name            String
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  memberships     WardrobeMembership[]
+
+  @@index([ownerCustomerId])
+  @@index([ownerCustomerId, updatedAt])
+}
+
+model WardrobeItem {
+  id              String                 @id @default(cuid())
+  ownerCustomerId String
+  description     String
+  itemType        String
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  colors          WardrobeItemColor[]
+  memberships     WardrobeMembership[]
+
+  @@index([ownerCustomerId])
+  @@index([ownerCustomerId, itemType])
+}
+
+model WardrobeItemColor {
+  id              String       @id @default(cuid())
+  wardrobeItemId  String
+  colorName       String
+  hexCode         String
+  paletteCode     String?
+  displayOrder    Int
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  item            WardrobeItem @relation(fields: [wardrobeItemId], references: [id], onDelete: Cascade)
+
+  @@index([wardrobeItemId, displayOrder])
+}
+
+model WardrobeMembership {
+  id              String       @id @default(cuid())
+  wardrobeId      String
+  wardrobeItemId  String
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  wardrobe        Wardrobe     @relation(fields: [wardrobeId], references: [id], onDelete: Cascade)
+  item            WardrobeItem @relation(fields: [wardrobeItemId], references: [id], onDelete: Cascade)
+
+  @@unique([wardrobeId, wardrobeItemId])
+  @@index([wardrobeId])
+  @@index([wardrobeItemId])
+}

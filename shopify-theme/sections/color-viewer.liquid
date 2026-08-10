@@ -1,0 +1,1397 @@
+{% assign palette_access_string = '' %}
+
+{% if customer %}
+  {% assign palette_access_string = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
+{% endif %}
+<!-- LIVE COLOR VIEWER -->
+<div
+  class="ycs-color-page"
+  id="ycs-color-page"
+  data-customer-id="{{ customer.id }}"
+  data-customer-email="{{ customer.email | escape }}"
+  data-palette-access="{{ palette_access_string | escape }}"
+  data-is-admin="{% if palette_access_string contains ',YCS_ADMIN,' %}true{% else %}false{% endif %}"
+  data-is-style-masters="{% if palette_access_string contains ',VIP,' %}true{% else %}false{% endif %}"
+  data-app-base-url="https://ycs-palette-app.vercel.app"
+>
+  <button type="button" class="ycs-color-close" id="ycs-color-close" aria-label="Close">✕</button>
+
+  <button type="button" class="ycs-color-arrow ycs-color-arrow--left" id="ycs-color-prev" aria-label="Previous color">
+    ‹
+  </button>
+
+  <button type="button" class="ycs-color-arrow ycs-color-arrow--right" id="ycs-color-next" aria-label="Next color">
+    ›
+  </button>
+
+  <section class="ycs-color-dock" id="ycs-color-dock">
+    <div class="ycs-color-dock__inner">
+      <div class="ycs-color-dock__left">
+        <div class="ycs-color-title-row">
+          <div class="ycs-color-name" id="ycs-color-name">Color</div>
+
+          {% if customer %}
+            <button
+              type="button"
+              class="ycs-color-fav-btn ycs-color-fav-btn--icon-only"
+              id="ycs-color-favorite-btn"
+              aria-label="Add to favorites"
+              title="Add to favorites">
+              <svg class="ycs-color-fav-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 20.2c-.2 0-.4-.1-.6-.2C10.1 19 4 14.7 4 9.6 4 6.9 5.9 5 8.5 5c1.5 0 2.8.7 3.5 1.8C12.7 5.7 14 5 15.5 5 18.1 5 20 6.9 20 9.6c0 5.1-6.1 9.4-7.4 10.4-.2.1-.4.2-.6.2z"></path>
+              </svg>
+            </button>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="ycs-color-dock__actions">
+        {% if palette_access_string contains ',YCS_ADMIN,' %}
+        <button type="button" class="ycs-color-combos-btn" id="ycs-open-wardrobe">
+          Add to Wardrobe
+        </button>
+        {% endif %}
+        <button type="button" class="ycs-color-combos-btn" id="ycs-open-combos" style="display:none;">
+          See Color Combos
+        </button>
+        <a href="#" class="ycs-color-combos-btn" id="ycs-open-photo-studio">
+  Try in Photo Draping Studio
+</a>
+      </div>
+    </div>
+  </section>
+
+  {% if palette_access_string contains ',YCS_ADMIN,' %}
+  <section class="ycs-wardrobe-drawer" id="ycs-wardrobe-drawer" aria-hidden="true">
+    <div class="ycs-wardrobe-drawer__scrim" id="ycs-wardrobe-drawer-scrim"></div>
+    <div class="ycs-wardrobe-drawer__panel">
+      <div class="ycs-combo-drawer__handle-wrap">
+        <button type="button" class="ycs-combo-drawer__handle" id="ycs-close-wardrobe" aria-label="Close wardrobe drawer"></button>
+      </div>
+      <div class="ycs-wardrobe-drawer__header">
+        <div>
+          <h2 class="ycs-combo-drawer__title">Add to Wardrobe</h2>
+          <p class="ycs-combo-drawer__subtitle">Create a wardrobe item using this palette color.</p>
+        </div>
+        <button type="button" class="ycs-combo-drawer__close-btn" id="ycs-close-wardrobe-text">Close</button>
+      </div>
+      <div class="ycs-wardrobe-drawer__status" id="ycs-wardrobe-status" hidden></div>
+      <div class="ycs-wardrobe-drawer__body" id="ycs-wardrobe-body"></div>
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="ycs-combo-drawer" id="ycs-combo-drawer" aria-hidden="true">
+    <div class="ycs-combo-drawer__scrim" id="ycs-combo-drawer-scrim"></div>
+
+    <div class="ycs-combo-drawer__panel">
+      <div class="ycs-combo-drawer__handle-wrap">
+        <button type="button" class="ycs-combo-drawer__handle" id="ycs-close-combos" aria-label="Close color combos"></button>
+      </div>
+
+      <div class="ycs-combo-drawer__header">
+        <div class="ycs-combo-drawer__copy">
+          <h2 class="ycs-combo-drawer__title">Wear This With</h2>
+          <p class="ycs-combo-drawer__subtitle">Easy outfit color ideas built around this shade.</p>
+        </div>
+
+        <div class="ycs-combo-drawer__actions">
+          <button type="button" class="ycs-combo-drawer__shuffle" id="ycs-color-combos-shuffle">
+            Show Different Combos
+          </button>
+
+          <button type="button" class="ycs-combo-drawer__close-btn" id="ycs-close-combos-text">
+            Close
+          </button>
+        </div>
+      </div>
+
+      <div class="ycs-combo-drawer__hint" id="ycs-combo-hint" style="display:none;">
+        You have 2 more ways to wear this color ↓
+      </div>
+
+      <div class="ycs-combo-drawer__body">
+        <div class="ycs-combo-drawer__grid" id="ycs-color-combos-grid"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="ycs-upsell-modal" id="ycs-upsell-modal" aria-hidden="true">
+    <div class="ycs-upsell-modal__scrim" id="ycs-upsell-close"></div>
+
+    <div class="ycs-upsell-modal__panel">
+      <button class="ycs-upsell-modal__x" id="ycs-upsell-close-btn" type="button" aria-label="Close">✕</button>
+
+      <p class="ycs-upsell-modal__eyebrow">Your Color Palette</p>
+
+      <h2 class="ycs-upsell-modal__title">
+        Get more ways to wear your colors
+      </h2>
+
+      <p class="ycs-upsell-modal__text">
+        You just saw one outfit idea. Inside Style Masters, you unlock more combinations built around your exact palette.
+      </p>
+
+      <ul class="ycs-upsell-modal__list">
+        <li>✔ More outfit ideas for every color</li>
+        <li>✔ Colors that always work together</li>
+        <li>✔ No guesswork getting dressed</li>
+      </ul>
+
+      <a href="/products/style-masters-magazine?from=color-combos" class="ycs-upsell-modal__cta">
+        Unlock My Color Combos
+      </a>
+    </div>
+  </div>
+</div>
+
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body { overflow: hidden; }
+  .shopify-section, #MainContent, main { margin: 0 !important; padding: 0 !important; max-width: none !important; }
+  .ycs-color-page { position: fixed; inset: 0; width: 100vw; height: 100vh; background: #ffffff; z-index: 9999; touch-action: pan-y; transition: background .24s ease; }
+  .ycs-color-close { position: fixed; top: 18px; right: 18px; width: 54px; height: 54px; border: 0; border-radius: 999px; background: rgba(255,255,255,0.92); color: #111; font-size: 30px; line-height: 1; cursor: pointer; z-index: 10020; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 28px rgba(0,0,0,0.14); }
+  .ycs-color-arrow { position: fixed; top: 50%; transform: translateY(-50%); width: 50px; height: 50px; border: 0; border-radius: 999px; background: rgba(255,255,255,0.90); color: #111; font-size: 32px; line-height: 1; cursor: pointer; z-index: 10010; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 26px rgba(0,0,0,0.12); transition: transform .16s ease, background .16s ease; }
+  .ycs-color-arrow:hover { background: rgba(255,255,255,0.98); }
+  .ycs-color-arrow--left { left: 20px; }
+  .ycs-color-arrow--right { right: 20px; }
+  .ycs-color-dock { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); width: min(860px, calc(100vw - 40px)); z-index: 10005; }
+  .ycs-color-dock__inner { display: flex; align-items: end; justify-content: space-between; gap: 16px; padding: 18px; border-radius: 28px; background: rgba(245,236,228,0.84); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 0 18px 42px rgba(0,0,0,0.18); }
+  .ycs-color-dock__left { min-width: 0; flex: 1 1 auto; }
+  .ycs-color-title-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .ycs-color-name { display: block; color: #111; font-size: 22px; line-height: 1.1; font-weight: 700; letter-spacing: -0.01em; max-width: 100%; padding: 0; background: transparent; border-radius: 0; box-shadow: none; }
+  .ycs-color-dock__actions { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+  .ycs-color-fav-btn, .ycs-color-combos-btn, .ycs-combo-drawer__shuffle, .ycs-combo-drawer__close-btn, .ycs-combo-card__save { appearance: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 10px 16px; border: 0; border-radius: 999px; background: rgba(255,255,255,0.94); color: #111; cursor: pointer; font: inherit; font-size: 14px; font-weight: 600; white-space: nowrap; box-shadow: 0 6px 18px rgba(0,0,0,0.08); transition: transform .16s ease, background .16s ease; }
+  .ycs-combo-drawer__shuffle { background: #111; color: #fff; }
+  .ycs-combo-drawer__shuffle:hover { background: #222 !important; color: #fff !important; }
+  .ycs-color-fav-btn--icon-only { width: 46px; min-width: 46px; height: 46px; min-height: 46px; padding: 0; gap: 0; flex: 0 0 auto; }
+  .ycs-color-fav-btn--icon-only .ycs-color-fav-label { display: none; }
+  .ycs-color-fav-btn:hover, .ycs-color-combos-btn:hover, .ycs-combo-drawer__close-btn:hover, .ycs-combo-card__save:hover { transform: translateY(-1px); background: rgba(255,255,255,1); }
+  .ycs-color-fav-icon { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; flex: 0 0 auto; }
+  .ycs-color-fav-btn.is-favorite .ycs-color-fav-icon { fill: currentColor; }
+  .ycs-color-fav-label { line-height: 1; white-space: nowrap; }
+
+  .ycs-combo-drawer { position: fixed; inset: 0; z-index: 10015; pointer-events: none; }
+  .ycs-combo-drawer__scrim { position: absolute; inset: 0; background: rgba(0,0,0,0.14); opacity: 0; transition: opacity .22s ease; }
+  .ycs-combo-drawer__panel { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%) translateY(calc(100% - 28px)); width: min(920px, calc(100vw - 24px)); max-height: min(68vh, 760px); background: rgba(245,236,228,0.97); border-radius: 26px 26px 0 0; box-shadow: 0 -10px 34px rgba(0,0,0,0.16); transition: transform .26s ease; display: flex; flex-direction: column; }
+  .ycs-combo-drawer.is-open { pointer-events: auto; }
+  .ycs-combo-drawer.is-open .ycs-combo-drawer__scrim { opacity: 1; }
+  .ycs-combo-drawer.is-open .ycs-combo-drawer__panel { transform: translateX(-50%) translateY(0); }
+  .ycs-combo-drawer__handle-wrap { display: flex; justify-content: center; padding: 10px 0 6px; }
+  .ycs-combo-drawer__handle { width: 56px; height: 6px; border: 0; border-radius: 999px; background: rgba(0,0,0,0.18); cursor: pointer; }
+  .ycs-combo-drawer__header { display: flex; align-items: start; justify-content: space-between; gap: 16px; padding: 6px 18px 8px; }
+  .ycs-combo-drawer__copy { min-width: 0; flex: 1 1 auto; }
+  .ycs-combo-drawer__title { margin: 0 0 4px; font-size: 24px; line-height: 1.1; color: #111; }
+  .ycs-combo-drawer__subtitle { margin: 0; font-size: 14px; line-height: 1.35; color: rgba(17,17,17,0.72); }
+  .ycs-combo-drawer__actions { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+  .ycs-combo-drawer__hint { margin: 0 18px 10px; font-size: 14px; font-weight: 600; color: #111; opacity: 0.8; }
+  .ycs-combo-drawer__body { padding: 0 18px 18px; overflow: auto; }
+  .ycs-combo-drawer__grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+
+  .ycs-combo-card { position: relative; border-radius: 20px; padding: 12px; background: rgba(255,255,255,0.76); overflow: hidden; }
+  .ycs-combo-card__label { margin: 0 0 8px; }
+  .ycs-combo-card__swatches { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+  .ycs-combo-card__swatch { width: 70px; height: 70px; border-radius: 14px; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.07); flex: 0 0 auto; cursor: pointer; transition: transform .16s ease, box-shadow .16s ease; }
+  .ycs-combo-card__swatch:hover { transform: scale(1.04); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.10), 0 6px 18px rgba(0,0,0,0.10); }
+  .ycs-combo-card__names { margin: 0 0 6px; font-size: 12px; line-height: 1.35; }
+  .ycs-combo-card__footer { display: flex; align-items: center; gap: 8px; }
+  .ycs-combo-card--locked .ycs-combo-card__content { filter: blur(5px); user-select: none; pointer-events: none; }
+  .ycs-combo-card__lock-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 14px; background: rgba(255,255,255,0.30); }
+  .ycs-combo-card__lock-inner { max-width: 250px; text-align: center; background: rgba(255,255,255,0.98); border-radius: 16px; padding: 16px 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.10); }
+  .ycs-combo-card__lock-title { margin: 0 0 6px; font-size: 18px; line-height: 1.15; font-weight: 700; color: #111; }
+  .ycs-combo-card__lock-text { margin: 0 0 12px; font-size: 13px; line-height: 1.35; color: #555; }
+  .ycs-combo-card__lock-button { display: inline-flex; align-items: center; justify-content: center; min-height: 34px; padding: 8px 14px; border-radius: 999px; background: #111; color: #fff; text-decoration: none; font-size: 13px; font-weight: 600; border: 0; cursor: pointer; }
+  .ycs-combo-card__lock-button:hover, .ycs-combo-card__lock-button:focus, .ycs-combo-card__lock-button:active { background: #222; color: #fff !important; text-decoration: none; }
+
+  .ycs-upsell-modal { position: fixed; inset: 0; z-index: 10030; pointer-events: none; }
+  .ycs-upsell-modal__scrim { position: absolute; inset: 0; background: rgba(0,0,0,0.4); opacity: 0; transition: opacity .2s ease; }
+  .ycs-upsell-modal__panel { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%) translateY(100%); width: min(520px, 100%); max-width: 520px; background: #fff; border-radius: 24px 24px 0 0; padding: 24px; text-align: center; transition: transform .25s ease; }
+  .ycs-upsell-modal__x { opacity: 0.6; border: 0; background: transparent; font-size: 24px; line-height: 1; cursor: pointer; position: absolute; top: 14px; right: 14px; }
+  .ycs-upsell-modal__x:hover { opacity: 1; }
+  .ycs-upsell-modal.is-open { pointer-events: auto; }
+  .ycs-upsell-modal.is-open .ycs-upsell-modal__scrim { opacity: 1; }
+  .ycs-upsell-modal.is-open .ycs-upsell-modal__panel { transform: translateX(-50%) translateY(0); }
+  .ycs-upsell-modal__eyebrow { margin: 0 0 8px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #777; }
+  .ycs-upsell-modal__title { margin: 0 0 8px; font-size: 24px; }
+  .ycs-upsell-modal__text { font-size: 14px; color: #555; margin: 0 0 16px; }
+  .ycs-upsell-modal__list { list-style: none; padding: 0; margin: 0 0 18px; font-size: 13px; color: #333; }
+  .ycs-upsell-modal__list li + li { margin-top: 6px; }
+	  .ycs-upsell-modal__cta { display: inline-block; background: #111; color: #fff; padding: 12px 18px; border-radius: 999px; text-decoration: none; font-weight: 600; }
+	  .ycs-upsell-modal__cta:hover, .ycs-upsell-modal__cta:focus, .ycs-upsell-modal__cta:active { background: #222; color: #fff !important; text-decoration: none !important; }
+
+	  .ycs-wardrobe-drawer { position: fixed; inset: 0; z-index: 10018; pointer-events: none; }
+	  .ycs-wardrobe-drawer__scrim { position: absolute; inset: 0; background: rgba(0,0,0,0.14); opacity: 0; transition: opacity .22s ease; }
+	  .ycs-wardrobe-drawer__panel { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%) translateY(calc(100% - 28px)); width: min(620px, calc(100vw - 24px)); max-height: min(78vh, 760px); background: rgba(245,236,228,0.98); border-radius: 26px 26px 0 0; box-shadow: 0 -10px 34px rgba(0,0,0,0.16); transition: transform .26s ease; display: flex; flex-direction: column; }
+	  .ycs-wardrobe-drawer.is-open { pointer-events: auto; }
+	  .ycs-wardrobe-drawer.is-open .ycs-wardrobe-drawer__scrim { opacity: 1; }
+	  .ycs-wardrobe-drawer.is-open .ycs-wardrobe-drawer__panel { transform: translateX(-50%) translateY(0); }
+	  .ycs-wardrobe-drawer__header { display: flex; align-items: start; justify-content: space-between; gap: 16px; padding: 6px 18px 8px; }
+	  .ycs-wardrobe-drawer__body { padding: 0 18px 18px; overflow: auto; }
+	  .ycs-wardrobe-drawer__status { margin: 0 18px 12px; border: 1px dashed #d8cfc3; border-radius: 12px; padding: 10px 12px; background: #fff; color: #5f5348; font-size: 13px; font-weight: 700; }
+	  .ycs-wardrobe-form { display: grid; gap: 12px; }
+	  .ycs-wardrobe-form label { display: grid; gap: 6px; color: #2f2a25; font-size: 13px; font-weight: 800; }
+	  .ycs-wardrobe-form input, .ycs-wardrobe-form select { width: 100%; min-height: 42px; border: 1px solid #ddd3c8; border-radius: 10px; background: #fff; color: #111; font: inherit; padding: 9px 12px; }
+	  .ycs-wardrobe-form__row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+	  .ycs-wardrobe-selected-colors { display: flex; flex-wrap: wrap; gap: 8px; }
+	  .ycs-wardrobe-color-pill { display: inline-flex; align-items: center; gap: 7px; border: 1px solid #ddd3c8; border-radius: 999px; background: #fff; padding: 6px 8px; color: #2f2a25; font-size: 12px; font-weight: 800; }
+	  .ycs-wardrobe-color-pill__swatch { width: 22px; height: 22px; border-radius: 999px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); }
+	  .ycs-wardrobe-color-pill button { border: 0; background: transparent; cursor: pointer; font: inherit; font-size: 16px; line-height: 1; padding: 0; }
+	  .ycs-wardrobe-add-color { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: end; }
+	  .ycs-wardrobe-form__actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+	  @media (min-width: 900px) {
+	    .ycs-combo-drawer__grid { grid-template-columns: repeat(3, 1fr); align-items: start; }
+    .ycs-combo-card { height: 100%; }
+  }
+
+  @media (max-width: 768px) {
+    .ycs-color-close { top: 12px; right: 12px; width: 46px; height: 46px; font-size: 24px; }
+    .ycs-color-arrow { width: 44px; height: 44px; font-size: 28px; top: 50%; }
+    .ycs-color-arrow--left { left: 12px; }
+    .ycs-color-arrow--right { right: 12px; }
+    .ycs-color-dock { width: calc(100vw - 20px); bottom: 12px; }
+    .ycs-color-dock__inner { flex-direction: column; align-items: stretch; gap: 12px; padding: 14px; border-radius: 22px; }
+    .ycs-color-name { font-size: 18px; min-height: 0; padding: 0; }
+    .ycs-color-title-row { gap: 8px; }
+    .ycs-color-dock__actions { width: 100%; }
+    .ycs-color-combos-btn { width: 100%; min-height: 42px; padding: 9px 12px; }
+    .ycs-color-fav-btn--icon-only { width: 42px; min-width: 42px; height: 42px; min-height: 42px; padding: 0; }
+    .ycs-combo-drawer__panel { width: 100vw; max-height: 76vh; border-radius: 22px 22px 0 0; transform: translateX(-50%) translateY(calc(100% - 24px)); }
+    .ycs-combo-drawer__header { flex-direction: column; align-items: stretch; gap: 10px; padding: 4px 14px 8px; }
+    .ycs-combo-drawer__title { font-size: 22px; }
+    .ycs-combo-drawer__body { padding: 0 14px 14px; }
+    .ycs-combo-drawer__hint { margin: 0 18px 10px; font-size: 12px; font-weight: 600; color: #111; opacity: 0.7; }
+	    .ycs-combo-drawer__actions { display: flex; flex-direction: column; gap: 8px; }
+	    .ycs-combo-drawer__shuffle, .ycs-combo-drawer__close-btn { width: 100%; }
+	    .ycs-combo-card { padding: 12px; }
+	    .ycs-combo-card__swatch { width: 70px; height: 70px; border-radius: 13px; }
+	    .ycs-wardrobe-drawer__panel { width: 100vw; max-height: 82vh; border-radius: 22px 22px 0 0; }
+	    .ycs-wardrobe-drawer__header { flex-direction: column; align-items: stretch; gap: 10px; padding: 4px 14px 8px; }
+	    .ycs-wardrobe-drawer__body { padding: 0 14px 14px; }
+	    .ycs-wardrobe-form__row, .ycs-wardrobe-add-color { grid-template-columns: 1fr; }
+	    .ycs-wardrobe-form__actions .ycs-color-combos-btn { width: 100%; }
+	  }
+
+  
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', async function () {
+    const page = document.getElementById('ycs-color-page');
+    const nameEl = document.getElementById('ycs-color-name');
+    const closeBtn = document.getElementById('ycs-color-close');
+    const prevBtn = document.getElementById('ycs-color-prev');
+    const nextBtn = document.getElementById('ycs-color-next');
+    const favoriteBtn = document.getElementById('ycs-color-favorite-btn');
+    const favoriteLabel = document.getElementById('ycs-color-fav-label');
+    const openCombosBtn = document.getElementById('ycs-open-combos');
+    const closeCombosBtn = document.getElementById('ycs-close-combos');
+    const closeCombosTextBtn = document.getElementById('ycs-close-combos-text');
+    const drawer = document.getElementById('ycs-combo-drawer');
+    const drawerScrim = document.getElementById('ycs-combo-drawer-scrim');
+    const combosGrid = document.getElementById('ycs-color-combos-grid');
+    const shuffleBtn = document.getElementById('ycs-color-combos-shuffle');
+    const comboHint = document.getElementById('ycs-combo-hint');
+    const upsellModal = document.getElementById('ycs-upsell-modal');
+    const upsellClose = document.getElementById('ycs-upsell-close');
+    const upsellCloseBtn = document.getElementById('ycs-upsell-close-btn');
+    const wardrobeDrawer = document.getElementById('ycs-wardrobe-drawer');
+    const wardrobeDrawerScrim = document.getElementById('ycs-wardrobe-drawer-scrim');
+    const openWardrobeBtn = document.getElementById('ycs-open-wardrobe');
+    const closeWardrobeBtn = document.getElementById('ycs-close-wardrobe');
+    const closeWardrobeTextBtn = document.getElementById('ycs-close-wardrobe-text');
+    const wardrobeBodyEl = document.getElementById('ycs-wardrobe-body');
+    const wardrobeStatusEl = document.getElementById('ycs-wardrobe-status');
+
+    const customerId = page.dataset.customerId || null;
+    const email = page.dataset.customerEmail || null;
+    const accessIsAdmin = page.dataset.isAdmin === 'true';
+    const isStyleMasters = page.dataset.isStyleMasters === 'true';
+    const paletteAccessString = (page.dataset.paletteAccess || '').toUpperCase();
+    const APP_BASE_URL = (page.dataset.appBaseUrl || '').replace(/\/$/, '');
+    const wardrobeApiBase = APP_BASE_URL ? APP_BASE_URL + '/api/wardrobes' : '';
+
+const hasPaidDrapingAccess =
+  paletteAccessString.includes(',DRAPINGSTUDIOSTARTER,') ||
+  paletteAccessString.includes(',DRAPINGSTUDIO,') ||
+  paletteAccessString.includes(',VIP,') ||
+  paletteAccessString.includes(',YCS_ADMIN,');
+    
+    const isLoggedIn = !!customerId;
+    const CUSTOMER_ID = customerId;
+
+    const params = new URLSearchParams(window.location.search);
+    const urlHex = (params.get('hex') || 'FFFFFF').replace('#', '').trim().toUpperCase();
+    const urlName = params.get('name') || 'Color';
+    const paletteCode = (params.get('palette') || '').toUpperCase().trim();
+
+    const openPhotoStudioBtn = document.getElementById('ycs-open-photo-studio');
+    if (openPhotoStudioBtn) {
+  if (isStyleMasters) {
+    openPhotoStudioBtn.textContent = 'Try in Photo Draping Studio';
+  } else {
+    openPhotoStudioBtn.textContent = 'Try This on Your Face';
+  }
+}
+
+    let colors = [];
+    let currentIndex = 0;
+    let startX = 0;
+    let startY = 0;
+    let favoriteHexes = new Set();
+    let comboVariantIndex = 0;
+    let photoStudioUrl = '';
+    let wardrobeState = {
+      wardrobes: [],
+      selectedColors: []
+    };
+
+    function canAccess(featureKey) {
+      return !!window.YCS_ACCESS?.features?.[featureKey];
+    }
+
+    window.YCS_ACCESS = {
+      customerId,
+      email,
+      isLoggedIn,
+      isAdmin: accessIsAdmin,
+      isStyleMasters,
+      features: {
+        favorites: isLoggedIn,
+        color_combos: accessIsAdmin || isStyleMasters
+      }
+    };
+
+    if (openCombosBtn) {
+      openCombosBtn.textContent = canAccess('color_combos') ? 'See Color Combos' : 'Unlock Color Combos';
+    }
+
+    function openUpsell() {
+      if (!upsellModal) return;
+      upsellModal.classList.add('is-open');
+      upsellModal.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeUpsell() {
+      if (!upsellModal) return;
+      upsellModal.classList.remove('is-open');
+      upsellModal.setAttribute('aria-hidden', 'true');
+    }
+
+    function setWardrobeStatus(message, isError) {
+      if (!wardrobeStatusEl) return;
+      wardrobeStatusEl.hidden = !message;
+      wardrobeStatusEl.textContent = message || '';
+      wardrobeStatusEl.style.borderColor = isError ? '#f2c8d3' : '#cfe3d4';
+      wardrobeStatusEl.style.background = isError ? '#fff5f7' : '#f7fff9';
+      wardrobeStatusEl.style.color = isError ? '#bd3155' : '#3f6f4d';
+    }
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function currentWardrobeColor() {
+      const color = colors[currentIndex] || {};
+      return {
+        name: color.name || urlName || 'Color',
+        hex: normalizeHex(color.hex || `#${urlHex}`),
+        paletteCode
+      };
+    }
+
+    function addWardrobeColor(color) {
+      const hex = normalizeHex(color.hex || color.hexCode);
+      const name = String(color.name || color.colorName || '').trim() || hex;
+      if (!hex) return;
+      const exists = wardrobeState.selectedColors.some((item) =>
+        normalizeHex(item.hex) === hex && String(item.name || '').trim().toLowerCase() === name.toLowerCase()
+      );
+      if (!exists) {
+        wardrobeState.selectedColors.push({ name, hex, paletteCode: color.paletteCode || paletteCode });
+      }
+    }
+
+    async function loadWardrobesForColor() {
+      if (!wardrobeApiBase || !CUSTOMER_ID) return [];
+      const query = new URLSearchParams({ customerId: CUSTOMER_ID });
+      const response = await fetch(wardrobeApiBase + '?' + query.toString(), { credentials: 'omit' });
+      const json = await response.json();
+      if (!response.ok) throw new Error(json.error || 'Could not load wardrobes');
+      wardrobeState.wardrobes = json.wardrobes || [];
+      return wardrobeState.wardrobes;
+    }
+
+    function renderWardrobeColorPills() {
+      const list = document.getElementById('ycs-wardrobe-selected-colors');
+      if (!list) return;
+      list.innerHTML = wardrobeState.selectedColors.map((color, index) => `
+        <span class="ycs-wardrobe-color-pill">
+          <span class="ycs-wardrobe-color-pill__swatch" style="background:${escapeHtml(color.hex)}"></span>
+          ${escapeHtml(color.name)}
+          <button type="button" data-ycs-wardrobe-remove-color="${index}" aria-label="Remove color">×</button>
+        </span>
+      `).join('');
+    }
+
+    function renderWardrobeForm() {
+      if (!wardrobeBodyEl) return;
+      const wardrobeOptions = wardrobeState.wardrobes.map((wardrobe) =>
+        `<option value="${escapeHtml(wardrobe.id)}">${escapeHtml(wardrobe.name)}</option>`
+      ).join('');
+      const availableOptions = colors
+        .filter((color) => normalizeHex(color.hex))
+        .map((color, index) =>
+          `<option value="${index}">${escapeHtml(color.name || normalizeHex(color.hex))}</option>`
+        )
+        .join('');
+
+      wardrobeBodyEl.innerHTML = `
+        <form class="ycs-wardrobe-form" id="ycs-wardrobe-form">
+          <div class="ycs-wardrobe-form__row">
+            <label>Wardrobe
+              <select name="wardrobeId">
+                ${wardrobeOptions}
+              </select>
+            </label>
+            <label>New wardrobe
+              <input name="newWardrobeName" placeholder="Travel Capsule">
+            </label>
+          </div>
+          <div class="ycs-wardrobe-form__row">
+            <label>Item Type
+              <select name="itemType">
+                <option value="top">Top</option>
+                <option value="bottom">Bottom</option>
+                <option value="dress_jumpsuit">Dress / Jumpsuit</option>
+                <option value="outer_layer">Outer Layer</option>
+                <option value="shoe">Shoe</option>
+                <option value="bag">Bag</option>
+              </select>
+            </label>
+            <label>Description
+              <input name="description" placeholder="Silk Blouse" required>
+            </label>
+          </div>
+          <div>
+            <label>Colors</label>
+            <div class="ycs-wardrobe-selected-colors" id="ycs-wardrobe-selected-colors"></div>
+          </div>
+          <div class="ycs-wardrobe-add-color">
+            <label>Add Color
+              <select name="additionalColor">
+                ${availableOptions}
+              </select>
+            </label>
+            <button type="button" class="ycs-color-combos-btn" id="ycs-wardrobe-add-color">+ Add Color</button>
+          </div>
+          <div class="ycs-wardrobe-form__actions">
+            <button type="submit" class="ycs-color-combos-btn">Add Item</button>
+          </div>
+        </form>
+      `;
+      renderWardrobeColorPills();
+    }
+
+    async function openWardrobeDrawer() {
+      if (!wardrobeDrawer || !accessIsAdmin) return;
+      wardrobeState.selectedColors = [];
+      addWardrobeColor(currentWardrobeColor());
+      wardrobeDrawer.classList.add('is-open');
+      wardrobeDrawer.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+      setWardrobeStatus('Loading wardrobes...', false);
+      try {
+        await loadWardrobesForColor();
+        setWardrobeStatus('', false);
+        renderWardrobeForm();
+      } catch (error) {
+        console.error(error);
+        setWardrobeStatus(error.message || 'Could not load wardrobes.', true);
+        renderWardrobeForm();
+      }
+    }
+
+    function closeWardrobeDrawer() {
+      if (!wardrobeDrawer) return;
+      wardrobeDrawer.classList.remove('is-open');
+      wardrobeDrawer.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = 'hidden';
+    }
+
+    async function saveWardrobeItem(form) {
+      if (!wardrobeApiBase || !CUSTOMER_ID) return;
+      let wardrobeId = String(form.elements.wardrobeId?.value || '').trim();
+      const newWardrobeName = String(form.elements.newWardrobeName?.value || '').trim();
+      const description = String(form.elements.description?.value || '').trim();
+      const itemType = String(form.elements.itemType?.value || '').trim();
+
+      if (!description) throw new Error('Description is required');
+      if (!wardrobeState.selectedColors.length) throw new Error('Select at least one color');
+
+      if (newWardrobeName) {
+        const createResponse = await fetch(wardrobeApiBase, {
+          method: 'POST',
+          credentials: 'omit',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ customerId: CUSTOMER_ID, action: 'createWardrobe', name: newWardrobeName })
+        });
+        const createJson = await createResponse.json();
+        if (!createResponse.ok) throw new Error(createJson.error || 'Could not create wardrobe');
+        wardrobeId = createJson.wardrobe?.id || wardrobeId;
+      }
+
+      if (!wardrobeId) throw new Error('Choose or create a wardrobe');
+
+      const response = await fetch(wardrobeApiBase, {
+        method: 'POST',
+        credentials: 'omit',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerId: CUSTOMER_ID,
+          action: 'createItem',
+          wardrobeId,
+          description,
+          itemType,
+          colors: wardrobeState.selectedColors
+        })
+      });
+      const json = await response.json();
+      if (!response.ok) throw new Error(json.error || 'Could not add item');
+    }
+
+    const TONAL_ADJACENCY_MAP = {
+      Reds: ['Oranges', 'Pinks'],
+      Oranges: ['Reds', 'Golden Yellows'],
+      'Golden Yellows': ['Oranges', 'Yellows'],
+      Yellows: ['Golden Yellows', 'Yellow Greens'],
+      'Yellow Greens': ['Yellows', 'Greens'],
+      Greens: ['Yellow Greens', 'Aquas/Teals'],
+      'Aquas/Teals': ['Greens', 'Blues'],
+      Blues: ['Aquas/Teals', 'Indigos'],
+      Indigos: ['Blues', 'Purples'],
+      Purples: ['Indigos', 'Plums'],
+      Plums: ['Purples', 'Magentas'],
+      Magentas: ['Plums', 'Pinks'],
+      Pinks: ['Magentas', 'Reds']
+    };
+
+    const BOLD_CONTRAST_MAP = {
+      Reds: ['Aquas/Teals', 'Plums', 'Blues'],
+      Oranges: ['Blues', 'Aquas/Teals', 'Indigos'],
+      'Golden Yellows': ['Purples', 'Indigos', 'Blues'],
+      Yellows: ['Blues', 'Aquas/Teals', 'Purples', 'Plums'],
+      'Yellow Greens': ['Indigos', 'Magentas', 'Purples'],
+      Greens: ['Pinks', 'Plums', 'Purples'],
+      'Aquas/Teals': ['Oranges', 'Reds', 'Magentas', 'Pinks'],
+      Blues: ['Oranges', 'Reds', 'Golden Yellows', 'Pinks'],
+      Indigos: ['Yellow Greens', 'Yellows', 'Golden Yellows', 'Oranges', 'Reds'],
+      Purples: ['Golden Yellows', 'Yellows', 'Yellow Greens', 'Greens'],
+      Plums: ['Reds', 'Greens', 'Yellows', 'Aquas/Teals'],
+      Magentas: ['Yellow Greens', 'Greens', 'Aquas/Teals'],
+      Pinks: ['Greens', 'Aquas/Teals', 'Blues', 'Reds']
+    };
+
+    function normalizeHex(hex) {
+      const value = String(hex || '').trim();
+      return value.startsWith('#') ? value.toLowerCase() : `#${value.toLowerCase()}`;
+    }
+
+    function normalizeValue(value) {
+      return String(value || '').trim().toLowerCase();
+    }
+
+    function parsePaletteCodes(value) {
+      if (Array.isArray(value)) return value.map(v => String(v).trim().toUpperCase()).filter(Boolean);
+      return String(value || '').split(',').map(v => v.trim().toUpperCase()).filter(Boolean);
+    }
+
+    function toBoolean(value) {
+      if (typeof value === 'boolean') return value;
+      const normalized = normalizeValue(value);
+      return normalized === 'true' || normalized === '1' || normalized === 'yes';
+    }
+
+    function sortByOrder(items) {
+      return items.slice().sort((a, b) => Number(a.sortOrder || 9999) - Number(b.sortOrder || 9999));
+    }
+
+    function uniqueByHex(items) {
+      const seen = new Set();
+      return items.filter(item => {
+        const key = normalizeHex(item.hex);
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
+
+    function belongsToPalette(color, activePaletteCode) {
+      const codes = parsePaletteCodes(color.paletteCodes);
+      return codes.includes(String(activePaletteCode || '').toUpperCase());
+    }
+
+    function getDepthRank(depth) {
+      const normalized = normalizeValue(depth);
+      if (normalized === 'light') return 1;
+      if (normalized === 'medium') return 2;
+      if (normalized === 'deep' || normalized === 'dark') return 3;
+      return 999;
+    }
+
+    function getNeutralDepthValue(color) {
+      return normalizeValue(color?.neutralDepth || color?.depth || '');
+    }
+
+    function filterNeutralsWithDifferentDepth(items, firstNeutral) {
+      if (!firstNeutral) return items || [];
+      const firstDepth = getNeutralDepthValue(firstNeutral);
+      return (items || []).filter(item => getNeutralDepthValue(item) !== firstDepth);
+    }
+
+    function findNearestBySortOrder(items, selectedColor) {
+      const selectedOrder = Number(selectedColor.sortOrder || 0);
+      return items
+        .filter(item => normalizeHex(item.hex) !== normalizeHex(selectedColor.hex))
+        .sort((a, b) => {
+          const aDiff = Math.abs(Number(a.sortOrder || 0) - selectedOrder);
+          const bDiff = Math.abs(Number(b.sortOrder || 0) - selectedOrder);
+          return aDiff - bDiff;
+        })[0] || null;
+    }
+
+    function pickFromPoolAlternating(items, ratio, step = 0) {
+      if (!items || !items.length) return null;
+      const sorted = sortByOrder(items);
+      const maxIndex = sorted.length - 1;
+      const baseIndex = Math.round(ratio * maxIndex);
+      const offsets = [0, 1, -1, 2, -2, 3, -3];
+
+      for (const offset of offsets) {
+        const targetIndex = baseIndex + offset + step;
+        if (targetIndex >= 0 && targetIndex <= maxIndex) {
+          return sorted[targetIndex];
+        }
+      }
+
+      return sorted[Math.max(0, Math.min(maxIndex, baseIndex))] || null;
+    }
+
+    function pickWithVariant(items, ratio, step = 0) {
+      return pickFromPoolAlternating(items, ratio, step + comboVariantIndex);
+    }
+
+    function getCategoryPositionInfo(selectedColor, sameCategoryColors) {
+      const sorted = sortByOrder(
+        sameCategoryColors
+          .filter(c => normalizeHex(c.hex) !== normalizeHex(selectedColor.hex))
+          .concat([selectedColor])
+      );
+      const index = sorted.findIndex(c => normalizeHex(c.hex) === normalizeHex(selectedColor.hex));
+      const count = sorted.length;
+
+      if (index === -1 || count <= 1) return { index: 0, count, ratio: 0 };
+
+      return {
+        index,
+        count,
+        ratio: index / (count - 1)
+      };
+    }
+
+    function isCCD(activePaletteCode) {
+      return activePaletteCode === 'CCD';
+    }
+
+    function isRestrictedEasyPalette(activePaletteCode) {
+      return ['CWL','CWM','SWL','SWM','SWD','LO','MO','DO','SCL','SCM','CCL','CCM'].includes(activePaletteCode);
+    }
+
+    function isSameDepth(a, b) {
+      return getDepthRank(a) === getDepthRank(b);
+    }
+
+    function isAdjacentDepth(a, b) {
+      return Math.abs(getDepthRank(a) - getDepthRank(b)) === 1;
+    }
+
+    function isLightDeepPair(a, b) {
+      const r1 = getDepthRank(a);
+      const r2 = getDepthRank(b);
+      return (r1 === 1 && r2 === 3) || (r1 === 3 && r2 === 1);
+    }
+
+    function isAllowedTonalDepthPair(selectedDepth, candidateDepth, activePaletteCode) {
+      if (!selectedDepth || !candidateDepth) return false;
+      if (isCCD(activePaletteCode)) {
+        return isAdjacentDepth(selectedDepth, candidateDepth) || isLightDeepPair(selectedDepth, candidateDepth);
+      }
+      return isAdjacentDepth(selectedDepth, candidateDepth);
+    }
+
+    function isAllowedContrastDepthPair(selectedDepth, candidateDepth) {
+      if (!selectedDepth || !candidateDepth) return false;
+      return !isSameDepth(selectedDepth, candidateDepth);
+    }
+
+    function setFavoriteButtonState(isFavorite) {
+      if (!favoriteBtn) return;
+      favoriteBtn.classList.toggle('is-favorite', isFavorite);
+      favoriteBtn.setAttribute('aria-label', isFavorite ? 'Remove from favorites' : 'Add to favorites');
+      favoriteBtn.setAttribute('title', isFavorite ? 'Remove from favorites' : 'Add to favorites');
+      if (favoriteLabel) favoriteLabel.textContent = isFavorite ? 'Favorited' : 'Favorite';
+    }
+
+    function updateFavoriteButtonForCurrentColor() {
+      if (!favoriteBtn) return;
+      const color = colors[currentIndex];
+      if (!color) return;
+      const isFavorite = favoriteHexes.has(normalizeHex(color.hex));
+      setFavoriteButtonState(isFavorite);
+    }
+if (favoriteBtn) {
+  favoriteBtn.classList.add('is-loading');
+
+  setTimeout(() => {
+    favoriteBtn.classList.remove('is-loading');
+  }, 300);
+}
+
+    function comboCardMarkup(combo, isLocked) {
+      return `
+        <article class="ycs-combo-card${isLocked ? ' ycs-combo-card--locked' : ''}">
+          <div class="ycs-combo-card__content">
+            <p class="ycs-combo-card__label">${combo.label}</p>
+            <div class="ycs-combo-card__swatches">
+              ${combo.colors.map(color => `
+                <div
+                  class="ycs-combo-card__swatch"
+                  data-hex="${normalizeHex(color.hex)}"
+                  data-name="${String(color.name || '').replace(/"/g, '&quot;')}"
+                  title="View ${color.name}"
+                  style="background:${normalizeHex(color.hex)};">
+                </div>
+              `).join('')}
+            </div>
+            <p class="ycs-combo-card__names">
+              ${combo.colors.map(color => color.name).join(' + ')}
+            </p>
+            <div class="ycs-combo-card__footer"></div>
+          </div>
+          ${isLocked ? `
+            <div class="ycs-combo-card__lock-overlay">
+              <div class="ycs-combo-card__lock-inner">
+                <p class="ycs-combo-card__lock-title">Unlock more color combos</p>
+                <p class="ycs-combo-card__lock-text">
+                  Unlock personalized color combinations inside Style Masters.
+                </p>
+                <button class="ycs-combo-card__lock-button" data-open-upsell type="button">
+                  Unlock My Color Combos
+                </button>
+              </div>
+            </div>
+          ` : ''}
+        </article>
+      `;
+    }
+
+    function generateColorCombos(selectedColor, allColors, activePaletteCode) {
+      const paletteColors = allColors.filter(color => belongsToPalette(color, activePaletteCode));
+      const selectedHex = normalizeHex(selectedColor.hex);
+      const selectedDepth = normalizeValue(selectedColor.depth);
+      const samePalette = paletteColors.filter(color => normalizeHex(color.hex) !== selectedHex);
+
+      const neutrals = samePalette.filter(color => toBoolean(color.isNeutral));
+      const lightNeutrals = neutrals.filter(color => normalizeValue(color.neutralDepth) === 'light');
+      const mediumNeutrals = neutrals.filter(color => normalizeValue(color.neutralDepth) === 'medium');
+      const deepNeutrals = neutrals.filter(color => {
+        const depth = normalizeValue(color.neutralDepth);
+        return depth === 'deep' || depth === 'dark';
+      });
+
+      const sameCategory = samePalette.filter(color =>
+        !toBoolean(color.isNeutral) &&
+        normalizeValue(color.category) === normalizeValue(selectedColor.category)
+      );
+
+      const categoryPosition = getCategoryPositionInfo(selectedColor, sameCategory);
+      const categoryRatio = categoryPosition.ratio;
+
+      const sameDepthNeutrals = neutrals.filter(n => normalizeValue(n.neutralDepth) === selectedDepth);
+      const lighterNeutrals = neutrals.filter(n => getDepthRank(n.neutralDepth) < getDepthRank(selectedDepth));
+      const deeperNeutrals = neutrals.filter(n => getDepthRank(n.neutralDepth) > getDepthRank(selectedDepth));
+
+      let easyNeutral1 = null;
+      let easyNeutral2 = null;
+
+      if (isCCD(activePaletteCode)) {
+        easyNeutral1 =
+          pickWithVariant(lightNeutrals, categoryRatio, 0) ||
+          pickWithVariant(mediumNeutrals, categoryRatio, 0) ||
+          pickWithVariant(neutrals, categoryRatio, 0);
+
+        easyNeutral2 =
+          pickWithVariant(filterNeutralsWithDifferentDepth(deepNeutrals, easyNeutral1), categoryRatio, 0) ||
+          pickWithVariant(filterNeutralsWithDifferentDepth(mediumNeutrals, easyNeutral1), categoryRatio, 1) ||
+          pickWithVariant(filterNeutralsWithDifferentDepth(lightNeutrals, easyNeutral1), categoryRatio, 1) ||
+          pickWithVariant(filterNeutralsWithDifferentDepth(neutrals, easyNeutral1), categoryRatio, 1);
+      } else if (isRestrictedEasyPalette(activePaletteCode)) {
+        easyNeutral1 =
+          pickWithVariant(sameDepthNeutrals, categoryRatio, 0) ||
+          pickWithVariant(lighterNeutrals, categoryRatio, 0) ||
+          pickWithVariant(deeperNeutrals, categoryRatio, 0) ||
+          pickWithVariant(neutrals, categoryRatio, 0);
+
+        easyNeutral2 =
+          pickWithVariant(filterNeutralsWithDifferentDepth(lighterNeutrals, easyNeutral1), categoryRatio, 1) ||
+          pickWithVariant(filterNeutralsWithDifferentDepth(deeperNeutrals, easyNeutral1), categoryRatio, 1) ||
+          pickWithVariant(filterNeutralsWithDifferentDepth(sameDepthNeutrals, easyNeutral1), categoryRatio, 1) ||
+          pickWithVariant(filterNeutralsWithDifferentDepth(neutrals, easyNeutral1), categoryRatio, 1);
+      } else {
+        easyNeutral1 = pickWithVariant(neutrals, categoryRatio, 0);
+        easyNeutral2 =
+          pickWithVariant(filterNeutralsWithDifferentDepth(neutrals, easyNeutral1), categoryRatio, 1) ||
+          pickWithVariant(neutrals, categoryRatio, 1);
+      }
+
+      const tonalAllowedCategories = new Set([
+        selectedColor.category,
+        ...(TONAL_ADJACENCY_MAP[selectedColor.category] || [])
+      ]);
+
+      const tonalPool = samePalette.filter(color =>
+        !toBoolean(color.isNeutral) &&
+        tonalAllowedCategories.has(color.category)
+      );
+
+      const tonalDepthFiltered = tonalPool.filter(color =>
+        isAllowedTonalDepthPair(selectedColor.depth, color.depth, activePaletteCode)
+      );
+
+      const tonalPartner =
+        pickWithVariant(tonalDepthFiltered, categoryRatio, 0) ||
+        pickWithVariant(tonalDepthFiltered, categoryRatio, 1) ||
+        findNearestBySortOrder(tonalDepthFiltered, selectedColor) ||
+        pickWithVariant(tonalPool, categoryRatio, 0) ||
+        findNearestBySortOrder(tonalPool, selectedColor);
+
+      const tonalNeutral =
+        pickWithVariant(
+          neutrals.filter(n => normalizeValue(n.neutralDepth) === selectedDepth),
+          categoryRatio,
+          0
+        ) ||
+        (isCCD(activePaletteCode) ? pickWithVariant(neutrals, categoryRatio, 0) : null) ||
+        pickWithVariant(mediumNeutrals, categoryRatio, 0) ||
+        pickWithVariant(neutrals, categoryRatio, 0);
+
+      const contrastAllowedCategories = BOLD_CONTRAST_MAP[selectedColor.category] || [];
+
+      const contrastPool = samePalette.filter(color =>
+        !toBoolean(color.isNeutral) &&
+        contrastAllowedCategories.includes(color.category)
+      );
+
+      const contrastDepthFiltered = contrastPool.filter(color =>
+        isAllowedContrastDepthPair(selectedColor.depth, color.depth)
+      );
+
+      const contrastPartner =
+        pickWithVariant(contrastDepthFiltered, categoryRatio, 0) ||
+        pickWithVariant(contrastDepthFiltered, categoryRatio, 1) ||
+        pickWithVariant(contrastDepthFiltered, categoryRatio, -1) ||
+        findNearestBySortOrder(contrastDepthFiltered, selectedColor) ||
+        pickWithVariant(contrastPool, categoryRatio, 0) ||
+        findNearestBySortOrder(contrastPool, selectedColor);
+
+      const contrastNeutral =
+        pickWithVariant(neutrals, categoryRatio, 0) ||
+        pickWithVariant(mediumNeutrals, categoryRatio, 0);
+
+      const isMember = canAccess('color_combos');
+
+      const combos = [
+        {
+          id: 'easy',
+          label: isMember ? 'Easy Outfit' : 'Your Starter Combo',
+          colors: uniqueByHex([selectedColor, easyNeutral1, easyNeutral2].filter(Boolean))
+        },
+        {
+          id: 'tonal',
+          label: isMember ? 'Polished Tonal' : 'Next Level Combo',
+          colors: uniqueByHex([selectedColor, tonalPartner, tonalNeutral].filter(Boolean))
+        },
+        {
+          id: 'contrast',
+          label: isMember ? 'Bold Contrast' : 'High Impact Combo',
+          colors: uniqueByHex([selectedColor, contrastPartner, contrastNeutral].filter(Boolean))
+        }
+      ];
+
+      return combos.filter(combo => combo.colors.length >= 2);
+    }
+
+    function openDrawer() {
+      drawer.classList.add('is-open');
+      drawer.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeDrawer() {
+      drawer.classList.remove('is-open');
+      drawer.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function renderColorCombos() {
+      if (comboHint) {
+        comboHint.style.display = canAccess('color_combos') ? 'none' : '';
+      }
+
+      if (!combosGrid || !openCombosBtn) return;
+
+      const selectedColor = colors[currentIndex];
+
+      if (!selectedColor || !paletteCode) {
+        openCombosBtn.style.display = 'none';
+        combosGrid.innerHTML = '';
+        return;
+      }
+
+      const combos = generateColorCombos(selectedColor, colors, paletteCode);
+
+      if (!combos.length) {
+        openCombosBtn.style.display = 'none';
+        combosGrid.innerHTML = '';
+        return;
+      }
+
+      combosGrid.innerHTML = combos.map((combo, index) => {
+        const isLocked = !canAccess('color_combos') && index > 0;
+        return comboCardMarkup(combo, isLocked);
+      }).join('');
+
+      openCombosBtn.style.display = '';
+    }
+    function updatePhotoStudioLink(color) {
+  if (!openPhotoStudioBtn || !color) return;
+
+  const hex = normalizeHex(color.hex);
+  const name = color.name || 'Color';
+  const returnUrl = window.location.pathname + window.location.search;
+
+  const params = new URLSearchParams();
+
+  if (paletteCode) params.set('palette', paletteCode);
+  if (hex) params.set('hex', hex);
+  if (name) params.set('colorName', name);
+  if (returnUrl) params.set('returnUrl', returnUrl);
+
+  const baseUrl = hasPaidDrapingAccess
+  ? '/pages/photo-prep?mode=personal&workflow=photo-draping'
+  : '/pages/photo-prep?mode=personal&workflow=photo-draping&trial=sample';
+
+photoStudioUrl = `${baseUrl}&${params.toString()}`;
+}
+
+    function applyColor(pushUrl) {
+  const color = colors[currentIndex];
+  if (!color) return;
+
+  updatePhotoStudioLink(color);
+
+      const hex = normalizeHex(color.hex);
+      const name = color.name || 'Color';
+
+      page.style.background = hex;
+      nameEl.textContent = name;
+      comboVariantIndex = 0;
+      renderColorCombos();
+
+      sessionStorage.setItem('ycsPaletteIndex', String(currentIndex));
+
+      const nextUrl = paletteCode
+        ? `/pages/color?hex=${encodeURIComponent(hex.replace('#', ''))}&name=${encodeURIComponent(name)}&palette=${encodeURIComponent(paletteCode)}`
+        : `/pages/color?hex=${encodeURIComponent(hex.replace('#', ''))}&name=${encodeURIComponent(name)}`;
+
+      if (pushUrl) {
+        window.history.pushState({ index: currentIndex }, '', nextUrl);
+      } else {
+        window.history.replaceState({ index: currentIndex }, '', nextUrl);
+      }
+
+      if (colors.length <= 1) {
+        prevBtn.style.display = 'none';
+        nextBtn.style.display = 'none';
+      } else {
+        prevBtn.style.display = '';
+        nextBtn.style.display = '';
+      }
+
+      updateFavoriteButtonForCurrentColor();
+    }
+
+    function showNextColor() {
+      if (colors.length <= 1) return;
+      currentIndex = (currentIndex + 1) % colors.length;
+      applyColor(true);
+    }
+
+    function showPrevColor() {
+      if (colors.length <= 1) return;
+      currentIndex = (currentIndex - 1 + colors.length) % colors.length;
+      applyColor(true);
+    }
+// FAVORITES
+// Uses /apps/palette-data with action=getFavorites and action=toggleFavorite
+// Do not change this unless the backend route is changed too
+    async function loadFavorites() {
+      if (!CUSTOMER_ID || !paletteCode) return;
+
+      try {
+        const response = await fetch(
+          `/apps/palette-data?action=getFavorites&customerId=${encodeURIComponent(CUSTOMER_ID)}&palette=${encodeURIComponent(paletteCode)}`,
+          { credentials: 'same-origin' }
+        );
+
+        const text = await response.text();
+        const data = text ? JSON.parse(text) : {};
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Could not load favorites');
+        }
+
+        favoriteHexes = new Set((data.favorites || []).map(normalizeHex));
+        updateFavoriteButtonForCurrentColor();
+      } catch (error) {
+        console.error('loadFavorites failed:', error);
+      }
+    }
+
+    async function toggleFavoriteForCurrentColor() {
+      if (!favoriteBtn || !CUSTOMER_ID || !paletteCode) return;
+
+      const color = colors[currentIndex];
+      if (!color) return;
+
+      const hex = normalizeHex(color.hex);
+      const name = color.name || 'Color';
+      const wasFavorite = favoriteHexes.has(hex);
+
+      if (wasFavorite) {
+        favoriteHexes.delete(hex);
+      } else {
+        favoriteHexes.add(hex);
+      }
+
+      updateFavoriteButtonForCurrentColor();
+
+      try {
+        const response = await fetch(`/apps/palette-data?action=toggleFavorite`, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            customerId: CUSTOMER_ID,
+            paletteCode: paletteCode,
+            colorName: name,
+            hex: hex
+          })
+        });
+
+        const text = await response.text();
+        const result = text ? JSON.parse(text) : {};
+
+        if (!response.ok || !result.success) {
+          throw new Error(result.error || 'Failed to update favorite');
+        }
+
+        if (result.isFavorite) {
+          favoriteHexes.add(hex);
+        } else {
+          favoriteHexes.delete(hex);
+        }
+
+        updateFavoriteButtonForCurrentColor();
+      } catch (error) {
+        console.error('toggleFavorite failed:', error);
+
+        if (wasFavorite) {
+          favoriteHexes.add(hex);
+        } else {
+          favoriteHexes.delete(hex);
+        }
+
+        updateFavoriteButtonForCurrentColor();
+      }
+    }
+
+    async function loadPaletteColorsForCombos() {
+      if (!paletteCode) return;
+
+      try {
+        const response = await fetch(`/apps/palette-data?palette=${encodeURIComponent(paletteCode)}`, {
+          credentials: 'same-origin'
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.colors) {
+          throw new Error(data.error || 'Could not load palette colors');
+        }
+
+        colors = data.colors.map(color => ({
+          name: color.name || color.ColorName || '',
+          hex: color.hex || color.Hex || '',
+          sortOrder: Number(color.sortOrder || color.SortOrder || 9999),
+          category: color.category || color.Category || '',
+          paletteCodes: color.paletteCodes || color.palettes || color.PaletteCodes_Final_Manual || '',
+          depth: color.depth || color.Depth || '',
+          temperature: color.temperature || color.Temperature || '',
+          chroma: color.chroma || color.Chroma || '',
+          isNeutral: color.isNeutral ?? color.IsNeutral ?? false,
+          neutralDepth: color.neutralDepth || color.NeutralDepth || '',
+          isBest: color.isBest ?? color.IsBest ?? false
+        }));
+
+        const currentHexNormalized = normalizeHex(`#${urlHex}`);
+        const matchedIndex = colors.findIndex(color => normalizeHex(color.hex) === currentHexNormalized);
+
+        if (matchedIndex >= 0) {
+          currentIndex = matchedIndex;
+        } else {
+          colors.unshift({
+            name: urlName,
+            hex: `#${urlHex}`,
+            sortOrder: 0,
+            category: '',
+            paletteCodes: paletteCode,
+            depth: '',
+            temperature: '',
+            chroma: '',
+            isNeutral: false,
+            neutralDepth: '',
+            isBest: false
+          });
+          currentIndex = 0;
+        }
+
+        applyColor(false);
+      } catch (error) {
+        console.error('Combo palette load failed:', error);
+      }
+    }
+
+    prevBtn.addEventListener('click', showPrevColor);
+    nextBtn.addEventListener('click', showNextColor);
+
+    if (favoriteBtn) {
+      favoriteBtn.addEventListener('click', toggleFavoriteForCurrentColor);
+    }
+
+    if (openCombosBtn) {
+      openCombosBtn.addEventListener('click', openDrawer);
+    }
+
+    if (closeCombosBtn) {
+      closeCombosBtn.addEventListener('click', closeDrawer);
+    }
+
+    if (closeCombosTextBtn) {
+      closeCombosTextBtn.addEventListener('click', closeDrawer);
+    }
+
+    if (drawerScrim) {
+      drawerScrim.addEventListener('click', closeDrawer);
+    }
+
+    if (upsellClose) {
+      upsellClose.addEventListener('click', closeUpsell);
+    }
+
+    if (upsellCloseBtn) {
+      upsellCloseBtn.addEventListener('click', closeUpsell);
+    }
+
+    if (openWardrobeBtn) {
+      openWardrobeBtn.addEventListener('click', openWardrobeDrawer);
+    }
+
+    if (closeWardrobeBtn) {
+      closeWardrobeBtn.addEventListener('click', closeWardrobeDrawer);
+    }
+
+    if (closeWardrobeTextBtn) {
+      closeWardrobeTextBtn.addEventListener('click', closeWardrobeDrawer);
+    }
+
+    if (wardrobeDrawerScrim) {
+      wardrobeDrawerScrim.addEventListener('click', closeWardrobeDrawer);
+    }
+
+    if (wardrobeBodyEl) {
+      wardrobeBodyEl.addEventListener('click', function (event) {
+        const addButton = event.target.closest('#ycs-wardrobe-add-color');
+        if (addButton) {
+          const form = document.getElementById('ycs-wardrobe-form');
+          const index = Number(form?.elements.additionalColor?.value || -1);
+          const color = colors[index];
+          if (color) {
+            addWardrobeColor({ ...color, paletteCode });
+            renderWardrobeColorPills();
+          }
+          return;
+        }
+
+        const removeButton = event.target.closest('[data-ycs-wardrobe-remove-color]');
+        if (removeButton) {
+          wardrobeState.selectedColors.splice(Number(removeButton.dataset.ycsWardrobeRemoveColor), 1);
+          renderWardrobeColorPills();
+        }
+      });
+
+      wardrobeBodyEl.addEventListener('submit', async function (event) {
+        const form = event.target.closest('#ycs-wardrobe-form');
+        if (!form) return;
+        event.preventDefault();
+        setWardrobeStatus('Adding item...', false);
+        try {
+          await saveWardrobeItem(form);
+          setWardrobeStatus('Added to wardrobe.', false);
+          window.setTimeout(closeWardrobeDrawer, 550);
+        } catch (error) {
+          console.error(error);
+          setWardrobeStatus(error.message || 'Could not add item.', true);
+        }
+      });
+    }
+
+    if (shuffleBtn) {
+      shuffleBtn.addEventListener('click', function () {
+        comboVariantIndex += 1;
+        renderColorCombos();
+      });
+    }
+
+    document.addEventListener('click', function (e) {
+      const trigger = e.target.closest('[data-open-upsell]');
+      if (trigger) {
+        openUpsell();
+      }
+    });
+
+    combosGrid.addEventListener('click', function (e) {
+      const swatch = e.target.closest('.ycs-combo-card__swatch');
+      if (swatch) {
+        const hex = (swatch.dataset.hex || '').replace('#', '').trim().toUpperCase();
+        const name = swatch.dataset.name || '';
+        const foundIndex = colors.findIndex(color =>
+          normalizeHex(color.hex) === `#${hex.toLowerCase()}` &&
+          String(color.name || '') === name
+        );
+
+        if (foundIndex >= 0) {
+          currentIndex = foundIndex;
+          applyColor(true);
+          closeDrawer();
+        } else {
+          const nextUrl = paletteCode
+            ? `/pages/color?hex=${encodeURIComponent(hex)}&name=${encodeURIComponent(name)}&palette=${encodeURIComponent(paletteCode)}`
+            : `/pages/color?hex=${encodeURIComponent(hex)}&name=${encodeURIComponent(name)}`;
+
+          window.location.href = nextUrl;
+        }
+      }
+    });
+
+    closeBtn.addEventListener('click', function () {
+      const returnUrl = sessionStorage.getItem('ycsPaletteReturnUrl');
+
+      if (document.referrer && document.referrer.includes('/pages/color')) {
+        window.history.back();
+      } else if (returnUrl) {
+        window.location.href = returnUrl;
+      } else {
+        window.location.href = '/pages/my-palettes';
+      }
+    });
+    if (openPhotoStudioBtn) {
+  openPhotoStudioBtn.addEventListener('click', function () {
+    if (!photoStudioUrl) return;
+    window.location.href = photoStudioUrl;
+  });
+}
+    page.addEventListener('touchstart', function (e) {
+      const touch = e.changedTouches[0];
+      startX = touch.clientX;
+      startY = touch.clientY;
+    }, { passive: true });
+
+    page.addEventListener('touchend', function (e) {
+      if (drawer.classList.contains('is-open')) return;
+
+      const touch = e.changedTouches[0];
+      const endX = touch.clientX;
+      const endY = touch.clientY;
+
+      const diffX = endX - startX;
+      const diffY = endY - startY;
+
+      if (Math.abs(diffX) < 50) return;
+      if (Math.abs(diffX) <= Math.abs(diffY)) return;
+
+      if (diffX < 0) {
+        showNextColor();
+      } else {
+        showPrevColor();
+      }
+    }, { passive: true });
+
+    window.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && drawer.classList.contains('is-open')) {
+        closeDrawer();
+      }
+      if (e.key === 'Escape' && upsellModal && upsellModal.classList.contains('is-open')) {
+        closeUpsell();
+      }
+      if (e.key === 'Escape' && wardrobeDrawer && wardrobeDrawer.classList.contains('is-open')) {
+        closeWardrobeDrawer();
+      }
+    });
+
+    window.addEventListener('popstate', function () {
+      const popParams = new URLSearchParams(window.location.search);
+      const popHex = (popParams.get('hex') || '').replace('#', '').trim().toUpperCase();
+      const popName = popParams.get('name') || '';
+
+      const foundIndex = colors.findIndex(color => {
+        const colorHex = String(color.hex || '').replace('#', '').trim().toUpperCase();
+        const colorName = String(color.name || '');
+        return colorHex === popHex && colorName === popName;
+      });
+
+      if (foundIndex >= 0) {
+        currentIndex = foundIndex;
+        applyColor(false);
+      }
+    });
+
+    applyColor(false);
+    await loadFavorites();
+    await loadPaletteColorsForCombos();
+  });
+</script>
+
+{% schema %}
+{
+  "name": "Color Viewer",
+  "settings": []
+}
+{% endschema %}
