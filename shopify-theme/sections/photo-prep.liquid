@@ -1294,7 +1294,7 @@ const isToolsReturnUrl =
   safeReturnUrl.includes('view=tools') ||
   safeReturnUrl.includes('view=catools') ||
   safeReturnUrl.includes('/pages/color-analysis-tools');
-const returnLabel = isToolsReturnUrl ? 'Color Analysis Tools' : 'My Color Palettes';
+const returnLabel = isToolsReturnUrl ? 'Tools' : 'My Color Palettes';
 const WORKFLOW = (params.get('workflow') || '').trim().toLowerCase() || '';
 const REQUESTED_PALETTE_CODE = (params.get('palette') || '').trim();
 const YCS_PALETTE_OPTIONS = [
