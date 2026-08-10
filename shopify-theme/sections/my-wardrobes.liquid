@@ -176,7 +176,7 @@
   .ycs-wardrobes__controls {
     display: flex;
     align-items: flex-end;
-    justify-content: space-between;
+    justify-content: flex-start;
     gap: 12px;
     margin-bottom: 18px;
     padding: 14px;
@@ -188,7 +188,7 @@
   .ycs-wardrobes__controls label {
     display: grid;
     gap: 6px;
-    min-width: min(100%, 300px);
+    width: min(100%, 320px);
     font-size: 13px;
     font-weight: 800;
   }
@@ -242,9 +242,17 @@
 
   .ycs-wardrobes-row__head {
     display: flex;
-    align-items: baseline;
+    align-items: center;
+    justify-content: space-between;
     gap: 8px;
     margin-bottom: 10px;
+  }
+
+  .ycs-wardrobes-row__title {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
   }
 
   .ycs-wardrobes-row__head h2 {
@@ -257,6 +265,33 @@
     color: #8b8177;
     font-size: 13px;
     font-weight: 800;
+  }
+
+  .ycs-wardrobes-row__scroll-controls {
+    display: flex;
+    gap: 6px;
+  }
+
+  .ycs-wardrobes-row__scroll-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid #d8cfc3;
+    border-radius: 999px;
+    background: #fff;
+    color: #2f2a25;
+    cursor: pointer;
+    font: inherit;
+    font-size: 18px;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .ycs-wardrobes-row__scroll-button:hover {
+    background: #111;
+    color: #fff;
   }
 
   .ycs-wardrobes-row__scroller {
@@ -557,10 +592,16 @@
         return `
           <section class="ycs-wardrobes-row">
             <div class="ycs-wardrobes-row__head">
-              <h2>${typeLabels[type]}</h2>
-              <span class="ycs-wardrobes-row__count">${items.length}</span>
+              <div class="ycs-wardrobes-row__title">
+                <h2>${typeLabels[type]}</h2>
+                <span class="ycs-wardrobes-row__count">${items.length}</span>
+              </div>
+              <div class="ycs-wardrobes-row__scroll-controls" aria-label="${typeLabels[type]} row controls">
+                <button type="button" class="ycs-wardrobes-row__scroll-button" data-ycs-scroll-row="-1" aria-label="Scroll ${typeLabels[type]} left">‹</button>
+                <button type="button" class="ycs-wardrobes-row__scroll-button" data-ycs-scroll-row="1" aria-label="Scroll ${typeLabels[type]} right">›</button>
+              </div>
             </div>
-            <div class="ycs-wardrobes-row__scroller">
+            <div class="ycs-wardrobes-row__scroller" data-ycs-row-scroller>
               ${items.map(cardMarkup).join('')}
             </div>
           </section>
@@ -712,6 +753,19 @@
         const wardrobe = activeWardrobe();
         const item = (wardrobe?.items || []).find((entry) => entry.id === card.dataset.ycsItemId);
         if (item) openItemModal(item);
+        return;
+      }
+
+      const rowScrollButton = event.target.closest('[data-ycs-scroll-row]');
+      if (rowScrollButton) {
+        const row = rowScrollButton.closest('.ycs-wardrobes-row');
+        const scroller = row?.querySelector('[data-ycs-row-scroller]');
+        if (!scroller) return;
+        const direction = Number(rowScrollButton.dataset.ycsScrollRow || 1);
+        scroller.scrollBy({
+          left: direction * Math.max(220, Math.round(scroller.clientWidth * 0.72)),
+          behavior: 'smooth'
+        });
       }
     });
 
