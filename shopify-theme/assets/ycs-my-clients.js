@@ -44,7 +44,7 @@
   let activeReportClientId = "";
   let activeReportPage = 1;
   let activeReportTemplateRequest = 0;
-  let draggingReportPageOrderId = "";
+  let reportPageRailDrag = null;
   let activeSavedDrapedImages = [];
   let activeSavedDrapedImagesClientId = "";
   let coverPhotoDrag = null;
@@ -869,7 +869,6 @@
                 data-ycs-report-page-order-index="${index}">
                 <span
                   class="ycs-report-page-rail__thumb ycs-report-page-rail__drag"
-                  draggable="true"
                   data-ycs-report-page-drag-handle
                   aria-label="Drag page ${pageNumber} to reorder"
                   title="Drag to reorder">${pageNumber}</span>
@@ -2751,59 +2750,93 @@
 
   });
 
-  root.addEventListener("dragstart", (event) => {
-    const handle = event.target.closest("[data-ycs-report-page-drag-handle]");
-    const item = handle?.closest("[data-ycs-report-page-order-id]");
-    if (!handle || !item || !canCreateReports) return;
-    draggingReportPageOrderId = item.dataset.ycsReportPageOrderId || "";
-    item.classList.add("is-dragging");
-    event.dataTransfer.effectAllowed = "move";
-    event.dataTransfer.setData("text/plain", draggingReportPageOrderId);
-  });
-
-  root.addEventListener("dragend", (event) => {
-    event.target.closest("[data-ycs-report-page-order-id]")?.classList.remove("is-dragging");
-    detailEl.querySelectorAll("[data-ycs-report-page-order-id].is-drop-target").forEach((item) => item.classList.remove("is-drop-target"));
-    draggingReportPageOrderId = "";
-  });
-
-  root.addEventListener("dragover", (event) => {
-    const item = event.target.closest("[data-ycs-report-page-order-id]");
-    if (!item || !draggingReportPageOrderId) return;
-    event.preventDefault();
-    event.dataTransfer.dropEffect = "move";
-    detailEl.querySelectorAll("[data-ycs-report-page-order-id].is-drop-target").forEach((entry) => {
-      if (entry !== item) entry.classList.remove("is-drop-target");
+  function cleanupReportPageRailDrag() {
+    detailEl.querySelectorAll("[data-ycs-report-page-order-id].is-dragging, [data-ycs-report-page-order-id].is-drop-target").forEach((item) => {
+      item.classList.remove("is-dragging", "is-drop-target");
     });
-    item.classList.add("is-drop-target");
-  });
+    reportPageRailDrag = null;
+  }
 
-  root.addEventListener("dragleave", (event) => {
-    const item = event.target.closest("[data-ycs-report-page-order-id]");
-    if (!item || item.contains(event.relatedTarget)) return;
-    item.classList.remove("is-drop-target");
-  });
+  function reportPageRailItemFromPoint(clientX, clientY) {
+    return document.elementFromPoint(clientX, clientY)?.closest("[data-ycs-report-page-order-id]") || null;
+  }
 
-  root.addEventListener("drop", (event) => {
-    const item = event.target.closest("[data-ycs-report-page-order-id]");
-    if (!item || !draggingReportPageOrderId || !canCreateReports) return;
-    event.preventDefault();
-
+  function commitReportPageRailDrop(targetItem, clientY) {
+    if (!targetItem || !reportPageRailDrag?.orderId || !canCreateReports) return false;
     const client = clients.find((entry) => entry.clientRecordId === activeReportClientId);
     const builder = detailEl.querySelector("[data-ycs-report-builder]");
     const form = builder?.querySelector("[data-ycs-report-form]");
-    if (!client || !builder || !form) return;
+    if (!client || !builder || !form) return false;
 
     activeReportDraft = readReportDraftFromForm(form, client);
-    const rect = item.getBoundingClientRect();
-    const insertAfter = event.clientY > rect.top + (rect.height / 2);
-    const targetIndex = (Number(item.dataset.ycsReportPageOrderIndex) || 0) + (insertAfter ? 1 : 0);
-    moveReportPageToIndex(activeReportDraft, draggingReportPageOrderId, targetIndex);
+    const rect = targetItem.getBoundingClientRect();
+    const insertAfter = clientY > rect.top + (rect.height / 2);
+    const targetIndex = (Number(targetItem.dataset.ycsReportPageOrderIndex) || 0) + (insertAfter ? 1 : 0);
+    moveReportPageToIndex(activeReportDraft, reportPageRailDrag.orderId, targetIndex);
     const nextPage = activeReportPage;
-    draggingReportPageOrderId = "";
     builder.outerHTML = renderReportBuilder(client);
     applyActiveReportPage(nextPage);
+    return true;
+  }
+
+  root.addEventListener("pointerdown", (event) => {
+    const handle = event.target.closest("[data-ycs-report-page-drag-handle]");
+    const item = handle?.closest("[data-ycs-report-page-order-id]");
+    if (!handle || !item || !canCreateReports) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    reportPageRailDrag = {
+      pointerId: event.pointerId,
+      handle,
+      orderId: item.dataset.ycsReportPageOrderId || "",
+      startX: event.clientX,
+      startY: event.clientY,
+      hasMoved: false
+    };
+    item.classList.add("is-dragging");
+    handle.setPointerCapture?.(event.pointerId);
   });
+
+  root.addEventListener("pointermove", (event) => {
+    if (!reportPageRailDrag || event.pointerId !== reportPageRailDrag.pointerId) return;
+    event.preventDefault();
+
+    const distance = Math.abs(event.clientX - reportPageRailDrag.startX) + Math.abs(event.clientY - reportPageRailDrag.startY);
+    if (distance > 4) reportPageRailDrag.hasMoved = true;
+
+    const targetItem = reportPageRailItemFromPoint(event.clientX, event.clientY);
+    detailEl.querySelectorAll("[data-ycs-report-page-order-id].is-drop-target").forEach((item) => {
+      if (item !== targetItem) item.classList.remove("is-drop-target");
+    });
+    if (targetItem && targetItem.dataset.ycsReportPageOrderId !== reportPageRailDrag.orderId) {
+      targetItem.classList.add("is-drop-target");
+    }
+  });
+
+  function endReportPageRailDrag(event) {
+    if (!reportPageRailDrag || event.pointerId !== reportPageRailDrag.pointerId) return;
+    event.preventDefault();
+    event.stopPropagation();
+
+    const handle = reportPageRailDrag.handle;
+    const targetItem = reportPageRailItemFromPoint(event.clientX, event.clientY);
+    const shouldCommit = reportPageRailDrag.hasMoved && targetItem && targetItem.dataset.ycsReportPageOrderId !== reportPageRailDrag.orderId;
+    if (shouldCommit) {
+      const committed = commitReportPageRailDrop(targetItem, event.clientY);
+      if (committed) {
+        handle.releasePointerCapture?.(event.pointerId);
+        reportPageRailDrag = null;
+        return;
+      }
+    }
+
+    handle.releasePointerCapture?.(event.pointerId);
+    cleanupReportPageRailDrag();
+  }
+
+  root.addEventListener("pointerup", endReportPageRailDrag);
+  root.addEventListener("pointercancel", endReportPageRailDrag);
 
   root.addEventListener("pointerdown", (event) => {
     if (!canCreateReports) return;
