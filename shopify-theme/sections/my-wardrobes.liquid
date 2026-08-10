@@ -176,8 +176,10 @@
   .ycs-wardrobes__controls {
     display: grid;
     grid-template-columns: minmax(260px, 576px) auto;
-    align-items: end;
-    gap: 12px;
+    grid-template-rows: auto auto;
+    align-items: center;
+    column-gap: 12px;
+    row-gap: 6px;
     margin-bottom: 18px;
     padding: 14px;
     border: 1px solid #ece7df;
@@ -186,11 +188,20 @@
   }
 
   .ycs-wardrobes__controls label {
-    display: grid;
-    gap: 6px;
+    display: contents;
     width: 100%;
     font-size: 13px;
     font-weight: 800;
+  }
+
+  .ycs-wardrobes__controls label span {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .ycs-wardrobes__controls select {
+    grid-column: 1;
+    grid-row: 2;
   }
 
   .ycs-wardrobes__controls select,
@@ -209,9 +220,15 @@
   .ycs-wardrobes__control-actions {
     display: flex;
     flex-wrap: wrap;
+    grid-column: 2;
+    grid-row: 2;
     gap: 8px;
     align-items: center;
-    align-self: end;
+    align-self: stretch;
+  }
+
+  .ycs-wardrobes__control-actions .ycs-wardrobes__button {
+    min-height: 42px;
   }
 
   .ycs-wardrobes__status {
@@ -521,6 +538,19 @@
 
     .ycs-wardrobes__controls {
       grid-template-columns: 1fr;
+      grid-template-rows: auto;
+    }
+
+    .ycs-wardrobes__controls label {
+      display: grid;
+      gap: 6px;
+    }
+
+    .ycs-wardrobes__controls label span,
+    .ycs-wardrobes__controls select,
+    .ycs-wardrobes__control-actions {
+      grid-column: auto;
+      grid-row: auto;
     }
 
     .ycs-wardrobes__control-actions,
