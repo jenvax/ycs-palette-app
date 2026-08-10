@@ -767,6 +767,19 @@
     font-weight: 800;
   }
 
+  .ycs-report-custom-page__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .ycs-report-custom-page__actions .ycs-clients__button,
+  .ycs-report-custom-page__actions .ycs-report-image-clear {
+    min-height: 34px;
+    padding: 7px 10px;
+    font-size: 12px;
+  }
+
   .ycs-report-checkbox {
     display: flex !important;
     grid-template-columns: none !important;
@@ -1151,6 +1164,31 @@
     line-height: 1;
   }
 
+  .ycs-report-page-nav button.ycs-report-page-nav__move {
+    position: absolute;
+    bottom: -6px;
+    width: 18px;
+    height: 18px;
+    border-color: #ddd3c8;
+    background: #fff;
+    color: #4f463d;
+    font-size: 13px;
+    line-height: 1;
+  }
+
+  .ycs-report-page-nav button.ycs-report-page-nav__move--earlier {
+    left: -6px;
+  }
+
+  .ycs-report-page-nav button.ycs-report-page-nav__move--later {
+    right: -6px;
+  }
+
+  .ycs-report-page-nav button.ycs-report-page-nav__move:disabled {
+    cursor: default;
+    opacity: .35;
+  }
+
   .ycs-report-page-nav button.ycs-report-page-nav__remove:hover {
     background: #fff3f3;
   }
@@ -1187,12 +1225,20 @@
     z-index: 5;
     display: grid;
     gap: 6px;
-    width: 160px;
+    width: 180px;
     padding: 8px;
     border: 1px solid #ddd3c8;
     border-radius: 8px;
     background: #fff;
     box-shadow: 0 10px 24px rgba(0,0,0,.14);
+  }
+
+  .ycs-report-page-add__menu span {
+    color: #716960;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.25;
+    text-transform: uppercase;
   }
 
   .ycs-report-page-nav .ycs-report-page-add__menu button {

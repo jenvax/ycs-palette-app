@@ -242,6 +242,30 @@
     return BASE_REPORT_PAGE_COUNT + reportCustomPages(draft).length;
   }
 
+  function customReportPageInsertIndex(draft) {
+    const pages = reportCustomPages(draft);
+    if (activeReportPage > BASE_REPORT_PAGE_COUNT) {
+      return Math.min(Math.max(activeReportPage - BASE_REPORT_PAGE_COUNT, 0), pages.length);
+    }
+    return pages.length;
+  }
+
+  function moveCustomReportPage(draft, pageId, direction) {
+    const pages = reportCustomPages(draft);
+    const currentIndex = pages.findIndex((page) => page.id === pageId);
+    if (currentIndex < 0) return draft;
+
+    const nextIndex = Math.min(Math.max(currentIndex + direction, 0), pages.length - 1);
+    if (nextIndex === currentIndex) return draft;
+
+    const nextPages = pages.slice();
+    const [movedPage] = nextPages.splice(currentIndex, 1);
+    nextPages.splice(nextIndex, 0, movedPage);
+    draft.customPages = nextPages;
+    activeReportPage = BASE_REPORT_PAGE_COUNT + nextIndex + 1;
+    return draft;
+  }
+
   function copyWithoutGeneratedLead(value, leadPatterns) {
     const paragraphs = String(value || "").split(/\n{2,}/);
     if (paragraphs.length && leadPatterns.some((pattern) => pattern.test(paragraphs[0].trim()))) {
@@ -647,6 +671,8 @@
           const pageNumber = BASE_REPORT_PAGE_COUNT + index + 1;
           const isPhotoTemplate = template === "photos" || template === "photos4";
           const templateLabel = template === "photos4" ? "Four-photo page" : (template === "photos" ? "Photo page" : "Letter page");
+          const canMoveEarlier = index > 0;
+          const canMoveLater = index < customPages.length - 1;
           return `
             <div class="ycs-report-form-page" data-ycs-report-controls-page="${pageNumber}"${pageNumber === activeReportPage ? "" : " hidden"}>
               <div class="ycs-report-form-page__head">
@@ -696,7 +722,11 @@
                 ` : ""}
               ` : ""}
               ${template !== "photos4" ? `<label>Copy<textarea name="customPages.${escapeHtml(id)}.copy">${escapeHtml(page.copy || "")}</textarea></label>` : ""}
-              <button class="ycs-report-image-clear" type="button" data-ycs-remove-custom-report-page="${escapeHtml(id)}">Remove page</button>
+              <div class="ycs-report-custom-page__actions">
+                <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-move-custom-report-page="${escapeHtml(id)}" data-ycs-move-custom-report-page-direction="-1"${canMoveEarlier ? "" : " disabled"}>Move earlier</button>
+                <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-move-custom-report-page="${escapeHtml(id)}" data-ycs-move-custom-report-page-direction="1"${canMoveLater ? "" : " disabled"}>Move later</button>
+                <button class="ycs-report-image-clear" type="button" data-ycs-remove-custom-report-page="${escapeHtml(id)}">Remove page</button>
+              </div>
               </fieldset>
             </div>
           `;
@@ -971,6 +1001,9 @@
     activeReportClientId = client.clientRecordId;
     activeReportDraft = draft;
     activeReportPage = Math.min(Math.max(Number(activeReportPage) || 1, 1), totalReportPages(draft));
+    const insertPageLabel = activeReportPage > BASE_REPORT_PAGE_COUNT
+      ? `Insert after page ${activeReportPage}`
+      : "Add after built-in pages";
 
     const paletteOptions = colorTypeOptions.map(([code, name]) => (
       `<option value="${escapeHtml(code)}"${draft.paletteCode === code ? " selected" : ""}>${escapeHtml(name)} (${escapeHtml(code)})</option>`
@@ -1115,9 +1148,26 @@
                   ? reportCustomPages(draft)[pageNumber - BASE_REPORT_PAGE_COUNT - 1]
                   : null;
                 if (customPage) {
+                  const customIndex = pageNumber - BASE_REPORT_PAGE_COUNT - 1;
                   return `
                     <span class="ycs-report-page-nav__item">
                       <button type="button" class="${pageNumber === activeReportPage ? "is-active" : ""}" data-ycs-report-page-button="${pageNumber}">${pageNumber}</button>
+                      <button
+                        type="button"
+                        class="ycs-report-page-nav__move ycs-report-page-nav__move--earlier"
+                        data-ycs-move-custom-report-page="${escapeHtml(customPage.id)}"
+                        data-ycs-move-custom-report-page-direction="-1"
+                        aria-label="Move page ${pageNumber} earlier"${customIndex > 0 ? "" : " disabled"}>
+                        ‹
+                      </button>
+                      <button
+                        type="button"
+                        class="ycs-report-page-nav__move ycs-report-page-nav__move--later"
+                        data-ycs-move-custom-report-page="${escapeHtml(customPage.id)}"
+                        data-ycs-move-custom-report-page-direction="1"
+                        aria-label="Move page ${pageNumber} later"${customIndex < reportCustomPages(draft).length - 1 ? "" : " disabled"}>
+                        ›
+                      </button>
                       <button
                         type="button"
                         class="ycs-report-page-nav__remove"
@@ -1133,6 +1183,7 @@
               <details class="ycs-report-page-add">
                 <summary aria-label="Add report page">+</summary>
                 <div class="ycs-report-page-add__menu">
+                  <span>${escapeHtml(insertPageLabel)}</span>
                   <button type="button" data-ycs-add-custom-report-page="letter">Letter Page</button>
                   <button type="button" data-ycs-add-custom-report-page="photos">Photo Page</button>
                   <button type="button" data-ycs-add-custom-report-page="photos4">Four Photos</button>
@@ -2344,6 +2395,7 @@
     const clearReportLogoButton = event.target.closest("[data-ycs-clear-report-logo]");
     const addCustomReportPageButton = event.target.closest("[data-ycs-add-custom-report-page]");
     const removeCustomReportPageButton = event.target.closest("[data-ycs-remove-custom-report-page]");
+    const moveCustomReportPageButton = event.target.closest("[data-ycs-move-custom-report-page]");
 
     if (pageBackButton && pageBackButton.dataset.ycsBackMode === "clients") {
       event.preventDefault();
@@ -2459,20 +2511,37 @@
 
       activeReportDraft = readReportDraftFromForm(form, client);
       const template = normalizeCustomPageTemplate(addCustomReportPageButton.dataset.ycsAddCustomReportPage);
-      activeReportDraft.customPages = [
-        ...reportCustomPages(activeReportDraft),
-        {
-          id: makeCustomReportPageId(),
-          template,
-          title: template === "letter" ? "" : "New Page",
-          copy: "",
-          image1Url: "",
-          image2Url: "",
-          image3Url: "",
-          image4Url: ""
-        }
-      ];
-      const nextPage = totalReportPages(activeReportDraft);
+      const pages = reportCustomPages(activeReportDraft).slice();
+      const insertIndex = customReportPageInsertIndex(activeReportDraft);
+      pages.splice(insertIndex, 0, {
+        id: makeCustomReportPageId(),
+        template,
+        title: template === "letter" ? "" : "New Page",
+        copy: "",
+        image1Url: "",
+        image2Url: "",
+        image3Url: "",
+        image4Url: ""
+      });
+      activeReportDraft.customPages = pages;
+      const nextPage = BASE_REPORT_PAGE_COUNT + insertIndex + 1;
+      builder.outerHTML = renderReportBuilder(client);
+      applyActiveReportPage(nextPage);
+    }
+
+    if (moveCustomReportPageButton) {
+      if (!canCreateReports) return;
+      event.preventDefault();
+      const client = clients.find((item) => item.clientRecordId === activeReportClientId);
+      const builder = detailEl.querySelector("[data-ycs-report-builder]");
+      const form = builder?.querySelector("[data-ycs-report-form]");
+      if (!client || !builder || !form) return;
+
+      activeReportDraft = readReportDraftFromForm(form, client);
+      const pageId = moveCustomReportPageButton.dataset.ycsMoveCustomReportPage;
+      const direction = Number(moveCustomReportPageButton.dataset.ycsMoveCustomReportPageDirection) || 0;
+      moveCustomReportPage(activeReportDraft, pageId, direction);
+      const nextPage = activeReportPage;
       builder.outerHTML = renderReportBuilder(client);
       applyActiveReportPage(nextPage);
     }
