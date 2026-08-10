@@ -51,8 +51,8 @@
 
     <div id="palette-authorized-content">
       <div class="ycs-palette-topnav">
-        <a class="palette-back-link" href="/pages/my-palettes">My Color Palettes</a>
-        <a class="palette-back-link" href="/pages/my-wardrobes">My Wardrobes</a>
+        <a class="ycs-palette-nav-link" href="/pages/my-palettes">My Color Palettes</a>
+        <a class="ycs-palette-nav-link" href="/pages/my-wardrobes">My Wardrobes</a>
       </div>
 
       <div class="ycs-palette-header">
@@ -186,12 +186,19 @@
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
+    align-items: center;
     margin-bottom: 10px;
+    position: relative;
+    z-index: 2;
   }
 
-  .palette-back-link {
+  .ycs-palette-nav-link {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
+    position: static !important;
+    transform: none !important;
+    margin: 0 !important;
     min-height: 38px;
     padding: 9px 16px;
     border: 1px solid #e4d8cc;
@@ -845,7 +852,7 @@
     const returnUrl = params.get('returnUrl') || '/pages/my-palettes';
     const safeReturnUrl = returnUrl.startsWith('/') ? returnUrl : '/pages/my-palettes';
     const returnLabel = 'My Color Palettes';
-    const backLinkEl = document.querySelector('.palette-back-link');
+    const backLinkEl = document.querySelector('.ycs-palette-nav-link[href="/pages/my-palettes"]');
     const unauthorizedReturnButtonEl = document.querySelector('#palette-unauthorized .ycs-palette-login__button');
     const unauthorizedReturnTextEl = document.querySelector('#palette-unauthorized .ycs-palette-login__text');
 
