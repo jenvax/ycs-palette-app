@@ -451,28 +451,27 @@
   }
 
   .ycs-wardrobe-card__outfit-button {
-    position: absolute;
-    top: 7px;
-    left: 7px;
-    z-index: 1;
-    display: grid;
-    place-items: center;
-    width: 28px;
-    height: 28px;
-    border: 1px solid rgba(0,0,0,.08);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 7px;
+    width: 100%;
+    border: 1px solid #ddd3c8;
     border-radius: 999px;
-    background: rgba(255,255,255,.92);
-    box-shadow: 0 2px 8px rgba(0,0,0,.14);
-    color: #2f2a25;
+    background: #fff;
+    color: #4f463d;
     cursor: pointer;
     font: inherit;
-    font-size: 18px;
+    font-size: 11px;
     font-weight: 900;
-    line-height: 1;
+    line-height: 1.1;
+    padding: 7px 8px;
+    text-transform: uppercase;
   }
 
   .ycs-wardrobe-card.is-in-outfit .ycs-wardrobe-card__outfit-button {
     background: #111;
+    border-color: #111;
     color: #fff;
   }
 
@@ -498,21 +497,21 @@
 
   .ycs-wardrobe-card__handle {
     position: absolute;
-    top: 7px;
-    right: 7px;
+    top: 6px;
+    right: 6px;
     z-index: 1;
     display: grid;
     place-items: center;
-    width: 28px;
-    height: 28px;
+    width: 22px;
+    height: 22px;
     border-radius: 999px;
-    background: rgba(255,255,255,.9);
-    box-shadow: 0 2px 8px rgba(0,0,0,.14);
-    color: #2f2a25;
+    background: rgba(255,255,255,.76);
+    color: #6f665e;
     cursor: grab;
-    font-size: 18px;
+    font-size: 15px;
     font-weight: 900;
     line-height: 1;
+    opacity: .72;
   }
 
   .ycs-wardrobe-card__handle:active {
@@ -819,12 +818,12 @@
       const isInOutfit = state.outfitSelections?.[item.itemType] === item.id;
       return `
         <button type="button" class="ycs-wardrobe-card${isInOutfit ? ' is-in-outfit' : ''}" data-ycs-item-id="${escapeHtml(item.id)}" data-ycs-item-type="${escapeHtml(item.itemType)}">
-          <span class="ycs-wardrobe-card__outfit-button" data-ycs-add-to-outfit aria-label="Add ${escapeHtml(item.description)} to outfit">+</span>
           <span class="ycs-wardrobe-card__handle" draggable="true" data-ycs-drag-handle aria-label="Move wardrobe item">⋮</span>
           <span class="ycs-wardrobe-card__swatch" style="${mosaicStyle(mosaicColors)}">
             ${mosaicColors.map((color) => `<span style="background:${escapeHtml(color.hex || color.hexCode || '#eee')}"></span>`).join('')}
           </span>
           <span class="ycs-wardrobe-card__name">${escapeHtml(item.description)}</span>
+          <span class="ycs-wardrobe-card__outfit-button" data-ycs-add-to-outfit aria-label="Add ${escapeHtml(item.description)} to outfit">${isInOutfit ? 'In Outfit' : 'Add to Outfit'}</span>
         </button>
       `;
     }
