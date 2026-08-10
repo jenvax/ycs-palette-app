@@ -2717,7 +2717,8 @@
       const currentIndex = entries.findIndex((entry) => entry.id === moveReportPageButton.dataset.ycsMoveReportPage);
       if (currentIndex < 0) return;
       const direction = Number(moveReportPageButton.dataset.ycsMoveReportPageDirection) || 0;
-      moveReportPageToIndex(activeReportDraft, moveReportPageButton.dataset.ycsMoveReportPage, currentIndex + direction);
+      const targetIndex = direction > 0 ? currentIndex + 2 : currentIndex - 1;
+      moveReportPageToIndex(activeReportDraft, moveReportPageButton.dataset.ycsMoveReportPage, targetIndex);
       const nextPage = activeReportPage;
       builder.outerHTML = renderReportBuilder(client);
       applyActiveReportPage(nextPage);
