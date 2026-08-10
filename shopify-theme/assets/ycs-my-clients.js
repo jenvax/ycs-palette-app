@@ -880,15 +880,14 @@
             `;
           }).join("")}
         </div>
-        <details class="ycs-report-page-add">
-          <summary>Add page</summary>
+        <div class="ycs-report-page-add">
+          <button type="button" class="ycs-report-page-add__primary" data-ycs-add-custom-report-page="letter">Add Page</button>
           <div class="ycs-report-page-add__menu">
             <span>${escapeHtml(insertPageLabel)}</span>
-            <button type="button" data-ycs-add-custom-report-page="letter">Letter Page</button>
-            <button type="button" data-ycs-add-custom-report-page="photos">Photo Page</button>
-            <button type="button" data-ycs-add-custom-report-page="photos4">Four Photos</button>
+            <button type="button" data-ycs-add-custom-report-page="photos">2 Photos</button>
+            <button type="button" data-ycs-add-custom-report-page="photos4">4 Photos</button>
           </div>
-        </details>
+        </div>
       </aside>
     `;
   }
@@ -2666,6 +2665,7 @@
       const nextPage = LOCKED_REPORT_PAGE_COUNT + insertIndex + 1;
       builder.outerHTML = renderReportBuilder(client);
       applyActiveReportPage(nextPage);
+      return;
     }
 
     if (duplicateReportPageButton) {
