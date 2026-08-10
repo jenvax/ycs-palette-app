@@ -67,6 +67,8 @@
 
   const REPORT_TYPE = "signature_first_section";
   const BASE_REPORT_PAGE_COUNT = 7;
+  const LOCKED_REPORT_PAGE_COUNT = 3;
+  const MOVABLE_BUILT_IN_REPORT_PAGES = ["depth", "temperature", "chroma", "palette"];
   const YCS_REPORT_LOGO_URL = "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/YourColorStyle_Logo-120.png?v=1643287573";
   const REPORT_CHECKMARK_URL = "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/green-check-mark.png?v=1740232016";
   const paletteNames = {
@@ -234,36 +236,138 @@
     return `custom_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
   }
 
+  function makeReportOrderId(prefix = "page") {
+    return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
+  }
+
   function reportCustomPages(draft) {
     return Array.isArray(draft?.customPages) ? draft.customPages : [];
   }
 
+  function builtInReportPageLabel(key) {
+    return {
+      depth: "Depth",
+      temperature: "Temperature",
+      chroma: "Chroma",
+      palette: "Palette Type"
+    }[key] || "Report Page";
+  }
+
+  function customPageById(draft, id) {
+    return reportCustomPages(draft).find((page) => page.id === id) || null;
+  }
+
+  function normalizeReportPageOrder(draft) {
+    const customIds = new Set(reportCustomPages(draft).map((page) => page.id));
+    const usedSingleBuiltIns = new Set();
+    const rawEntries = Array.isArray(draft?.reportPageOrder) ? draft.reportPageOrder : [];
+    const entries = rawEntries.map((entry) => {
+      const type = String(entry?.type || "").trim();
+      const key = String(entry?.key || "").trim();
+      if (type === "builtIn" && MOVABLE_BUILT_IN_REPORT_PAGES.includes(key)) {
+        if (usedSingleBuiltIns.has(key) && !entry.duplicateOf) return null;
+        if (!entry.duplicateOf) usedSingleBuiltIns.add(key);
+        return {
+          id: String(entry.id || makeReportOrderId(key)),
+          type: "builtIn",
+          key,
+          duplicateOf: entry.duplicateOf ? String(entry.duplicateOf) : ""
+        };
+      }
+      if (type === "custom" && customIds.has(key)) {
+        return {
+          id: String(entry.id || makeReportOrderId("custom")),
+          type: "custom",
+          key
+        };
+      }
+      return null;
+    }).filter(Boolean);
+
+    MOVABLE_BUILT_IN_REPORT_PAGES.forEach((key) => {
+      if (!usedSingleBuiltIns.has(key)) {
+        entries.push({ id: key, type: "builtIn", key, duplicateOf: "" });
+      }
+    });
+
+    reportCustomPages(draft).forEach((page) => {
+      if (!entries.some((entry) => entry.type === "custom" && entry.key === page.id)) {
+        entries.push({ id: page.id, type: "custom", key: page.id });
+      }
+    });
+
+    return entries;
+  }
+
   function totalReportPages(draft) {
-    return BASE_REPORT_PAGE_COUNT + reportCustomPages(draft).length;
+    return LOCKED_REPORT_PAGE_COUNT + normalizeReportPageOrder(draft).length;
   }
 
   function customReportPageInsertIndex(draft) {
-    const pages = reportCustomPages(draft);
-    if (activeReportPage > BASE_REPORT_PAGE_COUNT) {
-      return Math.min(Math.max(activeReportPage - BASE_REPORT_PAGE_COUNT, 0), pages.length);
-    }
-    return pages.length;
+    return Math.min(Math.max(activeReportPage - LOCKED_REPORT_PAGE_COUNT, 0), normalizeReportPageOrder(draft).length);
   }
 
-  function moveCustomReportPage(draft, pageId, direction) {
-    const pages = reportCustomPages(draft);
-    const currentIndex = pages.findIndex((page) => page.id === pageId);
+  function applyReportPageOrder(draft, entries) {
+    draft.reportPageOrder = entries;
+    return draft;
+  }
+
+  function moveReportPage(draft, orderId, direction) {
+    const entries = normalizeReportPageOrder(draft);
+    const currentIndex = entries.findIndex((entry) => entry.id === orderId);
     if (currentIndex < 0) return draft;
 
-    const nextIndex = Math.min(Math.max(currentIndex + direction, 0), pages.length - 1);
+    const nextIndex = Math.min(Math.max(currentIndex + direction, 0), entries.length - 1);
     if (nextIndex === currentIndex) return draft;
 
-    const nextPages = pages.slice();
-    const [movedPage] = nextPages.splice(currentIndex, 1);
-    nextPages.splice(nextIndex, 0, movedPage);
-    draft.customPages = nextPages;
-    activeReportPage = BASE_REPORT_PAGE_COUNT + nextIndex + 1;
+    const nextEntries = entries.slice();
+    const [movedEntry] = nextEntries.splice(currentIndex, 1);
+    nextEntries.splice(nextIndex, 0, movedEntry);
+    applyReportPageOrder(draft, nextEntries);
+    activeReportPage = LOCKED_REPORT_PAGE_COUNT + nextIndex + 1;
     return draft;
+  }
+
+  function duplicateReportPage(draft, orderId) {
+    const entries = normalizeReportPageOrder(draft);
+    const currentIndex = entries.findIndex((entry) => entry.id === orderId);
+    if (currentIndex < 0) return draft;
+
+    const entry = entries[currentIndex];
+    const nextEntries = entries.slice();
+    if (entry.type === "custom") {
+      const page = customPageById(draft, entry.key);
+      if (!page) return draft;
+      const newId = makeCustomReportPageId();
+      draft.customPages = [
+        ...reportCustomPages(draft),
+        { ...page, id: newId, title: page.title ? `${page.title} Copy` : page.title }
+      ];
+      nextEntries.splice(currentIndex + 1, 0, { id: newId, type: "custom", key: newId });
+    } else {
+      nextEntries.splice(currentIndex + 1, 0, {
+        id: makeReportOrderId(entry.key),
+        type: "builtIn",
+        key: entry.key,
+        duplicateOf: entry.id
+      });
+    }
+    applyReportPageOrder(draft, nextEntries);
+    activeReportPage = LOCKED_REPORT_PAGE_COUNT + currentIndex + 2;
+    return draft;
+  }
+
+  function reportPageNumberForBuiltIn(draft, key) {
+    const entries = normalizeReportPageOrder(draft);
+    const activeIndex = activeReportPage - LOCKED_REPORT_PAGE_COUNT - 1;
+    if (entries[activeIndex]?.type === "builtIn" && entries[activeIndex]?.key === key) return activeReportPage;
+    const index = entries.findIndex((entry) => entry.type === "builtIn" && entry.key === key);
+    return index >= 0 ? LOCKED_REPORT_PAGE_COUNT + index + 1 : LOCKED_REPORT_PAGE_COUNT + 1;
+  }
+
+  function reportPageNumberForCustomPage(draft, pageId) {
+    const index = normalizeReportPageOrder(draft).findIndex((entry) => entry.type === "custom" && entry.key === pageId);
+    return index >= 0 ? LOCKED_REPORT_PAGE_COUNT + index + 1 : totalReportPages(draft);
   }
 
   function copyWithoutGeneratedLead(value, leadPatterns) {
@@ -334,6 +438,7 @@
       undertoneChoice: choiceKey(temperature),
       chromaChoice: choiceKey(chroma),
       customPages: [],
+      reportPageOrder: [],
       text: {
         intro: `Dear ${firstName},\n\nOne of my favorite parts of creating a Signature Color Analysis is discovering the quiet beauty that makes someone unique. Your best colors reflect the natural harmony already present in your features.\n\nYou are ${paletteName}, a palette built around ${temperature.toLowerCase()} undertones, ${depth.toLowerCase()} depth, and ${chroma.toLowerCase()} color. Together, these qualities create a look that feels refined, approachable, and effortlessly polished.\n\nThe colors throughout this guide were selected because they work with your natural coloring, not against it. My hope is that this guide makes choosing colors feel simple.\n\nWarmly,\nJen Vax`,
         howItWorks: "Your best colors are based on how color interacts with your natural features. At Your Color Style, we use a simple 3-step process to identify the colors that make you look more vibrant, healthy, and put together.",
@@ -376,6 +481,7 @@
           image4Url: String(page.image4Url || "")
         }))
         : [],
+      reportPageOrder: Array.isArray(incoming.reportPageOrder) ? incoming.reportPageOrder : [],
       text: {
         ...base.text,
         ...(incoming.text || {})
@@ -668,11 +774,13 @@
       ${customPages.length ? customPages.map((page, index) => {
           const id = String(page.id || makeCustomReportPageId());
           const template = normalizeCustomPageTemplate(page.template);
-          const pageNumber = BASE_REPORT_PAGE_COUNT + index + 1;
+          const pageNumber = reportPageNumberForCustomPage(draft, id);
           const isPhotoTemplate = template === "photos" || template === "photos4";
           const templateLabel = template === "photos4" ? "Four-photo page" : (template === "photos" ? "Photo page" : "Letter page");
-          const canMoveEarlier = index > 0;
-          const canMoveLater = index < customPages.length - 1;
+          const canMoveEarlier = pageNumber > LOCKED_REPORT_PAGE_COUNT + 1;
+          const canMoveLater = pageNumber < totalReportPages(draft);
+          const orderEntry = normalizeReportPageOrder(draft).find((entry) => entry.type === "custom" && entry.key === id);
+          const orderId = orderEntry?.id || id;
           return `
             <div class="ycs-report-form-page" data-ycs-report-controls-page="${pageNumber}"${pageNumber === activeReportPage ? "" : " hidden"}>
               <div class="ycs-report-form-page__head">
@@ -723,8 +831,9 @@
               ` : ""}
               ${template !== "photos4" ? `<label>Copy<textarea name="customPages.${escapeHtml(id)}.copy">${escapeHtml(page.copy || "")}</textarea></label>` : ""}
               <div class="ycs-report-custom-page__actions">
-                <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-move-custom-report-page="${escapeHtml(id)}" data-ycs-move-custom-report-page-direction="-1"${canMoveEarlier ? "" : " disabled"}>Move earlier</button>
-                <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-move-custom-report-page="${escapeHtml(id)}" data-ycs-move-custom-report-page-direction="1"${canMoveLater ? "" : " disabled"}>Move later</button>
+                <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-move-report-page="${escapeHtml(orderId)}" data-ycs-move-report-page-direction="-1"${canMoveEarlier ? "" : " disabled"}>Move earlier</button>
+                <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-move-report-page="${escapeHtml(orderId)}" data-ycs-move-report-page-direction="1"${canMoveLater ? "" : " disabled"}>Move later</button>
+                <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-duplicate-report-page="${escapeHtml(orderId)}">Duplicate page</button>
                 <button class="ycs-report-image-clear" type="button" data-ycs-remove-custom-report-page="${escapeHtml(id)}">Remove page</button>
               </div>
               </fieldset>
@@ -886,6 +995,56 @@
     const undertoneLabel = choiceLabel(draft.undertoneChoice, draft.undertone).toUpperCase();
     const chromaLabel = choiceLabel(draft.chromaChoice, draft.chroma).toUpperCase();
 
+    const builtInRenderers = {
+      depth: (pageNumber) => `
+        <section class="ycs-report-page" data-report-page="${pageNumber}">
+          ${renderReportBrand(draft)}
+          <h1>Depth</h1>
+          ${renderComparisonImages([
+            { label: "Light Tones", value: "light", url: draft.depthLightImageUrl || draft.depthImageUrl, fieldName: "depthLightImageUrl" },
+            { label: "Medium Tones", value: "medium", url: draft.depthMediumImageUrl, fieldName: "depthMediumImageUrl" },
+            { label: "Deep Tones", value: "deep", url: draft.depthDeepImageUrl, fieldName: "depthDeepImageUrl" }
+          ], "ycs-report-comparison-grid ycs-report-comparison-grid--three", draft.depthChoice, options)}
+          ${renderCopyWithSubheading(`Your depth is ${depthLabel}`, draft.text.depth, [/^your depth is\b/i])}
+          ${renderReportFooter(draft, pageNumber)}
+        </section>
+      `,
+      temperature: (pageNumber) => `
+        <section class="ycs-report-page" data-report-page="${pageNumber}">
+          ${renderReportBrand(draft)}
+          <h1>Temperature</h1>
+          ${renderComparisonImages([
+            { label: "Warm Tones", value: "warm", url: draft.undertoneWarmImageUrl || draft.undertoneImageUrl, fieldName: "undertoneWarmImageUrl" },
+            { label: "Cool Tones", value: "cool", url: draft.undertoneCoolImageUrl, fieldName: "undertoneCoolImageUrl" },
+            { label: "Olive Tones", value: "olive", url: draft.undertoneOliveImageUrl, fieldName: "undertoneOliveImageUrl", hidden: draft.showOliveImage === false }
+          ], "ycs-report-comparison-grid ycs-report-comparison-grid--three", draft.undertoneChoice, options)}
+          ${renderCopyWithSubheading(`Your undertone is ${undertoneLabel}`, draft.text.undertone, [/^you have\b/i, /^your undertone is\b/i])}
+          ${renderReportFooter(draft, pageNumber)}
+        </section>
+      `,
+      chroma: (pageNumber) => `
+        <section class="ycs-report-page" data-report-page="${pageNumber}">
+          ${renderReportBrand(draft)}
+          <h1>Chroma</h1>
+          ${renderComparisonImages([
+            { label: "Soft Tones", value: "soft", url: draft.chromaSoftImageUrl || draft.chromaImageUrl, fieldName: "chromaSoftImageUrl" },
+            { label: "Clear Tones", value: "clear", url: draft.chromaClearImageUrl, fieldName: "chromaClearImageUrl" }
+          ], "ycs-report-comparison-grid ycs-report-comparison-grid--two", draft.chromaChoice, options)}
+          ${renderCopyWithSubheading(`Your chroma is ${chromaLabel}`, draft.text.chroma, [/^you are\b/i, /^your chroma is\b/i])}
+          ${renderReportFooter(draft, pageNumber)}
+        </section>
+      `,
+      palette: (pageNumber) => `
+        <section class="ycs-report-page" data-report-page="${pageNumber}">
+          ${renderReportBrand(draft)}
+          <h1>${escapeHtml(draft.paletteName)}</h1>
+          ${renderCoverArt(draft, "ycs-report-cover-art--inline")}
+          ${renderCopyWithSubheading(`You are ${draft.paletteName}`, draft.text.paletteType, [/^you are\b/i])}
+          ${renderReportFooter(draft, pageNumber)}
+        </section>
+      `
+    };
+
     const pages = [`
       <section class="ycs-report-page ycs-report-page--cover" data-report-page="1">
         ${renderReportBrand(draft)}
@@ -930,54 +1089,18 @@
         </div>
         ${renderReportFooter(draft, 3)}
       </section>
-      `, `
-      <section class="ycs-report-page" data-report-page="4">
-        ${renderReportBrand(draft)}
-        <h1>Depth</h1>
-        ${renderComparisonImages([
-          { label: "Light Tones", value: "light", url: draft.depthLightImageUrl || draft.depthImageUrl, fieldName: "depthLightImageUrl" },
-          { label: "Medium Tones", value: "medium", url: draft.depthMediumImageUrl, fieldName: "depthMediumImageUrl" },
-          { label: "Deep Tones", value: "deep", url: draft.depthDeepImageUrl, fieldName: "depthDeepImageUrl" }
-        ], "ycs-report-comparison-grid ycs-report-comparison-grid--three", draft.depthChoice, options)}
-        ${renderCopyWithSubheading(`Your depth is ${depthLabel}`, draft.text.depth, [/^your depth is\b/i])}
-        ${renderReportFooter(draft, 4)}
-      </section>
-      `, `
-      <section class="ycs-report-page" data-report-page="5">
-        ${renderReportBrand(draft)}
-        <h1>Temperature</h1>
-            ${renderComparisonImages([
-              { label: "Warm Tones", value: "warm", url: draft.undertoneWarmImageUrl || draft.undertoneImageUrl, fieldName: "undertoneWarmImageUrl" },
-              { label: "Cool Tones", value: "cool", url: draft.undertoneCoolImageUrl, fieldName: "undertoneCoolImageUrl" },
-              { label: "Olive Tones", value: "olive", url: draft.undertoneOliveImageUrl, fieldName: "undertoneOliveImageUrl", hidden: draft.showOliveImage === false }
-            ], "ycs-report-comparison-grid ycs-report-comparison-grid--three", draft.undertoneChoice, options)}
-        ${renderCopyWithSubheading(`Your undertone is ${undertoneLabel}`, draft.text.undertone, [/^you have\b/i, /^your undertone is\b/i])}
-        ${renderReportFooter(draft, 5)}
-      </section>
-      `, `
-      <section class="ycs-report-page" data-report-page="6">
-        ${renderReportBrand(draft)}
-        <h1>Chroma</h1>
-        ${renderComparisonImages([
-          { label: "Soft Tones", value: "soft", url: draft.chromaSoftImageUrl || draft.chromaImageUrl, fieldName: "chromaSoftImageUrl" },
-          { label: "Clear Tones", value: "clear", url: draft.chromaClearImageUrl, fieldName: "chromaClearImageUrl" }
-        ], "ycs-report-comparison-grid ycs-report-comparison-grid--two", draft.chromaChoice, options)}
-        ${renderCopyWithSubheading(`Your chroma is ${chromaLabel}`, draft.text.chroma, [/^you are\b/i, /^your chroma is\b/i])}
-        ${renderReportFooter(draft, 6)}
-      </section>
-      `, `
-      <section class="ycs-report-page" data-report-page="7">
-        ${renderReportBrand(draft)}
-        <h1>${escapeHtml(draft.paletteName)}</h1>
-        ${renderCoverArt(draft, "ycs-report-cover-art--inline")}
-        ${renderCopyWithSubheading(`You are ${draft.paletteName}`, draft.text.paletteType, [/^you are\b/i])}
-        ${renderReportFooter(draft, 7)}
-      </section>
       `];
 
-    reportCustomPages(draft).forEach((page, index) => {
-      const pageNumber = BASE_REPORT_PAGE_COUNT + index + 1;
-      pages.push(renderCustomReportPage(draft, page, pageNumber, options));
+    normalizeReportPageOrder(draft).forEach((entry, index) => {
+      const pageNumber = LOCKED_REPORT_PAGE_COUNT + index + 1;
+      if (entry.type === "builtIn" && builtInRenderers[entry.key]) {
+        pages.push(builtInRenderers[entry.key](pageNumber));
+        return;
+      }
+      if (entry.type === "custom") {
+        const page = customPageById(draft, entry.key);
+        if (page) pages.push(renderCustomReportPage(draft, page, pageNumber, options));
+      }
     });
 
     if (options.exportMode) {
@@ -1001,9 +1124,10 @@
     activeReportClientId = client.clientRecordId;
     activeReportDraft = draft;
     activeReportPage = Math.min(Math.max(Number(activeReportPage) || 1, 1), totalReportPages(draft));
-    const insertPageLabel = activeReportPage > BASE_REPORT_PAGE_COUNT
+    const orderedReportPages = normalizeReportPageOrder(draft);
+    const insertPageLabel = activeReportPage > LOCKED_REPORT_PAGE_COUNT
       ? `Insert after page ${activeReportPage}`
-      : "Add after built-in pages";
+      : "Add after page 3";
 
     const paletteOptions = colorTypeOptions.map(([code, name]) => (
       `<option value="${escapeHtml(code)}"${draft.paletteCode === code ? " selected" : ""}>${escapeHtml(name)} (${escapeHtml(code)})</option>`
@@ -1052,7 +1176,7 @@
                 </div>
               </div>
             `)}
-            ${renderReportControlsPage(4, "Depth", `
+            ${renderReportControlsPage(reportPageNumberForBuiltIn(draft, "depth"), "Depth", `
               <label>Depth decision<select name="depthChoice">${renderDecisionOptions([
                 { value: "light", label: "Light" },
                 { value: "medium", label: "Medium" },
@@ -1081,7 +1205,7 @@
               })}
               <label>Depth copy<textarea name="text.depth">${escapeHtml(draft.text.depth)}</textarea></label>
             `)}
-            ${renderReportControlsPage(5, "Temperature", `
+            ${renderReportControlsPage(reportPageNumberForBuiltIn(draft, "temperature"), "Temperature", `
               <label>Undertone decision<select name="undertoneChoice">${renderDecisionOptions([
                 { value: "warm", label: "Warm" },
                 { value: "cool", label: "Cool" },
@@ -1114,7 +1238,7 @@
               })}
               <label>Temperature copy<textarea name="text.undertone">${escapeHtml(draft.text.undertone)}</textarea></label>
             `)}
-            ${renderReportControlsPage(6, "Chroma", `
+            ${renderReportControlsPage(reportPageNumberForBuiltIn(draft, "chroma"), "Chroma", `
               <label>Chroma decision<select name="chromaChoice">${renderDecisionOptions([
                 { value: "soft", label: "Soft" },
                 { value: "clear", label: "Clear" }
@@ -1135,50 +1259,57 @@
               })}
               <label>Chroma copy<textarea name="text.chroma">${escapeHtml(draft.text.chroma)}</textarea></label>
             `)}
-            ${renderReportControlsPage(7, "Palette Type", `
+            ${renderReportControlsPage(reportPageNumberForBuiltIn(draft, "palette"), "Palette Type", `
               <label>Palette type copy<textarea name="text.paletteType">${escapeHtml(draft.text.paletteType)}</textarea></label>
             `)}
             ${renderCustomPagesForm(draft)}
           </form>
           <div class="ycs-report-preview-shell">
             <div class="ycs-report-page-nav" data-ycs-report-page-nav>
-              ${Array.from({ length: totalReportPages(draft) }, (_, index) => {
+              ${Array.from({ length: LOCKED_REPORT_PAGE_COUNT }, (_, index) => {
                 const pageNumber = index + 1;
-                const customPage = pageNumber > BASE_REPORT_PAGE_COUNT
-                  ? reportCustomPages(draft)[pageNumber - BASE_REPORT_PAGE_COUNT - 1]
-                  : null;
-                if (customPage) {
-                  const customIndex = pageNumber - BASE_REPORT_PAGE_COUNT - 1;
+                return `<button type="button" class="${pageNumber === activeReportPage ? "is-active" : ""}" data-ycs-report-page-button="${pageNumber}">${pageNumber}</button>`;
+              }).join("")}
+              ${orderedReportPages.map((entry, index) => {
+                const pageNumber = LOCKED_REPORT_PAGE_COUNT + index + 1;
+                const label = entry.type === "builtIn"
+                  ? builtInReportPageLabel(entry.key)
+                  : (customPageById(draft, entry.key)?.title || "Custom Page");
                   return `
                     <span class="ycs-report-page-nav__item">
-                      <button type="button" class="${pageNumber === activeReportPage ? "is-active" : ""}" data-ycs-report-page-button="${pageNumber}">${pageNumber}</button>
+                      <button type="button" class="${pageNumber === activeReportPage ? "is-active" : ""}" data-ycs-report-page-button="${pageNumber}" title="${escapeHtml(label)}">${pageNumber}</button>
                       <button
                         type="button"
                         class="ycs-report-page-nav__move ycs-report-page-nav__move--earlier"
-                        data-ycs-move-custom-report-page="${escapeHtml(customPage.id)}"
-                        data-ycs-move-custom-report-page-direction="-1"
-                        aria-label="Move page ${pageNumber} earlier"${customIndex > 0 ? "" : " disabled"}>
+                        data-ycs-move-report-page="${escapeHtml(entry.id)}"
+                        data-ycs-move-report-page-direction="-1"
+                        aria-label="Move page ${pageNumber} earlier"${index > 0 ? "" : " disabled"}>
                         ‹
                       </button>
                       <button
                         type="button"
                         class="ycs-report-page-nav__move ycs-report-page-nav__move--later"
-                        data-ycs-move-custom-report-page="${escapeHtml(customPage.id)}"
-                        data-ycs-move-custom-report-page-direction="1"
-                        aria-label="Move page ${pageNumber} later"${customIndex < reportCustomPages(draft).length - 1 ? "" : " disabled"}>
+                        data-ycs-move-report-page="${escapeHtml(entry.id)}"
+                        data-ycs-move-report-page-direction="1"
+                        aria-label="Move page ${pageNumber} later"${index < orderedReportPages.length - 1 ? "" : " disabled"}>
                         ›
                       </button>
                       <button
                         type="button"
+                        class="ycs-report-page-nav__duplicate"
+                        data-ycs-duplicate-report-page="${escapeHtml(entry.id)}"
+                        aria-label="Duplicate page ${pageNumber}">
+                        +
+                      </button>
+                      ${entry.type === "custom" ? `<button
+                        type="button"
                         class="ycs-report-page-nav__remove"
-                        data-ycs-remove-custom-report-page="${escapeHtml(customPage.id)}"
+                        data-ycs-remove-custom-report-page="${escapeHtml(entry.key)}"
                         aria-label="Remove page ${pageNumber}">
                         ×
-                      </button>
+                      </button>` : ""}
                     </span>
                   `;
-                }
-                return `<button type="button" class="${pageNumber === activeReportPage ? "is-active" : ""}" data-ycs-report-page-button="${pageNumber}">${pageNumber}</button>`;
               }).join("")}
               <details class="ycs-report-page-add">
                 <summary aria-label="Add report page">+</summary>
@@ -1259,6 +1390,7 @@
         image4Url: fieldValue("image4Url")
       };
     });
+    draft.reportPageOrder = normalizeReportPageOrder(draft);
 
     return draft;
   }
@@ -2395,7 +2527,8 @@
     const clearReportLogoButton = event.target.closest("[data-ycs-clear-report-logo]");
     const addCustomReportPageButton = event.target.closest("[data-ycs-add-custom-report-page]");
     const removeCustomReportPageButton = event.target.closest("[data-ycs-remove-custom-report-page]");
-    const moveCustomReportPageButton = event.target.closest("[data-ycs-move-custom-report-page]");
+    const moveReportPageButton = event.target.closest("[data-ycs-move-report-page]");
+    const duplicateReportPageButton = event.target.closest("[data-ycs-duplicate-report-page]");
 
     if (pageBackButton && pageBackButton.dataset.ycsBackMode === "clients") {
       event.preventDefault();
@@ -2492,7 +2625,16 @@
 
     if (reportPageButton) {
       if (!canCreateReports) return;
-      applyActiveReportPage(reportPageButton.dataset.ycsReportPageButton);
+      const nextPage = Number(reportPageButton.dataset.ycsReportPageButton) || 1;
+      const client = clients.find((item) => item.clientRecordId === activeReportClientId);
+      const builder = detailEl.querySelector("[data-ycs-report-builder]");
+      const form = builder?.querySelector("[data-ycs-report-form]");
+      if (client && builder && form) {
+        activeReportDraft = readReportDraftFromForm(form, client);
+        activeReportPage = Math.min(Math.max(nextPage, 1), totalReportPages(activeReportDraft));
+        builder.outerHTML = renderReportBuilder(client);
+      }
+      applyActiveReportPage(nextPage);
     }
 
     if (clearReportLogoButton) {
@@ -2511,9 +2653,8 @@
 
       activeReportDraft = readReportDraftFromForm(form, client);
       const template = normalizeCustomPageTemplate(addCustomReportPageButton.dataset.ycsAddCustomReportPage);
-      const pages = reportCustomPages(activeReportDraft).slice();
       const insertIndex = customReportPageInsertIndex(activeReportDraft);
-      pages.splice(insertIndex, 0, {
+      const newPage = {
         id: makeCustomReportPageId(),
         template,
         title: template === "letter" ? "" : "New Page",
@@ -2522,14 +2663,17 @@
         image2Url: "",
         image3Url: "",
         image4Url: ""
-      });
-      activeReportDraft.customPages = pages;
-      const nextPage = BASE_REPORT_PAGE_COUNT + insertIndex + 1;
+      };
+      activeReportDraft.customPages = [...reportCustomPages(activeReportDraft), newPage];
+      const order = normalizeReportPageOrder(activeReportDraft).filter((entry) => !(entry.type === "custom" && entry.key === newPage.id));
+      order.splice(insertIndex, 0, { id: newPage.id, type: "custom", key: newPage.id });
+      activeReportDraft.reportPageOrder = order;
+      const nextPage = LOCKED_REPORT_PAGE_COUNT + insertIndex + 1;
       builder.outerHTML = renderReportBuilder(client);
       applyActiveReportPage(nextPage);
     }
 
-    if (moveCustomReportPageButton) {
+    if (moveReportPageButton) {
       if (!canCreateReports) return;
       event.preventDefault();
       const client = clients.find((item) => item.clientRecordId === activeReportClientId);
@@ -2538,9 +2682,24 @@
       if (!client || !builder || !form) return;
 
       activeReportDraft = readReportDraftFromForm(form, client);
-      const pageId = moveCustomReportPageButton.dataset.ycsMoveCustomReportPage;
-      const direction = Number(moveCustomReportPageButton.dataset.ycsMoveCustomReportPageDirection) || 0;
-      moveCustomReportPage(activeReportDraft, pageId, direction);
+      const orderId = moveReportPageButton.dataset.ycsMoveReportPage;
+      const direction = Number(moveReportPageButton.dataset.ycsMoveReportPageDirection) || 0;
+      moveReportPage(activeReportDraft, orderId, direction);
+      const nextPage = activeReportPage;
+      builder.outerHTML = renderReportBuilder(client);
+      applyActiveReportPage(nextPage);
+    }
+
+    if (duplicateReportPageButton) {
+      if (!canCreateReports) return;
+      event.preventDefault();
+      const client = clients.find((item) => item.clientRecordId === activeReportClientId);
+      const builder = detailEl.querySelector("[data-ycs-report-builder]");
+      const form = builder?.querySelector("[data-ycs-report-form]");
+      if (!client || !builder || !form) return;
+
+      activeReportDraft = readReportDraftFromForm(form, client);
+      duplicateReportPage(activeReportDraft, duplicateReportPageButton.dataset.ycsDuplicateReportPage);
       const nextPage = activeReportPage;
       builder.outerHTML = renderReportBuilder(client);
       applyActiveReportPage(nextPage);
@@ -2559,6 +2718,7 @@
 
       activeReportDraft = readReportDraftFromForm(form, client);
       activeReportDraft.customPages = reportCustomPages(activeReportDraft).filter((page) => page.id !== removeId);
+      activeReportDraft.reportPageOrder = normalizeReportPageOrder(activeReportDraft).filter((entry) => !(entry.type === "custom" && entry.key === removeId));
       builder.outerHTML = renderReportBuilder(client);
       applyActiveReportPage(Math.min(activeReportPage, totalReportPages(activeReportDraft)));
     }
