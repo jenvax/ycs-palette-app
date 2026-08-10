@@ -44,6 +44,7 @@
   let activeReportClientId = "";
   let activeReportPage = 1;
   let activeReportTemplateRequest = 0;
+  let draggingReportPageOrderId = "";
   let activeSavedDrapedImages = [];
   let activeSavedDrapedImagesClientId = "";
   let coverPhotoDrag = null;
@@ -312,19 +313,20 @@
     return draft;
   }
 
-  function moveReportPage(draft, orderId, direction) {
+  function moveReportPageToIndex(draft, orderId, nextIndex) {
     const entries = normalizeReportPageOrder(draft);
     const currentIndex = entries.findIndex((entry) => entry.id === orderId);
     if (currentIndex < 0) return draft;
 
-    const nextIndex = Math.min(Math.max(currentIndex + direction, 0), entries.length - 1);
-    if (nextIndex === currentIndex) return draft;
-
     const nextEntries = entries.slice();
     const [movedEntry] = nextEntries.splice(currentIndex, 1);
-    nextEntries.splice(nextIndex, 0, movedEntry);
+    const requestedIndex = Math.min(Math.max(Number(nextIndex) || 0, 0), entries.length);
+    const safeIndex = Math.min(Math.max(currentIndex < requestedIndex ? requestedIndex - 1 : requestedIndex, 0), nextEntries.length);
+    if (safeIndex === currentIndex) return draft;
+
+    nextEntries.splice(safeIndex, 0, movedEntry);
     applyReportPageOrder(draft, nextEntries);
-    activeReportPage = LOCKED_REPORT_PAGE_COUNT + nextIndex + 1;
+    activeReportPage = LOCKED_REPORT_PAGE_COUNT + safeIndex + 1;
     return draft;
   }
 
@@ -777,10 +779,6 @@
           const pageNumber = reportPageNumberForCustomPage(draft, id);
           const isPhotoTemplate = template === "photos" || template === "photos4";
           const templateLabel = template === "photos4" ? "Four-photo page" : (template === "photos" ? "Photo page" : "Letter page");
-          const canMoveEarlier = pageNumber > LOCKED_REPORT_PAGE_COUNT + 1;
-          const canMoveLater = pageNumber < totalReportPages(draft);
-          const orderEntry = normalizeReportPageOrder(draft).find((entry) => entry.type === "custom" && entry.key === id);
-          const orderId = orderEntry?.id || id;
           return `
             <div class="ycs-report-form-page" data-ycs-report-controls-page="${pageNumber}"${pageNumber === activeReportPage ? "" : " hidden"}>
               <div class="ycs-report-form-page__head">
@@ -830,16 +828,68 @@
                 ` : ""}
               ` : ""}
               ${template !== "photos4" ? `<label>Copy<textarea name="customPages.${escapeHtml(id)}.copy">${escapeHtml(page.copy || "")}</textarea></label>` : ""}
-              <div class="ycs-report-custom-page__actions">
-                <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-move-report-page="${escapeHtml(orderId)}" data-ycs-move-report-page-direction="-1"${canMoveEarlier ? "" : " disabled"}>Move earlier</button>
-                <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-move-report-page="${escapeHtml(orderId)}" data-ycs-move-report-page-direction="1"${canMoveLater ? "" : " disabled"}>Move later</button>
-                <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-duplicate-report-page="${escapeHtml(orderId)}">Duplicate page</button>
-                <button class="ycs-report-image-clear" type="button" data-ycs-remove-custom-report-page="${escapeHtml(id)}">Remove page</button>
-              </div>
               </fieldset>
             </div>
           `;
         }).join("") : ""}
+    `;
+  }
+
+  function renderReportPageRail(draft, orderedReportPages, insertPageLabel) {
+    const lockedPages = [
+      { pageNumber: 1, label: "Cover" },
+      { pageNumber: 2, label: "Intro Letter" },
+      { pageNumber: 3, label: "How It Works" }
+    ];
+
+    return `
+      <aside class="ycs-report-page-rail" aria-label="Report pages">
+        <div class="ycs-report-page-rail__head">
+          <span>Pages</span>
+        </div>
+        <div class="ycs-report-page-rail__list" data-ycs-report-page-rail>
+          ${lockedPages.map((page) => `
+            <button
+              type="button"
+              class="ycs-report-page-rail__item${page.pageNumber === activeReportPage ? " is-active" : ""} is-locked"
+              data-ycs-report-page-button="${page.pageNumber}">
+              <span class="ycs-report-page-rail__thumb">${page.pageNumber}</span>
+              <span class="ycs-report-page-rail__label">${escapeHtml(page.label)}</span>
+            </button>
+          `).join("")}
+          ${orderedReportPages.map((entry, index) => {
+            const pageNumber = LOCKED_REPORT_PAGE_COUNT + index + 1;
+            const label = entry.type === "builtIn"
+              ? builtInReportPageLabel(entry.key)
+              : (customPageById(draft, entry.key)?.title || "Custom Page");
+            return `
+              <div
+                class="ycs-report-page-rail__item${pageNumber === activeReportPage ? " is-active" : ""}"
+                draggable="true"
+                data-ycs-report-page-order-id="${escapeHtml(entry.id)}"
+                data-ycs-report-page-order-index="${index}">
+                <button type="button" class="ycs-report-page-rail__select" data-ycs-report-page-button="${pageNumber}">
+                  <span class="ycs-report-page-rail__thumb">${pageNumber}</span>
+                  <span class="ycs-report-page-rail__label">${escapeHtml(label)}</span>
+                </button>
+                <div class="ycs-report-page-rail__actions">
+                  <button type="button" data-ycs-duplicate-report-page="${escapeHtml(entry.id)}">Duplicate</button>
+                  ${entry.type === "custom" ? `<button type="button" data-ycs-remove-custom-report-page="${escapeHtml(entry.key)}">Remove</button>` : ""}
+                </div>
+              </div>
+            `;
+          }).join("")}
+        </div>
+        <details class="ycs-report-page-add">
+          <summary>Add page</summary>
+          <div class="ycs-report-page-add__menu">
+            <span>${escapeHtml(insertPageLabel)}</span>
+            <button type="button" data-ycs-add-custom-report-page="letter">Letter Page</button>
+            <button type="button" data-ycs-add-custom-report-page="photos">Photo Page</button>
+            <button type="button" data-ycs-add-custom-report-page="photos4">Four Photos</button>
+          </div>
+        </details>
+      </aside>
     `;
   }
 
@@ -1146,6 +1196,7 @@
         </div>
         <div class="ycs-report-builder__status" data-ycs-report-status>Loading saved draft...</div>
         <div class="ycs-report-builder__layout">
+          ${renderReportPageRail(draft, orderedReportPages, insertPageLabel)}
           <form class="ycs-report-form" data-ycs-report-form>
             <input type="hidden" name="clientRecordId" value="${escapeHtml(client.clientRecordId)}">
             <input type="hidden" name="selectedDrapeImageUrl" value="${escapeHtml(draft.selectedDrapeImageUrl)}">
@@ -1265,62 +1316,6 @@
             ${renderCustomPagesForm(draft)}
           </form>
           <div class="ycs-report-preview-shell">
-            <div class="ycs-report-page-nav" data-ycs-report-page-nav>
-              ${Array.from({ length: LOCKED_REPORT_PAGE_COUNT }, (_, index) => {
-                const pageNumber = index + 1;
-                return `<button type="button" class="${pageNumber === activeReportPage ? "is-active" : ""}" data-ycs-report-page-button="${pageNumber}">${pageNumber}</button>`;
-              }).join("")}
-              ${orderedReportPages.map((entry, index) => {
-                const pageNumber = LOCKED_REPORT_PAGE_COUNT + index + 1;
-                const label = entry.type === "builtIn"
-                  ? builtInReportPageLabel(entry.key)
-                  : (customPageById(draft, entry.key)?.title || "Custom Page");
-                  return `
-                    <span class="ycs-report-page-nav__item">
-                      <button type="button" class="${pageNumber === activeReportPage ? "is-active" : ""}" data-ycs-report-page-button="${pageNumber}" title="${escapeHtml(label)}">${pageNumber}</button>
-                      <button
-                        type="button"
-                        class="ycs-report-page-nav__move ycs-report-page-nav__move--earlier"
-                        data-ycs-move-report-page="${escapeHtml(entry.id)}"
-                        data-ycs-move-report-page-direction="-1"
-                        aria-label="Move page ${pageNumber} earlier"${index > 0 ? "" : " disabled"}>
-                        ‹
-                      </button>
-                      <button
-                        type="button"
-                        class="ycs-report-page-nav__move ycs-report-page-nav__move--later"
-                        data-ycs-move-report-page="${escapeHtml(entry.id)}"
-                        data-ycs-move-report-page-direction="1"
-                        aria-label="Move page ${pageNumber} later"${index < orderedReportPages.length - 1 ? "" : " disabled"}>
-                        ›
-                      </button>
-                      <button
-                        type="button"
-                        class="ycs-report-page-nav__duplicate"
-                        data-ycs-duplicate-report-page="${escapeHtml(entry.id)}"
-                        aria-label="Duplicate page ${pageNumber}">
-                        +
-                      </button>
-                      ${entry.type === "custom" ? `<button
-                        type="button"
-                        class="ycs-report-page-nav__remove"
-                        data-ycs-remove-custom-report-page="${escapeHtml(entry.key)}"
-                        aria-label="Remove page ${pageNumber}">
-                        ×
-                      </button>` : ""}
-                    </span>
-                  `;
-              }).join("")}
-              <details class="ycs-report-page-add">
-                <summary aria-label="Add report page">+</summary>
-                <div class="ycs-report-page-add__menu">
-                  <span>${escapeHtml(insertPageLabel)}</span>
-                  <button type="button" data-ycs-add-custom-report-page="letter">Letter Page</button>
-                  <button type="button" data-ycs-add-custom-report-page="photos">Photo Page</button>
-                  <button type="button" data-ycs-add-custom-report-page="photos4">Four Photos</button>
-                </div>
-              </details>
-            </div>
             <div class="ycs-report-preview" data-ycs-report-preview data-active-report-page="${activeReportPage}">
               ${reportPagesHtml(draft, { interactive: true })}
             </div>
@@ -1688,6 +1683,7 @@
 
     detailEl.querySelectorAll("[data-ycs-report-page-button]").forEach((button) => {
       button.classList.toggle("is-active", Number(button.dataset.ycsReportPageButton) === safePage);
+      button.closest(".ycs-report-page-rail__item")?.classList.toggle("is-active", Number(button.dataset.ycsReportPageButton) === safePage);
     });
 
     detailEl.querySelectorAll("[data-ycs-report-controls-page]").forEach((controls) => {
@@ -2527,7 +2523,6 @@
     const clearReportLogoButton = event.target.closest("[data-ycs-clear-report-logo]");
     const addCustomReportPageButton = event.target.closest("[data-ycs-add-custom-report-page]");
     const removeCustomReportPageButton = event.target.closest("[data-ycs-remove-custom-report-page]");
-    const moveReportPageButton = event.target.closest("[data-ycs-move-report-page]");
     const duplicateReportPageButton = event.target.closest("[data-ycs-duplicate-report-page]");
 
     if (pageBackButton && pageBackButton.dataset.ycsBackMode === "clients") {
@@ -2673,23 +2668,6 @@
       applyActiveReportPage(nextPage);
     }
 
-    if (moveReportPageButton) {
-      if (!canCreateReports) return;
-      event.preventDefault();
-      const client = clients.find((item) => item.clientRecordId === activeReportClientId);
-      const builder = detailEl.querySelector("[data-ycs-report-builder]");
-      const form = builder?.querySelector("[data-ycs-report-form]");
-      if (!client || !builder || !form) return;
-
-      activeReportDraft = readReportDraftFromForm(form, client);
-      const orderId = moveReportPageButton.dataset.ycsMoveReportPage;
-      const direction = Number(moveReportPageButton.dataset.ycsMoveReportPageDirection) || 0;
-      moveReportPage(activeReportDraft, orderId, direction);
-      const nextPage = activeReportPage;
-      builder.outerHTML = renderReportBuilder(client);
-      applyActiveReportPage(nextPage);
-    }
-
     if (duplicateReportPageButton) {
       if (!canCreateReports) return;
       event.preventDefault();
@@ -2764,6 +2742,59 @@
       closeReportImageModal();
     }
 
+  });
+
+  root.addEventListener("dragstart", (event) => {
+    const item = event.target.closest("[data-ycs-report-page-order-id]");
+    if (!item || !canCreateReports) return;
+    draggingReportPageOrderId = item.dataset.ycsReportPageOrderId || "";
+    item.classList.add("is-dragging");
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", draggingReportPageOrderId);
+  });
+
+  root.addEventListener("dragend", (event) => {
+    event.target.closest("[data-ycs-report-page-order-id]")?.classList.remove("is-dragging");
+    detailEl.querySelectorAll("[data-ycs-report-page-order-id].is-drop-target").forEach((item) => item.classList.remove("is-drop-target"));
+    draggingReportPageOrderId = "";
+  });
+
+  root.addEventListener("dragover", (event) => {
+    const item = event.target.closest("[data-ycs-report-page-order-id]");
+    if (!item || !draggingReportPageOrderId) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    detailEl.querySelectorAll("[data-ycs-report-page-order-id].is-drop-target").forEach((entry) => {
+      if (entry !== item) entry.classList.remove("is-drop-target");
+    });
+    item.classList.add("is-drop-target");
+  });
+
+  root.addEventListener("dragleave", (event) => {
+    const item = event.target.closest("[data-ycs-report-page-order-id]");
+    if (!item || item.contains(event.relatedTarget)) return;
+    item.classList.remove("is-drop-target");
+  });
+
+  root.addEventListener("drop", (event) => {
+    const item = event.target.closest("[data-ycs-report-page-order-id]");
+    if (!item || !draggingReportPageOrderId || !canCreateReports) return;
+    event.preventDefault();
+
+    const client = clients.find((entry) => entry.clientRecordId === activeReportClientId);
+    const builder = detailEl.querySelector("[data-ycs-report-builder]");
+    const form = builder?.querySelector("[data-ycs-report-form]");
+    if (!client || !builder || !form) return;
+
+    activeReportDraft = readReportDraftFromForm(form, client);
+    const rect = item.getBoundingClientRect();
+    const insertAfter = event.clientY > rect.top + (rect.height / 2);
+    const targetIndex = (Number(item.dataset.ycsReportPageOrderIndex) || 0) + (insertAfter ? 1 : 0);
+    moveReportPageToIndex(activeReportDraft, draggingReportPageOrderId, targetIndex);
+    const nextPage = activeReportPage;
+    draggingReportPageOrderId = "";
+    builder.outerHTML = renderReportBuilder(client);
+    applyActiveReportPage(nextPage);
   });
 
   root.addEventListener("pointerdown", (event) => {
