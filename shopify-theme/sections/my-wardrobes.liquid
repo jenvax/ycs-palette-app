@@ -245,7 +245,6 @@
   .ycs-wardrobes-row__head {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 8px;
     margin-bottom: 10px;
   }
@@ -272,6 +271,14 @@
   .ycs-wardrobes-row__scroll-controls {
     display: flex;
     gap: 6px;
+  }
+
+  .ycs-wardrobes-row__scroll-shell {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr) 34px;
+    align-items: start;
+    gap: 8px;
+    width: 100%;
   }
 
   .ycs-wardrobes-row__scroll-button {
@@ -368,22 +375,11 @@
 
   @media (min-width: 980px) {
     .ycs-wardrobes-row {
-      display: grid;
-      grid-template-columns: 132px minmax(0, 1fr);
-      gap: 10px;
-      align-items: start;
+      display: block;
     }
 
     .ycs-wardrobes-row__head {
-      display: grid;
-      gap: 10px;
-      justify-content: stretch;
-      margin-bottom: 0;
-      padding-top: 2px;
-    }
-
-    .ycs-wardrobes-row__scroll-controls {
-      justify-content: flex-start;
+      margin-bottom: 10px;
     }
   }
 
@@ -682,17 +678,17 @@
             <div class="ycs-wardrobes-row__head">
               <div class="ycs-wardrobes-row__title">
                 <h2>${typeLabels[type]}</h2>
-                <span class="ycs-wardrobes-row__count">${items.length}</span>
-              </div>
-              <div class="ycs-wardrobes-row__scroll-controls" aria-label="${typeLabels[type]} row controls">
-                <button type="button" class="ycs-wardrobes-row__scroll-button" data-ycs-scroll-row="-1" aria-label="Scroll ${typeLabels[type]} left">‹</button>
-                <button type="button" class="ycs-wardrobes-row__scroll-button" data-ycs-scroll-row="1" aria-label="Scroll ${typeLabels[type]} right">›</button>
+                <span class="ycs-wardrobes-row__count">(${items.length})</span>
               </div>
             </div>
-            <div class="ycs-wardrobes-row__scroller" data-ycs-row-scroller>
-              <div class="ycs-wardrobes-row__track" data-ycs-row-track data-ycs-row-type="${type}" data-ycs-row-offset="0">
-                ${items.map(cardMarkup).join('')}
+            <div class="ycs-wardrobes-row__scroll-shell" aria-label="${typeLabels[type]} row controls">
+              <button type="button" class="ycs-wardrobes-row__scroll-button" data-ycs-scroll-row="-1" aria-label="Scroll ${typeLabels[type]} left">‹</button>
+              <div class="ycs-wardrobes-row__scroller" data-ycs-row-scroller>
+                <div class="ycs-wardrobes-row__track" data-ycs-row-track data-ycs-row-type="${type}" data-ycs-row-offset="0">
+                  ${items.map(cardMarkup).join('')}
+                </div>
               </div>
+              <button type="button" class="ycs-wardrobes-row__scroll-button" data-ycs-scroll-row="1" aria-label="Scroll ${typeLabels[type]} right">›</button>
             </div>
           </section>
         `;
