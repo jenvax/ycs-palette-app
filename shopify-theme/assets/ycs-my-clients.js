@@ -873,7 +873,7 @@
                   <span class="ycs-report-page-rail__label">${escapeHtml(label)}</span>
                 </button>
                 <div class="ycs-report-page-rail__actions">
-                  <button type="button" data-ycs-duplicate-report-page="${escapeHtml(entry.id)}">Duplicate</button>
+                  <button type="button" data-ycs-duplicate-report-page="${escapeHtml(entry.id)}">Copy</button>
                   ${entry.type === "custom" ? `<button type="button" data-ycs-remove-custom-report-page="${escapeHtml(entry.key)}">Remove</button>` : ""}
                 </div>
               </div>
@@ -882,11 +882,14 @@
         </div>
         <div class="ycs-report-page-add">
           <button type="button" class="ycs-report-page-add__primary" data-ycs-add-custom-report-page="letter">Add Page</button>
-          <div class="ycs-report-page-add__menu">
-            <span>${escapeHtml(insertPageLabel)}</span>
-            <button type="button" data-ycs-add-custom-report-page="photos">2 Photos</button>
-            <button type="button" data-ycs-add-custom-report-page="photos4">4 Photos</button>
-          </div>
+          <details class="ycs-report-page-add__more">
+            <summary>Photo page types</summary>
+            <div class="ycs-report-page-add__menu">
+              <span>${escapeHtml(insertPageLabel)}</span>
+              <button type="button" data-ycs-add-custom-report-page="photos">2-photo page</button>
+              <button type="button" data-ycs-add-custom-report-page="photos4">4-photo page</button>
+            </div>
+          </details>
         </div>
       </aside>
     `;
