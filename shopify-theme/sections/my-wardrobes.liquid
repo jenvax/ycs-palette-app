@@ -295,21 +295,23 @@
   }
 
   .ycs-wardrobes-row__scroller {
+    overflow: hidden;
+    padding: 2px 2px 12px;
+    width: 100%;
+  }
+
+  .ycs-wardrobes-row__track {
     display: flex;
     gap: 12px;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    padding: 2px 2px 12px;
-    scroll-snap-type: x proximity;
-    scrollbar-width: thin;
-    width: 100%;
-    max-width: min(100%, 760px);
+    min-height: 158px;
+    transform: translateX(0);
+    transition: transform .22s ease;
+    will-change: transform;
   }
 
   .ycs-wardrobe-card {
     flex: 0 0 132px;
     width: 132px;
-    scroll-snap-align: start;
     border: 0;
     background: transparent;
     color: inherit;
@@ -641,7 +643,9 @@
               </div>
             </div>
             <div class="ycs-wardrobes-row__scroller" data-ycs-row-scroller>
-              ${items.map(cardMarkup).join('')}
+              <div class="ycs-wardrobes-row__track" data-ycs-row-track data-ycs-row-offset="0">
+                ${items.map(cardMarkup).join('')}
+              </div>
             </div>
           </section>
         `;
@@ -792,18 +796,17 @@
         event.preventDefault();
         event.stopPropagation();
         const row = rowScrollButton.closest('.ycs-wardrobes-row');
-        const scroller = row?.querySelector('[data-ycs-row-scroller]');
-        if (!scroller) return;
+        const track = row?.querySelector('[data-ycs-row-track]');
+        if (!track) return;
         const direction = Number(rowScrollButton.dataset.ycsScrollRow || 1);
-        const before = scroller.scrollLeft;
-        scroller.scrollBy({
-          left: direction * 288,
-          behavior: 'smooth'
-        });
-        window.setTimeout(() => {
-          if (scroller.scrollLeft !== before) return;
-          scroller.scrollLeft = before + (direction * 288);
-        }, 80);
+        const card = track.querySelector('.ycs-wardrobe-card');
+        const cardWidth = card ? card.getBoundingClientRect().width : 132;
+        const gap = Number.parseFloat(window.getComputedStyle(track).columnGap || window.getComputedStyle(track).gap || '12') || 12;
+        const step = cardWidth + gap;
+        const currentOffset = Number(track.dataset.ycsRowOffset || 0);
+        const nextOffset = currentOffset - (direction * step);
+        track.dataset.ycsRowOffset = String(nextOffset);
+        track.style.transform = `translateX(${nextOffset}px)`;
         return;
       }
 
