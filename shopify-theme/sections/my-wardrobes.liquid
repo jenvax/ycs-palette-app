@@ -303,6 +303,7 @@
     scroll-snap-type: x proximity;
     scrollbar-width: thin;
     width: 100%;
+    max-width: min(100%, 760px);
   }
 
   .ycs-wardrobe-card {
@@ -326,6 +327,27 @@
     border-radius: 8px;
     background: #f6f1ea;
     box-shadow: inset 0 0 0 1px rgba(0,0,0,.08), 0 5px 16px rgba(0,0,0,.06);
+  }
+
+  @media (min-width: 980px) {
+    .ycs-wardrobes-row {
+      display: grid;
+      grid-template-columns: 168px minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .ycs-wardrobes-row__head {
+      display: grid;
+      gap: 10px;
+      justify-content: stretch;
+      margin-bottom: 0;
+      padding-top: 2px;
+    }
+
+    .ycs-wardrobes-row__scroll-controls {
+      justify-content: flex-start;
+    }
   }
 
   .ycs-wardrobe-card__swatch span {
@@ -773,10 +795,15 @@
         const scroller = row?.querySelector('[data-ycs-row-scroller]');
         if (!scroller) return;
         const direction = Number(rowScrollButton.dataset.ycsScrollRow || 1);
+        const before = scroller.scrollLeft;
         scroller.scrollBy({
           left: direction * 288,
           behavior: 'smooth'
         });
+        window.setTimeout(() => {
+          if (scroller.scrollLeft !== before) return;
+          scroller.scrollLeft = before + (direction * 288);
+        }, 80);
         return;
       }
 
