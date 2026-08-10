@@ -431,14 +431,7 @@
   }
 
   function buildClientListHref() {
-    const query = new URLSearchParams({
-      mode: 'trade',
-      workflow: 'color-analysis',
-      returnUrl: getReturnUrl()
-    });
-
-    addAdminPreviewParam(query);
-    return '/pages/photo-prep?' + query.toString();
+    return appendAdminPreviewToHref('/pages/my-clients');
   }
 
   function buildManageClientHref() {
@@ -2276,7 +2269,7 @@ function updateBackLink() {
     return;
   }
 
-  backBtn.textContent = 'Back to Client List';
+  backBtn.textContent = 'My Clients';
   backBtn.href = buildClientListHref();
 }
 
