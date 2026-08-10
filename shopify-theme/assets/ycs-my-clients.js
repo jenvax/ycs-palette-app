@@ -2265,8 +2265,13 @@
 
     detailEl.innerHTML = `
       <div class="ycs-clients__detail-header ycs-clients__detail-header--edit">
-        <div class="ycs-clients__detail-photo">
-          <div class="ycs-client-card__placeholder">No photo yet</div>
+        <div>
+          <button class="ycs-clients__detail-photo ycs-clients__detail-photo--upload" type="submit" form="ycs-create-client-form" name="createAction" value="photoPrep" data-ycs-create-client-photo-prep>
+            <span class="ycs-client-card__placeholder">Upload a Photo</span>
+          </button>
+          <button class="ycs-clients__button ycs-clients__button--secondary ycs-clients__upload-photo-button" type="submit" form="ycs-create-client-form" name="createAction" value="photoPrep" data-ycs-create-client-photo-prep>
+            Upload a Photo
+          </button>
         </div>
         <div>
           <h2>Add Client</h2>
@@ -2279,7 +2284,7 @@
   function renderEditForm(client, saveMessage, isCreate) {
     const selectedPaletteCode = String(client.paletteCode || "").trim().toUpperCase();
     return `
-      <form class="ycs-clients__edit-form" ${isCreate ? "data-ycs-client-create-form" : "data-ycs-client-edit-form"}>
+      <form class="ycs-clients__edit-form" ${isCreate ? 'id="ycs-create-client-form" data-ycs-client-create-form' : "data-ycs-client-edit-form"}>
         <input type="hidden" name="clientRecordId" value="${escapeHtml(client.clientRecordId)}">
         <input class="ycs-clients__input" name="firstName" value="${escapeHtml(client.firstName)}" placeholder="First name" required>
         <input class="ycs-clients__input" name="lastName" value="${escapeHtml(client.lastName)}" placeholder="Last name" required>
@@ -2390,7 +2395,7 @@
     showClientById(payload.clientRecordId, true, "Client saved.");
   }
 
-  async function createClient(form) {
+  async function createClient(form, options = {}) {
     const formData = new FormData(form);
     const payload = {
       consultantId,
@@ -2437,7 +2442,12 @@
     nextUrl.searchParams.delete("newClient");
     nextUrl.searchParams.set("clientRecordId", client.clientRecordId);
     window.history.pushState({}, "", nextUrl.pathname + nextUrl.search);
+    if (options.redirectToPhotoPrep) {
+      window.location.href = startAnalysisUrl(client);
+      return client;
+    }
     showClientById(client.clientRecordId, true, "Client created.");
+    return client;
   }
 
   async function deleteClientById(clientRecordId) {
@@ -2908,7 +2918,9 @@
     event.preventDefault();
 
     if (createForm) {
-      createClient(createForm).catch((error) => setStatus(error.message || "Client create failed.", true));
+      const redirectToPhotoPrep = event.submitter?.dataset?.ycsCreateClientPhotoPrep !== undefined ||
+        event.submitter?.value === "photoPrep";
+      createClient(createForm, { redirectToPhotoPrep }).catch((error) => setStatus(error.message || "Client create failed.", true));
       return;
     }
 
