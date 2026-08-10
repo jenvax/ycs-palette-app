@@ -876,6 +876,8 @@
                   <span class="ycs-report-page-rail__label">${escapeHtml(label)}</span>
                 </button>
                 <div class="ycs-report-page-rail__actions">
+                  <button type="button" data-ycs-move-report-page="${escapeHtml(entry.id)}" data-ycs-move-report-page-direction="-1" aria-label="Move page ${pageNumber} up"${index === 0 ? " disabled" : ""}>↑</button>
+                  <button type="button" data-ycs-move-report-page="${escapeHtml(entry.id)}" data-ycs-move-report-page-direction="1" aria-label="Move page ${pageNumber} down"${index === orderedReportPages.length - 1 ? " disabled" : ""}>↓</button>
                   <button type="button" data-ycs-duplicate-report-page="${escapeHtml(entry.id)}">Copy</button>
                   ${entry.type === "custom" ? `<button type="button" data-ycs-remove-custom-report-page="${escapeHtml(entry.key)}">Remove</button>` : ""}
                 </div>
@@ -2539,6 +2541,7 @@
     const addCustomReportPageButton = event.target.closest("[data-ycs-add-custom-report-page]");
     const removeCustomReportPageButton = event.target.closest("[data-ycs-remove-custom-report-page]");
     const duplicateReportPageButton = event.target.closest("[data-ycs-duplicate-report-page]");
+    const moveReportPageButton = event.target.closest("[data-ycs-move-report-page]");
 
     if (pageBackButton && pageBackButton.dataset.ycsBackMode === "clients") {
       event.preventDefault();
@@ -2697,6 +2700,26 @@
       const nextPage = activeReportPage;
       builder.outerHTML = renderReportBuilder(client);
       applyActiveReportPage(nextPage);
+    }
+
+    if (moveReportPageButton) {
+      if (!canCreateReports || moveReportPageButton.disabled) return;
+      event.preventDefault();
+      const client = clients.find((item) => item.clientRecordId === activeReportClientId);
+      const builder = detailEl.querySelector("[data-ycs-report-builder]");
+      const form = builder?.querySelector("[data-ycs-report-form]");
+      if (!client || !builder || !form) return;
+
+      activeReportDraft = readReportDraftFromForm(form, client);
+      const entries = normalizeReportPageOrder(activeReportDraft);
+      const currentIndex = entries.findIndex((entry) => entry.id === moveReportPageButton.dataset.ycsMoveReportPage);
+      if (currentIndex < 0) return;
+      const direction = Number(moveReportPageButton.dataset.ycsMoveReportPageDirection) || 0;
+      moveReportPageToIndex(activeReportDraft, moveReportPageButton.dataset.ycsMoveReportPage, currentIndex + direction);
+      const nextPage = activeReportPage;
+      builder.outerHTML = renderReportBuilder(client);
+      applyActiveReportPage(nextPage);
+      return;
     }
 
     if (removeCustomReportPageButton) {
