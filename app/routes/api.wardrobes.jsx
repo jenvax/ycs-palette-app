@@ -1,7 +1,7 @@
 /* global process */
-import prisma from "../db.server.js";
 
 const ADMIN_TAG = "YCS_ADMIN";
+const WARDROBE_TABLE = "WardrobeItems";
 const ITEM_TYPES = new Set([
   "top",
   "bottom",
@@ -10,6 +10,15 @@ const ITEM_TYPES = new Set([
   "shoe",
   "bag"
 ]);
+
+class AirtableRequestError extends Error {
+  constructor(message, details = {}) {
+    super(message);
+    this.name = "AirtableRequestError";
+    this.status = details.status;
+    this.type = details.type;
+  }
+}
 
 function getCorsHeaders(origin) {
   const allowedOrigins = [
@@ -46,40 +55,125 @@ function escapeFormulaValue(value) {
   return String(value || "").replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
-async function fetchCustomerDirectoryTags(customerId) {
-  const baseId = process.env.AIRTABLE_BASE_ID;
-  const token = process.env.AIRTABLE_TOKEN;
+function makeId(prefix) {
+  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
 
+function airtableConfig() {
+  return {
+    baseId: process.env.AIRTABLE_BASE_ID,
+    token: process.env.AIRTABLE_TOKEN,
+    tableName: process.env.AIRTABLE_WARDROBE_ITEMS_TABLE || WARDROBE_TABLE
+  };
+}
+
+async function airtableRequest({ method = "GET", tableName, recordId, searchParams, fields }) {
+  const { baseId, token, tableName: defaultTableName } = airtableConfig();
   if (!baseId || !token) {
-    const error = new Error("Missing customer directory configuration");
-    error.status = 500;
-    throw error;
+    throw new AirtableRequestError("Missing Airtable configuration", { status: 500 });
   }
 
-  const params = new URLSearchParams({
-    maxRecords: "1",
-    filterByFormula: `{CustomerId}="${escapeFormulaValue(customerId)}"`
-  });
+  const encodedTable = encodeURIComponent(tableName || defaultTableName);
+  const url = new URL(`https://api.airtable.com/v0/${baseId}/${encodedTable}${recordId ? `/${recordId}` : ""}`);
 
-  const response = await fetch(`https://api.airtable.com/v0/${baseId}/CustomerDirectory?${params.toString()}`, {
+  if (searchParams) {
+    searchParams.forEach((value, key) => url.searchParams.set(key, value));
+  }
+
+  const response = await fetch(url.toString(), {
+    method,
     headers: {
-      Authorization: `Bearer ${token}`
-    }
+      Authorization: `Bearer ${token}`,
+      ...(fields ? { "Content-Type": "application/json" } : {})
+    },
+    ...(fields ? { body: JSON.stringify({ fields }) } : {})
   });
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    const message = data.error?.message || data.error || "Customer directory lookup failed";
-    const error = new Error(message);
-    error.status = response.status || 500;
-    throw error;
+    throw new AirtableRequestError(
+      data?.error?.message || data?.error?.type || "Airtable request failed",
+      {
+        status: response.status,
+        type: data?.error?.type
+      }
+    );
   }
 
-  const fields = data.records?.[0]?.fields || {};
-  return String(fields.ShopifyTags || fields.Tags || "")
-    .split(",")
-    .map((tag) => tag.trim().toUpperCase())
-    .filter(Boolean);
+  return data;
+}
+
+async function fetchAllAirtableRecords({ tableName, formula }) {
+  const records = [];
+  let offset = "";
+
+  do {
+    const searchParams = new URLSearchParams();
+    if (formula) searchParams.set("filterByFormula", formula);
+    if (offset) searchParams.set("offset", offset);
+
+    const data = await airtableRequest({ tableName, searchParams });
+    records.push(...(data.records || []));
+    offset = data.offset || "";
+  } while (offset);
+
+  return records;
+}
+
+function isMissingTable(error) {
+  return error?.status === 404 || ["TABLE_NOT_FOUND", "NOT_FOUND"].includes(error?.type);
+}
+
+async function ensureWardrobeTable() {
+  const { baseId, token, tableName } = airtableConfig();
+  if (!baseId || !token) {
+    throw new AirtableRequestError("Missing Airtable configuration", { status: 500 });
+  }
+
+  const response = await fetch(`https://api.airtable.com/v0/meta/bases/${baseId}/tables`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      name: tableName,
+      description: "Wardrobe Builder wardrobes and items.",
+      fields: [
+        { name: "RecordType", type: "singleLineText" },
+        { name: "OwnerCustomerId", type: "singleLineText" },
+        { name: "WardrobeId", type: "singleLineText" },
+        { name: "WardrobeName", type: "singleLineText" },
+        { name: "ItemId", type: "singleLineText" },
+        { name: "Description", type: "singleLineText" },
+        { name: "ItemType", type: "singleLineText" },
+        { name: "ColorsJson", type: "multilineText" },
+        { name: "CreatedAt", type: "singleLineText" },
+        { name: "UpdatedAt", type: "singleLineText" }
+      ]
+    })
+  });
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new AirtableRequestError(
+      data?.error?.message || data?.error?.type || "Unable to create Airtable wardrobe table",
+      {
+        status: response.status,
+        type: data?.error?.type
+      }
+    );
+  }
+}
+
+async function withWardrobeTableSetup(callback) {
+  try {
+    return await callback();
+  } catch (error) {
+    if (!isMissingTable(error)) throw error;
+    await ensureWardrobeTable();
+    return callback();
+  }
 }
 
 async function getShopifyAccessToken({ shop, apiKey, apiSecret }) {
@@ -185,6 +279,19 @@ async function fetchCustomerTags(customerId) {
   });
 }
 
+async function fetchCustomerDirectoryTags(customerId) {
+  const records = await fetchAllAirtableRecords({
+    tableName: "CustomerDirectory",
+    formula: `{CustomerId}="${escapeFormulaValue(customerId)}"`
+  });
+
+  const fields = records[0]?.fields || {};
+  return String(fields.ShopifyTags || fields.Tags || "")
+    .split(",")
+    .map((tag) => tag.trim().toUpperCase())
+    .filter(Boolean);
+}
+
 async function authorizeAdmin(customerId) {
   const ownerCustomerId = normalizeCustomerId(customerId);
   if (!ownerCustomerId) {
@@ -206,97 +313,6 @@ async function authorizeAdmin(customerId) {
   return { ok: true, ownerCustomerId };
 }
 
-function serializeItem(item) {
-  const colors = (item.colors || [])
-    .slice()
-    .sort((a, b) => a.displayOrder - b.displayOrder)
-    .map((color) => ({
-      id: color.id,
-      name: color.colorName,
-      colorName: color.colorName,
-      hex: color.hexCode,
-      hexCode: color.hexCode,
-      paletteCode: color.paletteCode || "",
-      displayOrder: color.displayOrder
-    }));
-
-  return {
-    id: item.id,
-    description: item.description,
-    itemType: item.itemType,
-    colors,
-    wardrobeIds: (item.memberships || []).map((membership) => membership.wardrobeId),
-    createdAt: item.createdAt,
-    updatedAt: item.updatedAt
-  };
-}
-
-function serializeWardrobe(wardrobe) {
-  const items = (wardrobe.memberships || [])
-    .map((membership) => membership.item)
-    .filter(Boolean)
-    .map(serializeItem)
-    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-
-  return {
-    id: wardrobe.id,
-    name: wardrobe.name,
-    items,
-    itemCount: items.length,
-    createdAt: wardrobe.createdAt,
-    updatedAt: wardrobe.updatedAt
-  };
-}
-
-async function listWardrobes(ownerCustomerId) {
-  const wardrobes = await prisma.wardrobe.findMany({
-    where: { ownerCustomerId },
-    orderBy: [{ updatedAt: "desc" }],
-    include: {
-      memberships: {
-        include: {
-          item: {
-            include: {
-              colors: { orderBy: { displayOrder: "asc" } },
-              memberships: true
-            }
-          }
-        }
-      }
-    }
-  });
-
-  return { wardrobes: wardrobes.map(serializeWardrobe) };
-}
-
-async function requireOwnedWardrobe(ownerCustomerId, wardrobeId) {
-  const wardrobe = await prisma.wardrobe.findFirst({
-    where: { id: wardrobeId, ownerCustomerId }
-  });
-
-  if (!wardrobe) {
-    const error = new Error("Wardrobe not found");
-    error.status = 404;
-    throw error;
-  }
-
-  return wardrobe;
-}
-
-async function requireOwnedItem(ownerCustomerId, itemId) {
-  const item = await prisma.wardrobeItem.findFirst({
-    where: { id: itemId, ownerCustomerId }
-  });
-
-  if (!item) {
-    const error = new Error("Wardrobe item not found");
-    error.status = 404;
-    throw error;
-  }
-
-  return item;
-}
-
 function cleanColors(colors) {
   if (!Array.isArray(colors)) return [];
 
@@ -305,40 +321,124 @@ function cleanColors(colors) {
     .map((color, index) => {
       const hexCode = normalizeHex(color.hexCode || color.hex);
       const colorName = cleanString(color.colorName || color.name) || hexCode;
-      const paletteCode = cleanString(color.paletteCode);
+      const paletteCode = cleanString(color.paletteCode) || "";
       if (!hexCode || !colorName) return null;
       const key = `${hexCode}:${colorName}`;
       if (seen.has(key)) return null;
       seen.add(key);
-      return { colorName, hexCode, paletteCode, displayOrder: index };
+      return {
+        id: makeId("wcolor"),
+        name: colorName,
+        colorName,
+        hex: hexCode,
+        hexCode,
+        paletteCode,
+        displayOrder: index
+      };
     })
     .filter(Boolean);
 }
 
-async function readWardrobe(ownerCustomerId, wardrobeId) {
-  const wardrobe = await prisma.wardrobe.findFirst({
-    where: { id: wardrobeId, ownerCustomerId },
-    include: {
-      memberships: {
-        include: {
-          item: {
-            include: {
-              colors: { orderBy: { displayOrder: "asc" } },
-              memberships: true
-            }
-          }
-        }
-      }
-    }
-  });
+function parseColors(value) {
+  try {
+    const parsed = JSON.parse(String(value || "[]"));
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
 
+function itemFromRecord(record) {
+  const fields = record.fields || {};
+  return {
+    id: String(fields.ItemId || record.id),
+    airtableRecordId: record.id,
+    description: String(fields.Description || ""),
+    itemType: String(fields.ItemType || ""),
+    colors: parseColors(fields.ColorsJson),
+    wardrobeIds: [String(fields.WardrobeId || "")].filter(Boolean),
+    createdAt: String(fields.CreatedAt || record.createdTime || ""),
+    updatedAt: String(fields.UpdatedAt || record.createdTime || "")
+  };
+}
+
+function wardrobeFromRecord(record, items) {
+  const fields = record.fields || {};
+  const wardrobeId = String(fields.WardrobeId || record.id);
+  const wardrobeItems = items
+    .filter((item) => item.wardrobeIds.includes(wardrobeId))
+    .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+
+  return {
+    id: wardrobeId,
+    airtableRecordId: record.id,
+    name: String(fields.WardrobeName || "Wardrobe"),
+    items: wardrobeItems,
+    itemCount: wardrobeItems.length,
+    createdAt: String(fields.CreatedAt || record.createdTime || ""),
+    updatedAt: String(fields.UpdatedAt || record.createdTime || "")
+  };
+}
+
+async function getOwnerRecords(ownerCustomerId) {
+  return withWardrobeTableSetup(() => fetchAllAirtableRecords({
+    formula: `{OwnerCustomerId}="${escapeFormulaValue(ownerCustomerId)}"`
+  }));
+}
+
+async function listWardrobes(ownerCustomerId) {
+  const records = await getOwnerRecords(ownerCustomerId);
+  const wardrobeRecords = records.filter((record) => record.fields?.RecordType === "wardrobe");
+  const itemRecords = records.filter((record) => record.fields?.RecordType === "item");
+  const items = itemRecords.map(itemFromRecord);
+  const wardrobes = wardrobeRecords
+    .map((record) => wardrobeFromRecord(record, items))
+    .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+
+  return { wardrobes };
+}
+
+async function findOwnedWardrobe(ownerCustomerId, wardrobeId) {
+  const records = await withWardrobeTableSetup(() => fetchAllAirtableRecords({
+    formula: `AND({RecordType}="wardrobe",{OwnerCustomerId}="${escapeFormulaValue(ownerCustomerId)}",{WardrobeId}="${escapeFormulaValue(wardrobeId)}")`
+  }));
+  return records[0] || null;
+}
+
+async function requireOwnedWardrobe(ownerCustomerId, wardrobeId) {
+  const wardrobe = await findOwnedWardrobe(ownerCustomerId, wardrobeId);
   if (!wardrobe) {
     const error = new Error("Wardrobe not found");
     error.status = 404;
     throw error;
   }
+  return wardrobe;
+}
 
-  return serializeWardrobe(wardrobe);
+async function requireOwnedItem(ownerCustomerId, itemId) {
+  const records = await withWardrobeTableSetup(() => fetchAllAirtableRecords({
+    formula: `AND({RecordType}="item",{OwnerCustomerId}="${escapeFormulaValue(ownerCustomerId)}",{ItemId}="${escapeFormulaValue(itemId)}")`
+  }));
+
+  if (!records[0]) {
+    const error = new Error("Wardrobe item not found");
+    error.status = 404;
+    throw error;
+  }
+
+  return records[0];
+}
+
+async function readWardrobe(ownerCustomerId, wardrobeId) {
+  const [wardrobeRecord, records] = await Promise.all([
+    requireOwnedWardrobe(ownerCustomerId, wardrobeId),
+    getOwnerRecords(ownerCustomerId)
+  ]);
+  const items = records
+    .filter((record) => record.fields?.RecordType === "item")
+    .map(itemFromRecord);
+
+  return wardrobeFromRecord(wardrobeRecord, items);
 }
 
 export async function loader({ request }) {
@@ -390,12 +490,21 @@ export async function action({ request }) {
       const name = cleanString(body.name);
       if (!name) return Response.json({ error: "Wardrobe name is required" }, { status: 400, headers: corsHeaders });
 
-      const wardrobe = await prisma.wardrobe.create({
-        data: { ownerCustomerId, name },
-        include: { memberships: true }
-      });
+      const now = new Date().toISOString();
+      const wardrobeId = makeId("wardrobe");
+      const record = await withWardrobeTableSetup(() => airtableRequest({
+        method: "POST",
+        fields: {
+          RecordType: "wardrobe",
+          OwnerCustomerId: ownerCustomerId,
+          WardrobeId: wardrobeId,
+          WardrobeName: name,
+          CreatedAt: now,
+          UpdatedAt: now
+        }
+      }));
 
-      return Response.json({ wardrobe: serializeWardrobe(wardrobe) }, { headers: corsHeaders });
+      return Response.json({ wardrobe: wardrobeFromRecord(record, []) }, { headers: corsHeaders });
     }
 
     if (actionName === "renameWardrobe") {
@@ -404,8 +513,15 @@ export async function action({ request }) {
       if (!wardrobeId) return Response.json({ error: "Missing wardrobeId" }, { status: 400, headers: corsHeaders });
       if (!name) return Response.json({ error: "Wardrobe name is required" }, { status: 400, headers: corsHeaders });
 
-      await requireOwnedWardrobe(ownerCustomerId, wardrobeId);
-      await prisma.wardrobe.update({ where: { id: wardrobeId }, data: { name } });
+      const wardrobe = await requireOwnedWardrobe(ownerCustomerId, wardrobeId);
+      await airtableRequest({
+        method: "PATCH",
+        recordId: wardrobe.id,
+        fields: {
+          WardrobeName: name,
+          UpdatedAt: new Date().toISOString()
+        }
+      });
 
       return Response.json({ wardrobe: await readWardrobe(ownerCustomerId, wardrobeId) }, { headers: corsHeaders });
     }
@@ -414,8 +530,13 @@ export async function action({ request }) {
       const wardrobeId = cleanString(body.wardrobeId);
       if (!wardrobeId) return Response.json({ error: "Missing wardrobeId" }, { status: 400, headers: corsHeaders });
 
-      await requireOwnedWardrobe(ownerCustomerId, wardrobeId);
-      await prisma.wardrobe.delete({ where: { id: wardrobeId } });
+      const records = await getOwnerRecords(ownerCustomerId);
+      const recordsToDelete = records.filter((record) => {
+        const fields = record.fields || {};
+        return fields.WardrobeId === wardrobeId && ["wardrobe", "item"].includes(fields.RecordType);
+      });
+
+      await Promise.all(recordsToDelete.map((record) => airtableRequest({ method: "DELETE", recordId: record.id })));
 
       return Response.json({ success: true }, { headers: corsHeaders });
     }
@@ -431,23 +552,35 @@ export async function action({ request }) {
       if (!ITEM_TYPES.has(itemType)) return Response.json({ error: "Choose an item type" }, { status: 400, headers: corsHeaders });
       if (!colors.length) return Response.json({ error: "Select at least one color" }, { status: 400, headers: corsHeaders });
 
-      await requireOwnedWardrobe(ownerCustomerId, wardrobeId);
-
-      const item = await prisma.wardrobeItem.create({
-        data: {
-          ownerCustomerId,
-          description,
-          itemType,
-          colors: { create: colors },
-          memberships: { create: { wardrobeId } }
-        },
-        include: {
-          colors: { orderBy: { displayOrder: "asc" } },
-          memberships: true
+      const wardrobe = await requireOwnedWardrobe(ownerCustomerId, wardrobeId);
+      const now = new Date().toISOString();
+      const itemId = makeId("witem");
+      const wardrobeName = String(wardrobe.fields?.WardrobeName || "");
+      const itemRecord = await airtableRequest({
+        method: "POST",
+        fields: {
+          RecordType: "item",
+          OwnerCustomerId: ownerCustomerId,
+          WardrobeId: wardrobeId,
+          WardrobeName: wardrobeName,
+          ItemId: itemId,
+          Description: description,
+          ItemType: itemType,
+          ColorsJson: JSON.stringify(colors),
+          CreatedAt: now,
+          UpdatedAt: now
         }
       });
+      await airtableRequest({
+        method: "PATCH",
+        recordId: wardrobe.id,
+        fields: { UpdatedAt: now }
+      });
 
-      return Response.json({ item: serializeItem(item), wardrobe: await readWardrobe(ownerCustomerId, wardrobeId) }, { headers: corsHeaders });
+      return Response.json(
+        { item: itemFromRecord(itemRecord), wardrobe: await readWardrobe(ownerCustomerId, wardrobeId) },
+        { headers: corsHeaders }
+      );
     }
 
     if (actionName === "updateItem") {
@@ -464,18 +597,18 @@ export async function action({ request }) {
       if (!colors.length) return Response.json({ error: "Select at least one color" }, { status: 400, headers: corsHeaders });
 
       await requireOwnedWardrobe(ownerCustomerId, wardrobeId);
-      await requireOwnedItem(ownerCustomerId, itemId);
-
-      await prisma.$transaction([
-        prisma.wardrobeItem.update({
-          where: { id: itemId },
-          data: { description, itemType }
-        }),
-        prisma.wardrobeItemColor.deleteMany({ where: { wardrobeItemId: itemId } }),
-        prisma.wardrobeItemColor.createMany({
-          data: colors.map((color) => ({ ...color, wardrobeItemId: itemId }))
-        })
-      ]);
+      const item = await requireOwnedItem(ownerCustomerId, itemId);
+      const now = new Date().toISOString();
+      await airtableRequest({
+        method: "PATCH",
+        recordId: item.id,
+        fields: {
+          Description: description,
+          ItemType: itemType,
+          ColorsJson: JSON.stringify(colors),
+          UpdatedAt: now
+        }
+      });
 
       return Response.json({ wardrobe: await readWardrobe(ownerCustomerId, wardrobeId) }, { headers: corsHeaders });
     }
@@ -487,13 +620,8 @@ export async function action({ request }) {
       if (!itemId) return Response.json({ error: "Missing itemId" }, { status: 400, headers: corsHeaders });
 
       await requireOwnedWardrobe(ownerCustomerId, wardrobeId);
-      await requireOwnedItem(ownerCustomerId, itemId);
-      await prisma.wardrobeMembership.deleteMany({ where: { wardrobeId, wardrobeItemId: itemId } });
-
-      const remainingMemberships = await prisma.wardrobeMembership.count({ where: { wardrobeItemId: itemId } });
-      if (remainingMemberships === 0) {
-        await prisma.wardrobeItem.delete({ where: { id: itemId } });
-      }
+      const item = await requireOwnedItem(ownerCustomerId, itemId);
+      await airtableRequest({ method: "DELETE", recordId: item.id });
 
       return Response.json({ success: true, wardrobe: await readWardrobe(ownerCustomerId, wardrobeId) }, { headers: corsHeaders });
     }
