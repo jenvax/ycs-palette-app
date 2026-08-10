@@ -42,6 +42,46 @@ function normalizeHex(value) {
   return `#${raw.toUpperCase()}`;
 }
 
+function escapeFormulaValue(value) {
+  return String(value || "").replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+async function fetchCustomerDirectoryTags(customerId) {
+  const baseId = process.env.AIRTABLE_BASE_ID;
+  const token = process.env.AIRTABLE_TOKEN;
+
+  if (!baseId || !token) {
+    const error = new Error("Missing customer directory configuration");
+    error.status = 500;
+    throw error;
+  }
+
+  const params = new URLSearchParams({
+    maxRecords: "1",
+    filterByFormula: `{CustomerId}="${escapeFormulaValue(customerId)}"`
+  });
+
+  const response = await fetch(`https://api.airtable.com/v0/${baseId}/CustomerDirectory?${params.toString()}`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const message = data.error?.message || data.error || "Customer directory lookup failed";
+    const error = new Error(message);
+    error.status = response.status || 500;
+    throw error;
+  }
+
+  const fields = data.records?.[0]?.fields || {};
+  return String(fields.ShopifyTags || fields.Tags || "")
+    .split(",")
+    .map((tag) => tag.trim().toUpperCase())
+    .filter(Boolean);
+}
+
 async function getShopifyAccessToken({ shop, apiKey, apiSecret }) {
   const response = await fetch(`https://${shop}/admin/oauth/access_token`, {
     method: "POST",
@@ -151,7 +191,14 @@ async function authorizeAdmin(customerId) {
     return { ok: false, status: 401, error: "You must be signed in to use Wardrobe Builder" };
   }
 
-  const tags = await fetchCustomerTags(ownerCustomerId);
+  let tags = [];
+  try {
+    tags = await fetchCustomerTags(ownerCustomerId);
+  } catch (error) {
+    console.error("Shopify wardrobe authorization failed, trying CustomerDirectory:", error);
+    tags = await fetchCustomerDirectoryTags(ownerCustomerId);
+  }
+
   if (!tags.includes(ADMIN_TAG)) {
     return { ok: false, status: 403, error: "YCS_ADMIN access required" };
   }
