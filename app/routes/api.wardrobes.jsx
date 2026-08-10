@@ -122,7 +122,10 @@ async function fetchAllAirtableRecords({ tableName, formula }) {
 }
 
 function isMissingTable(error) {
-  return error?.status === 404 || ["TABLE_NOT_FOUND", "NOT_FOUND"].includes(error?.type);
+  const message = String(error?.message || "").toLowerCase();
+  return error?.status === 404
+    || ["TABLE_NOT_FOUND", "NOT_FOUND", "INVALID_PERMISSIONS_OR_MODEL_NOT_FOUND"].includes(error?.type)
+    || message.includes("requested model was not found");
 }
 
 async function ensureWardrobeTable() {
