@@ -553,15 +553,29 @@
       if (count <= 1) return 'grid-template-columns:1fr;grid-template-rows:1fr;';
       if (count === 2) return 'grid-template-columns:1fr 1fr;grid-template-rows:1fr;';
       if (count <= 4) return 'grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;';
-      return 'grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);';
+      if (count <= 6) return 'grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);';
+      return 'grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);';
+    }
+
+    function displayMosaicColors(colors) {
+      const displayColors = colors.slice(0, 9);
+      const count = displayColors.length;
+      const targetCount = count <= 4 ? count : count <= 6 ? 6 : 9;
+      let fillIndex = 0;
+      while (displayColors.length < targetCount) {
+        displayColors.push(colors[fillIndex % colors.length]);
+        fillIndex += 1;
+      }
+      return displayColors;
     }
 
     function cardMarkup(item) {
       const colors = item.colors && item.colors.length ? item.colors : [{ hex: '#eee', name: 'Color' }];
+      const mosaicColors = displayMosaicColors(colors);
       return `
         <button type="button" class="ycs-wardrobe-card" data-ycs-item-id="${escapeHtml(item.id)}">
-          <span class="ycs-wardrobe-card__swatch" style="${mosaicStyle(colors)}">
-            ${colors.map((color) => `<span style="background:${escapeHtml(color.hex || color.hexCode || '#eee')}"></span>`).join('')}
+          <span class="ycs-wardrobe-card__swatch" style="${mosaicStyle(mosaicColors)}">
+            ${mosaicColors.map((color) => `<span style="background:${escapeHtml(color.hex || color.hexCode || '#eee')}"></span>`).join('')}
           </span>
           <span class="ycs-wardrobe-card__name">${escapeHtml(item.description)}</span>
         </button>
