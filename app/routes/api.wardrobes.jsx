@@ -42,52 +42,107 @@ function normalizeHex(value) {
   return `#${raw.toUpperCase()}`;
 }
 
-async function shopifyAdminGraphQL({ query, variables = {} }) {
-  const shop = String(process.env.SHOPIFY_SYNC_SHOP || process.env.SHOPIFY_SHOP || "")
-    .replace(/^https?:\/\//, "")
-    .replace(/\/.*$/, "");
-  const accessToken = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
+async function getShopifyAccessToken({ shop, apiKey, apiSecret }) {
+  const response = await fetch(`https://${shop}/admin/oauth/access_token`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      client_id: apiKey,
+      client_secret: apiSecret,
+      grant_type: "client_credentials"
+    })
+  });
+  const data = await response.json().catch(() => ({}));
 
-  if (!shop || !accessToken) {
-    throw new Error("Missing Shopify admin configuration");
+  if (!response.ok || !data.access_token) {
+    const error = new Error("Failed to generate Shopify access token");
+    error.status = response.status || 500;
+    throw error;
   }
 
+  return data.access_token;
+}
+
+async function fetchCustomerTagsWithToken({ shop, accessToken, customerId }) {
   const response = await fetch(`https://${shop}/admin/api/2026-04/graphql.json`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "X-Shopify-Access-Token": accessToken
     },
-    body: JSON.stringify({ query, variables })
+    body: JSON.stringify({
+      query: `
+        query getCustomerTags($id: ID!) {
+          customer(id: $id) {
+            tags
+          }
+        }
+      `,
+      variables: { id: `gid://shopify/Customer/${customerId}` }
+    })
   });
-
-  const json = await response.json();
+  const json = await response.json().catch(() => ({}));
 
   if (!response.ok || json.errors) {
-    throw new Error(json.errors?.[0]?.message || "Shopify Admin GraphQL request failed");
+    const message = json.errors?.[0]?.message || json.error || "Shopify customer lookup failed";
+    const error = new Error(message);
+    error.status = response.status || 500;
+    throw error;
   }
 
-  return json.data;
+  return Array.isArray(json.data?.customer?.tags)
+    ? json.data.customer.tags.map((tag) => String(tag).trim().toUpperCase())
+    : [];
 }
 
 async function fetchCustomerTags(customerId) {
   const safeCustomerId = normalizeCustomerId(customerId);
   if (!safeCustomerId) return [];
 
-  const data = await shopifyAdminGraphQL({
-    query: `
-      query getCustomerTags($id: ID!) {
-        customer(id: $id) {
-          tags
-        }
-      }
-    `,
-    variables: { id: `gid://shopify/Customer/${safeCustomerId}` }
+  const shop = String(process.env.SHOPIFY_SYNC_SHOP || process.env.SHOPIFY_SHOP || "")
+    .replace(/^https?:\/\//, "")
+    .replace(/\/.*$/, "");
+  const staticAccessToken = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
+
+  if (!shop) {
+    const error = new Error("Missing Shopify shop configuration");
+    error.status = 500;
+    throw error;
+  }
+
+  if (staticAccessToken) {
+    try {
+      return await fetchCustomerTagsWithToken({
+        shop,
+        accessToken: staticAccessToken,
+        customerId: safeCustomerId
+      });
+    } catch (error) {
+      console.error("Static Shopify customer lookup failed, trying generated app token:", error);
+    }
+  }
+
+  const apiSecret = process.env.SHOPIFY_API_SECRET || process.env.SHOPIFY_API_TOKEN;
+
+  if (!process.env.SHOPIFY_API_KEY || !apiSecret) {
+    const error = new Error("Missing Shopify API credentials");
+    error.status = 500;
+    throw error;
+  }
+
+  const generatedAccessToken = await getShopifyAccessToken({
+    shop,
+    apiKey: process.env.SHOPIFY_API_KEY,
+    apiSecret
   });
 
-  return Array.isArray(data.customer?.tags)
-    ? data.customer.tags.map((tag) => String(tag).trim().toUpperCase())
-    : [];
+  return fetchCustomerTagsWithToken({
+    shop,
+    accessToken: generatedAccessToken,
+    customerId: safeCustomerId
+  });
 }
 
 async function authorizeAdmin(customerId) {
