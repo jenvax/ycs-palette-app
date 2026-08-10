@@ -502,66 +502,9 @@
     margin-top: 14px;
   }
 
-  .ycs-swatch-scroll-row {
-    position: relative;
-    margin-top: 14px;
-  }
-
-  .ycs-swatch-scroll-controls {
-    display: flex;
-    justify-content: flex-end;
-    gap: 6px;
-    margin-bottom: 8px;
-  }
-
-  .ycs-swatch-scroll-button {
-    appearance: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 34px;
-    height: 34px;
-    border: 1px solid #ddd3c8;
-    border-radius: 999px;
-    background: #fff;
-    color: #2f2a25;
-    cursor: pointer;
-    font: inherit;
-    font-size: 18px;
-    font-weight: 900;
-    line-height: 1;
-  }
-
-  .ycs-swatch-scroll-button:hover {
-    background: #111;
-    color: #fff;
-  }
-
-  .ycs-swatch-grid.ycs-swatch-grid--scroll {
-    display: flex;
-    gap: 8px;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scroll-snap-type: x proximity;
-    scrollbar-width: thin;
-    margin-top: 0;
-    padding: 2px 2px 12px;
-  }
-
-  .ycs-swatch-grid.ycs-swatch-grid--scroll .ycs-swatch-link {
-    flex: 0 0 104px;
-    width: 104px;
-    scroll-snap-align: start;
-  }
-
   @media (min-width: 700px) {
     .ycs-swatch-grid {
       grid-template-columns: repeat(6, minmax(0, 1fr));
-    }
-
-    .ycs-swatch-grid.ycs-swatch-grid--scroll .ycs-swatch-link {
-      flex-basis: 128px;
-      width: 128px;
     }
   }
 
@@ -570,11 +513,6 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px 8px;
     margin-top: 14px;
-  }
-
-  .ycs-palette-section--favorites .ycs-swatch-grid.ycs-swatch-grid--scroll {
-    display: flex;
-    grid-template-columns: none;
   }
 
   .ycs-palette-section--favorites .ycs-swatch-link {
@@ -700,25 +638,9 @@
     gap: 4px;
   }
 
-  .ycs-palette-app.is-compact-palette .ycs-swatch-grid.ycs-swatch-grid--scroll {
-    display: flex;
-    grid-template-columns: none;
-    gap: 4px;
-  }
-
-  .ycs-palette-app.is-compact-palette .ycs-swatch-grid.ycs-swatch-grid--scroll .ycs-swatch-link {
-    flex: 0 0 44px;
-    width: 44px;
-  }
-
   @media (min-width: 700px) {
     .ycs-palette-app.is-compact-palette .ycs-swatch-grid {
       grid-template-columns: repeat(12, minmax(0, 1fr));
-    }
-
-    .ycs-palette-app.is-compact-palette .ycs-swatch-grid.ycs-swatch-grid--scroll .ycs-swatch-link {
-      flex-basis: 48px;
-      width: 48px;
     }
   }
 
@@ -925,21 +847,6 @@
     const messageEl = document.getElementById('palette-message');
     const scanToggleEl = document.getElementById('palette-scan-toggle');
     const openPhotoDrapingEl = document.getElementById('ycs-open-photo-draping');
-
-    sectionsEl.addEventListener('click', function (event) {
-      const button = event.target.closest('[data-ycs-swatch-scroll]');
-      if (!button) return;
-
-      const row = button.closest('.ycs-swatch-scroll-row');
-      const scroller = row?.querySelector('[data-ycs-swatch-scroller]');
-      if (!scroller) return;
-
-      const direction = Number(button.dataset.ycsSwatchScroll || 1);
-      scroller.scrollBy({
-        left: direction * Math.max(220, Math.round(scroller.clientWidth * 0.72)),
-        behavior: 'smooth'
-      });
-    });
 
     const params = new URLSearchParams(window.location.search);
     const returnUrl = params.get('returnUrl') || '/pages/my-palettes';
@@ -1329,20 +1236,6 @@ const hasAccess =
       `;
     }
 
-    function renderSwatchRow(colors) {
-      return `
-        <div class="ycs-swatch-scroll-row">
-          <div class="ycs-swatch-scroll-controls" aria-label="Color row controls">
-            <button type="button" class="ycs-swatch-scroll-button" data-ycs-swatch-scroll="-1" aria-label="Scroll colors left">‹</button>
-            <button type="button" class="ycs-swatch-scroll-button" data-ycs-swatch-scroll="1" aria-label="Scroll colors right">›</button>
-          </div>
-          <div class="ycs-swatch-grid ycs-swatch-grid--scroll" data-ycs-swatch-scroller>
-            ${colors.map(color => swatchMarkup(color)).join('')}
-          </div>
-        </div>
-      `;
-    }
-
     function getNeutralFamily(color) {
       return String(
         color.neutralFamily ||
@@ -1379,7 +1272,9 @@ const hasAccess =
         html += `
           <div class="ycs-depth-group">
             <h3 class="ycs-depth-group__title">Light Neutrals</h3>
-            ${renderSwatchRow(lightColors)}
+            <div class="ycs-swatch-grid">
+              ${lightColors.map(color => swatchMarkup(color)).join('')}
+            </div>
           </div>
         `;
       }
@@ -1413,7 +1308,9 @@ const hasAccess =
         html += `
           <div class="ycs-depth-group">
             <h3 class="ycs-subcategory-heading">${family}</h3>
-            ${renderSwatchRow(familyColors)}
+            <div class="ycs-swatch-grid">
+              ${familyColors.map(color => swatchMarkup(color)).join('')}
+            </div>
           </div>
         `;
       });
@@ -1452,7 +1349,9 @@ const hasAccess =
           return `
             <div class="ycs-depth-group">
               <h3 class="ycs-depth-group__title">${label}</h3>
-              ${renderSwatchRow(groupedByDepth[depth])}
+              <div class="ycs-swatch-grid">
+                ${groupedByDepth[depth].map(color => swatchMarkup(color)).join('')}
+              </div>
             </div>
           `;
         })
@@ -1468,7 +1367,9 @@ const hasAccess =
       if (currentViewMode === 'compact') {
         sectionsEl.innerHTML = `
           <section class="ycs-palette-section ycs-palette-section--compact" data-category="All">
-            ${renderSwatchRow(flatColors)}
+            <div class="ycs-swatch-grid">
+              ${flatColors.map(color => swatchMarkup(color)).join('')}
+            </div>
           </section>
         `;
         return;
@@ -1491,7 +1392,9 @@ const hasAccess =
               </h2>
               <div class="ycs-gradient-bar" style="background: ${gradientForColors(grouped['Favorites'] || [])};"></div>
             </div>
-            ${renderSwatchRow(grouped['Favorites'] || [])}
+            <div class="ycs-swatch-grid">
+              ${(grouped['Favorites'] || []).map(color => swatchMarkup(color)).join('')}
+            </div>
           </section>
         ` : '';
 
@@ -1502,7 +1405,9 @@ const hasAccess =
               <h2 class="ycs-section-title">All Colors</h2>
               <div class="ycs-gradient-bar" style="background: ${gradientForColors(flatColors)};"></div>
             </div>
-            ${renderSwatchRow(flatColors)}
+            <div class="ycs-swatch-grid">
+              ${flatColors.map(color => swatchMarkup(color)).join('')}
+            </div>
           </section>
         `;
         return;
@@ -1552,7 +1457,9 @@ const hasAccess =
             ${
               shouldGroupByDepth
                 ? renderDepthGroupedSwatches(colors, category)
-                : renderSwatchRow(colors)
+                : `<div class="ycs-swatch-grid">
+                    ${colors.map(color => swatchMarkup(color)).join('')}
+                  </div>`
             }
           </section>
         `;
