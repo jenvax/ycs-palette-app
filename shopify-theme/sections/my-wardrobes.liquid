@@ -3,6 +3,8 @@
   {% assign palette_access_string = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
 {% endif %}
 
+{% assign wardrobe_palette_codes = 'CWL,CWM,CWD,CCL,CCM,CCD,SWL,SWM,SWD,SCL,SCM,SCD,LO,MO,DO,CWLG,CWMG,CWDG,SWLG,SWMG,SWDG' | split: ',' %}
+
 {% assign is_admin = false %}
 {% if customer and palette_access_string contains ',YCS_ADMIN,' %}
   {% assign is_admin = true %}
@@ -23,6 +25,17 @@
   >
     <nav class="ycs-wardrobes__nav" aria-label="Wardrobe navigation">
       <a href="/pages/my-palettes" class="ycs-wardrobes__nav-link">My Palettes</a>
+      {% for palette_code in wardrobe_palette_codes %}
+        {% assign palette_token = ',' | append: palette_code | append: ',' %}
+        {% if palette_access_string contains palette_token %}
+          <a
+            href="/pages/palette?palette={{ palette_code }}&returnUrl=/pages/my-wardrobes"
+            class="ycs-wardrobes__nav-link ycs-wardrobes__nav-link--palette"
+          >
+            {{ palette_code }}
+          </a>
+        {% endif %}
+      {% endfor %}
     </nav>
 
     <header class="ycs-wardrobes__header">
