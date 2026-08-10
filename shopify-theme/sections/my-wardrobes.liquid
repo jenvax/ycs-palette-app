@@ -255,6 +255,95 @@
     color: #625c55;
   }
 
+  .ycs-wardrobes__workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 190px;
+    gap: 16px;
+    align-items: start;
+  }
+
+  .ycs-wardrobes__rows {
+    min-width: 0;
+  }
+
+  .ycs-outfit-panel {
+    position: sticky;
+    top: 16px;
+    display: grid;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid #ece7df;
+    border-radius: 8px;
+    background: #fbfaf8;
+  }
+
+  .ycs-outfit-panel__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .ycs-outfit-panel__head h2 {
+    margin: 0;
+    color: #2f2a25;
+    font-size: 18px;
+    line-height: 1.15;
+  }
+
+  .ycs-outfit-panel__clear {
+    border: 0;
+    background: transparent;
+    color: #8b8177;
+    cursor: pointer;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 0;
+  }
+
+  .ycs-outfit-panel__empty {
+    margin: 0;
+    color: #716960;
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .ycs-outfit-panel__stack {
+    display: grid;
+    gap: 8px;
+  }
+
+  .ycs-outfit-panel__item {
+    display: grid;
+    gap: 5px;
+  }
+
+  .ycs-outfit-panel__label {
+    color: #8b8177;
+    font-size: 11px;
+    font-weight: 900;
+    line-height: 1.1;
+    text-transform: uppercase;
+  }
+
+  .ycs-outfit-panel__swatch {
+    display: grid;
+    width: 100%;
+    aspect-ratio: 1;
+    overflow: hidden;
+    border-radius: 8px;
+    background: #f6f1ea;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.08);
+  }
+
+  .ycs-outfit-panel__name {
+    color: #2f2a25;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.2;
+  }
+
   .ycs-wardrobes-row {
     margin-bottom: 24px;
   }
@@ -355,6 +444,36 @@
 
   .ycs-wardrobe-card.is-dragging {
     opacity: .42;
+  }
+
+  .ycs-wardrobe-card.is-in-outfit .ycs-wardrobe-card__swatch {
+    box-shadow: inset 0 0 0 3px #111, 0 5px 16px rgba(0,0,0,.06);
+  }
+
+  .ycs-wardrobe-card__outfit-button {
+    position: absolute;
+    top: 7px;
+    left: 7px;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border: 1px solid rgba(0,0,0,.08);
+    border-radius: 999px;
+    background: rgba(255,255,255,.92);
+    box-shadow: 0 2px 8px rgba(0,0,0,.14);
+    color: #2f2a25;
+    cursor: pointer;
+    font: inherit;
+    font-size: 18px;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .ycs-wardrobe-card.is-in-outfit .ycs-wardrobe-card__outfit-button {
+    background: #111;
+    color: #fff;
   }
 
   .ycs-wardrobe-card--add {
@@ -578,6 +697,14 @@
       width: 100%;
     }
 
+    .ycs-wardrobes__workspace {
+      grid-template-columns: 1fr;
+    }
+
+    .ycs-outfit-panel {
+      position: static;
+    }
+
     .ycs-wardrobe-card {
       flex-basis: 112px;
       width: 112px;
@@ -635,7 +762,8 @@
       editingColors: [],
       draggingItemId: '',
       didDragCard: false,
-      dragEndedAt: 0
+      dragEndedAt: 0,
+      outfitSelections: {}
     };
 
     function escapeHtml(value) {
@@ -688,14 +816,47 @@
     function cardMarkup(item) {
       const colors = item.colors && item.colors.length ? item.colors : [{ hex: '#eee', name: 'Color' }];
       const mosaicColors = displayMosaicColors(colors);
+      const isInOutfit = state.outfitSelections?.[item.itemType] === item.id;
       return `
-        <button type="button" class="ycs-wardrobe-card" data-ycs-item-id="${escapeHtml(item.id)}" data-ycs-item-type="${escapeHtml(item.itemType)}">
+        <button type="button" class="ycs-wardrobe-card${isInOutfit ? ' is-in-outfit' : ''}" data-ycs-item-id="${escapeHtml(item.id)}" data-ycs-item-type="${escapeHtml(item.itemType)}">
+          <span class="ycs-wardrobe-card__outfit-button" data-ycs-add-to-outfit aria-label="Add ${escapeHtml(item.description)} to outfit">+</span>
           <span class="ycs-wardrobe-card__handle" draggable="true" data-ycs-drag-handle aria-label="Move wardrobe item">⋮</span>
           <span class="ycs-wardrobe-card__swatch" style="${mosaicStyle(mosaicColors)}">
             ${mosaicColors.map((color) => `<span style="background:${escapeHtml(color.hex || color.hexCode || '#eee')}"></span>`).join('')}
           </span>
           <span class="ycs-wardrobe-card__name">${escapeHtml(item.description)}</span>
         </button>
+      `;
+    }
+
+    function outfitItemMarkup(item) {
+      const colors = item.colors && item.colors.length ? item.colors : [{ hex: '#eee', name: 'Color' }];
+      const mosaicColors = displayMosaicColors(colors);
+      return `
+        <div class="ycs-outfit-panel__item">
+          <span class="ycs-outfit-panel__label">${escapeHtml(typeLabels[item.itemType] || item.itemType)}</span>
+          <span class="ycs-outfit-panel__swatch" style="${mosaicStyle(mosaicColors)}">
+            ${mosaicColors.map((color) => `<span style="background:${escapeHtml(color.hex || color.hexCode || '#eee')}"></span>`).join('')}
+          </span>
+          <span class="ycs-outfit-panel__name">${escapeHtml(item.description)}</span>
+        </div>
+      `;
+    }
+
+    function outfitPanelMarkup(wardrobe) {
+      const items = typeOrder
+        .map((type) => (wardrobe.items || []).find((item) => item.id === state.outfitSelections?.[type] && item.itemType === type))
+        .filter(Boolean);
+      return `
+        <aside class="ycs-outfit-panel" aria-label="Outfit builder">
+          <div class="ycs-outfit-panel__head">
+            <h2>Outfit</h2>
+            ${items.length ? '<button type="button" class="ycs-outfit-panel__clear" data-ycs-clear-outfit>Clear</button>' : ''}
+          </div>
+          ${items.length
+            ? `<div class="ycs-outfit-panel__stack">${items.map(outfitItemMarkup).join('')}</div>`
+            : '<p class="ycs-outfit-panel__empty">Add one item from any category to build an outfit.</p>'}
+        </aside>
       `;
     }
 
@@ -750,9 +911,12 @@
         `;
       }).join('');
 
-      bodyEl.innerHTML = rows || `
-        <div class="ycs-wardrobes__empty">
-          This wardrobe is empty. Add an item from one of the wardrobe rows.
+      bodyEl.innerHTML = `
+        <div class="ycs-wardrobes__workspace">
+          <div class="ycs-wardrobes__rows">
+            ${rows || '<div class="ycs-wardrobes__empty">This wardrobe is empty. Add an item from one of the wardrobe rows.</div>'}
+          </div>
+          ${outfitPanelMarkup(wardrobe)}
         </div>
       `;
     }
@@ -964,6 +1128,27 @@
         return;
       }
 
+      const clearOutfitButton = event.target.closest('[data-ycs-clear-outfit]');
+      if (clearOutfitButton) {
+        event.preventDefault();
+        state.outfitSelections = {};
+        render();
+        return;
+      }
+
+      const outfitButton = event.target.closest('[data-ycs-add-to-outfit]');
+      if (outfitButton) {
+        event.preventDefault();
+        event.stopPropagation();
+        const card = outfitButton.closest('[data-ycs-item-id]');
+        const wardrobe = activeWardrobe();
+        const item = (wardrobe?.items || []).find((entry) => entry.id === card?.dataset.ycsItemId);
+        if (!item) return;
+        state.outfitSelections[item.itemType] = item.id;
+        render();
+        return;
+      }
+
       const addCard = event.target.closest('[data-ycs-add-item-type]');
       if (addCard) {
         openNewItemModal(addCard.dataset.ycsAddItemType || 'top');
@@ -1141,6 +1326,7 @@
 
     selectEl.addEventListener('change', function () {
       state.activeWardrobeId = selectEl.value;
+      state.outfitSelections = {};
       localStorage.setItem('ycsActiveWardrobeId', state.activeWardrobeId);
       render();
     });
