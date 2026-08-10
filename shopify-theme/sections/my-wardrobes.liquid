@@ -357,6 +357,26 @@
     opacity: .42;
   }
 
+  .ycs-wardrobe-card--add {
+    min-height: 158px;
+  }
+
+  .ycs-wardrobe-card--add .ycs-wardrobe-card__swatch {
+    display: grid;
+    place-items: center;
+    border: 2px dashed #d8cfc3;
+    background: #fbfaf8;
+    box-shadow: none;
+    color: #8b8177;
+    font-size: 42px;
+    font-weight: 500;
+  }
+
+  .ycs-wardrobe-card--add:hover .ycs-wardrobe-card__swatch {
+    border-color: #111;
+    color: #111;
+  }
+
   .ycs-wardrobe-card__handle {
     position: absolute;
     top: 7px;
@@ -611,6 +631,7 @@
       wardrobes: [],
       activeWardrobeId: localStorage.getItem('ycsActiveWardrobeId') || '',
       editingItem: null,
+      editingMode: 'edit',
       editingColors: [],
       draggingItemId: '',
       didDragCard: false,
@@ -678,6 +699,15 @@
       `;
     }
 
+    function addCardMarkup(type) {
+      return `
+        <button type="button" class="ycs-wardrobe-card ycs-wardrobe-card--add" data-ycs-add-item-type="${type}" aria-label="Add ${escapeHtml(typeLabels[type])} item">
+          <span class="ycs-wardrobe-card__swatch">+</span>
+          <span class="ycs-wardrobe-card__name">Add Item</span>
+        </button>
+      `;
+    }
+
     function render() {
       const wardrobe = activeWardrobe();
 
@@ -698,7 +728,6 @@
 
       const rows = typeOrder.map((type) => {
         const items = (wardrobe.items || []).filter((item) => item.itemType === type);
-        if (!items.length) return '';
         return `
           <section class="ycs-wardrobes-row">
             <div class="ycs-wardrobes-row__head">
@@ -712,6 +741,7 @@
               <div class="ycs-wardrobes-row__scroller" data-ycs-row-scroller>
                 <div class="ycs-wardrobes-row__track" data-ycs-row-track data-ycs-row-type="${type}" data-ycs-row-offset="0">
                   ${items.map(cardMarkup).join('')}
+                  ${addCardMarkup(type)}
                 </div>
               </div>
               <button type="button" class="ycs-wardrobes-row__scroll-button" data-ycs-scroll-row="1" aria-label="Scroll ${typeLabels[type]} right">›</button>
@@ -722,7 +752,7 @@
 
       bodyEl.innerHTML = rows || `
         <div class="ycs-wardrobes__empty">
-          This wardrobe is empty. Add an item from an open palette color.
+          This wardrobe is empty. Add an item from one of the wardrobe rows.
         </div>
       `;
     }
@@ -767,6 +797,7 @@
     function closeModal() {
       modalEl.hidden = true;
       state.editingItem = null;
+      state.editingMode = 'edit';
       state.editingColors = [];
     }
 
@@ -782,22 +813,15 @@
       `).join('');
     }
 
-    function openItemModal(item) {
-      state.editingItem = item;
-      state.editingColors = (item.colors || []).map((color) => ({
-        name: color.name || color.colorName,
-        hex: color.hex || color.hexCode,
-        paletteCode: color.paletteCode || ''
-      }));
-      modalTitleEl.textContent = 'Edit Wardrobe Item';
-      modalBodyEl.innerHTML = `
+    function itemFormMarkup({ item, itemType, isNew }) {
+      return `
         <form class="ycs-wardrobes-form" data-ycs-item-form>
           <label>Description
-            <input name="description" value="${escapeHtml(item.description)}" required>
+            <input name="description" value="${escapeHtml(item?.description || '')}" placeholder="Knit Top" required>
           </label>
           <label>Item Type
             <select name="itemType">
-              ${itemTypeOptions.map(([value, label]) => `<option value="${value}"${value === item.itemType ? ' selected' : ''}>${label}</option>`).join('')}
+              ${itemTypeOptions.map(([value, label]) => `<option value="${value}"${value === itemType ? ' selected' : ''}>${label}</option>`).join('')}
             </select>
           </label>
           <div>
@@ -814,13 +838,37 @@
             <button type="button" class="ycs-wardrobes__button ycs-wardrobes__button--secondary" data-ycs-add-manual-color>Add Color</button>
           </div>
           <div class="ycs-wardrobes-form__actions">
-            <button type="button" class="ycs-wardrobes__button ycs-wardrobes__button--danger" data-ycs-remove-from-wardrobe>Remove from Wardrobe</button>
-            <button type="submit" class="ycs-wardrobes__button">Save Item</button>
+            ${isNew ? '' : '<button type="button" class="ycs-wardrobes__button ycs-wardrobes__button--danger" data-ycs-remove-from-wardrobe>Remove from Wardrobe</button>'}
+            <button type="submit" class="ycs-wardrobes__button">${isNew ? 'Add Item' : 'Save Item'}</button>
           </div>
         </form>
       `;
+    }
+
+    function openItemModal(item) {
+      state.editingItem = item;
+      state.editingMode = 'edit';
+      state.editingColors = (item.colors || []).map((color) => ({
+        name: color.name || color.colorName,
+        hex: color.hex || color.hexCode,
+        paletteCode: color.paletteCode || ''
+      }));
+      modalTitleEl.textContent = 'Edit Wardrobe Item';
+      modalBodyEl.innerHTML = itemFormMarkup({ item, itemType: item.itemType, isNew: false });
       modalEl.hidden = false;
       renderColorPills();
+    }
+
+    function openNewItemModal(itemType) {
+      state.editingItem = null;
+      state.editingMode = 'create';
+      state.editingColors = [];
+      modalTitleEl.textContent = 'Add Wardrobe Item';
+      modalBodyEl.innerHTML = itemFormMarkup({ item: null, itemType, isNew: true });
+      modalEl.hidden = false;
+      renderColorPills();
+      const form = modalEl.querySelector('[data-ycs-item-form]');
+      if (form) form.elements.description.focus();
     }
 
     function orderedItemPayload(wardrobe) {
@@ -913,6 +961,12 @@
         const nextOffset = currentOffset + (direction * step);
         track.dataset.ycsRowOffset = String(nextOffset);
         track.style.transform = `translateX(${nextOffset}px)`;
+        return;
+      }
+
+      const addCard = event.target.closest('[data-ycs-add-item-type]');
+      if (addCard) {
+        openNewItemModal(addCard.dataset.ycsAddItemType || 'top');
         return;
       }
 
@@ -1048,23 +1102,37 @@
       event.preventDefault();
 
       const wardrobe = activeWardrobe();
-      if (!wardrobe || !state.editingItem) return;
+      if (!wardrobe) return;
+      const typedColorName = String(form.elements.newColorName?.value || '').trim();
+      const typedColorHex = normalizeHex(form.elements.newColorHex?.value);
+      if (typedColorName || typedColorHex) {
+        if (!typedColorName || !typedColorHex) {
+          setStatus('Enter a color name and six-character hex.', true);
+          return;
+        }
+        state.editingColors.push({ name: typedColorName, hex: typedColorHex, paletteCode: '' });
+      }
       if (!state.editingColors.length) {
         setStatus('Select at least one color.', true);
         return;
       }
 
       try {
-        await apiPost({
-          action: 'updateItem',
+        const isCreate = state.editingMode === 'create';
+        const payload = {
+          action: isCreate ? 'createItem' : 'updateItem',
           wardrobeId: wardrobe.id,
-          itemId: state.editingItem.id,
           description: form.elements.description.value,
           itemType: form.elements.itemType.value,
           colors: state.editingColors
-        });
+        };
+        if (!isCreate) {
+          if (!state.editingItem) return;
+          payload.itemId = state.editingItem.id;
+        }
+        await apiPost(payload);
         closeModal();
-        await refreshAfter('Item saved.');
+        await refreshAfter(isCreate ? 'Item added.' : 'Item saved.');
       } catch (error) {
         console.error(error);
         setStatus(error.message || 'Could not save item.', true);
