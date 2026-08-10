@@ -1196,6 +1196,11 @@
     grid-column: 1 / -1;
   }
 
+  .ycs-report-page-rail__item:not(.is-locked) .ycs-report-page-rail__select {
+    display: block;
+    grid-column: 2 / -1;
+  }
+
   .ycs-report-page-rail__thumb {
     display: grid;
     place-items: center;
@@ -1207,6 +1212,14 @@
     color: #2f2a25;
     font-size: 16px;
     font-weight: 900;
+  }
+
+  .ycs-report-page-rail__drag {
+    cursor: grab;
+  }
+
+  .ycs-report-page-rail__drag:active {
+    cursor: grabbing;
   }
 
   .ycs-report-page-rail__label {
