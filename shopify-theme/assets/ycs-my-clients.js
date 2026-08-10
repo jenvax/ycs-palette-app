@@ -2216,9 +2216,11 @@
 
     detailEl.innerHTML = `
       <div class="ycs-clients__detail-header${editMode ? " ycs-clients__detail-header--edit" : ""}">
-        <div class="ycs-clients__detail-photo">
-          ${photoUrl ? `<img src="${escapeHtml(photoUrl)}" alt="${escapeHtml(displayName(client))}">` : '<div class="ycs-client-card__placeholder">No photo yet</div>'}
-        </div>
+        ${photoUrl
+          ? `<div class="ycs-clients__detail-photo"><img src="${escapeHtml(photoUrl)}" alt="${escapeHtml(displayName(client))}"></div>`
+          : `<a class="ycs-clients__detail-photo ycs-clients__detail-photo--upload" href="${escapeHtml(startAnalysisUrl(client))}">
+              <span class="ycs-client-card__placeholder">Upload Photo</span>
+            </a>`}
         <div>
           <h2>${escapeHtml(displayName(client))}</h2>
           <div class="ycs-clients__detail-meta${editMode ? " ycs-clients__detail-meta--edit" : ""}">
