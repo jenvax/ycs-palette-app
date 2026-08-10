@@ -1662,7 +1662,7 @@
 
   .ycs-report-comparison-grid--two {
     grid-template-columns: repeat(2, 1fr);
-    max-width: 430px;
+    max-width: none;
     margin-left: auto;
     margin-right: auto;
   }
@@ -1700,6 +1700,27 @@
 
   .ycs-report-comparison-image-space:has(.ycs-report-preview__image--empty) {
     display: inline-flex;
+  }
+
+  .ycs-report-comparison-grid--two {
+    gap: 16px;
+  }
+
+  .ycs-report-comparison-grid--two .ycs-report-preview-image-button {
+    display: block;
+    width: 100%;
+  }
+
+  .ycs-report-comparison-grid--two .ycs-report-comparison-image-space {
+    display: flex;
+    width: 100%;
+    max-width: none;
+    height: 293px;
+  }
+
+  .ycs-report-comparison-grid--two .ycs-report-preview__image--empty {
+    width: 100%;
+    height: 293px;
   }
 
   .ycs-report-checkmark {
