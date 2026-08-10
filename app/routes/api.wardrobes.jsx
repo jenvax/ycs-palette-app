@@ -2,6 +2,7 @@
 
 const ADMIN_TAG = "YCS_ADMIN";
 const WARDROBE_TABLE = "WardrobeItems";
+const DISPLAY_ORDER_FIELD = "DisplayOrder";
 const ITEM_TYPES = new Set([
   "top",
   "bottom",
@@ -152,6 +153,7 @@ async function ensureWardrobeTable() {
         { name: "Description", type: "singleLineText" },
         { name: "ItemType", type: "singleLineText" },
         { name: "ColorsJson", type: "multilineText" },
+        { name: DISPLAY_ORDER_FIELD, type: "number", options: { precision: 0 } },
         { name: "CreatedAt", type: "singleLineText" },
         { name: "UpdatedAt", type: "singleLineText" }
       ]
@@ -166,6 +168,48 @@ async function ensureWardrobeTable() {
         status: response.status,
         type: data?.error?.type
       }
+    );
+  }
+}
+
+async function ensureWardrobeDisplayOrderField() {
+  const { baseId, schemaToken, tableName } = airtableConfig();
+  if (!baseId || !schemaToken) {
+    throw new AirtableRequestError("Missing Airtable configuration", { status: 500 });
+  }
+
+  const tablesResponse = await fetch(`https://api.airtable.com/v0/meta/bases/${baseId}/tables`, {
+    headers: { Authorization: `Bearer ${schemaToken}` }
+  });
+  const tablesData = await tablesResponse.json().catch(() => ({}));
+  if (!tablesResponse.ok) {
+    throw new AirtableRequestError(
+      tablesData?.error?.message || tablesData?.error?.type || "Unable to inspect Airtable wardrobe table",
+      { status: tablesResponse.status, type: tablesData?.error?.type }
+    );
+  }
+
+  const table = (tablesData.tables || []).find((entry) => entry.name === tableName);
+  if (!table) return;
+  if ((table.fields || []).some((field) => field.name === DISPLAY_ORDER_FIELD)) return;
+
+  const fieldResponse = await fetch(`https://api.airtable.com/v0/meta/bases/${baseId}/tables/${table.id}/fields`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${schemaToken}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      name: DISPLAY_ORDER_FIELD,
+      type: "number",
+      options: { precision: 0 }
+    })
+  });
+  const fieldData = await fieldResponse.json().catch(() => ({}));
+  if (!fieldResponse.ok && fieldData?.error?.type !== "DUPLICATE_FIELD_NAME") {
+    throw new AirtableRequestError(
+      fieldData?.error?.message || fieldData?.error?.type || "Unable to create wardrobe order field",
+      { status: fieldResponse.status, type: fieldData?.error?.type }
     );
   }
 }
@@ -354,12 +398,14 @@ function parseColors(value) {
 
 function itemFromRecord(record) {
   const fields = record.fields || {};
+  const displayOrder = Number(fields[DISPLAY_ORDER_FIELD]);
   return {
     id: String(fields.ItemId || record.id),
     airtableRecordId: record.id,
     description: String(fields.Description || ""),
     itemType: String(fields.ItemType || ""),
     colors: parseColors(fields.ColorsJson),
+    displayOrder: Number.isFinite(displayOrder) ? displayOrder : null,
     wardrobeIds: [String(fields.WardrobeId || "")].filter(Boolean),
     createdAt: String(fields.CreatedAt || record.createdTime || ""),
     updatedAt: String(fields.UpdatedAt || record.createdTime || "")
@@ -371,7 +417,12 @@ function wardrobeFromRecord(record, items) {
   const wardrobeId = String(fields.WardrobeId || record.id);
   const wardrobeItems = items
     .filter((item) => item.wardrobeIds.includes(wardrobeId))
-    .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+    .sort((a, b) => {
+      const orderA = Number.isFinite(a.displayOrder) ? a.displayOrder : Number.MAX_SAFE_INTEGER;
+      const orderB = Number.isFinite(b.displayOrder) ? b.displayOrder : Number.MAX_SAFE_INTEGER;
+      if (orderA !== orderB) return orderA - orderB;
+      return String(b.updatedAt || "").localeCompare(String(a.updatedAt || ""));
+    });
 
   return {
     id: wardrobeId,
@@ -560,6 +611,7 @@ export async function action({ request }) {
       const now = new Date().toISOString();
       const itemId = makeId("witem");
       const wardrobeName = String(wardrobe.fields?.WardrobeName || "");
+      await ensureWardrobeDisplayOrderField();
       const itemRecord = await airtableRequest({
         method: "POST",
         fields: {
@@ -571,6 +623,7 @@ export async function action({ request }) {
           Description: description,
           ItemType: itemType,
           ColorsJson: JSON.stringify(colors),
+          [DISPLAY_ORDER_FIELD]: Date.now(),
           CreatedAt: now,
           UpdatedAt: now
         }
@@ -612,6 +665,58 @@ export async function action({ request }) {
           ColorsJson: JSON.stringify(colors),
           UpdatedAt: now
         }
+      });
+
+      return Response.json({ wardrobe: await readWardrobe(ownerCustomerId, wardrobeId) }, { headers: corsHeaders });
+    }
+
+    if (actionName === "reorderItems") {
+      const wardrobeId = cleanString(body.wardrobeId);
+      const orderedItems = Array.isArray(body.items) ? body.items : [];
+
+      if (!wardrobeId) return Response.json({ error: "Missing wardrobeId" }, { status: 400, headers: corsHeaders });
+      if (!orderedItems.length) return Response.json({ error: "Missing wardrobe item order" }, { status: 400, headers: corsHeaders });
+
+      const wardrobe = await requireOwnedWardrobe(ownerCustomerId, wardrobeId);
+      const itemIds = new Set();
+      const cleanedItems = orderedItems.map((entry, index) => {
+        const itemId = cleanString(entry?.itemId);
+        const itemType = cleanString(entry?.itemType);
+        if (!itemId || !ITEM_TYPES.has(itemType) || itemIds.has(itemId)) return null;
+        itemIds.add(itemId);
+        return { itemId, itemType, displayOrder: index };
+      });
+
+      if (cleanedItems.some((entry) => !entry)) {
+        return Response.json({ error: "Invalid wardrobe item order" }, { status: 400, headers: corsHeaders });
+      }
+
+      await ensureWardrobeDisplayOrderField();
+      const records = await getOwnerRecords(ownerCustomerId);
+      const wardrobeItemRecords = records.filter((record) => {
+        const fields = record.fields || {};
+        return fields.RecordType === "item" && fields.WardrobeId === wardrobeId;
+      });
+      const recordByItemId = new Map(wardrobeItemRecords.map((record) => [String(record.fields?.ItemId || record.id), record]));
+
+      if (cleanedItems.some((entry) => !recordByItemId.has(entry.itemId))) {
+        return Response.json({ error: "Wardrobe item not found" }, { status: 404, headers: corsHeaders });
+      }
+
+      const now = new Date().toISOString();
+      await Promise.all(cleanedItems.map((entry) => airtableRequest({
+        method: "PATCH",
+        recordId: recordByItemId.get(entry.itemId).id,
+        fields: {
+          ItemType: entry.itemType,
+          [DISPLAY_ORDER_FIELD]: entry.displayOrder,
+          UpdatedAt: now
+        }
+      })));
+      await airtableRequest({
+        method: "PATCH",
+        recordId: wardrobe.id,
+        fields: { UpdatedAt: now }
       });
 
       return Response.json({ wardrobe: await readWardrobe(ownerCustomerId, wardrobeId) }, { headers: corsHeaders });

@@ -309,16 +309,29 @@
     will-change: transform;
   }
 
+  .ycs-wardrobes-row__track.is-drop-target {
+    outline: 2px dashed #d8cfc3;
+    outline-offset: 6px;
+  }
+
   .ycs-wardrobe-card {
     flex: 0 0 132px;
     width: 132px;
     border: 0;
     background: transparent;
     color: inherit;
-    cursor: pointer;
+    cursor: grab;
     font: inherit;
     padding: 0;
     text-align: left;
+  }
+
+  .ycs-wardrobe-card:active {
+    cursor: grabbing;
+  }
+
+  .ycs-wardrobe-card.is-dragging {
+    opacity: .42;
   }
 
   .ycs-wardrobe-card__swatch {
@@ -446,13 +459,8 @@
     background: #fff;
     padding: 6px 8px;
     color: #2f2a25;
-    cursor: grab;
     font-size: 12px;
     font-weight: 800;
-  }
-
-  .ycs-wardrobes-color-pill.is-dragging {
-    opacity: .45;
   }
 
   .ycs-wardrobes-color-pill__swatch {
@@ -551,7 +559,9 @@
       wardrobes: [],
       activeWardrobeId: localStorage.getItem('ycsActiveWardrobeId') || '',
       editingItem: null,
-      editingColors: []
+      editingColors: [],
+      draggingItemId: '',
+      didDragCard: false
     };
 
     function escapeHtml(value) {
@@ -605,7 +615,7 @@
       const colors = item.colors && item.colors.length ? item.colors : [{ hex: '#eee', name: 'Color' }];
       const mosaicColors = displayMosaicColors(colors);
       return `
-        <button type="button" class="ycs-wardrobe-card" data-ycs-item-id="${escapeHtml(item.id)}">
+        <button type="button" class="ycs-wardrobe-card" draggable="true" data-ycs-item-id="${escapeHtml(item.id)}" data-ycs-item-type="${escapeHtml(item.itemType)}">
           <span class="ycs-wardrobe-card__swatch" style="${mosaicStyle(mosaicColors)}">
             ${mosaicColors.map((color) => `<span style="background:${escapeHtml(color.hex || color.hexCode || '#eee')}"></span>`).join('')}
           </span>
@@ -648,7 +658,7 @@
               </div>
             </div>
             <div class="ycs-wardrobes-row__scroller" data-ycs-row-scroller>
-              <div class="ycs-wardrobes-row__track" data-ycs-row-track data-ycs-row-offset="0">
+              <div class="ycs-wardrobes-row__track" data-ycs-row-track data-ycs-row-type="${type}" data-ycs-row-offset="0">
                 ${items.map(cardMarkup).join('')}
               </div>
             </div>
@@ -710,7 +720,7 @@
       const list = modalBodyEl.querySelector('[data-ycs-wardrobe-color-list]');
       if (!list) return;
       list.innerHTML = state.editingColors.map((color, index) => `
-        <span class="ycs-wardrobes-color-pill" draggable="true" data-ycs-color-index="${index}">
+        <span class="ycs-wardrobes-color-pill">
           <span class="ycs-wardrobes-color-pill__swatch" style="background:${escapeHtml(color.hex || color.hexCode)}"></span>
           ${escapeHtml(color.name || color.colorName)}
           <button type="button" data-ycs-remove-color="${index}" aria-label="Remove color">×</button>
@@ -757,6 +767,50 @@
       `;
       modalEl.hidden = false;
       renderColorPills();
+    }
+
+    function orderedItemPayload(wardrobe) {
+      return typeOrder.flatMap((type) => (wardrobe.items || [])
+        .filter((item) => item.itemType === type)
+        .map((item) => ({ itemId: item.id, itemType: type })));
+    }
+
+    function moveWardrobeItem({ itemId, targetType, targetItemId, insertAfter }) {
+      const wardrobe = activeWardrobe();
+      if (!wardrobe) return false;
+
+      const item = (wardrobe.items || []).find((entry) => entry.id === itemId);
+      if (!item || !typeOrder.includes(targetType)) return false;
+      if (targetItemId === itemId) return false;
+
+      const groupedItems = new Map(typeOrder.map((type) => [
+        type,
+        (wardrobe.items || []).filter((entry) => entry.itemType === type && entry.id !== itemId)
+      ]));
+      const targetItems = groupedItems.get(targetType) || [];
+      let targetIndex = targetItemId ? targetItems.findIndex((entry) => entry.id === targetItemId) : -1;
+
+      if (targetIndex < 0) {
+        targetIndex = targetItems.length;
+      } else if (insertAfter) {
+        targetIndex += 1;
+      }
+
+      item.itemType = targetType;
+      targetItems.splice(targetIndex, 0, item);
+      groupedItems.set(targetType, targetItems);
+      wardrobe.items = typeOrder.flatMap((type) => groupedItems.get(type) || []);
+      return true;
+    }
+
+    async function saveWardrobeItemOrder() {
+      const wardrobe = activeWardrobe();
+      if (!wardrobe) return;
+      await apiPost({
+        action: 'reorderItems',
+        wardrobeId: wardrobe.id,
+        items: orderedItemPayload(wardrobe)
+      });
     }
 
     root.addEventListener('click', async function (event) {
@@ -817,43 +871,76 @@
 
       const card = event.target.closest('[data-ycs-item-id]');
       if (card) {
+        if (state.didDragCard) {
+          state.didDragCard = false;
+          return;
+        }
         const wardrobe = activeWardrobe();
         const item = (wardrobe?.items || []).find((entry) => entry.id === card.dataset.ycsItemId);
         if (item) openItemModal(item);
       }
     });
 
-    modalEl.addEventListener('dragstart', function (event) {
-      const pill = event.target.closest('[data-ycs-color-index]');
-      if (!pill) return;
+    root.addEventListener('dragstart', function (event) {
+      const card = event.target.closest('[data-ycs-item-id]');
+      if (!card) return;
+      state.draggingItemId = card.dataset.ycsItemId || '';
+      state.didDragCard = true;
       event.dataTransfer.effectAllowed = 'move';
-      event.dataTransfer.setData('text/plain', pill.dataset.ycsColorIndex);
-      pill.classList.add('is-dragging');
+      event.dataTransfer.setData('text/plain', state.draggingItemId);
+      card.classList.add('is-dragging');
     });
 
-    modalEl.addEventListener('dragend', function (event) {
-      const pill = event.target.closest('[data-ycs-color-index]');
-      if (pill) pill.classList.remove('is-dragging');
+    root.addEventListener('dragend', function (event) {
+      const card = event.target.closest('[data-ycs-item-id]');
+      if (card) card.classList.remove('is-dragging');
+      root.querySelectorAll('[data-ycs-row-track].is-drop-target').forEach((track) => track.classList.remove('is-drop-target'));
+      window.setTimeout(() => {
+        state.draggingItemId = '';
+      }, 0);
     });
 
-    modalEl.addEventListener('dragover', function (event) {
-      if (!event.target.closest('[data-ycs-color-index]')) return;
+    root.addEventListener('dragover', function (event) {
+      const track = event.target.closest('[data-ycs-row-track]');
+      if (!track || !state.draggingItemId) return;
       event.preventDefault();
       event.dataTransfer.dropEffect = 'move';
+      track.classList.add('is-drop-target');
     });
 
-    modalEl.addEventListener('drop', function (event) {
-      const targetPill = event.target.closest('[data-ycs-color-index]');
-      if (!targetPill) return;
+    root.addEventListener('dragleave', function (event) {
+      const track = event.target.closest('[data-ycs-row-track]');
+      if (!track || track.contains(event.relatedTarget)) return;
+      track.classList.remove('is-drop-target');
+    });
+
+    root.addEventListener('drop', async function (event) {
+      const track = event.target.closest('[data-ycs-row-track]');
+      if (!track || !state.draggingItemId) return;
       event.preventDefault();
 
-      const fromIndex = Number(event.dataTransfer.getData('text/plain'));
-      const toIndex = Number(targetPill.dataset.ycsColorIndex);
-      if (!Number.isInteger(fromIndex) || !Number.isInteger(toIndex) || fromIndex === toIndex) return;
+      const draggedItemId = event.dataTransfer.getData('text/plain') || state.draggingItemId;
+      const targetCard = event.target.closest('[data-ycs-item-id]');
+      const targetRect = targetCard ? targetCard.getBoundingClientRect() : null;
+      const insertAfter = targetRect ? event.clientX > targetRect.left + (targetRect.width / 2) : false;
+      const moved = moveWardrobeItem({
+        itemId: draggedItemId,
+        targetType: track.dataset.ycsRowType,
+        targetItemId: targetCard?.dataset.ycsItemId || '',
+        insertAfter
+      });
+      root.querySelectorAll('[data-ycs-row-track].is-drop-target').forEach((rowTrack) => rowTrack.classList.remove('is-drop-target'));
+      if (!moved) return;
 
-      const [movedColor] = state.editingColors.splice(fromIndex, 1);
-      state.editingColors.splice(toIndex, 0, movedColor);
-      renderColorPills();
+      render();
+      try {
+        await saveWardrobeItemOrder();
+        await refreshAfter('Wardrobe order saved.');
+      } catch (error) {
+        console.error(error);
+        setStatus(error.message || 'Could not save wardrobe order.', true);
+        await loadWardrobes();
+      }
     });
 
     modalEl.addEventListener('click', async function (event) {
