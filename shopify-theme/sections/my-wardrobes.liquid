@@ -334,8 +334,8 @@
   @media (min-width: 980px) {
     .ycs-wardrobes-row {
       display: grid;
-      grid-template-columns: 168px minmax(0, 1fr);
-      gap: 16px;
+      grid-template-columns: 132px minmax(0, 1fr);
+      gap: 10px;
       align-items: start;
     }
 
@@ -446,8 +446,13 @@
     background: #fff;
     padding: 6px 8px;
     color: #2f2a25;
+    cursor: grab;
     font-size: 12px;
     font-weight: 800;
+  }
+
+  .ycs-wardrobes-color-pill.is-dragging {
+    opacity: .45;
   }
 
   .ycs-wardrobes-color-pill__swatch {
@@ -705,7 +710,7 @@
       const list = modalBodyEl.querySelector('[data-ycs-wardrobe-color-list]');
       if (!list) return;
       list.innerHTML = state.editingColors.map((color, index) => `
-        <span class="ycs-wardrobes-color-pill">
+        <span class="ycs-wardrobes-color-pill" draggable="true" data-ycs-color-index="${index}">
           <span class="ycs-wardrobes-color-pill__swatch" style="background:${escapeHtml(color.hex || color.hexCode)}"></span>
           ${escapeHtml(color.name || color.colorName)}
           <button type="button" data-ycs-remove-color="${index}" aria-label="Remove color">×</button>
@@ -804,7 +809,7 @@
         const gap = Number.parseFloat(window.getComputedStyle(track).columnGap || window.getComputedStyle(track).gap || '12') || 12;
         const step = cardWidth + gap;
         const currentOffset = Number(track.dataset.ycsRowOffset || 0);
-        const nextOffset = currentOffset - (direction * step);
+        const nextOffset = currentOffset + (direction * step);
         track.dataset.ycsRowOffset = String(nextOffset);
         track.style.transform = `translateX(${nextOffset}px)`;
         return;
@@ -816,6 +821,39 @@
         const item = (wardrobe?.items || []).find((entry) => entry.id === card.dataset.ycsItemId);
         if (item) openItemModal(item);
       }
+    });
+
+    modalEl.addEventListener('dragstart', function (event) {
+      const pill = event.target.closest('[data-ycs-color-index]');
+      if (!pill) return;
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', pill.dataset.ycsColorIndex);
+      pill.classList.add('is-dragging');
+    });
+
+    modalEl.addEventListener('dragend', function (event) {
+      const pill = event.target.closest('[data-ycs-color-index]');
+      if (pill) pill.classList.remove('is-dragging');
+    });
+
+    modalEl.addEventListener('dragover', function (event) {
+      if (!event.target.closest('[data-ycs-color-index]')) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+    });
+
+    modalEl.addEventListener('drop', function (event) {
+      const targetPill = event.target.closest('[data-ycs-color-index]');
+      if (!targetPill) return;
+      event.preventDefault();
+
+      const fromIndex = Number(event.dataTransfer.getData('text/plain'));
+      const toIndex = Number(targetPill.dataset.ycsColorIndex);
+      if (!Number.isInteger(fromIndex) || !Number.isInteger(toIndex) || fromIndex === toIndex) return;
+
+      const [movedColor] = state.editingColors.splice(fromIndex, 1);
+      state.editingColors.splice(toIndex, 0, movedColor);
+      renderColorPills();
     });
 
     modalEl.addEventListener('click', async function (event) {
