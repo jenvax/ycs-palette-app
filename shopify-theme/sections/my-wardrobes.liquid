@@ -300,12 +300,15 @@
     overflow-x: auto;
     overscroll-behavior-x: contain;
     padding: 2px 2px 12px;
+    scroll-snap-type: x proximity;
     scrollbar-width: thin;
+    width: 100%;
   }
 
   .ycs-wardrobe-card {
     flex: 0 0 132px;
     width: 132px;
+    scroll-snap-align: start;
     border: 0;
     background: transparent;
     color: inherit;
@@ -762,24 +765,26 @@
         return;
       }
 
-      const card = event.target.closest('[data-ycs-item-id]');
-      if (card) {
-        const wardrobe = activeWardrobe();
-        const item = (wardrobe?.items || []).find((entry) => entry.id === card.dataset.ycsItemId);
-        if (item) openItemModal(item);
-        return;
-      }
-
       const rowScrollButton = event.target.closest('[data-ycs-scroll-row]');
       if (rowScrollButton) {
+        event.preventDefault();
+        event.stopPropagation();
         const row = rowScrollButton.closest('.ycs-wardrobes-row');
         const scroller = row?.querySelector('[data-ycs-row-scroller]');
         if (!scroller) return;
         const direction = Number(rowScrollButton.dataset.ycsScrollRow || 1);
         scroller.scrollBy({
-          left: direction * Math.max(220, Math.round(scroller.clientWidth * 0.72)),
+          left: direction * 288,
           behavior: 'smooth'
         });
+        return;
+      }
+
+      const card = event.target.closest('[data-ycs-item-id]');
+      if (card) {
+        const wardrobe = activeWardrobe();
+        const item = (wardrobe?.items || []).find((entry) => entry.id === card.dataset.ycsItemId);
+        if (item) openItemModal(item);
       }
     });
 
