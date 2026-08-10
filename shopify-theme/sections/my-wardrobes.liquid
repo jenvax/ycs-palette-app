@@ -174,9 +174,9 @@
   }
 
   .ycs-wardrobes__controls {
-    display: flex;
-    align-items: flex-end;
-    justify-content: flex-start;
+    display: grid;
+    grid-template-columns: minmax(260px, 576px) auto;
+    align-items: end;
     gap: 12px;
     margin-bottom: 18px;
     padding: 14px;
@@ -188,7 +188,7 @@
   .ycs-wardrobes__controls label {
     display: grid;
     gap: 6px;
-    width: min(100%, 320px);
+    width: 100%;
     font-size: 13px;
     font-weight: 800;
   }
@@ -210,6 +210,8 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+    align-items: center;
+    padding-top: 24px;
   }
 
   .ycs-wardrobes__status {
@@ -521,9 +523,17 @@
       display: grid;
     }
 
+    .ycs-wardrobes__controls {
+      grid-template-columns: 1fr;
+    }
+
     .ycs-wardrobes__control-actions,
     .ycs-wardrobes__button {
       width: 100%;
+    }
+
+    .ycs-wardrobes__control-actions {
+      padding-top: 0;
     }
 
     .ycs-wardrobe-card {
