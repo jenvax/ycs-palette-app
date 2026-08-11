@@ -234,8 +234,6 @@ function getCustomerPaletteCode() {
   const signatureRightLipEditBtn = document.getElementById('ycs-signature-right-lip-edit');
   const signatureLeftLipVisibilityBtn = document.getElementById('ycs-signature-left-lip-visibility');
   const signatureRightLipVisibilityBtn = document.getElementById('ycs-signature-right-lip-visibility');
-  const signatureLeftLipCollapseBtn = document.getElementById('ycs-signature-left-lip-collapse');
-  const signatureRightLipCollapseBtn = document.getElementById('ycs-signature-right-lip-collapse');
 
   const lipEmptyMode = document.getElementById('ycs-lip-empty-mode');
   const lipUseMode = document.getElementById('ycs-lip-use-mode');
@@ -391,9 +389,7 @@ customerPaletteCode: '',
     leftPaletteCode: '',
     rightPaletteCode: '',
     leftFilter: 'all',
-    rightFilter: 'all',
-    leftLipCollapsed: false,
-    rightLipCollapsed: false
+    rightFilter: 'all'
   },
   leftColorHex: '',
     rightColorHex: '',
@@ -1845,36 +1841,15 @@ function setSignatureSideFilter(panel, value) {
   }
 }
 
-function isSignatureLipCollapsed(panel) {
-  return panel === 'right'
-    ? !!state.signature.rightLipCollapsed
-    : !!state.signature.leftLipCollapsed;
-}
-
-function setSignatureLipCollapsed(panel, collapsed) {
-  if (panel === 'right') {
-    state.signature.rightLipCollapsed = !!collapsed;
-  } else {
-    state.signature.leftLipCollapsed = !!collapsed;
-  }
-}
-
-function syncSignatureLipCollapseControl(panel) {
+function syncSignatureLipVisibilityControl(panel) {
   const isRight = panel === 'right';
-  const collapseBtn = isRight ? signatureRightLipCollapseBtn : signatureLeftLipCollapseBtn;
   const anchorBtn = isRight ? signatureRightLipEditBtn : signatureLeftLipEditBtn;
   const sectionEl = anchorBtn ? anchorBtn.closest('.ycs-signature-side-section--lip') : null;
-  const collapsed = isSignatureLipCollapsed(panel);
+  const visible = isRight ? state.lip.rightVisible : state.lip.leftVisible;
   const hasCompletedMask = getCompletedLipShapes().length > 0;
 
   if (sectionEl) {
-    sectionEl.classList.toggle('is-lip-collapsed', collapsed && hasCompletedMask);
-  }
-
-  if (collapseBtn) {
-    collapseBtn.textContent = collapsed ? 'Expand' : 'Collapse';
-    collapseBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
-    collapseBtn.disabled = !hasCompletedMask;
+    sectionEl.classList.toggle('is-lip-collapsed', !visible && hasCompletedMask);
   }
 }
 
@@ -4172,7 +4147,7 @@ function syncSignatureLipSideControl(panel) {
     sectionEl.classList.toggle('has-lip-shape', hasCompletedMask);
   }
 
-  syncSignatureLipCollapseControl(panel);
+  syncSignatureLipVisibilityControl(panel);
 
   if (editBtn) {
     editBtn.textContent = hasCompletedMask ? 'Edit' : 'Create Lip';
@@ -4269,19 +4244,6 @@ function enterLipEditOrAdjustMode() {
 
     syncLipUiMode();
     renderLips();
-    saveAnalysisSession();
-  });
-});
-
-[
-  { panel: 'left', button: signatureLeftLipCollapseBtn },
-  { panel: 'right', button: signatureRightLipCollapseBtn }
-].forEach(function (item) {
-  if (!item.button) return;
-
-  item.button.addEventListener('click', function () {
-    setSignatureLipCollapsed(item.panel, !isSignatureLipCollapsed(item.panel));
-    syncSignatureLipCollapseControl(item.panel);
     saveAnalysisSession();
   });
 });
