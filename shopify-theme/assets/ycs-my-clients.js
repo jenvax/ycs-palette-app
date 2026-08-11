@@ -1546,10 +1546,16 @@
       })
     });
     const responseText = await response.text();
-    const data = responseText ? JSON.parse(responseText) : {};
+    let data = {};
+    if (responseText && responseText.trim().startsWith("{")) {
+      data = JSON.parse(responseText);
+    }
 
     if (!response.ok) {
-      throw new Error(data.error || "Unable to delete saved draped photos");
+      const errorText = responseText && !responseText.trim().startsWith("<")
+        ? responseText.slice(0, 160)
+        : "";
+      throw new Error(data.error || errorText || "Unable to delete saved draped photos");
     }
 
     activeSavedDrapedImages = activeSavedDrapedImages.filter((image) => !ids.includes(image.id));
