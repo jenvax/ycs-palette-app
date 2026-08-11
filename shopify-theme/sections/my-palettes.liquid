@@ -24,7 +24,7 @@
 {% if should_render_ycs_my_palettes %}
 <div class="ycs-my-palettes">
   <div class="ycs-palette-topnav">
-    <a href="{{ routes.account_url }}" class="palette-back-link">← My Account</a>
+    <a href="{{ routes.account_url }}" class="palette-back-link">My Account</a>
   </div>
 
   {% assign palette_access_string = '' %}
@@ -1000,12 +1000,35 @@
 </div>
 
 <style>
+  .ycs-palette-topnav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 18px;
+  }
+
   .palette-back-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    border: 1px solid #e6ded5;
+    border-radius: 999px;
+    background: #fff;
+    color: #2f2a25;
     font-size: 14px;
-    font-weight: 600;
-    color: #444;
+    font-weight: 800;
+    line-height: 1;
+    padding: 0 18px;
     text-decoration: none;
     z-index: 1000;
+  }
+
+  .palette-back-link:hover {
+    border-color: #111;
+    background: #111;
+    color: #fff;
   }
 
   .ycs-my-palettes__section--studio {

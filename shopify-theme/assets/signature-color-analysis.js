@@ -3691,6 +3691,18 @@ const fileName = [color, 'lip', lip, firstName, lastName].join('-');
     }
   }
 
+  function updateSharedDragFromPointer(event) {
+    if (gestureState.isPinching) return false;
+    if (!state.dragging) return false;
+    if (state.pointerId !== event.pointerId) return false;
+
+    event.preventDefault();
+    state.x = event.clientX - state.dragStartX;
+    state.y = event.clientY - state.dragStartY;
+    updateImageTransform();
+    return true;
+  }
+
   function attachSharedDrag(frameEl) {
   frameEl.addEventListener('pointerdown', function (event) {
     if (!state.imgLoaded) return;
@@ -3770,6 +3782,8 @@ const fileName = [color, 'lip', lip, firstName, lastName].join('-');
 
       return;
     }
+
+    updateSharedDragFromPointer(event);
   }, { passive: false });
 }
 
@@ -4804,14 +4818,7 @@ const y = ((e.clientY - svgRect.top) / svgRect.height) * 1000;
     });
   }
 
-  // 🚫 BLOCK DRAG DURING PINCH
-  if (gestureState.isPinching) return;
-  if (!state.dragging) return;
-  if (state.pointerId !== event.pointerId) return;
-
-  state.x = event.clientX - state.dragStartX;
-  state.y = event.clientY - state.dragStartY;
-  updateImageTransform();
+  updateSharedDragFromPointer(event);
 });
 
 function endGesturePointer(event) {
