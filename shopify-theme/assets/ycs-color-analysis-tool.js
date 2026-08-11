@@ -3343,8 +3343,10 @@ requestAnimationFrame(function () {
               state.lip.points = Array.isArray(activeShape.points) ? activeShape.points : [];
               state.lip.closed = !!activeShape.closed;
               state.lip.editing = false;
-              state.lip.adjusting = true;
+              state.lip.adjusting = false;
               state.lip.showGuides = true;
+              appEl.classList.remove('is-lip-editing');
+              appEl.classList.remove('is-lip-adjusting');
               syncLipUiMode();
               syncLipOpacityControl();
               renderLips();
@@ -3423,8 +3425,10 @@ if (data.lipMask) {
 
   if (state.lip.shapes.length) {
     state.lip.editing = false;
-    state.lip.adjusting = true;
+    state.lip.adjusting = false;
     state.lip.showGuides = true;
+    appEl.classList.remove('is-lip-editing');
+    appEl.classList.remove('is-lip-adjusting');
   }
 
   syncLipUiMode();
