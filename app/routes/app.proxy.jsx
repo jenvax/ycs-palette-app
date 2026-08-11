@@ -4,6 +4,7 @@ import {
   isDueForDraping
 } from "../services/draping-stats.server.js";
 import { authenticate } from "../shopify.server";
+import crypto from "node:crypto";
 
 function normalizeField(value) {
   if (Array.isArray(value)) return value[0] || "";
@@ -292,6 +293,45 @@ async function getAirtableRecord({ baseId, tableName, token, recordId }) {
 function normalizeAirtableIdList(value) {
   const list = Array.isArray(value) ? value : [value];
   return [...new Set(list.map((item) => String(item || "").trim()).filter(Boolean))];
+}
+
+function verifyAppProxySignature(url, sharedSecret) {
+  if (!sharedSecret) return false;
+
+  const providedSignature = String(url.searchParams.get("signature") || "").trim();
+  const timestamp = Number(url.searchParams.get("timestamp") || 0);
+  const now = Math.floor(Date.now() / 1000);
+
+  if (!providedSignature || !timestamp || Math.abs(now - timestamp) > 600) {
+    return false;
+  }
+
+  const paramsByKey = new Map();
+  url.searchParams.forEach((value, key) => {
+    if (key === "signature") return;
+    const values = paramsByKey.get(key) || [];
+    values.push(value);
+    paramsByKey.set(key, values);
+  });
+
+  const message = Array.from(paramsByKey.entries())
+    .map(([key, values]) => `${key}=${values.join(",")}`)
+    .sort()
+    .join("");
+
+  const calculatedSignature = crypto
+    .createHmac("sha256", sharedSecret)
+    .update(message)
+    .digest("hex");
+
+  try {
+    return crypto.timingSafeEqual(
+      Buffer.from(providedSignature, "utf8"),
+      Buffer.from(calculatedSignature, "utf8")
+    );
+  } catch {
+    return false;
+  }
 }
 
 function firstSavedDrapedField(fields, names) {
@@ -1399,11 +1439,14 @@ export async function action({ request }) {
       try {
         await authenticate.public.appProxy(request);
       } catch (authError) {
-        console.error("deleteSavedDrapedImages proxy authentication failed:", authError);
-        return Response.json(
-          { error: "Signed storefront request required to delete saved photos" },
-          { status: 401 }
-        );
+        const hasValidProxySignature = verifyAppProxySignature(url, process.env.SHOPIFY_API_SECRET);
+        if (!hasValidProxySignature) {
+          console.error("deleteSavedDrapedImages proxy authentication failed:", authError);
+          return Response.json(
+            { error: "Signed storefront request required to delete saved photos" },
+            { status: 401 }
+          );
+        }
       }
 
       const loggedInCustomerId = normalizeCustomerId(url.searchParams.get("logged_in_customer_id"));
