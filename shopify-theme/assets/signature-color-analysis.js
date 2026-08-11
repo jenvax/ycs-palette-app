@@ -976,7 +976,7 @@ async function drawRealisticDrapeTexture(ctx, options) {
   });
 
   paletteEls.forEach(function (el) {
-  const code = state.customerPaletteCode || getCustomerPaletteCode() || state.analysisResult.resultCode || '';
+  const code = getSignatureColorTypeCode();
   el.textContent = code;
   el.hidden = !code;
 });
@@ -988,6 +988,15 @@ async function drawRealisticDrapeTexture(ctx, options) {
   if (rightColorEl) {
     rightColorEl.textContent = state.rightColorName || '';
   }
+}
+
+function getSignatureColorTypeCode() {
+  return (
+    state.customerPaletteCode ||
+    getCustomerPaletteCode() ||
+    (state.analysisResult && state.analysisResult.resultCode) ||
+    ''
+  );
 }
 
   function syncColorLabels() {
@@ -3611,7 +3620,7 @@ if (lipCanvas) {
       }
       drawSignatureExportLabels(ctx, canvas, {
   firstName: state.clientFirstName || getClientFirstName(),
-  paletteCode: state.customerPaletteCode || getCustomerPaletteCode(),
+  paletteCode: getSignatureColorTypeCode(),
   colorName: colorName,
   lipName: lipName,
   lipColor: lipColor,
