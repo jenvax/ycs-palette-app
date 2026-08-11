@@ -2402,9 +2402,48 @@
     });
   }
 
-  function confirmDiscardClientChanges() {
+  function promptDiscardClientChanges() {
+    return new Promise((resolve) => {
+      const overlay = document.createElement("div");
+      overlay.className = "ycs-clients-discard";
+      overlay.innerHTML = `
+        <div class="ycs-clients-discard__dialog" role="dialog" aria-modal="true" aria-labelledby="ycs-clients-discard-title">
+          <h2 id="ycs-clients-discard-title">Unsaved client changes</h2>
+          <p>Leave without saving?</p>
+          <div class="ycs-clients-discard__actions">
+            <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-discard-stay>Stay</button>
+            <button class="ycs-clients__button" type="button" data-ycs-discard-leave>Leave</button>
+          </div>
+        </div>
+      `;
+
+      const close = (shouldLeave) => {
+        overlay.remove();
+        resolve(shouldLeave);
+      };
+
+      overlay.addEventListener("click", (event) => {
+        if (event.target === overlay || event.target.closest("[data-ycs-discard-stay]")) {
+          close(false);
+          return;
+        }
+        if (event.target.closest("[data-ycs-discard-leave]")) {
+          close(true);
+        }
+      });
+
+      overlay.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") close(false);
+      });
+
+      document.body.appendChild(overlay);
+      overlay.querySelector("[data-ycs-discard-stay]")?.focus();
+    });
+  }
+
+  async function confirmDiscardClientChanges() {
     if (!hasUnsavedClientFormChanges()) return true;
-    return window.confirm("You have unsaved client changes. Leave without saving?");
+    return promptDiscardClientChanges();
   }
 
   async function saveClient(form) {
@@ -2558,7 +2597,7 @@
     el.addEventListener("change", renderCards);
   });
 
-  root.addEventListener("click", (event) => {
+  root.addEventListener("click", async (event) => {
     const viewButton = event.target.closest("[data-ycs-view-client]");
     const editButton = event.target.closest("[data-ycs-edit-client]");
     const deleteButton = event.target.closest("[data-ycs-delete-client]");
@@ -2587,19 +2626,21 @@
     const cancelClientEditButton = event.target.closest("[data-ycs-cancel-client-edit]");
     const leaveClientViewLink = event.target.closest("[data-ycs-leave-client-view]");
 
-    if (leaveClientViewLink && !confirmDiscardClientChanges()) {
+    if (leaveClientViewLink) {
       event.preventDefault();
+      if (!(await confirmDiscardClientChanges())) return;
+      window.location.href = leaveClientViewLink.href;
       return;
     }
 
-    if (pageBackButton && pageBackButton.dataset.ycsBackMode !== "clients" && !confirmDiscardClientChanges()) {
+    if (pageBackButton && pageBackButton.dataset.ycsBackMode !== "clients" && !(await confirmDiscardClientChanges())) {
       event.preventDefault();
       return;
     }
 
     if (pageBackButton && pageBackButton.dataset.ycsBackMode === "clients") {
       event.preventDefault();
-      if (!confirmDiscardClientChanges()) return;
+      if (!(await confirmDiscardClientChanges())) return;
       const nextUrl = listUrl();
       window.history.pushState({}, "", nextUrl);
       renderCards();
@@ -2608,7 +2649,7 @@
 
     if (cancelClientEditButton) {
       event.preventDefault();
-      if (!confirmDiscardClientChanges()) return;
+      if (!(await confirmDiscardClientChanges())) return;
       const activeForm = getActiveClientForm();
       const clientRecordId = activeForm?.querySelector("[name='clientRecordId']")?.value || "";
       if (clientRecordId) {
@@ -2623,7 +2664,7 @@
 
     if (addClientButton) {
       event.preventDefault();
-      if (!confirmDiscardClientChanges()) return;
+      if (!(await confirmDiscardClientChanges())) return;
       const nextUrl = new URL(window.location.href);
       nextUrl.searchParams.delete("clientRecordId");
       nextUrl.searchParams.delete("edit");
@@ -2635,14 +2676,14 @@
 
     if (viewButton) {
       event.preventDefault();
-      if (!confirmDiscardClientChanges()) return;
+      if (!(await confirmDiscardClientChanges())) return;
       const clientRecordId = viewButton.dataset.ycsViewClient;
       window.history.pushState({}, "", clientUrl({ clientRecordId }));
       showClientById(clientRecordId, false);
     }
 
     if (editButton) {
-      if (!confirmDiscardClientChanges()) return;
+      if (!(await confirmDiscardClientChanges())) return;
       showClientById(editButton.dataset.ycsEditClient, true);
     }
 
@@ -2697,7 +2738,7 @@
     }
 
     if (backButton) {
-      if (!confirmDiscardClientChanges()) return;
+      if (!(await confirmDiscardClientChanges())) return;
       const url = new URL(window.location.href);
       url.searchParams.delete("clientRecordId");
       url.searchParams.delete("edit");
@@ -2862,12 +2903,6 @@
       closeReportImageModal();
     }
 
-  });
-
-  window.addEventListener("beforeunload", (event) => {
-    if (!hasUnsavedClientFormChanges()) return;
-    event.preventDefault();
-    event.returnValue = "";
   });
 
   function cleanupReportPageRailDrag() {

@@ -104,13 +104,19 @@
   {% else %}
     <div class="ycs-clients__topbar">
       <nav class="ycs-clients__nav" aria-label="Color analysis tools">
-        <a href="{{ routes.account_url }}" class="ycs-clients__back-link">My Account</a>
+        <a href="{{ routes.account_url }}" class="ycs-clients__back-link" data-ycs-leave-client-view>My Account</a>
         <a
           href="/pages/my-palettes?view=catools{% if admin_view_as != '' %}&viewAs={{ admin_view_as }}{% endif %}"
           class="ycs-clients__back-link"
           data-ycs-clients-back-link
           data-tools-href="/pages/my-palettes?view=catools{% if admin_view_as != '' %}&viewAs={{ admin_view_as }}{% endif %}"
+          data-ycs-leave-client-view
         >Tools</a>
+        <a
+          href="/pages/my-clients{% if admin_view_as != '' %}?viewAs={{ admin_view_as }}{% endif %}"
+          class="ycs-clients__back-link is-active"
+          data-ycs-leave-client-view
+        >My Clients</a>
       </nav>
     </div>
 
@@ -190,10 +196,26 @@
   }
 
   .ycs-clients__back-link {
-    color: #444;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    border: 1px solid #e6ded5;
+    border-radius: 999px;
+    background: #fff;
+    color: #2f2a25;
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 800;
+    line-height: 1;
+    padding: 0 18px;
     text-decoration: none;
+  }
+
+  .ycs-clients__back-link:hover,
+  .ycs-clients__back-link.is-active {
+    border-color: #111;
+    background: #111;
+    color: #fff;
   }
 
   .ycs-clients__header {
@@ -647,6 +669,42 @@
     color: #4f8a5f;
     font-size: 13px;
     font-weight: 800;
+  }
+
+  .ycs-clients-discard {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(47, 42, 37, 0.45);
+    padding: 18px;
+  }
+
+  .ycs-clients-discard__dialog {
+    width: min(440px, 100%);
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 18px 48px rgba(0,0,0,.18);
+    padding: 22px;
+  }
+
+  .ycs-clients-discard__dialog h2 {
+    margin: 0 0 8px;
+    font-size: 26px;
+  }
+
+  .ycs-clients-discard__dialog p {
+    margin: 0 0 18px;
+    color: #625c55;
+    font-size: 16px;
+  }
+
+  .ycs-clients-discard__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
   }
 
   .ycs-report-builder {
