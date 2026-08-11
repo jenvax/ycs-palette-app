@@ -2058,10 +2058,17 @@
     return url.pathname + url.search;
   }
 
-  function startAnalysisUrl(client) {
+  function photoPrepUrl(client) {
     const url = new URL("/pages/photo-prep", window.location.origin);
     url.searchParams.set("mode", "trade");
     url.searchParams.set("workflow", "color-analysis");
+    url.searchParams.set("clientRecordId", client.clientRecordId);
+    return url.pathname + url.search;
+  }
+
+  function structuredAnalysisUrl(client) {
+    const url = new URL("/pages/color-analysis-tool", window.location.origin);
+    url.searchParams.set("mode", "trade");
     url.searchParams.set("clientRecordId", client.clientRecordId);
     return url.pathname + url.search;
   }
@@ -2161,7 +2168,7 @@
       return `<img src="${escapeHtml(photoUrl)}" alt="${escapeHtml(displayName(client))}" loading="lazy">`;
     }
 
-    return `<a class="${className}__placeholder" href="${escapeHtml(startAnalysisUrl(client))}" data-ycs-leave-client-view>Upload Photo</a>`;
+    return `<a class="${className}__placeholder" href="${escapeHtml(photoPrepUrl(client))}" data-ycs-leave-client-view>Upload Photo</a>`;
   }
 
   function renderCards() {
@@ -2197,7 +2204,7 @@
           <div class="ycs-client-card__actions">
             <button class="ycs-client-card__button" type="button" data-ycs-edit-client="${escapeHtml(client.clientRecordId)}">View/Edit</button>
             <button class="ycs-client-card__button ycs-client-card__button--danger" type="button" data-ycs-delete-client="${escapeHtml(client.clientRecordId)}">Delete</button>
-            ${hasPhoto ? `<a class="ycs-client-card__button ycs-client-card__button--secondary" href="${escapeHtml(startAnalysisUrl(client))}" data-ycs-leave-client-view>Structured Analysis</a>` : ""}
+            ${hasPhoto ? `<a class="ycs-client-card__button ycs-client-card__button--secondary" href="${escapeHtml(structuredAnalysisUrl(client))}" data-ycs-leave-client-view>Structured Analysis</a>` : ""}
             ${hasPhoto ? `<a class="ycs-client-card__button ycs-client-card__button--secondary" href="${escapeHtml(drapingStudioUrl(client))}" data-ycs-leave-client-view>Lip & Draping Studio</a>` : ""}
           </div>
         </div>
@@ -2225,7 +2232,7 @@
       <div class="ycs-clients__detail-header${editMode ? " ycs-clients__detail-header--edit" : ""}">
         ${photoUrl
           ? `<div class="ycs-clients__detail-photo"><img src="${escapeHtml(photoUrl)}" alt="${escapeHtml(displayName(client))}"></div>`
-          : `<a class="ycs-clients__detail-photo ycs-clients__detail-photo--upload" href="${escapeHtml(startAnalysisUrl(client))}" data-ycs-leave-client-view>
+          : `<a class="ycs-clients__detail-photo ycs-clients__detail-photo--upload" href="${escapeHtml(photoPrepUrl(client))}" data-ycs-leave-client-view>
               <span class="ycs-client-card__placeholder">Upload Photo</span>
             </a>`}
         <div>
@@ -2241,7 +2248,7 @@
           <div class="ycs-clients__detail-actions">
             ${editMode ? "" : `<button class="ycs-clients__button" type="button" data-ycs-edit-client="${escapeHtml(client.clientRecordId)}">View/Edit</button>`}
             <button class="ycs-clients__button ycs-clients__button--danger" type="button" data-ycs-delete-client="${escapeHtml(client.clientRecordId)}">Delete</button>
-            ${hasPhoto ? `<a class="ycs-clients__button ycs-clients__button--secondary" href="${escapeHtml(startAnalysisUrl(client))}" data-ycs-leave-client-view>Structured Analysis</a>` : ""}
+            ${hasPhoto ? `<a class="ycs-clients__button ycs-clients__button--secondary" href="${escapeHtml(structuredAnalysisUrl(client))}" data-ycs-leave-client-view>Structured Analysis</a>` : ""}
             ${hasPhoto ? `<a class="ycs-clients__button ycs-clients__button--secondary" href="${escapeHtml(drapingStudioUrl(client))}" data-ycs-leave-client-view>Lip & Draping Studio</a>` : ""}
             <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-manage-client-photos="${escapeHtml(client.clientRecordId)}">Manage Client Photos</button>
             ${canCreateReports ? `<button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-show-report-builder>Report Builder</button>` : ""}
@@ -2526,7 +2533,7 @@
     nextUrl.searchParams.set("clientRecordId", client.clientRecordId);
     window.history.pushState({}, "", nextUrl.pathname + nextUrl.search);
     if (options.redirectToPhotoPrep) {
-      window.location.href = startAnalysisUrl(client);
+      window.location.href = photoPrepUrl(client);
       return client;
     }
     showClientById(client.clientRecordId, true, "Client created.");
