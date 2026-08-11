@@ -166,7 +166,9 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
           <a id="ycs-photo-prep-lip-nav" href="/pages/signature-color-analysis" class="ycs-photo-prep-back" hidden>Lip & Draping Studio</a>
         </nav>
       {% endif %}
-      <a id="ycs-photo-prep-back-link" href="/pages/my-palettes" class="ycs-photo-prep-back">← Back</a>
+      {% unless can_use_client_management and is_personal_mode_request != true %}
+        <a id="ycs-photo-prep-back-link" href="/pages/my-palettes" class="ycs-photo-prep-back">← Back</a>
+      {% endunless %}
     </div>
 
     <div class="ycs-photo-prep-header">
@@ -186,17 +188,6 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
       <div class="ycs-photo-prep-meta-head">
         <div class="ycs-photo-prep-meta-copy">
           <p><strong>Customer:</strong> <span id="ycs-prep-customer-name">—</span></p>
-          <p><strong>Email:</strong> <span id="ycs-prep-customer-email">—</span></p>
-        </div>
-
-        <div class="ycs-photo-prep-meta-actions">
-          <button type="button" id="ycs-prep-show-client-list-btn" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary">
-  Manage Clients
-</button>
-
-          <button type="button" id="ycs-prep-edit-client-btn" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary">
-            Edit Client Info
-          </button>
         </div>
       </div>
 
@@ -491,10 +482,26 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
   }
 
   .ycs-photo-prep-back {
-    text-decoration: none;
-    color: #444;
-    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    border: 1px solid #e6ded5;
+    border-radius: 999px;
+    background: #fff;
+    color: #2f2a25;
     font-size: 14px;
+    font-weight: 800;
+    line-height: 1;
+    padding: 0 18px;
+    text-decoration: none;
+  }
+
+  .ycs-photo-prep-back:hover,
+  .ycs-photo-prep-back.is-active {
+    border-color: #111;
+    background: #111;
+    color: #fff;
   }
 
   .ycs-photo-prep-header {
@@ -1722,6 +1729,7 @@ if (replaceBtn && !IS_SIMPLE_ANALYST && !IS_PERSONAL_MODE && !IS_MEMBER_PHOTO_MO
   if (!backLink) return;
 
   backLink.dataset.backAction = '';
+  backLink.hidden = false;
 
   if (IS_PERSONAL_MODE) {
     backLink.textContent = '← Back to ' + returnLabel;
@@ -1742,14 +1750,11 @@ if (replaceBtn && !IS_SIMPLE_ANALYST && !IS_PERSONAL_MODE && !IS_MEMBER_PHOTO_MO
   }
 
   if (state.workspaceOpen && (state.clientRecordId || state.customerId)) {
-    const clientListUrl = new URL('/pages/photo-prep?mode=trade&workflow=color-analysis', window.location.origin);
-    clientListUrl.searchParams.set('returnUrl', returnUrl);
-    backLink.textContent = '← Back to Client List';
-    backLink.setAttribute('href', clientListUrl.pathname + clientListUrl.search);
-    backLink.dataset.backAction = 'client-list';
+    backLink.hidden = true;
     return;
   }
 
+  backLink.hidden = false;
   backLink.textContent = '← Back to ' + returnLabel;
   backLink.setAttribute('href', safeReturnUrl);
 }
@@ -2338,8 +2343,8 @@ function openFreeTrialClient(clientId) {
     const lastName = (state.lastName || '').trim();
     const fullName = [firstName, lastName].filter(Boolean).join(' ');
 
-    customerNameEl.textContent = fullName || 'Name not available';
-    customerEmailEl.textContent = state.email || 'Email not available';
+    if (customerNameEl) customerNameEl.textContent = fullName || 'Name not available';
+    if (customerEmailEl) customerEmailEl.textContent = state.email || 'Email not available';
   }
 
   function syncClientMetaFromCreateInputs() {
