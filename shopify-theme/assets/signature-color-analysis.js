@@ -271,6 +271,8 @@ function getCustomerPaletteCode() {
   const exportLabelRightToggle = document.getElementById('ycs-analysis-export-label-right');
   const exportNameLeftToggle = document.getElementById('ycs-analysis-export-name-left');
   const exportNameRightToggle = document.getElementById('ycs-analysis-export-name-right');
+  const exportLipSwatchLeftToggle = document.getElementById('ycs-analysis-export-lip-swatch-left');
+  const exportLipSwatchRightToggle = document.getElementById('ycs-analysis-export-lip-swatch-right');
 
   const leftColorLabel = document.getElementById('ycs-analysis-selected-left');
   const rightColorLabel = document.getElementById('ycs-analysis-selected-right');
@@ -475,8 +477,8 @@ function drawSignatureExportLabels(ctx, canvas, options) {
   const firstName = options.showCustomerName === false ? '' : String(options.firstName || '').trim();
   const paletteCode = options.showCustomerName === false ? '' : String(options.paletteCode || '').trim().toUpperCase();
   const colorName = options.showColorName === false ? '' : String(options.colorName || '').trim();
-  const lipName = String(options.lipName || '').trim();
-  const lipColor = normalizeHex(options.lipColor || '');
+  const lipName = options.showLipSwatch === false ? '' : String(options.lipName || '').trim();
+  const lipColor = options.showLipSwatch === false ? '' : normalizeHex(options.lipColor || '');
 
   const exportWidth = canvas.width / 2;
 const exportHeight = canvas.height / 2;
@@ -573,6 +575,11 @@ function shouldDrawExportColorLabel(panel) {
 function shouldDrawExportCustomerName(panel) {
   const toggle = panel === 'right' ? exportNameRightToggle : exportNameLeftToggle;
   return !toggle || toggle.checked;
+}
+
+function shouldDrawExportLipSwatch(panel) {
+  const toggle = panel === 'right' ? exportLipSwatchRightToggle : exportLipSwatchLeftToggle;
+  return !!(toggle && toggle.checked);
 }
 
 function escapeHtml(value) {
@@ -3610,6 +3617,7 @@ if (lipCanvas) {
   lipColor: lipColor,
   showColorName: shouldDrawExportColorLabel(panel),
   showCustomerName: shouldDrawExportCustomerName(panel),
+  showLipSwatch: shouldDrawExportLipSwatch(panel),
   drapeY: signatureDrapeY,
   drapeHeight: signatureDrapeHeight
 });
