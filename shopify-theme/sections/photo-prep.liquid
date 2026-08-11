@@ -132,6 +132,7 @@
   data-is-diy-catool="{% if is_diy_catool %}true{% else %}false{% endif %}"
   data-is-simple-analyst="{% if is_simple_analyst %}true{% else %}false{% endif %}"
   data-can-use-photo-prep="{% if can_use_photo_prep %}true{% else %}false{% endif %}"
+  data-can-use-client-management="{% if can_use_client_management %}true{% else %}false{% endif %}"
   data-is-vip="{% if is_vip %}true{% else %}false{% endif %}"
 data-has-draping-studio="{% if has_draping_studio_access %}true{% else %}false{% endif %}"
 data-has-draping-studio-starter="{% if has_draping_studio_starter %}true{% else %}false{% endif %}"
@@ -155,6 +156,16 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
   {% else %}
     
     <div class="ycs-photo-prep-topbar">
+      {% if can_use_client_management and is_personal_mode_request != true %}
+        <nav class="ycs-photo-prep-tool-nav" aria-label="Color analysis tools">
+          <a href="{{ routes.account_url }}" class="ycs-photo-prep-back">My Account</a>
+          <a href="/pages/my-palettes?view=catools" class="ycs-photo-prep-back">Tools</a>
+          <a href="/pages/my-clients" class="ycs-photo-prep-back">My Clients</a>
+          <a id="ycs-photo-prep-manage-client-nav" href="/pages/my-clients" class="ycs-photo-prep-back" hidden>Manage Client</a>
+          <a id="ycs-photo-prep-structured-nav" href="/pages/color-analysis-tool" class="ycs-photo-prep-back" hidden>Structured Analysis</a>
+          <a id="ycs-photo-prep-lip-nav" href="/pages/signature-color-analysis" class="ycs-photo-prep-back" hidden>Lip & Draping Studio</a>
+        </nav>
+      {% endif %}
       <a id="ycs-photo-prep-back-link" href="/pages/my-palettes" class="ycs-photo-prep-back">← Back</a>
     </div>
 
@@ -465,7 +476,18 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
   }
 
   .ycs-photo-prep-topbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+    align-items: center;
     margin-bottom: 10px;
+  }
+
+  .ycs-photo-prep-tool-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
   }
 
   .ycs-photo-prep-back {
@@ -1265,7 +1287,7 @@ const IS_CATOOL_GROWTH = appEl.dataset.isCatoolGrowth === 'true';
 const IS_CATOOL_FREE = appEl.dataset.isCatoolFree === 'true';
 const IS_DIY_CATOOL = appEl.dataset.isDiyCatool === 'true';
 const IS_SIMPLE_ANALYST = appEl.dataset.isSimpleAnalyst === 'true';
-const CAN_USE_CLIENT_MANAGEMENT = IS_ADMIN || IS_TRADE || IS_SIMPLE_ANALYST;
+const CAN_USE_CLIENT_MANAGEMENT = appEl.dataset.canUseClientManagement === 'true';
 const CAN_USE_PHOTO_PREP = appEl.dataset.canUsePhotoPrep === 'true';
 const VIEWER_CUSTOMER_ID = (appEl.dataset.customerId || '').trim();
 const APP_BASE_URL = appEl.dataset.appBaseUrl || '';
@@ -1462,6 +1484,9 @@ const workingImg = document.getElementById('ycs-prep-working-img');
   const activeStatusEl = document.getElementById('ycs-prep-active-status');
 
   const backLink = document.getElementById('ycs-photo-prep-back-link');
+  const manageClientNavLink = document.getElementById('ycs-photo-prep-manage-client-nav');
+  const structuredNavLink = document.getElementById('ycs-photo-prep-structured-nav');
+  const lipNavLink = document.getElementById('ycs-photo-prep-lip-nav');
 
   const customerMetaEl = document.getElementById('ycs-prep-customer-meta');
   const customerNameEl = document.getElementById('ycs-prep-customer-name');
@@ -1729,6 +1754,33 @@ if (replaceBtn && !IS_SIMPLE_ANALYST && !IS_PERSONAL_MODE && !IS_MEMBER_PHOTO_MO
   backLink.setAttribute('href', safeReturnUrl);
 }
 
+function setToolNavLink(link, href, shouldShow) {
+  if (!link) return;
+  link.hidden = !shouldShow;
+  if (href) {
+    link.setAttribute('href', href);
+  }
+}
+
+function syncColorAnalysisToolNav(structuredHref, signatureHref) {
+  if (!CAN_USE_CLIENT_MANAGEMENT) return;
+
+  const hasClient = !!state.clientRecordId;
+  const canOpenTools = !!state.clientRecordId || !!state.customerId || IS_SIMPLE_ANALYST || IS_CATOOL_FREE_TRIAL_FLOW;
+
+  if (hasClient) {
+    const manageClientUrl = new URL('/pages/my-clients', window.location.origin);
+    manageClientUrl.searchParams.set('clientRecordId', state.clientRecordId);
+    manageClientUrl.searchParams.set('edit', '1');
+    setToolNavLink(manageClientNavLink, manageClientUrl.pathname + manageClientUrl.search, true);
+  } else {
+    setToolNavLink(manageClientNavLink, '', false);
+  }
+
+  setToolNavLink(structuredNavLink, structuredHref || '/pages/color-analysis-tool', canOpenTools);
+  setToolNavLink(lipNavLink, signatureHref || '/pages/signature-color-analysis', canOpenTools);
+}
+
 function updateStartAnalysisLink() {
   if (!startAnalysisBtn) return;
 
@@ -1759,6 +1811,7 @@ function updateStartAnalysisLink() {
 
     startAnalysisBtn.textContent = 'Open Draping Studio';
     startAnalysisBtn.setAttribute('href', href);
+    syncColorAnalysisToolNav('', '');
     return;
   }
 
@@ -1796,6 +1849,7 @@ function updateStartAnalysisLink() {
 
     startAnalysisBtn.textContent = 'Lip & Draping Studio';
     startAnalysisBtn.setAttribute('href', signatureUrl.pathname + signatureUrl.search);
+    syncColorAnalysisToolNav('', signatureUrl.pathname + signatureUrl.search);
 
     if (startSignatureAnalysisBtn) {
       startSignatureAnalysisBtn.hidden = true;
@@ -1820,8 +1874,9 @@ function updateStartAnalysisLink() {
     query.set('returnUrl', safeReturnUrl);
 
     const queryString = query.toString();
-    startAnalysisBtn.textContent = 'Start Color Analysis';
+    startAnalysisBtn.textContent = 'Structured Analysis';
     startAnalysisBtn.setAttribute('href', href + (queryString ? '?' + queryString : ''));
+    syncColorAnalysisToolNav(startAnalysisBtn.getAttribute('href'), '');
 
     if (startSignatureAnalysisBtn) {
       startSignatureAnalysisBtn.hidden = true;
@@ -1839,8 +1894,9 @@ function updateStartAnalysisLink() {
       href += '?' + queryString;
     }
 
-    startAnalysisBtn.textContent = 'Start Color Analysis';
+    startAnalysisBtn.textContent = 'Structured Analysis';
     startAnalysisBtn.setAttribute('href', href);
+    syncColorAnalysisToolNav(href, '');
     return;
   }
 
@@ -1864,8 +1920,9 @@ function updateStartAnalysisLink() {
     href += '?' + queryString;
   }
 
-  startAnalysisBtn.textContent = 'Start Color Analysis';
+  startAnalysisBtn.textContent = 'Structured Analysis';
   startAnalysisBtn.setAttribute('href', href);
+  let signatureHrefForNav = '';
 
   if (startSignatureAnalysisBtn && CAN_USE_CLIENT_MANAGEMENT) {
     let signatureHref = '/pages/signature-color-analysis';
@@ -1897,7 +1954,10 @@ if (state.firstName) {
     startSignatureAnalysisBtn.textContent = 'Lip & Draping Studio';
     startSignatureAnalysisBtn.setAttribute('href', signatureHref);
     startSignatureAnalysisBtn.hidden = false;
+    signatureHrefForNav = signatureHref;
   }
+
+  syncColorAnalysisToolNav(href, signatureHrefForNav);
 } //updateStartAnalysisLink
 
   

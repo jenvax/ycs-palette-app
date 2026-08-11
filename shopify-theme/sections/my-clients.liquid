@@ -103,12 +103,15 @@
     </div>
   {% else %}
     <div class="ycs-clients__topbar">
-      <a
-        href="/pages/my-palettes?view=catools{% if admin_view_as != '' %}&viewAs={{ admin_view_as }}{% endif %}"
-        class="ycs-clients__back-link"
-        data-ycs-clients-back-link
-        data-tools-href="/pages/my-palettes?view=catools{% if admin_view_as != '' %}&viewAs={{ admin_view_as }}{% endif %}"
-      >← Back to Color Analysis Tools</a>
+      <nav class="ycs-clients__nav" aria-label="Color analysis tools">
+        <a href="{{ routes.account_url }}" class="ycs-clients__back-link">My Account</a>
+        <a
+          href="/pages/my-palettes?view=catools{% if admin_view_as != '' %}&viewAs={{ admin_view_as }}{% endif %}"
+          class="ycs-clients__back-link"
+          data-ycs-clients-back-link
+          data-tools-href="/pages/my-palettes?view=catools{% if admin_view_as != '' %}&viewAs={{ admin_view_as }}{% endif %}"
+        >Tools</a>
+      </nav>
     </div>
 
     <div class="ycs-clients__header">
@@ -177,6 +180,13 @@
 
   .ycs-clients__topbar {
     margin-bottom: 10px;
+  }
+
+  .ycs-clients__nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
   }
 
   .ycs-clients__back-link {
@@ -292,6 +302,16 @@
     text-align: center;
     padding: 12px;
     background: #fffaf4;
+  }
+
+  a.ycs-client-card__placeholder {
+    color: #2f2a25;
+    font-weight: 800;
+    text-decoration: none;
+  }
+
+  a.ycs-client-card__placeholder:hover {
+    border-color: #111;
   }
 
   .ycs-client-card__content {
@@ -605,6 +625,16 @@
   .ycs-clients__edit-form .ycs-clients__input {
     min-height: 38px;
     padding: 8px 12px;
+  }
+
+  .ycs-clients__form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .ycs-clients__form-actions .ycs-clients__button {
+    flex: 1 1 180px;
   }
 
   .ycs-clients__textarea {

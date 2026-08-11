@@ -156,6 +156,10 @@
       "";
   }
 
+  function clientHasPhoto(client) {
+    return !!getPhotoUrl(client);
+  }
+
   function getAdjustedPhotoUrl(client) {
     const photos = Array.isArray(client.photos) ? client.photos : [];
     const latestAdjustedPhoto = photos.find((photo) => photo && photo.adjustedPhotoUrl);
@@ -1167,7 +1171,7 @@
     return pages.join("");
   }
 
-  function renderReportBuilder(client) {
+  function renderReportBuilder(client, isHidden = true) {
     const isSameReportClient = activeReportClientId === client.clientRecordId;
     if (!isSameReportClient) {
       activeSavedDrapedImages = [];
@@ -1191,7 +1195,7 @@
     )).join("");
 
     return `
-      <section class="ycs-report-builder" data-ycs-report-builder>
+      <section class="ycs-report-builder" data-ycs-report-builder${isHidden ? " hidden" : ""}>
         <div class="ycs-report-builder__header">
           <div>
             <h3>Color Analysis Report</h3>
@@ -1586,7 +1590,7 @@
     activeReportDraft = applyReportTemplateToDraft(activeReportDraft, template);
     const currentBuilder = detailEl.querySelector("[data-ycs-report-builder]");
     if (currentBuilder) {
-      currentBuilder.outerHTML = renderReportBuilder(client);
+      currentBuilder.outerHTML = renderReportBuilder(client, currentBuilder.hidden);
       applyActiveReportPage(activeReportPage);
     }
 
@@ -1705,7 +1709,7 @@
     if (!client || !builder || !form) return;
 
     activeReportDraft = readReportDraftFromForm(form, client);
-    builder.outerHTML = renderReportBuilder(client);
+    builder.outerHTML = renderReportBuilder(client, false);
     applyActiveReportPage(pageNumber);
   }
 
@@ -1919,7 +1923,8 @@
 
     const builder = detailEl.querySelector("[data-ycs-report-builder]");
     if (builder) {
-      builder.outerHTML = renderReportBuilder(client);
+      const wasHidden = builder.hidden;
+      builder.outerHTML = renderReportBuilder(client, wasHidden);
       const localMessage = savedDraft ? "Saved browser draft loaded." : "New draft ready.";
       const serverMessage = savedAt ? `Saved draft loaded. Last updated ${formatDate(savedAt)}.` : localMessage;
       setReportStatus(loadedFromServer ? serverMessage : localMessage, true);
@@ -2072,15 +2077,9 @@
 
   function updateShellMode(mode) {
     if (pageBackLinkEl) {
-      if (mode === "list") {
-        pageBackLinkEl.href = pageBackLinkEl.dataset.toolsHref || "/pages/my-palettes?view=catools";
-        pageBackLinkEl.textContent = "← Back to Color Analysis Tools";
-        pageBackLinkEl.dataset.ycsBackMode = "tools";
-      } else {
-        pageBackLinkEl.href = listUrl();
-        pageBackLinkEl.textContent = "← Back to My Clients";
-        pageBackLinkEl.dataset.ycsBackMode = "clients";
-      }
+      pageBackLinkEl.href = pageBackLinkEl.dataset.toolsHref || "/pages/my-palettes?view=catools";
+      pageBackLinkEl.textContent = "Tools";
+      pageBackLinkEl.dataset.ycsBackMode = "tools";
     }
 
     if (addClientEl) {
@@ -2156,7 +2155,7 @@
       return `<img src="${escapeHtml(photoUrl)}" alt="${escapeHtml(displayName(client))}" loading="lazy">`;
     }
 
-    return `<div class="${className}__placeholder">No photo yet</div>`;
+    return `<a class="${className}__placeholder" href="${escapeHtml(startAnalysisUrl(client))}" data-ycs-leave-client-view>Upload Photo</a>`;
   }
 
   function renderCards() {
@@ -2177,6 +2176,7 @@
       ${(() => {
         const palette = paletteLabel(client);
         const status = displayStatus(client.analysisStatus);
+        const hasPhoto = clientHasPhoto(client);
 
         return `
       <article class="ycs-client-card">
@@ -2191,8 +2191,8 @@
           <div class="ycs-client-card__actions">
             <button class="ycs-client-card__button" type="button" data-ycs-edit-client="${escapeHtml(client.clientRecordId)}">View/Edit</button>
             <button class="ycs-client-card__button ycs-client-card__button--danger" type="button" data-ycs-delete-client="${escapeHtml(client.clientRecordId)}">Delete</button>
-            <a class="ycs-client-card__button ycs-client-card__button--secondary" href="${escapeHtml(startAnalysisUrl(client))}">Start Color Analysis</a>
-            <a class="ycs-client-card__button ycs-client-card__button--secondary" href="${escapeHtml(drapingStudioUrl(client))}">Lip & Draping Studio</a>
+            ${hasPhoto ? `<a class="ycs-client-card__button ycs-client-card__button--secondary" href="${escapeHtml(startAnalysisUrl(client))}" data-ycs-leave-client-view>Structured Analysis</a>` : ""}
+            ${hasPhoto ? `<a class="ycs-client-card__button ycs-client-card__button--secondary" href="${escapeHtml(drapingStudioUrl(client))}" data-ycs-leave-client-view>Lip & Draping Studio</a>` : ""}
           </div>
         </div>
       </article>
@@ -2213,12 +2213,13 @@
     const status = displayStatus(client.analysisStatus);
     const created = formatDate(client.createdAt);
     const updated = formatDate(client.updatedAt);
+    const hasPhoto = clientHasPhoto(client);
 
     detailEl.innerHTML = `
       <div class="ycs-clients__detail-header${editMode ? " ycs-clients__detail-header--edit" : ""}">
         ${photoUrl
           ? `<div class="ycs-clients__detail-photo"><img src="${escapeHtml(photoUrl)}" alt="${escapeHtml(displayName(client))}"></div>`
-          : `<a class="ycs-clients__detail-photo ycs-clients__detail-photo--upload" href="${escapeHtml(startAnalysisUrl(client))}">
+          : `<a class="ycs-clients__detail-photo ycs-clients__detail-photo--upload" href="${escapeHtml(startAnalysisUrl(client))}" data-ycs-leave-client-view>
               <span class="ycs-client-card__placeholder">Upload Photo</span>
             </a>`}
         <div>
@@ -2234,8 +2235,8 @@
           <div class="ycs-clients__detail-actions">
             ${editMode ? "" : `<button class="ycs-clients__button" type="button" data-ycs-edit-client="${escapeHtml(client.clientRecordId)}">View/Edit</button>`}
             <button class="ycs-clients__button ycs-clients__button--danger" type="button" data-ycs-delete-client="${escapeHtml(client.clientRecordId)}">Delete</button>
-            <a class="ycs-clients__button ycs-clients__button--secondary" href="${escapeHtml(startAnalysisUrl(client))}">Start Color Analysis</a>
-            <a class="ycs-clients__button ycs-clients__button--secondary" href="${escapeHtml(drapingStudioUrl(client))}">Lip & Draping Studio</a>
+            ${hasPhoto ? `<a class="ycs-clients__button ycs-clients__button--secondary" href="${escapeHtml(startAnalysisUrl(client))}" data-ycs-leave-client-view>Structured Analysis</a>` : ""}
+            ${hasPhoto ? `<a class="ycs-clients__button ycs-clients__button--secondary" href="${escapeHtml(drapingStudioUrl(client))}" data-ycs-leave-client-view>Lip & Draping Studio</a>` : ""}
             <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-manage-client-photos="${escapeHtml(client.clientRecordId)}">Manage Client Photos</button>
             ${canCreateReports ? `<button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-show-report-builder>Report Builder</button>` : ""}
           </div>
@@ -2301,7 +2302,10 @@
         </select>
         <textarea class="ycs-clients__textarea" name="notes" placeholder="Notes">${escapeHtml(client.notes)}</textarea>
         ${saveMessage ? `<p class="ycs-clients__save-message">${escapeHtml(saveMessage)}</p>` : ""}
-        <button class="ycs-clients__button" type="submit">${isCreate ? "Create Client" : "Save Client"}</button>
+        <div class="ycs-clients__form-actions">
+          <button class="ycs-clients__button" type="submit">${isCreate ? "Create Client" : "Save Client"}</button>
+          <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-cancel-client-edit>Cancel</button>
+        </div>
       </form>
     `;
   }
@@ -2320,6 +2324,8 @@
     const client = clients.find((item) => item.clientRecordId === clientRecordId);
     const manager = detailEl.querySelector("[data-ycs-client-photo-manager]");
     if (!client || !manager) return;
+    const builder = detailEl.querySelector("[data-ycs-report-builder]");
+    if (builder) builder.hidden = true;
 
     manager.hidden = false;
     manager.innerHTML = renderClientPhotoManager(client, [], { loading: true });
@@ -2365,6 +2371,34 @@
       }
       throw error;
     }
+  }
+
+  function getActiveClientForm() {
+    return detailEl.querySelector("[data-ycs-client-create-form], [data-ycs-client-edit-form]");
+  }
+
+  function formElementInitialValue(element) {
+    if (element.tagName === "SELECT") {
+      const selectedOption = Array.from(element.options || []).find((option) => option.defaultSelected);
+      return selectedOption ? selectedOption.value : "";
+    }
+    return element.defaultValue || "";
+  }
+
+  function hasUnsavedClientFormChanges() {
+    const form = getActiveClientForm();
+    if (!form) return false;
+
+    return Array.from(form.elements || []).some((element) => {
+      if (!element.name || element.type === "hidden" || element.type === "submit" || element.type === "button") return false;
+      if (element.type === "checkbox" || element.type === "radio") return element.checked !== element.defaultChecked;
+      return String(element.value || "") !== String(formElementInitialValue(element) || "");
+    });
+  }
+
+  function confirmDiscardClientChanges() {
+    if (!hasUnsavedClientFormChanges()) return true;
+    return window.confirm("You have unsaved client changes. Leave without saving?");
   }
 
   async function saveClient(form) {
@@ -2544,17 +2578,46 @@
     const removeCustomReportPageButton = event.target.closest("[data-ycs-remove-custom-report-page]");
     const duplicateReportPageButton = event.target.closest("[data-ycs-duplicate-report-page]");
     const moveReportPageButton = event.target.closest("[data-ycs-move-report-page]");
+    const cancelClientEditButton = event.target.closest("[data-ycs-cancel-client-edit]");
+    const leaveClientViewLink = event.target.closest("[data-ycs-leave-client-view]");
+
+    if (leaveClientViewLink && !confirmDiscardClientChanges()) {
+      event.preventDefault();
+      return;
+    }
+
+    if (pageBackButton && pageBackButton.dataset.ycsBackMode !== "clients" && !confirmDiscardClientChanges()) {
+      event.preventDefault();
+      return;
+    }
 
     if (pageBackButton && pageBackButton.dataset.ycsBackMode === "clients") {
       event.preventDefault();
+      if (!confirmDiscardClientChanges()) return;
       const nextUrl = listUrl();
       window.history.pushState({}, "", nextUrl);
       renderCards();
       return;
     }
 
+    if (cancelClientEditButton) {
+      event.preventDefault();
+      if (!confirmDiscardClientChanges()) return;
+      const activeForm = getActiveClientForm();
+      const clientRecordId = activeForm?.querySelector("[name='clientRecordId']")?.value || "";
+      if (clientRecordId) {
+        showClientById(clientRecordId, false);
+      } else {
+        const nextUrl = listUrl();
+        window.history.pushState({}, "", nextUrl);
+        renderCards();
+      }
+      return;
+    }
+
     if (addClientButton) {
       event.preventDefault();
+      if (!confirmDiscardClientChanges()) return;
       const nextUrl = new URL(window.location.href);
       nextUrl.searchParams.delete("clientRecordId");
       nextUrl.searchParams.delete("edit");
@@ -2566,12 +2629,14 @@
 
     if (viewButton) {
       event.preventDefault();
+      if (!confirmDiscardClientChanges()) return;
       const clientRecordId = viewButton.dataset.ycsViewClient;
       window.history.pushState({}, "", clientUrl({ clientRecordId }));
       showClientById(clientRecordId, false);
     }
 
     if (editButton) {
+      if (!confirmDiscardClientChanges()) return;
       showClientById(editButton.dataset.ycsEditClient, true);
     }
 
@@ -2614,12 +2679,19 @@
     if (showReportBuilderButton) {
       event.preventDefault();
       const builder = detailEl.querySelector("[data-ycs-report-builder]");
+      const manager = detailEl.querySelector("[data-ycs-client-photo-manager]");
+      if (manager) {
+        manager.hidden = true;
+        manager.innerHTML = "";
+      }
       if (builder) {
+        builder.hidden = false;
         builder.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     }
 
     if (backButton) {
+      if (!confirmDiscardClientChanges()) return;
       const url = new URL(window.location.href);
       url.searchParams.delete("clientRecordId");
       url.searchParams.delete("edit");
@@ -2647,7 +2719,7 @@
       if (client && builder && form) {
         activeReportDraft = readReportDraftFromForm(form, client);
         activeReportPage = Math.min(Math.max(nextPage, 1), totalReportPages(activeReportDraft));
-        builder.outerHTML = renderReportBuilder(client);
+        builder.outerHTML = renderReportBuilder(client, false);
       }
       applyActiveReportPage(nextPage);
     }
@@ -2684,7 +2756,7 @@
       order.splice(insertIndex, 0, { id: newPage.id, type: "custom", key: newPage.id });
       activeReportDraft.reportPageOrder = order;
       const nextPage = LOCKED_REPORT_PAGE_COUNT + insertIndex + 1;
-      builder.outerHTML = renderReportBuilder(client);
+      builder.outerHTML = renderReportBuilder(client, false);
       applyActiveReportPage(nextPage);
       return;
     }
@@ -2700,7 +2772,7 @@
       activeReportDraft = readReportDraftFromForm(form, client);
       duplicateReportPage(activeReportDraft, duplicateReportPageButton.dataset.ycsDuplicateReportPage);
       const nextPage = activeReportPage;
-      builder.outerHTML = renderReportBuilder(client);
+      builder.outerHTML = renderReportBuilder(client, false);
       applyActiveReportPage(nextPage);
     }
 
@@ -2720,7 +2792,7 @@
       const targetIndex = direction > 0 ? currentIndex + 2 : currentIndex - 1;
       moveReportPageToIndex(activeReportDraft, moveReportPageButton.dataset.ycsMoveReportPage, targetIndex);
       const nextPage = activeReportPage;
-      builder.outerHTML = renderReportBuilder(client);
+      builder.outerHTML = renderReportBuilder(client, false);
       applyActiveReportPage(nextPage);
       return;
     }
@@ -2739,7 +2811,7 @@
       activeReportDraft = readReportDraftFromForm(form, client);
       activeReportDraft.customPages = reportCustomPages(activeReportDraft).filter((page) => page.id !== removeId);
       activeReportDraft.reportPageOrder = normalizeReportPageOrder(activeReportDraft).filter((entry) => !(entry.type === "custom" && entry.key === removeId));
-      builder.outerHTML = renderReportBuilder(client);
+      builder.outerHTML = renderReportBuilder(client, false);
       applyActiveReportPage(Math.min(activeReportPage, totalReportPages(activeReportDraft)));
     }
 
@@ -2786,6 +2858,12 @@
 
   });
 
+  window.addEventListener("beforeunload", (event) => {
+    if (!hasUnsavedClientFormChanges()) return;
+    event.preventDefault();
+    event.returnValue = "";
+  });
+
   function cleanupReportPageRailDrag() {
     detailEl.querySelectorAll("[data-ycs-report-page-order-id].is-dragging, [data-ycs-report-page-order-id].is-drop-target").forEach((item) => {
       item.classList.remove("is-dragging", "is-drop-target");
@@ -2810,7 +2888,7 @@
     const targetIndex = (Number(targetItem.dataset.ycsReportPageOrderIndex) || 0) + (insertAfter ? 1 : 0);
     moveReportPageToIndex(activeReportDraft, reportPageRailDrag.orderId, targetIndex);
     const nextPage = activeReportPage;
-    builder.outerHTML = renderReportBuilder(client);
+    builder.outerHTML = renderReportBuilder(client, false);
     applyActiveReportPage(nextPage);
     return true;
   }
@@ -2923,7 +3001,7 @@
       const form = builder?.querySelector("[data-ycs-report-form]");
       if (client && builder && form) {
         activeReportDraft = readReportDraftFromForm(form, client);
-        builder.outerHTML = renderReportBuilder(client);
+        builder.outerHTML = renderReportBuilder(client, false);
         applyActiveReportPage(activeReportPage);
       }
       return;

@@ -52,6 +52,7 @@ export async function action({ request }) {
   const corsHeaders = getCorsHeaders(origin);
 
   try {
+    const body = await request.json();
     const {
       clientRecordId,
       firstName,
@@ -60,7 +61,11 @@ export async function action({ request }) {
       paletteCode,
       paletteName,
       notes
-    } = await request.json();
+    } = body;
+    const hasEmail = Object.prototype.hasOwnProperty.call(body, "email");
+    const hasPaletteCode = Object.prototype.hasOwnProperty.call(body, "paletteCode");
+    const hasPaletteName = Object.prototype.hasOwnProperty.call(body, "paletteName");
+    const hasNotes = Object.prototype.hasOwnProperty.call(body, "notes");
 
     const safeClientRecordId = cleanString(clientRecordId);
     const safeFirstName = cleanString(firstName);
@@ -116,12 +121,12 @@ export async function action({ request }) {
 
     const baseFields = {
       FirstName: safeFirstName,
-      LastName: safeLastName,
-      Email: safeEmail || null,
-      AnalysisResultCode: safePaletteCode || null,
-      AnalysisResultLabel: safePaletteName || null,
-      Notes: safeNotes || null
+      LastName: safeLastName
     };
+    if (hasEmail) baseFields.Email = safeEmail || null;
+    if (hasPaletteCode) baseFields.AnalysisResultCode = safePaletteCode || null;
+    if (hasPaletteName) baseFields.AnalysisResultLabel = safePaletteName || null;
+    if (hasNotes) baseFields.Notes = safeNotes || null;
 
     const { response: patchRes, data: patchData } = await patchAirtableRecord({
       airtableBase,

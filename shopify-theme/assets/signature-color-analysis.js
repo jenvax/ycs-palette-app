@@ -2261,7 +2261,7 @@ photoPrepLink.href =
   return;
 }
 
-  photoPrepLink.textContent = 'Back to Photo Prep';
+  photoPrepLink.textContent = 'Photo Prep';
 
   if (CLIENT_RECORD_ID) {
     const prepQuery = new URLSearchParams({

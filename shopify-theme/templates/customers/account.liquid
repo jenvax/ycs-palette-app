@@ -9,7 +9,7 @@
 {% if customer %}
   {% assign account_tag_string = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
 
-  {% if account_tag_string contains ',VIP,' %}
+  {% if account_tag_string contains ',VIP,' or account_tag_string contains ',YCS_ADMIN,' %}
     {% assign has_style_masters_access = true %}
   {% endif %}
 {% endif %}
@@ -57,7 +57,7 @@
 
   {% if has_trade_access or has_color_analysis_tool %}
     <a href="/pages/my-palettes?view=catools" class="account-tool">
-      Color Analysis Tools
+      Tools
     </a>
   {% endif %}
 

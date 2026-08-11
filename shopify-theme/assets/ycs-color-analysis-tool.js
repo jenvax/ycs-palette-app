@@ -406,6 +406,33 @@
     return paletteNames[code] || code || '—';
   }
 
+  async function saveClientColorType(result) {
+    if (!APP_BASE_URL || !CLIENT_RECORD_ID || !result || !result.resultCode) return;
+
+    const firstName = String(state.clientFirstName || '').trim();
+    const lastName = String(state.clientLastName || '').trim();
+    if (!firstName || !lastName) return;
+
+    const response = await fetch(APP_BASE_URL + '/api/update-consultant-client', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        clientRecordId: CLIENT_RECORD_ID,
+        firstName,
+        lastName,
+        paletteCode: result.resultCode,
+        paletteName: result.resultLabel || getPaletteDisplayName(result.resultCode)
+      })
+    });
+    const data = await response.json().catch(function () {
+      return {};
+    });
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || 'Could not save color type');
+    }
+  }
+
   function getLaneLabel(lane) {
     const map = {
       'light-warm': 'Light Warm',
@@ -2264,7 +2291,7 @@ function updateBackLink() {
   if (!backBtn) return;
 
   if (IS_DIY_MODE) {
-    backBtn.textContent = 'Back to Photo Prep';
+    backBtn.textContent = 'Photo Prep';
     backBtn.href = photoPrepLink ? photoPrepLink.href : appendAdminPreviewToHref('/pages/photo-prep?mode=diy&workflow=color-analysis');
     return;
   }
@@ -2542,6 +2569,20 @@ function updateBackLink() {
     }
 
     saveAnalysisProgress();
+    saveClientColorType(result)
+      .then(function () {
+        if (chromaResultEl && chromaResultTextEl) {
+          chromaResultEl.hidden = false;
+          chromaResultTextEl.textContent = state.analysisResult.resultLabel + ' saved to client';
+        }
+      })
+      .catch(function (error) {
+        console.warn('Client color type save failed', error);
+        if (chromaResultEl && chromaResultTextEl) {
+          chromaResultEl.hidden = false;
+          chromaResultTextEl.textContent = state.analysisResult.resultLabel + ' selected. Client color type could not be saved.';
+        }
+      });
   }
 
   function resetGuidedFlow() {
