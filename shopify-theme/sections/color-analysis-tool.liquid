@@ -146,17 +146,17 @@
         <a href="{{ routes.account_url }}" class="ycs-analysis-back-link">My Account</a>
         <a href="/pages/my-palettes?view=catools{{ ycs_tools_view_as_query }}" class="ycs-analysis-back-link">Tools</a>
         <a href="/pages/my-clients{{ ycs_tools_view_as_query | replace: '&', '?' }}" id="ycs-analysis-back" class="ycs-analysis-back-link">My Clients</a>
-        <a id="ycs-analysis-manage-client-link" href="/pages/my-clients" class="ycs-analysis-toolbar-link" hidden>
+        <a id="ycs-analysis-manage-client-link" href="/pages/my-clients" class="ycs-analysis-back-link" hidden>
           Manage Client
         </a>
-        <a id="ycs-analysis-photo-prep-link" href="/pages/photo-prep" class="ycs-analysis-toolbar-link">
+        <a id="ycs-analysis-photo-prep-link" href="/pages/photo-prep" class="ycs-analysis-back-link">
           Photo Prep
         </a>
         {% if is_admin or is_trade or is_catool or is_catool_growth %}
           <a
             id="ycs-analysis-signature-link"
             href="/pages/signature-color-analysis"
-            class="ycs-analysis-toolbar-link"
+            class="ycs-analysis-back-link"
           >
             Lip & Draping Studio
           </a>
