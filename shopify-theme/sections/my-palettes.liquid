@@ -48,7 +48,16 @@
   %}
 
   {% assign is_color_analysis_tools_page = false %}
-  {% if ycs_page_url contains 'view=tools&' or ycs_page_url contains 'view=catools&' or ycs_page_url contains '/pages/color-analysis-tools' %}
+  {% if ycs_page_url contains 'view=tools&'
+    or ycs_page_url contains 'view=catools&'
+    or ycs_header_content contains 'view=catools'
+    or ycs_header_content contains 'view%3Dcatools'
+    or ycs_header_content contains 'view\\u003dcatools'
+    or ycs_header_content contains 'view=tools'
+    or ycs_header_content contains 'view%3Dtools'
+    or ycs_header_content contains 'view\\u003dtools'
+    or ycs_page_url contains '/pages/color-analysis-tools'
+  %}
     {% assign is_color_analysis_tools_page = true %}
   {% endif %}
 
