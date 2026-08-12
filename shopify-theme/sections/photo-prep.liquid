@@ -167,7 +167,10 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
         </nav>
       {% endif %}
       {% unless can_use_client_management and is_personal_mode_request != true %}
-        <a id="ycs-photo-prep-back-link" href="/pages/my-palettes" class="ycs-photo-prep-back">← Back</a>
+        <nav class="ycs-photo-prep-tool-nav" aria-label="Photo draping tools">
+          <a href="{{ routes.account_url }}" class="ycs-photo-prep-back">My Account</a>
+          <a id="ycs-photo-prep-back-link" href="/pages/my-palettes" class="ycs-photo-prep-back">My Color Palettes</a>
+        </nav>
       {% endunless %}
     </div>
 
@@ -1736,8 +1739,8 @@ if (replaceBtn && !IS_SIMPLE_ANALYST && !IS_PERSONAL_MODE && !IS_MEMBER_PHOTO_MO
   backLink.hidden = false;
 
   if (IS_PERSONAL_MODE) {
-    backLink.textContent = '← Back to ' + returnLabel;
-    backLink.setAttribute('href', safeReturnUrl);
+    backLink.textContent = 'My Color Palettes';
+    backLink.setAttribute('href', '/pages/my-palettes');
     return;
   }
 

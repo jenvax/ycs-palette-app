@@ -129,9 +129,9 @@ data-has-draping-studio-full="{% if has_draping_studio %}true{% else %}false{% e
 
   {% else %}
     <div class="ycs-drape-topnav">
-      <button type="button" id="ycs-drape-back" class="ycs-drape-back-link">
-        ← Back
-      </button>
+      <a href="{{ routes.account_url }}" class="ycs-drape-back-link">My Account</a>
+      <a href="/pages/my-palettes" class="ycs-drape-back-link">My Color Palettes</a>
+      <a href="/pages/photo-prep?mode=personal&workflow=photo-draping" class="ycs-drape-back-link">Photo Prep</a>
 
       {% if is_admin %}
         <a
@@ -593,7 +593,8 @@ data-has-draping-studio-full="{% if has_draping_studio %}true{% else %}false{% e
     margin-bottom: 10px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
+    flex-wrap: wrap;
     gap: 12px;
   }
 .ycs-usage-modal-dialog {
@@ -658,15 +659,26 @@ data-has-draping-studio-full="{% if has_draping_studio %}true{% else %}false{% e
   }
 
   .ycs-drape-back-link {
-    appearance: none;
-    border: 0;
-    background: transparent;
-    padding: 0;
-    font: inherit;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 36px;
+    border: 1px solid #e6ded5;
+    border-radius: 999px;
+    background: #fff;
+    padding: 8px 14px;
     font-size: 14px;
-    font-weight: 600;
-    color: #444;
-    cursor: pointer;
+    font-weight: 800;
+    line-height: 1;
+    color: #2f2a25;
+    text-decoration: none;
+  }
+
+  .ycs-drape-back-link:hover {
+    border-color: #111;
+    background: #111;
+    color: #fff;
+    text-decoration: none;
   }
 
   .ycs-drape-login,
