@@ -4,41 +4,50 @@
 <div class="page-width">
   <h1 class="page-title">{{ 'customer.account.title' | t }}</h1>
 
+ {% comment %}
+Show Style Masters Hub button if:
+- customer has VIP tag (active member), OR
+- customer has a permanent Style Masters issue entitlement tag, OR
+- customer has ever purchased Style Masters membership or issue products
+{% endcomment %}
+
 {% assign has_style_masters_access = false %}
+{% assign sm_handles = 'style-masters,style-masters-magazine,style-masters-membership' | split: ',' %}
 
 {% if customer %}
   {% assign account_tag_string = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
 
-  {% if account_tag_string contains ',VIP,' or account_tag_string contains ',YCS_ADMIN,' %}
+  {% if account_tag_string contains ',VIP,' or account_tag_string contains ',STYLEMASTERS_' %}
     {% assign has_style_masters_access = true %}
+  {% endif %}
+
+  {% if has_style_masters_access == false %}
+    {% for order in customer.orders %}
+      {% if order.cancelled_at == nil and order.financial_status != 'void' %}
+        {% for item in order.line_items %}
+          {% if item.product %}
+            {% assign item_handle = item.product.handle | downcase %}
+            {% assign item_tags = item.product.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
+            {% if sm_handles contains item_handle or item_handle contains 'style-masters-' or item_tags contains ',STYLE MASTERS ISSUE,' %}
+              {% assign has_style_masters_access = true %}
+              {% break %}
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+        {% if has_style_masters_access %}
+          {% break %}
+        {% endif %}
+      {% endif %}
+    {% endfor %}
   {% endif %}
 {% endif %}
 <h3 class="account-resources-title">Your Resources</h3>
 <div class="account-quick-links">
+  <a href="/pages/my-palettes" class="account-tool">
+    My Color Palettes
+  </a>
+
   {% assign palette_access_string = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
-
-  {% assign has_consumer_palette_access = false %}
-  {% assign has_real_consumer_palette = false %}
-  {% assign consumer_palette_codes = 'CWL,CWM,CWD,CWLG,CWMG,CWDG,CCL,CCM,CCD,SWL,SWM,SWD,SWLG,SWMG,SWDG,SCL,SCM,SCD,LO,MO,DO' | split: ',' %}
-  {% if palette_access_string contains ',VIP,' or palette_access_string contains ',DRAPINGSTUDIO,' or palette_access_string contains ',DRAPINGSTUDIOSTARTER,' or palette_access_string contains ',SAMPLE,' %}
-    {% assign has_consumer_palette_access = true %}
-  {% endif %}
-  {% for consumer_palette_code in consumer_palette_codes %}
-    {% assign consumer_palette_token = ',' | append: consumer_palette_code | append: ',' %}
-    {% if palette_access_string contains consumer_palette_token %}
-      {% assign has_real_consumer_palette = true %}
-      {% if has_consumer_palette_access == false %}
-        {% assign has_consumer_palette_access = true %}
-      {% endif %}
-      {% break %}
-    {% endif %}
-  {% endfor %}
-
-  {% if has_consumer_palette_access %}
-    <a href="/pages/my-palettes" class="account-tool">
-      {% if palette_access_string contains ',SAMPLE,' and has_real_consumer_palette == false %}Draping Studio{% else %}My Color Palettes{% endif %}
-    </a>
-  {% endif %}
 
   {% assign has_trade_access = false %}
   {% assign trade_july_cohort_expires_at = '2026-08-25 00:00:00 -0400' | date: '%s' %}
@@ -51,19 +60,13 @@
   {% endif %}
 
   {% assign has_color_analysis_tool = false %}
-  {% if palette_access_string contains ',CATOOL,' or palette_access_string contains ',CATOOLGROWTH,' or palette_access_string contains ',CATOOLFREE,' or palette_access_string contains ',DIYCATOOL,' or palette_access_string contains ',FREEDIYCATOOL,' or palette_access_string contains ',YCS_ADMIN,' %}
+  {% if palette_access_string contains ',CATOOL,' or palette_access_string contains ',CATOOLGROWTH,' or palette_access_string contains ',CATOOLFREE,' or palette_access_string contains ',DIYCATOOL,' or palette_access_string contains ',YCS_ADMIN,' %}
     {% assign has_color_analysis_tool = true %}
   {% endif %}
 
   {% if has_trade_access or has_color_analysis_tool %}
     <a href="/pages/my-palettes?view=catools" class="account-tool">
       Color Analysis Tools
-    </a>
-  {% endif %}
-
-  {% if palette_access_string contains ',YCS_ADMIN,' %}
-    <a href="/pages/my-wardrobes" class="account-tool">
-      My Wardrobes
     </a>
   {% endif %}
 
@@ -76,7 +79,7 @@
   </a>
 
   {% if has_style_masters_access %}
-
+    
     <a href="/pages/style-masters-library" class="account-tool">
       Style Masters Hub
     </a>
