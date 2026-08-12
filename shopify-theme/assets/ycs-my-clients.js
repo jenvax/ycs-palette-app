@@ -875,12 +875,8 @@
                 class="ycs-report-page-rail__item${pageNumber === activeReportPage ? " is-active" : ""}"
                 data-ycs-report-page-order-id="${escapeHtml(entry.id)}"
                 data-ycs-report-page-order-index="${index}">
-                <span
-                  class="ycs-report-page-rail__thumb ycs-report-page-rail__drag"
-                  data-ycs-report-page-drag-handle
-                  aria-label="Drag page ${pageNumber} to reorder"
-                  title="Drag to reorder">${pageNumber}</span>
                 <button type="button" class="ycs-report-page-rail__select" data-ycs-report-page-button="${pageNumber}">
+                  <span class="ycs-report-page-rail__thumb">${pageNumber}</span>
                   <span class="ycs-report-page-rail__label">${escapeHtml(label)}</span>
                 </button>
                 <div class="ycs-report-page-rail__actions">
