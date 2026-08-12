@@ -296,7 +296,7 @@
               </div>
 
               <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
-                <a href="{% if is_diy_catool or is_free_diy_catool %}/pages/photo-prep?mode=diy&workflow=color-analysis&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dcatools{% elsif is_catool_free %}/pages/photo-prep?mode=trade&workflow=color-analysis&trial=catoolfree&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dcatools{% else %}/pages/photo-prep?mode=trade&workflow=color-analysis&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dcatools{% endif %}" class="ycs-palette-card__button">
+                <a href="{% if is_diy_catool or is_free_diy_catool %}/pages/photo-prep?mode=diy&workflow=color-analysis&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dcatools{% elsif is_catool_free %}/pages/photo-prep?mode=trade&workflow=color-analysis&trial=catoolfree&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dcatools{% else %}/pages/photo-prep?mode=trade&workflow=color-analysis&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dcatools{% endif %}" class="ycs-palette-card__button" data-ycs-open-color-analysis-tool="{% if is_diy_catool or is_free_diy_catool or is_catool_free %}false{% else %}true{% endif %}">
                   Open Tool
                 </a>
               </div>
@@ -3175,6 +3175,40 @@
 
 (function () {
   const previewSelect = document.getElementById('ycs-admin-view-as');
+  const lastAnalysisClientStorageKey = 'ycs:last-color-analysis-client:{{ customer.id | default: "default" }}';
+
+  function getLastAnalysisClientId() {
+    try {
+      return String(window.localStorage.getItem(lastAnalysisClientStorageKey) || '').trim();
+    } catch (error) {
+      return '';
+    }
+  }
+
+  document.addEventListener('click', function (event) {
+    const openToolLink = event.target.closest('[data-ycs-open-color-analysis-tool="true"]');
+    if (!openToolLink) return;
+
+    const lastClientId = getLastAnalysisClientId();
+    if (!lastClientId) return;
+
+    event.preventDefault();
+
+    const nextUrl = new URL('/pages/color-analysis-tool', window.location.origin);
+    nextUrl.searchParams.set('clientRecordId', lastClientId);
+    nextUrl.searchParams.set('mode', 'trade');
+
+    const fallbackUrl = new URL(openToolLink.getAttribute('href'), window.location.origin);
+    if (fallbackUrl.searchParams.get('returnUrl')) {
+      nextUrl.searchParams.set('returnUrl', fallbackUrl.searchParams.get('returnUrl'));
+    }
+
+    if (previewSelect && previewSelect.value) {
+      nextUrl.searchParams.set('viewAs', previewSelect.value);
+    }
+
+    window.location.href = nextUrl.pathname + nextUrl.search;
+  });
 
   if (previewSelect) {
     const currentPreviewRole = previewSelect.value;

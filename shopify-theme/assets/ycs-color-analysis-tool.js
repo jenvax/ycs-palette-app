@@ -41,6 +41,7 @@
   const ACTIVE_RECORD_ID = CLIENT_RECORD_ID || CUSTOMER_ID || '';
   const RETURN_STEP = (urlParams.get('returnStep') || '').trim().toLowerCase();
   const forceDepthReturn = RETURN_STEP === 'depth';
+  const LAST_ANALYSIS_CLIENT_STORAGE_KEY = 'ycs:last-color-analysis-client:' + (VIEWER_CUSTOMER_ID || 'default');
 
   const HAS_NEW_PHOTO_FLAG = urlParams.get('newPhoto') === '1';
   const FREE_TRIAL_CLIENTS = {
@@ -55,6 +56,16 @@
     }
   };
   const FREE_TRIAL_STORAGE_PREFIX = 'ycs-catool-free-demo:';
+
+  function rememberLastAnalysisClient() {
+    if (!CLIENT_RECORD_ID || IS_FREE_ANALYSIS_DEMO) return;
+
+    try {
+      window.localStorage.setItem(LAST_ANALYSIS_CLIENT_STORAGE_KEY, CLIENT_RECORD_ID);
+    } catch (error) {
+      console.warn('Could not remember last color analysis client', error);
+    }
+  }
 
   const paletteAccessString = appEl.dataset.paletteAccess || '';
 
@@ -3396,6 +3407,7 @@ requestAnimationFrame(function () {
       throw new Error(IS_DIY_MODE ? 'No saved photo found.' : 'No saved photo found for this client.');
     }
 
+    rememberLastAnalysisClient();
     await loadPhotoIntoPanels(data.activePhotoUrl);
 state.clientFirstName = data.firstName || state.clientFirstName || '';
 state.clientLastName = data.lastName || state.clientLastName || '';

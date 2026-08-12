@@ -1771,7 +1771,7 @@ function syncColorAnalysisToolNav(structuredHref, signatureHref) {
   if (!CAN_USE_CLIENT_MANAGEMENT) return;
 
   const hasClient = !!state.clientRecordId;
-  const canOpenTools = !!state.clientRecordId || !!state.customerId || IS_SIMPLE_ANALYST || IS_CATOOL_FREE_TRIAL_FLOW;
+  const canOpenTools = !!state.clientRecordId;
 
   if (hasClient) {
     const manageClientUrl = new URL('/pages/my-clients', window.location.origin);
@@ -2023,7 +2023,8 @@ if (state.firstName) {
   if (state.adjustedPhotoUrl) {
     clientCreatedNote.textContent = 'Client ready. Adjusted photo saved.';
   } else if (state.originalPhotoUrl) {
-    clientCreatedNote.textContent = 'Client ready. Photo uploaded.';
+    clientCreatedNote.textContent = '';
+    clientCreatedNote.hidden = true;
   } else {
     clientCreatedNote.textContent = 'Client saved and ready for photo upload.';
   }
