@@ -1771,7 +1771,7 @@ function syncColorAnalysisToolNav(structuredHref, signatureHref) {
   if (!CAN_USE_CLIENT_MANAGEMENT) return;
 
   const hasClient = !!state.clientRecordId;
-  const canOpenTools = !!state.clientRecordId;
+  const hasPhoto = !!(state.hasLoadedPhoto || state.originalPhotoUrl || state.adjustedPhotoUrl || state.activePhotoUrl);
 
   if (hasClient) {
     const manageClientUrl = new URL('/pages/my-clients', window.location.origin);
@@ -1782,8 +1782,18 @@ function syncColorAnalysisToolNav(structuredHref, signatureHref) {
     setToolNavLink(manageClientNavLink, '', false);
   }
 
-  setToolNavLink(structuredNavLink, structuredHref || '/pages/color-analysis-tool', canOpenTools);
-  setToolNavLink(lipNavLink, signatureHref || '/pages/signature-color-analysis', canOpenTools);
+  setToolNavLink(structuredNavLink, structuredHref || '/pages/color-analysis-tool', hasClient && hasPhoto);
+  setToolNavLink(lipNavLink, signatureHref || '/pages/signature-color-analysis', hasClient && hasPhoto);
+}
+
+function syncPhotoDependentActions() {
+  const hasPhoto = !!(state.hasLoadedPhoto || state.originalPhotoUrl || state.adjustedPhotoUrl || state.activePhotoUrl);
+
+  if (replaceBtn) replaceBtn.hidden = !hasPhoto;
+  if (useOriginalBtn) useOriginalBtn.hidden = !hasPhoto;
+  if (saveBtn) saveBtn.hidden = !hasPhoto;
+  if (startAnalysisBtn) startAnalysisBtn.hidden = !hasPhoto;
+  if (startSignatureAnalysisBtn) startSignatureAnalysisBtn.hidden = !hasPhoto;
 }
 
 function updateStartAnalysisLink() {
@@ -1969,6 +1979,12 @@ if (state.firstName) {
 
   function updateClientStatusNote() {
   if (!clientCreatedNote) return;
+
+  if (CAN_USE_CLIENT_MANAGEMENT) {
+    clientCreatedNote.textContent = '';
+    clientCreatedNote.hidden = true;
+    return;
+  }
 
   if (!state.clientRecordId && !state.customerId) {
     clientCreatedNote.hidden = true;
@@ -2505,6 +2521,7 @@ function syncVisibility() {
   syncSimpleAnalystPhotoPrepVisibility();
   syncPersonalPhotoPrepVisibility();
   syncDiyPhotoPrepVisibility();
+  syncPhotoDependentActions();
   updatePageHeader();
 }
 
