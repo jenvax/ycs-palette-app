@@ -367,10 +367,6 @@
     return draft;
   }
 
-  function canDeleteReportPageEntry(entry) {
-    return !!entry && (entry.type === "custom" || !!entry.duplicateOf);
-  }
-
   function reportPageNumberForBuiltIn(draft, key) {
     const entries = normalizeReportPageOrder(draft);
     const activeIndex = activeReportPage - LOCKED_REPORT_PAGE_COUNT - 1;
@@ -879,15 +875,19 @@
                 class="ycs-report-page-rail__item${pageNumber === activeReportPage ? " is-active" : ""}"
                 data-ycs-report-page-order-id="${escapeHtml(entry.id)}"
                 data-ycs-report-page-order-index="${index}">
+                <span
+                  class="ycs-report-page-rail__thumb ycs-report-page-rail__drag"
+                  data-ycs-report-page-drag-handle
+                  aria-label="Drag page ${pageNumber} to reorder"
+                  title="Drag to reorder">${pageNumber}</span>
                 <button type="button" class="ycs-report-page-rail__select" data-ycs-report-page-button="${pageNumber}">
-                  <span class="ycs-report-page-rail__thumb">${pageNumber}</span>
                   <span class="ycs-report-page-rail__label">${escapeHtml(label)}</span>
                 </button>
                 <div class="ycs-report-page-rail__actions">
                   <button type="button" data-ycs-move-report-page="${escapeHtml(entry.id)}" data-ycs-move-report-page-direction="-1" aria-label="Move page ${pageNumber} up"${index === 0 ? " disabled" : ""}>↑</button>
                   <button type="button" data-ycs-move-report-page="${escapeHtml(entry.id)}" data-ycs-move-report-page-direction="1" aria-label="Move page ${pageNumber} down"${index === orderedReportPages.length - 1 ? " disabled" : ""}>↓</button>
                   <button type="button" data-ycs-duplicate-report-page="${escapeHtml(entry.id)}">Copy</button>
-                  ${canDeleteReportPageEntry(entry) ? `<button type="button" class="ycs-report-page-rail__delete" data-ycs-delete-report-page="${escapeHtml(entry.id)}">Delete</button>` : ""}
+                  ${entry.type === "custom" ? `<button type="button" data-ycs-remove-custom-report-page="${escapeHtml(entry.key)}">Remove</button>` : ""}
                 </div>
               </div>
             `;
@@ -1062,7 +1062,7 @@
 
     const builtInRenderers = {
       depth: (pageNumber) => `
-        <section class="ycs-report-page ycs-report-page--comparison-copy" data-report-page="${pageNumber}">
+        <section class="ycs-report-page" data-report-page="${pageNumber}">
           ${renderReportBrand(draft)}
           <h1>Depth</h1>
           ${renderComparisonImages([
@@ -1075,7 +1075,7 @@
         </section>
       `,
       temperature: (pageNumber) => `
-        <section class="ycs-report-page ycs-report-page--comparison-copy" data-report-page="${pageNumber}">
+        <section class="ycs-report-page" data-report-page="${pageNumber}">
           ${renderReportBrand(draft)}
           <h1>Temperature</h1>
           ${renderComparisonImages([
@@ -1088,7 +1088,7 @@
         </section>
       `,
       chroma: (pageNumber) => `
-        <section class="ycs-report-page ycs-report-page--comparison-copy" data-report-page="${pageNumber}">
+        <section class="ycs-report-page" data-report-page="${pageNumber}">
           ${renderReportBrand(draft)}
           <h1>Chroma</h1>
           ${renderComparisonImages([
@@ -2660,7 +2660,7 @@
     const reportModalCloseButton = event.target.closest("[data-ycs-report-image-modal-close]");
     const clearReportLogoButton = event.target.closest("[data-ycs-clear-report-logo]");
     const addCustomReportPageButton = event.target.closest("[data-ycs-add-custom-report-page]");
-    const deleteReportPageButton = event.target.closest("[data-ycs-delete-report-page]");
+    const removeCustomReportPageButton = event.target.closest("[data-ycs-remove-custom-report-page]");
     const duplicateReportPageButton = event.target.closest("[data-ycs-duplicate-report-page]");
     const moveReportPageButton = event.target.closest("[data-ycs-move-report-page]");
     const cancelClientEditButton = event.target.closest("[data-ycs-cancel-client-edit]");
@@ -2884,30 +2884,20 @@
       return;
     }
 
-    if (deleteReportPageButton) {
+    if (removeCustomReportPageButton) {
       if (!canCreateReports) return;
       event.preventDefault();
-      const deleteId = deleteReportPageButton.dataset.ycsDeleteReportPage;
+      const removeId = removeCustomReportPageButton.dataset.ycsRemoveCustomReportPage;
+      const confirmed = window.confirm("Remove this page from the report?");
+      if (!confirmed) return;
       const client = clients.find((item) => item.clientRecordId === activeReportClientId);
       const builder = detailEl.querySelector("[data-ycs-report-builder]");
       const form = builder?.querySelector("[data-ycs-report-form]");
       if (!client || !builder || !form) return;
 
       activeReportDraft = readReportDraftFromForm(form, client);
-      const entries = normalizeReportPageOrder(activeReportDraft);
-      const entry = entries.find((item) => item.id === deleteId);
-      if (!canDeleteReportPageEntry(entry)) return;
-
-      const label = entry.type === "custom"
-        ? (customPageById(activeReportDraft, entry.key)?.title || "this page")
-        : builtInReportPageLabel(entry.key);
-      const confirmed = window.confirm(`Delete ${label}? This cannot be undone.`);
-      if (!confirmed) return;
-
-      if (entry.type === "custom") {
-        activeReportDraft.customPages = reportCustomPages(activeReportDraft).filter((page) => page.id !== entry.key);
-      }
-      activeReportDraft.reportPageOrder = entries.filter((item) => item.id !== entry.id);
+      activeReportDraft.customPages = reportCustomPages(activeReportDraft).filter((page) => page.id !== removeId);
+      activeReportDraft.reportPageOrder = normalizeReportPageOrder(activeReportDraft).filter((entry) => !(entry.type === "custom" && entry.key === removeId));
       builder.outerHTML = renderReportBuilder(client, false);
       applyActiveReportPage(Math.min(activeReportPage, totalReportPages(activeReportDraft)));
     }

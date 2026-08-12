@@ -17,7 +17,7 @@
   | append: '&'
 %}
 
-{% if ycs_my_palettes_page_url contains '/pages/color-analysis-tools' or template.suffix == 'tools' or template.suffix == 'catools' %}
+{% if ycs_my_palettes_page_url contains 'view=tools&' or ycs_my_palettes_page_url contains 'view=catools&' or ycs_my_palettes_page_url contains '/pages/color-analysis-tools' or template.suffix == 'tools' or template.suffix == 'catools' %}
   {% assign should_render_ycs_my_palettes = false %}
 {% endif %}
 
@@ -48,16 +48,7 @@
   %}
 
   {% assign is_color_analysis_tools_page = false %}
-  {% if ycs_page_url contains 'view=tools&'
-    or ycs_page_url contains 'view=catools&'
-    or ycs_header_content contains 'view=catools'
-    or ycs_header_content contains 'view%3Dcatools'
-    or ycs_header_content contains 'view\\u003dcatools'
-    or ycs_header_content contains 'view=tools'
-    or ycs_header_content contains 'view%3Dtools'
-    or ycs_header_content contains 'view\\u003dtools'
-    or ycs_page_url contains '/pages/color-analysis-tools'
-  %}
+  {% if ycs_page_url contains 'view=tools&' or ycs_page_url contains '/pages/color-analysis-tools' %}
     {% assign is_color_analysis_tools_page = true %}
   {% endif %}
 
@@ -158,11 +149,6 @@
   {% assign can_use_analysis_tool = false %}
   {% if is_admin or is_trade or is_catool or is_catool_growth or is_catool_free or is_diy_catool or is_free_diy_catool %}
     {% assign can_use_analysis_tool = true %}
-  {% endif %}
-
-  {% assign can_manage_clients = false %}
-  {% if is_admin or is_trade or is_catool or is_catool_growth %}
-    {% assign can_manage_clients = true %}
   {% endif %}
 
   {% assign has_all_palette_access = false %}
@@ -455,7 +441,7 @@
               </div>
 
               <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
-                <a href="{% if is_diy_catool or is_free_diy_catool %}/pages/photo-prep?mode=diy&workflow=color-analysis&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dcatools{% elsif is_catool_free %}/pages/photo-prep?mode=trade&workflow=color-analysis&trial=catoolfree&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dcatools{% else %}/pages/photo-prep?mode=trade&workflow=color-analysis&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dcatools{% endif %}" class="ycs-palette-card__button" data-ycs-open-color-analysis-tool="{% if is_diy_catool or is_free_diy_catool or is_catool_free %}false{% else %}true{% endif %}">
+                <a href="{% if is_diy_catool or is_free_diy_catool %}/pages/photo-prep?mode=diy&workflow=color-analysis&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dtools{% elsif is_catool_free %}/pages/photo-prep?mode=trade&workflow=color-analysis&trial=catoolfree&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dtools{% else %}/pages/photo-prep?mode=trade&workflow=color-analysis&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dtools{% endif %}" class="ycs-palette-card__button" data-ycs-open-color-analysis-tool="{% if is_diy_catool or is_free_diy_catool or is_catool_free %}false{% else %}true{% endif %}">
                   Open Tool
                 </a>
               </div>
@@ -463,45 +449,7 @@
           </div>
         {% endif %}
 
-        {% if is_color_analysis_tools_page and can_manage_clients %}
-          <div class="ycs-palette-card ycs-palette-card--admin">
-            <div class="ycs-palette-card__top">
-              <div
-                class="ycs-palette-card__gradient"
-                style="background: linear-gradient(to right, #2f2a25, #d94c6a, #f2b880);">
-              </div>
-            </div>
-
-            <div class="ycs-palette-card__content">
-              <div class="ycs-palette-card__text">
-                <h2>My Clients</h2>
-                <p class="ycs-palette-card__subtitle">
-                  View and manage your color analysis clients.
-                </p>
-                <p class="ycs-palette-card__admin-label">
-                  {% if is_admin %}
-                    Admin client management
-                  {% elsif is_trade %}
-                    Trade client management
-                  {% elsif is_catool_growth %}
-                    Growth Plan • Full client management
-                  {% elsif is_catool %}
-                    Starter Plan • Client management
-                  {% endif %}
-                </p>
-              </div>
-
-              <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
-                <a href="/pages/my-clients{% if admin_view_as != '' %}?viewAs={{ admin_view_as }}{% endif %}" class="ycs-palette-card__button">
-                  View My Clients
-                </a>
-              </div>
-            </div>
-          </div>
-        {% endif %}
-
-        {% if is_color_analysis_tools_page %}
-        {% if is_trade or is_admin %}
+        {% if is_color_analysis_tools_page and is_trade %}
           <div class="ycs-palette-card ycs-palette-card--admin">
             <div class="ycs-palette-card__top">
               <div
@@ -528,7 +476,6 @@
               </div>
             </div>
           </div>
-        {% endif %}
         {% endif %}
 
         {% unless is_color_analysis_tools_page %}
@@ -806,7 +753,7 @@
               </div>
 
               <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
-                <a href="/pages/my-palettes?view=catools&viewAs=catoolgrowth" class="ycs-palette-card__button">
+                <a href="/pages/my-palettes?view=tools&viewAs=catoolgrowth" class="ycs-palette-card__button">
                   Open Growth View
                 </a>
               </div>

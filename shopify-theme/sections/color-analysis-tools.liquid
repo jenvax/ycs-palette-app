@@ -341,8 +341,7 @@
           </div>
         {% endif %}
 
-        {% if is_color_analysis_tools_page %}
-        {% if is_trade or is_admin %}
+        {% if is_color_analysis_tools_page and is_trade %}
           <div class="ycs-palette-card ycs-palette-card--admin">
             <div class="ycs-palette-card__top">
               <div
@@ -369,7 +368,6 @@
               </div>
             </div>
           </div>
-        {% endif %}
         {% endif %}
 
         {% unless is_color_analysis_tools_page %}

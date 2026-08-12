@@ -1,0 +1,346 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "page": {
+      "type": "page-template",
+      "settings": {
+        "section_width": false,
+        "width": 1200,
+        "hide_ttl": true,
+        "hide_hdft": false,
+        "breadcrumb": false
+      }
+    },
+    "ycs_color_analysis_tools": {
+      "type": "color-analysis-tools",
+      "blocks": {
+        "palette_cwl": {
+          "type": "palette",
+          "settings": {
+            "title": "Clear Warm Light",
+            "subtitle": "Bright • Warm • Light",
+            "palette_code": "CWL",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/expanded-digital-color-palettes",
+            "printable_pdf_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/CWL-printable.pdf?v=1773577385",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #e84855, #f59f4c, #f4d35e, #64b96a, #45a8e5)"
+          }
+        },
+        "palette_cwm": {
+          "type": "palette",
+          "settings": {
+            "title": "Clear Warm Medium",
+            "subtitle": "Bright • Warm • Medium",
+            "palette_code": "CWM",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/expanded-digital-color-palettes",
+            "printable_pdf_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/CWM-printable.pdf?v=1773577385",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #c8323d, #e87338, #ddb54a, #3f9960, #2378b8)"
+          }
+        },
+        "palette_cwd": {
+          "type": "palette",
+          "settings": {
+            "title": "Clear Warm Deep",
+            "subtitle": "Bright • Warm • Deep",
+            "palette_code": "CWD",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/expanded-digital-color-palettes",
+            "printable_pdf_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/CWD-printable.pdf?v=1773577385",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #8e1f2f, #a94f2f, #b8872e, #276246, #174f83)"
+          }
+        },
+        "palette_ccl": {
+          "type": "palette",
+          "settings": {
+            "title": "Clear Cool Light",
+            "subtitle": "Bright • Cool • Light",
+            "palette_code": "CCL",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/expanded-digital-color-palettes",
+            "printable_pdf_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/CCL-printable.pdf?v=1773590467",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #e23d7b, #b95ee8, #56a7f2, #42c1b2, #d9d7f1)"
+          }
+        },
+        "palette_ccm": {
+          "type": "palette",
+          "settings": {
+            "title": "Clear Cool Medium",
+            "subtitle": "Bright • Cool • Medium",
+            "palette_code": "CCM",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/expanded-digital-color-palettes",
+            "printable_pdf_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/CCM-printable.pdf?v=1773589362",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #bd245f, #8f42c4, #2873bf, #238f91, #6c6cc8)"
+          }
+        },
+        "palette_ccd": {
+          "type": "palette",
+          "settings": {
+            "title": "Clear Cool Deep",
+            "subtitle": "Bright • Cool • Deep",
+            "palette_code": "CCD",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/expanded-digital-color-palettes",
+            "printable_pdf_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/CCD-printable.pdf?v=1773589366",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #7f163f, #5f2b86, #174d87, #155d62, #322d72)"
+          }
+        },
+        "palette_swl": {
+          "type": "palette",
+          "settings": {
+            "title": "Soft Warm Light",
+            "subtitle": "Soft • Warm • Light",
+            "palette_code": "SWL",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/expanded-digital-color-palettes",
+            "printable_pdf_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/SWL-printable.pdf?v=1763477662",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #d9797f, #e0a36f, #d8bf76, #91b37d, #77a7c5)"
+          }
+        },
+        "palette_swm": {
+          "type": "palette",
+          "settings": {
+            "title": "Soft Warm Medium",
+            "subtitle": "Soft • Warm • Medium",
+            "palette_code": "SWM",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/expanded-digital-color-palettes",
+            "printable_pdf_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/SWM-printable.pdf?v=1763477662",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #b75d63, #bf8058, #b49a5d, #708d63, #5c849b)"
+          }
+        },
+        "palette_swd": {
+          "type": "palette",
+          "settings": {
+            "title": "Soft Warm Deep",
+            "subtitle": "Soft • Warm • Deep",
+            "palette_code": "SWD",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/expanded-digital-color-palettes",
+            "printable_pdf_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/SWD-printable.pdf?v=1763477662",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #7d3d46, #82553b, #7a683d, #465b3d, #38566a)"
+          }
+        },
+        "palette_scl": {
+          "type": "palette",
+          "settings": {
+            "title": "Soft Cool Light",
+            "subtitle": "Soft • Cool • Light",
+            "palette_code": "SCL",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/expanded-digital-color-palettes",
+            "printable_pdf_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/SCL-printable.pdf?v=1763477662",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #d77ca8, #aa8acf, #7aa5d5, #75bbb6, #b8b4d8)"
+          }
+        },
+        "palette_scm": {
+          "type": "palette",
+          "settings": {
+            "title": "Soft Cool Medium",
+            "subtitle": "Soft • Cool • Medium",
+            "palette_code": "SCM",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/expanded-digital-color-palettes",
+            "printable_pdf_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/SCM-printable.pdf?v=1763477662",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #ad5e86, #8469a8, #5f82ac, #5a928f, #817fb0)"
+          }
+        },
+        "palette_scd": {
+          "type": "palette",
+          "settings": {
+            "title": "Soft Cool Deep",
+            "subtitle": "Soft • Cool • Deep",
+            "palette_code": "SCD",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/expanded-digital-color-palettes",
+            "printable_pdf_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/SCD-printable.pdf?v=1763477662",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #743d5b, #584671, #3c5b78, #3d6462, #4b4d78)"
+          }
+        },
+        "palette_lo": {
+          "type": "palette",
+          "settings": {
+            "title": "Light Olive",
+            "subtitle": "Olive • Light",
+            "palette_code": "LO",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/expanded-digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #c96d6a, #d79562, #c5b86a, #9aaa62, #6f8b6d)"
+          }
+        },
+        "palette_mo": {
+          "type": "palette",
+          "settings": {
+            "title": "Medium Olive",
+            "subtitle": "Olive • Medium",
+            "palette_code": "MO",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/expanded-digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #9f4d4d, #b07342, #8d8542, #667b43, #456c5b)"
+          }
+        },
+        "palette_do": {
+          "type": "palette",
+          "settings": {
+            "title": "Deep Olive",
+            "subtitle": "Olive • Deep",
+            "palette_code": "DO",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/expanded-digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #6f2733, #7c4933, #635d2e, #3f582c, #25483f)"
+          }
+        },
+        "palette_sample": {
+          "type": "palette",
+          "settings": {
+            "title": "Sample Color Palette",
+            "subtitle": "Free trial colors",
+            "palette_code": "SAMPLE",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/expanded-digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #d94c6a, #f2b880, #d9d7f1)"
+          }
+        },
+        "palette_cwlg": {
+          "type": "palette",
+          "settings": {
+            "title": "Clear Warm Light for Gray Hair",
+            "subtitle": "Bright • Warm • Light • Gray Hair",
+            "palette_code": "CWLG",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/digital-color-palettes",
+            "printable_pdf_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/CWLG-printable.pdf?v=1773772241",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #d94c6a, #f2a36f, #d7c5aa, #a9b6b1, #6ea7d8)"
+          }
+        },
+        "palette_cwmg": {
+          "type": "palette",
+          "settings": {
+            "title": "Clear Warm Medium for Gray Hair",
+            "subtitle": "Bright • Warm • Medium • Gray Hair",
+            "palette_code": "CWMG",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/digital-color-palettes",
+            "printable_pdf_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/CWMG-printable.pdf?v=1773772241",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #b93645, #d47743, #b8a173, #8e9b93, #327db8)"
+          }
+        },
+        "palette_cwdg": {
+          "type": "palette",
+          "settings": {
+            "title": "Clear Warm Deep for Gray Hair",
+            "subtitle": "Bright • Warm • Deep • Gray Hair",
+            "palette_code": "CWDG",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/digital-color-palettes",
+            "printable_pdf_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/CWDG-printable.pdf?v=1773772638",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #7f2030, #9b5235, #86724b, #687066, #214f7a)"
+          }
+        },
+        "palette_swlg": {
+          "type": "palette",
+          "settings": {
+            "title": "Soft Warm Light for Gray Hair",
+            "subtitle": "Soft • Warm • Light • Gray Hair",
+            "palette_code": "SWLG",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #c9787f, #d6a178, #c3b695, #a6aaa0, #7fa5bd)"
+          }
+        },
+        "palette_swmg": {
+          "type": "palette",
+          "settings": {
+            "title": "Soft Warm Medium for Gray Hair",
+            "subtitle": "Soft • Warm • Medium • Gray Hair",
+            "palette_code": "SWMG",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #a65f67, #b07d5f, #95896d, #7d8176, #5f8498)"
+          }
+        },
+        "palette_swdg": {
+          "type": "palette",
+          "settings": {
+            "title": "Soft Warm Deep for Gray Hair",
+            "subtitle": "Soft • Warm • Deep • Gray Hair",
+            "palette_code": "SWDG",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #743e47, #765743, #6f6654, #5f6259, #3d5968)"
+          }
+        }
+      },
+      "block_order": [
+        "palette_cwl",
+        "palette_cwlg",
+        "palette_cwm",
+        "palette_cwmg",
+        "palette_cwd",
+        "palette_cwdg",
+        "palette_ccl",
+        "palette_ccm",
+        "palette_ccd",
+        "palette_swl",
+        "palette_swlg",
+        "palette_swm",
+        "palette_swmg",
+        "palette_swd",
+        "palette_swdg",
+        "palette_scl",
+        "palette_scm",
+        "palette_scd",
+        "palette_lo",
+        "palette_mo",
+        "palette_do",
+        "palette_sample"
+      ],
+      "settings": {
+        "heading": "Color Analysis Tools",
+        "intro": "Open your color analysis tools and client workflow."
+      }
+    }
+  },
+  "order": [
+    "page",
+    "ycs_color_analysis_tools"
+  ]
+}
