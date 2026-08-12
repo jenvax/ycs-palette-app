@@ -497,6 +497,10 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
     text-decoration: none;
   }
 
+  .ycs-photo-prep-back[hidden] {
+    display: none !important;
+  }
+
   .ycs-photo-prep-back:hover,
   .ycs-photo-prep-back.is-active {
     border-color: #111;
@@ -1762,6 +1766,7 @@ if (replaceBtn && !IS_SIMPLE_ANALYST && !IS_PERSONAL_MODE && !IS_MEMBER_PHOTO_MO
 function setToolNavLink(link, href, shouldShow) {
   if (!link) return;
   link.hidden = !shouldShow;
+  link.style.display = shouldShow ? '' : 'none';
   if (href) {
     link.setAttribute('href', href);
   }
