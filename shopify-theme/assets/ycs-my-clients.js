@@ -14,6 +14,10 @@
   const sortEl = root.querySelector("[data-ycs-client-sort]");
   const pageBackLinkEl = root.querySelector("[data-ycs-clients-back-link]");
   const addClientEl = root.querySelector("[data-ycs-add-client]");
+  const selectedClientNavLink = root.querySelector("[data-ycs-clients-nav-selected]");
+  const photoPrepNavLink = root.querySelector("[data-ycs-clients-nav-photo-prep]");
+  const structuredNavLink = root.querySelector("[data-ycs-clients-nav-structured]");
+  const lipNavLink = root.querySelector("[data-ycs-clients-nav-lip]");
 
   const YCS_PALETTE_OPTIONS = [
     ["CCL", "Clear Cool Light"],
@@ -2088,7 +2092,32 @@
     return url.pathname + url.search;
   }
 
-  function updateShellMode(mode) {
+  function setSelectedClientNav(client) {
+    const hasClient = !!(client && client.clientRecordId);
+    const hasPhoto = hasClient && clientHasPhoto(client);
+
+    if (selectedClientNavLink) {
+      selectedClientNavLink.hidden = !hasClient;
+      if (hasClient) selectedClientNavLink.href = listUrl();
+    }
+
+    if (photoPrepNavLink) {
+      photoPrepNavLink.hidden = !hasClient;
+      if (hasClient) photoPrepNavLink.href = photoPrepUrl(client);
+    }
+
+    if (structuredNavLink) {
+      structuredNavLink.hidden = !hasPhoto;
+      if (hasClient) structuredNavLink.href = structuredAnalysisUrl(client);
+    }
+
+    if (lipNavLink) {
+      lipNavLink.hidden = !hasPhoto;
+      if (hasClient) lipNavLink.href = drapingStudioUrl(client);
+    }
+  }
+
+  function updateShellMode(mode, client) {
     if (pageBackLinkEl) {
       pageBackLinkEl.href = pageBackLinkEl.dataset.toolsHref || "/pages/my-palettes?view=catools";
       pageBackLinkEl.textContent = "Tools";
@@ -2097,6 +2126,12 @@
 
     if (addClientEl) {
       addClientEl.hidden = mode !== "list";
+    }
+
+    if (mode === "detail" || mode === "edit") {
+      setSelectedClientNav(client);
+    } else {
+      setSelectedClientNav(null);
     }
   }
 
@@ -2215,7 +2250,7 @@
   }
 
   function renderDetail(client, editMode, saveMessage) {
-    updateShellMode(editMode ? "edit" : "detail");
+    updateShellMode(editMode ? "edit" : "detail", client);
     const photoUrl = getPhotoUrl(client);
     gridEl.hidden = true;
     detailEl.hidden = false;
@@ -2248,8 +2283,6 @@
           <div class="ycs-clients__detail-actions">
             ${editMode ? "" : `<button class="ycs-clients__button" type="button" data-ycs-edit-client="${escapeHtml(client.clientRecordId)}">View/Edit</button>`}
             <button class="ycs-clients__button ycs-clients__button--danger" type="button" data-ycs-delete-client="${escapeHtml(client.clientRecordId)}">Delete</button>
-            ${hasPhoto ? `<a class="ycs-clients__button ycs-clients__button--secondary" href="${escapeHtml(structuredAnalysisUrl(client))}" data-ycs-leave-client-view>Structured Analysis</a>` : ""}
-            ${hasPhoto ? `<a class="ycs-clients__button ycs-clients__button--secondary" href="${escapeHtml(drapingStudioUrl(client))}" data-ycs-leave-client-view>Lip & Draping Studio</a>` : ""}
             <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-manage-client-photos="${escapeHtml(client.clientRecordId)}">Manage Client Photos</button>
             ${canCreateReports ? `<button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-show-report-builder>Report Builder</button>` : ""}
           </div>

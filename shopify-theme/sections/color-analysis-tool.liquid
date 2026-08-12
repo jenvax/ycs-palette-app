@@ -143,12 +143,15 @@
 
     <div class="ycs-analysis-shell">
       <div class="ycs-analysis-topnav" role="navigation" aria-label="Color analysis navigation">
-        <a href="/pages/my-clients{{ ycs_tools_view_as_query | replace: '&', '?' }}" id="ycs-analysis-back" class="ycs-analysis-back-link">
-          My Clients
+        <a href="{{ routes.account_url }}" class="ycs-analysis-back-link">My Account</a>
+        <a href="/pages/my-palettes?view=catools{{ ycs_tools_view_as_query }}" class="ycs-analysis-back-link">Tools</a>
+        <a href="/pages/my-clients{{ ycs_tools_view_as_query | replace: '&', '?' }}" id="ycs-analysis-back" class="ycs-analysis-back-link">My Clients</a>
+        <a id="ycs-analysis-manage-client-link" href="/pages/my-clients" class="ycs-analysis-toolbar-link" hidden>
+          Manage Client
         </a>
-        <button type="button" id="ycs-analysis-mode-structured" class="ycs-analysis-mode-btn is-active">
-          Structured Analysis
-        </button>
+        <a id="ycs-analysis-photo-prep-link" href="/pages/photo-prep" class="ycs-analysis-toolbar-link">
+          Photo Prep
+        </a>
         {% if is_admin or is_trade or is_catool or is_catool_growth %}
           <a
             id="ycs-analysis-signature-link"
@@ -158,12 +161,6 @@
             Lip & Draping Studio
           </a>
         {% endif %}
-        <a id="ycs-analysis-photo-prep-link" href="/pages/photo-prep" class="ycs-analysis-toolbar-link">
-          Photo Prep
-        </a>
-        <a id="ycs-analysis-manage-client-link" href="/pages/my-clients" class="ycs-analysis-toolbar-link" hidden>
-          Manage Client
-        </a>
       </div>
       <div class="ycs-analysis-header">
         <p class="ycs-analysis-kicker">Your Color Style</p>

@@ -115,8 +115,31 @@
         <a
           href="/pages/my-clients{% if admin_view_as != '' %}?viewAs={{ admin_view_as }}{% endif %}"
           class="ycs-clients__back-link is-active"
+          data-ycs-clients-nav-selected
           data-ycs-leave-client-view
+          hidden
         >My Clients</a>
+        <a
+          href="/pages/photo-prep?mode=trade&workflow=color-analysis{% if admin_view_as != '' %}&viewAs={{ admin_view_as }}{% endif %}"
+          class="ycs-clients__back-link"
+          data-ycs-clients-nav-photo-prep
+          data-ycs-leave-client-view
+          hidden
+        >Photo Prep</a>
+        <a
+          href="/pages/color-analysis-tool{% if admin_view_as != '' %}?viewAs={{ admin_view_as }}{% endif %}"
+          class="ycs-clients__back-link"
+          data-ycs-clients-nav-structured
+          data-ycs-leave-client-view
+          hidden
+        >Structured Analysis</a>
+        <a
+          href="/pages/signature-color-analysis{% if admin_view_as != '' %}?viewAs={{ admin_view_as }}{% endif %}"
+          class="ycs-clients__back-link"
+          data-ycs-clients-nav-lip
+          data-ycs-leave-client-view
+          hidden
+        >Lip & Draping Studio</a>
       </nav>
     </div>
 

@@ -2912,6 +2912,41 @@ state.previewOffsetY = 0;
     };
   }
 
+  function clientHasSavedPhoto(client) {
+    if (!client) return false;
+    if (
+      client.adjustedPhotoUrl ||
+      client.originalPhotoUrl ||
+      client.activePhotoUrl ||
+      client.primaryPhotoUrl ||
+      client.photoUrl
+    ) {
+      return true;
+    }
+
+    const photos = Array.isArray(client.photos) ? client.photos : [];
+    return photos.some(function (photo) {
+      return !!(
+        photo &&
+        (
+          photo.adjustedPhotoUrl ||
+          photo.originalPhotoUrl ||
+          photo.activePhotoUrl ||
+          photo.primaryPhotoUrl ||
+          photo.photoUrl
+        )
+      );
+    });
+  }
+
+  function colorAnalysisToolUrl(clientRecordId) {
+    const url = new URL('/pages/color-analysis-tool', window.location.origin);
+    url.searchParams.set('clientRecordId', clientRecordId);
+    url.searchParams.set('mode', 'trade');
+    addAdminPreviewParam(url.searchParams);
+    return url.pathname + url.search;
+  }
+
   function renderRecentClients(clients) {
     if (!recentClientsList) return;
 
@@ -2966,6 +3001,7 @@ state.previewOffsetY = 0;
       const fullName = [client.firstName || '', client.lastName || ''].filter(Boolean).join(' ').trim() || 'Unnamed client';
       const email = client.email || 'No email';
       const clientRecordId = client.clientRecordId || '';
+      const hasPhoto = clientHasSavedPhoto(client);
 
       return `
         <div class="ycs-photo-prep-recent-item">
@@ -2983,6 +3019,7 @@ state.previewOffsetY = 0;
             data-palette-code="${escapeHtml(client.paletteCode || '')}"
             data-palette-name="${escapeHtml(client.paletteName || '')}"
             data-notes="${escapeHtml(client.notes || '')}"
+            data-has-photo="${hasPhoto ? 'true' : 'false'}"
           >
             Open
           </button>
@@ -4463,6 +4500,11 @@ if (addMemberPhotoBtn) {
 
   const clientRecordId = String(openBtn.dataset.clientRecordId || '').trim();
   if (!clientRecordId) return;
+
+  if (openBtn.dataset.hasPhoto === 'true') {
+    window.location.href = colorAnalysisToolUrl(clientRecordId);
+    return;
+  }
 
   state.firstName = String(openBtn.dataset.firstName || '').trim() || state.firstName;
   state.lastName = String(openBtn.dataset.lastName || '').trim() || state.lastName;
