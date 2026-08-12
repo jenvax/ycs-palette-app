@@ -111,8 +111,17 @@
 
     <div class="ycs-analysis-shell">
       <div class="ycs-analysis-topnav ycs-signature-topbar" role="navigation" aria-label="Lip and draping navigation">
-        <a href="/pages/photo-prep?mode=trade&workflow=color-analysis" id="ycs-signature-back-link" class="ycs-signature-back-link">
-          Back to Client List
+        <a href="{{ routes.account_url }}" class="ycs-signature-back-link">My Account</a>
+        <a
+          href="/pages/my-palettes?view=catools{% if admin_view_as != '' %}&viewAs={{ admin_view_as }}{% endif %}"
+          class="ycs-signature-back-link"
+        >Tools</a>
+        <a
+          href="/pages/my-clients{% if admin_view_as != '' %}?viewAs={{ admin_view_as }}{% endif %}"
+          class="ycs-signature-back-link"
+        >My Clients</a>
+        <a id="ycs-analysis-manage-client-link" href="/pages/my-clients" class="ycs-analysis-toolbar-link" hidden>
+          Manage Client
         </a>
         <a
           id="ycs-signature-standard-analysis-link"
@@ -120,15 +129,6 @@
           class="ycs-analysis-toolbar-link"
         >
           Structured Analysis
-        </a>
-        <button type="button" class="ycs-analysis-mode-btn is-active">
-          Lip & Draping Studio
-        </button>
-        <a id="ycs-analysis-photo-prep-link" href="/pages/photo-prep" class="ycs-analysis-toolbar-link">
-          Photo Prep
-        </a>
-        <a id="ycs-analysis-manage-client-link" href="/pages/my-clients" class="ycs-analysis-toolbar-link" hidden>
-          Manage Client
         </a>
       </div>
       <div class="ycs-analysis-header">
