@@ -1062,7 +1062,7 @@
 
     const builtInRenderers = {
       depth: (pageNumber) => `
-        <section class="ycs-report-page" data-report-page="${pageNumber}">
+        <section class="ycs-report-page ycs-report-page--comparison-copy" data-report-page="${pageNumber}">
           ${renderReportBrand(draft)}
           <h1>Depth</h1>
           ${renderComparisonImages([
@@ -1075,7 +1075,7 @@
         </section>
       `,
       temperature: (pageNumber) => `
-        <section class="ycs-report-page" data-report-page="${pageNumber}">
+        <section class="ycs-report-page ycs-report-page--comparison-copy" data-report-page="${pageNumber}">
           ${renderReportBrand(draft)}
           <h1>Temperature</h1>
           ${renderComparisonImages([
@@ -1088,7 +1088,7 @@
         </section>
       `,
       chroma: (pageNumber) => `
-        <section class="ycs-report-page" data-report-page="${pageNumber}">
+        <section class="ycs-report-page ycs-report-page--comparison-copy" data-report-page="${pageNumber}">
           ${renderReportBrand(draft)}
           <h1>Chroma</h1>
           ${renderComparisonImages([
