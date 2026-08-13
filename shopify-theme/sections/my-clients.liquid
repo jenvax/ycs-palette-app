@@ -1251,6 +1251,7 @@
     display: grid;
     gap: 10px;
     align-content: start;
+    min-width: 0;
   }
 
   .ycs-report-page-rail {
@@ -2038,6 +2039,28 @@
 
   [hidden] {
     display: none !important;
+  }
+
+  @media (max-width: 1100px) {
+    .ycs-report-builder__layout {
+      grid-template-columns: 154px minmax(0, 1fr);
+    }
+
+    .ycs-report-page-rail {
+      grid-column: 1;
+      grid-row: 1 / span 2;
+    }
+
+    .ycs-report-form,
+    .ycs-report-preview-shell {
+      grid-column: 2;
+      width: 100%;
+    }
+
+    .ycs-report-form {
+      max-height: none;
+      padding-right: 0;
+    }
   }
 
   @media (max-width: 720px) {
