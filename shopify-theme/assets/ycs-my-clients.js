@@ -265,7 +265,9 @@
   function reportPageEntryLabel(draft, entry) {
     if (entry?.type === "custom") return customPageById(draft, entry.key)?.title || "Custom Page";
     const label = builtInReportPageLabel(entry?.key);
-    return entry?.duplicateOf ? `${label} Copy` : label;
+    if (!entry?.duplicateOf) return label;
+    const copyTitle = String(reportPageCopies(draft)[entry.id]?.title || "").trim();
+    return copyTitle || `${label} Copy`;
   }
 
   function customPageById(draft, id) {
@@ -300,8 +302,9 @@
   function builtInReportImageValue(draft, entry, fieldName, fallbackFieldName = "") {
     if (entry?.duplicateOf) {
       const copy = reportPageCopies(draft)[entry.id] || {};
-      const copyValue = String(copy[fieldName] || "").trim();
-      if (copyValue) return copyValue;
+      if (Object.prototype.hasOwnProperty.call(copy, fieldName)) {
+        return String(copy[fieldName] || "").trim();
+      }
     }
     return String(draft?.[fieldName] || (fallbackFieldName ? draft?.[fallbackFieldName] : "") || "");
   }
@@ -311,11 +314,12 @@
   }
 
   function copyBuiltInReportImages(draft, entry) {
+    const title = reportPageEntryLabel(draft, entry);
     return builtInReportImageFields(entry?.key).reduce((copy, fieldPair) => {
       const [fieldName, fallbackFieldName] = fieldPair;
       copy[fieldName] = builtInReportImageValue(draft, entry, fieldName, fallbackFieldName);
       return copy;
-    }, {});
+    }, { title: `${title} Copy` });
   }
 
   function normalizeReportPageOrder(draft) {
@@ -1319,6 +1323,7 @@
               </div>
             `)}
             ${renderReportControlsPage(reportPageNumberForBuiltIn(draft, "depth"), reportPageEntryLabel(draft, depthControlsEntry), `
+              ${depthControlsEntry.duplicateOf ? `<label>Page title<input name="pageCopies.${escapeHtml(depthControlsEntry.id)}.title" value="${escapeHtml(reportPageEntryLabel(draft, depthControlsEntry))}"></label>` : ""}
               <label>Depth decision<select name="depthChoice">${renderDecisionOptions([
                 { value: "light", label: "Light" },
                 { value: "medium", label: "Medium" },
@@ -1348,6 +1353,7 @@
               <label>Depth copy<textarea name="text.depth">${escapeHtml(draft.text.depth)}</textarea></label>
             `)}
             ${renderReportControlsPage(reportPageNumberForBuiltIn(draft, "temperature"), reportPageEntryLabel(draft, temperatureControlsEntry), `
+              ${temperatureControlsEntry.duplicateOf ? `<label>Page title<input name="pageCopies.${escapeHtml(temperatureControlsEntry.id)}.title" value="${escapeHtml(reportPageEntryLabel(draft, temperatureControlsEntry))}"></label>` : ""}
               <label>Undertone decision<select name="undertoneChoice">${renderDecisionOptions([
                 { value: "warm", label: "Warm" },
                 { value: "cool", label: "Cool" },
@@ -1381,6 +1387,7 @@
               <label>Temperature copy<textarea name="text.undertone">${escapeHtml(draft.text.undertone)}</textarea></label>
             `)}
             ${renderReportControlsPage(reportPageNumberForBuiltIn(draft, "chroma"), reportPageEntryLabel(draft, chromaControlsEntry), `
+              ${chromaControlsEntry.duplicateOf ? `<label>Page title<input name="pageCopies.${escapeHtml(chromaControlsEntry.id)}.title" value="${escapeHtml(reportPageEntryLabel(draft, chromaControlsEntry))}"></label>` : ""}
               <label>Chroma decision<select name="chromaChoice">${renderDecisionOptions([
                 { value: "soft", label: "Soft" },
                 { value: "clear", label: "Clear" }
@@ -1490,7 +1497,9 @@
           copy[fieldName] = String(previousCopy[fieldName] || builtInReportImageValue(draft, { ...entry, duplicateOf: "" }, fieldName, fallbackFieldName) || "");
         }
         return copy;
-      }, {});
+      }, {
+        title: formString(`pageCopies.${entry.id}.title`, previousCopy.title || `${builtInReportPageLabel(entry.key)} Copy`)
+      });
       return copies;
     }, {});
 
