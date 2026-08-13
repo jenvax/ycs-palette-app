@@ -280,6 +280,10 @@
       : {};
   }
 
+  function reportCopyClearedFields(copy) {
+    return Array.isArray(copy?.clearedFields) ? copy.clearedFields.map(String) : [];
+  }
+
   function builtInReportImageFields(key) {
     return {
       depth: [
@@ -302,6 +306,7 @@
   function builtInReportImageValue(draft, entry, fieldName, fallbackFieldName = "") {
     if (entry?.duplicateOf) {
       const copy = reportPageCopies(draft)[entry.id] || {};
+      if (reportCopyClearedFields(copy).includes(fieldName)) return "";
       if (Object.prototype.hasOwnProperty.call(copy, fieldName)) {
         return String(copy[fieldName] || "").trim();
       }
@@ -570,6 +575,10 @@
         if (!fields || typeof fields !== "object" || Array.isArray(fields)) return copies;
         copies[String(id)] = Object.entries(fields).reduce((fieldCopies, fieldPair) => {
           const [fieldName, value] = fieldPair;
+          if (fieldName === "clearedFields") {
+            fieldCopies.clearedFields = reportCopyClearedFields(fields);
+            return fieldCopies;
+          }
           fieldCopies[String(fieldName)] = String(value || "");
           return fieldCopies;
         }, {});
@@ -1488,11 +1497,18 @@
     draft.pageCopies = draft.reportPageOrder.reduce((copies, entry) => {
       if (entry.type !== "builtIn" || !entry.duplicateOf) return copies;
       const previousCopy = reportPageCopies(draft)[entry.id] || {};
-      copies[entry.id] = builtInReportImageFields(entry.key).reduce((copy, fieldPair) => {
+      const clearedFields = new Set(reportCopyClearedFields(previousCopy));
+      const copyFields = builtInReportImageFields(entry.key).reduce((copy, fieldPair) => {
         const [fieldName, fallbackFieldName] = fieldPair;
         const copyFieldName = builtInReportImageFieldName(entry, fieldName);
         if (formData.has(copyFieldName)) {
-          copy[fieldName] = String(formData.get(copyFieldName) || "").trim();
+          const formValue = String(formData.get(copyFieldName) || "").trim();
+          copy[fieldName] = formValue;
+          if (formValue) {
+            clearedFields.delete(fieldName);
+          } else {
+            clearedFields.add(fieldName);
+          }
         } else {
           copy[fieldName] = String(previousCopy[fieldName] || builtInReportImageValue(draft, { ...entry, duplicateOf: "" }, fieldName, fallbackFieldName) || "");
         }
@@ -1500,6 +1516,8 @@
       }, {
         title: formString(`pageCopies.${entry.id}.title`, previousCopy.title || `${builtInReportPageLabel(entry.key)} Copy`)
       });
+      copyFields.clearedFields = Array.from(clearedFields);
+      copies[entry.id] = copyFields;
       return copies;
     }, {});
 
