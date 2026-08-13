@@ -3526,6 +3526,37 @@ return null;
     return imageUrl;
   }
 
+  function isCanvasExportSafe(canvas) {
+    if (!canvas) return false;
+
+    try {
+      const ctx = canvas.getContext('2d');
+      ctx.getImageData(0, 0, 1, 1);
+      return true;
+    } catch (error) {
+      console.warn('Canvas layer is not export-safe:', error);
+      return false;
+    }
+  }
+
+  function drawExportLipFallback(ctx, drawX, drawY, drawWidth, drawHeight, lipColor, lipOpacity) {
+    const shapes = getCompletedLipShapes();
+    if (!Array.isArray(shapes) || !shapes.length || !lipColor) return;
+
+    ctx.save();
+    ctx.translate(drawX, drawY);
+    ctx.scale(drawWidth / 1000, drawHeight / 1000);
+    ctx.globalAlpha = Math.min(Math.max(Number(lipOpacity) || 0.45, 0), 1);
+    ctx.fillStyle = lipColor;
+
+    shapes.forEach(function (shape) {
+      if (!shape || !Array.isArray(shape.points) || shape.points.length < 3) return;
+      ctx.fill(new Path2D(buildSmoothClosedPath(shape.points, true)));
+    });
+
+    ctx.restore();
+  }
+
   async function saveDrapedImageForReport(payload) {
     if (!APP_BASE_URL || (!CLIENT_RECORD_ID && !CUSTOMER_ID)) {
       return null;
@@ -3651,6 +3682,7 @@ return null;
       const lipCanvas = isRight ? rightLipCanvas : leftLipCanvas;
       const lipColor = isRight ? state.lip.rightColor : state.lip.leftColor;
       const lipVisible = isRight ? state.lip.rightVisible : state.lip.leftVisible;
+      const lipOpacity = isRight ? state.lip.rightOpacity : state.lip.leftOpacity;
 
       if (
         isUndertoneStepVisible() &&
@@ -3661,10 +3693,15 @@ return null;
         lipColor &&
         state.lip.closed
       ) {
-        try {
-          ctx.drawImage(lipCanvas, drawX, drawY, drawWidth, drawHeight);
-        } catch (lipExportError) {
-          console.warn('Could not include lips in exported draped view:', lipExportError);
+        if (isCanvasExportSafe(lipCanvas)) {
+          try {
+            ctx.drawImage(lipCanvas, drawX, drawY, drawWidth, drawHeight);
+          } catch (lipExportError) {
+            console.warn('Could not include lips in exported draped view:', lipExportError);
+            drawExportLipFallback(ctx, drawX, drawY, drawWidth, drawHeight, lipColor, lipOpacity);
+          }
+        } else {
+          drawExportLipFallback(ctx, drawX, drawY, drawWidth, drawHeight, lipColor, lipOpacity);
         }
       }
 
@@ -3701,7 +3738,8 @@ return null;
 
         if (realisticDrapeToggle && realisticDrapeToggle.checked && !hasDepthOverlay) {
           try {
-            const overlayImg = await loadImage(REALISTIC_DRAPE_OVERLAY_URL);
+            const overlayUrl = await getCanvasSafeImageUrl(REALISTIC_DRAPE_OVERLAY_URL);
+            const overlayImg = await loadImage(overlayUrl);
 
             ctx.save();
             ctx.translate(0, drapeY);
