@@ -703,7 +703,8 @@ async function drawRealisticDrapeTexture(ctx, options) {
   }
 
   try {
-    const overlayImg = await loadImage(REALISTIC_DRAPE_OVERLAY_URL);
+    const overlayUrl = await getCanvasSafeImageUrl(REALISTIC_DRAPE_OVERLAY_URL);
+    const overlayImg = await loadImage(overlayUrl);
     ctx.globalCompositeOperation = 'multiply';
     ctx.globalAlpha = 0.9;
     ctx.drawImage(overlayImg, 0, 0, 1000, 500);
@@ -3472,6 +3473,58 @@ return null;
     });
   }
 
+  async function getCanvasSafeImageUrl(src) {
+    const imageUrl = String(src || '').trim();
+    if (!imageUrl || !APP_BASE_URL) return imageUrl;
+    if (/^(data|blob):/i.test(imageUrl)) return imageUrl;
+
+    try {
+      const response = await fetch(APP_BASE_URL + '/api/proxy-image?url=' + encodeURIComponent(imageUrl));
+      const data = await response.json().catch(function () {
+        return {};
+      });
+
+      if (response.ok && data.imageBase64) {
+        return data.imageBase64;
+      }
+    } catch (error) {
+      console.warn('Could not proxy image for export canvas:', error);
+    }
+
+    return imageUrl;
+  }
+
+  function isCanvasExportSafe(canvas) {
+    if (!canvas) return false;
+
+    try {
+      const canvasContext = canvas.getContext('2d');
+      canvasContext.getImageData(0, 0, 1, 1);
+      return true;
+    } catch (error) {
+      console.warn('Canvas layer is not export-safe:', error);
+      return false;
+    }
+  }
+
+  function drawExportLipFallback(ctx, drawX, drawY, drawWidth, drawHeight, lipColor, lipOpacity) {
+    const shapes = getCompletedLipShapes();
+    if (!Array.isArray(shapes) || !shapes.length || !lipColor) return;
+
+    ctx.save();
+    ctx.translate(drawX, drawY);
+    ctx.scale(drawWidth / 1000, drawHeight / 1000);
+    ctx.globalAlpha = Math.min(Math.max(Number(lipOpacity) || 0.45, 0), 1);
+    ctx.fillStyle = lipColor;
+
+    shapes.forEach(function (shape) {
+      if (!shape || !Array.isArray(shape.points) || shape.points.length < 3) return;
+      ctx.fill(new Path2D(buildSmoothClosedPath(shape.points, true)));
+    });
+
+    ctx.restore();
+  }
+
   async function saveDrapedImageForReport(payload) {
     if (!APP_BASE_URL || (!CLIENT_RECORD_ID && !CUSTOMER_ID)) {
       return null;
@@ -3525,7 +3578,8 @@ return null;
       const ctx = canvas.getContext('2d');
       ctx.scale(2, 2);
 
-      const uploadedImg = await loadImage(state.loadedImageUrl);
+      const canvasSafePhotoUrl = await getCanvasSafeImageUrl(state.loadedImageUrl);
+      const uploadedImg = await loadImage(canvasSafePhotoUrl);
 
       const naturalWidth = uploadedImg.naturalWidth;
       const naturalHeight = uploadedImg.naturalHeight;
@@ -3556,8 +3610,18 @@ if (lipCanvas) {
   const lipY = lipRect.top - frameRectForLip.top;
   const lipW = lipRect.width;
   const lipH = lipRect.height;
+  const lipOpacity = isRight ? state.lip.rightOpacity : state.lip.leftOpacity;
 
-  ctx.drawImage(lipCanvas, lipX, lipY, lipW, lipH);
+  if (isCanvasExportSafe(lipCanvas)) {
+    try {
+      ctx.drawImage(lipCanvas, lipX, lipY, lipW, lipH);
+    } catch (lipDrawError) {
+      console.warn('Could not draw lip canvas layer; using export fallback:', lipDrawError);
+      drawExportLipFallback(ctx, drawX, drawY, drawWidth, drawHeight, lipColor, lipOpacity);
+    }
+  } else {
+    drawExportLipFallback(ctx, drawX, drawY, drawWidth, drawHeight, lipColor, lipOpacity);
+  }
 }
 
       const pathD = drapePathEl.getAttribute('d') || '';
@@ -3604,7 +3668,8 @@ if (lipCanvas) {
         }
 
         if (hasDepthOverlay) {
-          const depthOverlayImg = await loadImage(depthOverlayEl.getAttribute('src'));
+          const depthOverlayUrl = await getCanvasSafeImageUrl(depthOverlayEl.getAttribute('src'));
+          const depthOverlayImg = await loadImage(depthOverlayUrl);
           const overlayRect = depthOverlayEl.getBoundingClientRect();
           const frameRect2 = frameEl.getBoundingClientRect();
 
