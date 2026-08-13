@@ -1768,7 +1768,9 @@
     activeReportDraft = applyReportTemplateToDraft(activeReportDraft, template);
     const currentBuilder = detailEl.querySelector("[data-ycs-report-builder]");
     if (currentBuilder) {
+      const railScrollTop = reportRailScrollTop(currentBuilder);
       currentBuilder.outerHTML = renderReportBuilder(client, currentBuilder.hidden);
+      restoreReportRailScroll(railScrollTop);
       applyActiveReportPage(activeReportPage);
     }
 
@@ -1880,6 +1882,17 @@
     });
   }
 
+  function reportRailScrollTop(builder) {
+    return Number(builder?.querySelector("[data-ycs-report-page-rail]")?.scrollTop) || 0;
+  }
+
+  function restoreReportRailScroll(scrollTop) {
+    const rail = detailEl.querySelector("[data-ycs-report-page-rail]");
+    if (rail) {
+      rail.scrollTop = Math.max(Number(scrollTop) || 0, 0);
+    }
+  }
+
   function rerenderActiveReportBuilder(pageNumber = activeReportPage) {
     const client = clients.find((item) => item.clientRecordId === activeReportClientId);
     const builder = detailEl.querySelector("[data-ycs-report-builder]");
@@ -1887,7 +1900,9 @@
     if (!client || !builder || !form) return;
 
     activeReportDraft = readReportDraftFromForm(form, client);
+    const railScrollTop = reportRailScrollTop(builder);
     builder.outerHTML = renderReportBuilder(client, false);
+    restoreReportRailScroll(railScrollTop);
     applyActiveReportPage(pageNumber);
   }
 
@@ -2972,9 +2987,11 @@
       const builder = detailEl.querySelector("[data-ycs-report-builder]");
       const form = builder?.querySelector("[data-ycs-report-form]");
       if (client && builder && form) {
+        const railScrollTop = reportRailScrollTop(builder);
         activeReportDraft = readReportDraftFromForm(form, client);
         activeReportPage = Math.min(Math.max(nextPage, 1), totalReportPages(activeReportDraft));
         builder.outerHTML = renderReportBuilder(client, false);
+        restoreReportRailScroll(railScrollTop);
       }
       applyActiveReportPage(nextPage);
     }
@@ -3011,7 +3028,9 @@
       order.splice(insertIndex, 0, { id: newPage.id, type: "custom", key: newPage.id });
       activeReportDraft.reportPageOrder = order;
       const nextPage = LOCKED_REPORT_PAGE_COUNT + insertIndex + 1;
+      const railScrollTop = reportRailScrollTop(builder);
       builder.outerHTML = renderReportBuilder(client, false);
+      restoreReportRailScroll(railScrollTop);
       applyActiveReportPage(nextPage);
       return;
     }
@@ -3025,9 +3044,11 @@
       if (!client || !builder || !form) return;
 
       activeReportDraft = readReportDraftFromForm(form, client);
+      const railScrollTop = reportRailScrollTop(builder);
       duplicateReportPage(activeReportDraft, duplicateReportPageButton.dataset.ycsDuplicateReportPage);
       const nextPage = activeReportPage;
       builder.outerHTML = renderReportBuilder(client, false);
+      restoreReportRailScroll(railScrollTop);
       applyActiveReportPage(nextPage);
     }
 
@@ -3045,9 +3066,11 @@
       if (currentIndex < 0) return;
       const direction = Number(moveReportPageButton.dataset.ycsMoveReportPageDirection) || 0;
       const targetIndex = direction > 0 ? currentIndex + 2 : currentIndex - 1;
+      const railScrollTop = reportRailScrollTop(builder);
       moveReportPageToIndex(activeReportDraft, moveReportPageButton.dataset.ycsMoveReportPage, targetIndex);
       const nextPage = activeReportPage;
       builder.outerHTML = renderReportBuilder(client, false);
+      restoreReportRailScroll(railScrollTop);
       applyActiveReportPage(nextPage);
       return;
     }
@@ -3080,7 +3103,9 @@
         activeReportDraft.pageCopies = nextCopies;
       }
       activeReportDraft.reportPageOrder = entries.filter((item) => item.id !== entry.id);
+      const railScrollTop = reportRailScrollTop(builder);
       builder.outerHTML = renderReportBuilder(client, false);
+      restoreReportRailScroll(railScrollTop);
       applyActiveReportPage(Math.min(activeReportPage, totalReportPages(activeReportDraft)));
     }
 
@@ -3149,9 +3174,11 @@
     const rect = targetItem.getBoundingClientRect();
     const insertAfter = clientY > rect.top + (rect.height / 2);
     const targetIndex = (Number(targetItem.dataset.ycsReportPageOrderIndex) || 0) + (insertAfter ? 1 : 0);
+    const railScrollTop = reportRailScrollTop(builder);
     moveReportPageToIndex(activeReportDraft, reportPageRailDrag.orderId, targetIndex);
     const nextPage = activeReportPage;
     builder.outerHTML = renderReportBuilder(client, false);
+    restoreReportRailScroll(railScrollTop);
     applyActiveReportPage(nextPage);
     return true;
   }
@@ -3258,13 +3285,15 @@
       return;
     }
 
-    if (event.target.name === "showOliveImage") {
+    if (event.target.name === "showOliveImage" || /^pageCopies\..+\.showOliveImage$/.test(event.target.name || "")) {
       const client = clients.find((item) => item.clientRecordId === activeReportClientId);
       const builder = detailEl.querySelector("[data-ycs-report-builder]");
       const form = builder?.querySelector("[data-ycs-report-form]");
       if (client && builder && form) {
+        const railScrollTop = reportRailScrollTop(builder);
         activeReportDraft = readReportDraftFromForm(form, client);
         builder.outerHTML = renderReportBuilder(client, false);
+        restoreReportRailScroll(railScrollTop);
         applyActiveReportPage(activeReportPage);
       }
       return;
