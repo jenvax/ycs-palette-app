@@ -1484,8 +1484,11 @@
       copies[entry.id] = builtInReportImageFields(entry.key).reduce((copy, fieldPair) => {
         const [fieldName, fallbackFieldName] = fieldPair;
         const copyFieldName = builtInReportImageFieldName(entry, fieldName);
-        const formValue = String(formData.get(copyFieldName) || "").trim();
-        copy[fieldName] = formValue || String(previousCopy[fieldName] || builtInReportImageValue(draft, { ...entry, duplicateOf: "" }, fieldName, fallbackFieldName) || "");
+        if (formData.has(copyFieldName)) {
+          copy[fieldName] = String(formData.get(copyFieldName) || "").trim();
+        } else {
+          copy[fieldName] = String(previousCopy[fieldName] || builtInReportImageValue(draft, { ...entry, duplicateOf: "" }, fieldName, fallbackFieldName) || "");
+        }
         return copy;
       }, {});
       return copies;
