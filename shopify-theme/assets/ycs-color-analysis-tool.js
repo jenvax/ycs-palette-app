@@ -3505,6 +3505,27 @@ return null;
     return color + '-' + firstName + '-' + lastName + '.png';
   }
 
+  async function getCanvasSafeImageUrl(src) {
+    const imageUrl = String(src || '').trim();
+    if (!imageUrl || !APP_BASE_URL) return imageUrl;
+    if (/^(data|blob):/i.test(imageUrl)) return imageUrl;
+
+    try {
+      const response = await fetch(APP_BASE_URL + '/api/proxy-image?url=' + encodeURIComponent(imageUrl));
+      const data = await response.json().catch(function () {
+        return {};
+      });
+
+      if (response.ok && data.imageBase64) {
+        return data.imageBase64;
+      }
+    } catch (error) {
+      console.warn('Could not proxy image for export canvas:', error);
+    }
+
+    return imageUrl;
+  }
+
   async function saveDrapedImageForReport(payload) {
     if (!APP_BASE_URL || (!CLIENT_RECORD_ID && !CUSTOMER_ID)) {
       return null;
@@ -3602,7 +3623,8 @@ return null;
       const ctx = canvas.getContext('2d');
       ctx.scale(2, 2);
 
-      const uploadedImg = await loadImage(state.loadedImageUrl);
+      const canvasSafePhotoUrl = await getCanvasSafeImageUrl(state.loadedImageUrl);
+      const uploadedImg = await loadImage(canvasSafePhotoUrl);
 
       const naturalWidth = uploadedImg.naturalWidth;
       const naturalHeight = uploadedImg.naturalHeight;
@@ -3639,7 +3661,11 @@ return null;
         lipColor &&
         state.lip.closed
       ) {
-        ctx.drawImage(lipCanvas, drawX, drawY, drawWidth, drawHeight);
+        try {
+          ctx.drawImage(lipCanvas, drawX, drawY, drawWidth, drawHeight);
+        } catch (lipExportError) {
+          console.warn('Could not include lips in exported draped view:', lipExportError);
+        }
       }
 
       const pathD = drapePathEl.getAttribute('d') || '';
@@ -3691,16 +3717,21 @@ return null;
         }
 
         if (hasDepthOverlay) {
-          const depthOverlayImg = await loadImage(depthOverlayEl.getAttribute('src'));
-          const overlayRect = depthOverlayEl.getBoundingClientRect();
-          const frameRect2 = frameEl.getBoundingClientRect();
+          try {
+            const depthOverlayUrl = await getCanvasSafeImageUrl(depthOverlayEl.getAttribute('src'));
+            const depthOverlayImg = await loadImage(depthOverlayUrl);
+            const overlayRect = depthOverlayEl.getBoundingClientRect();
+            const frameRect2 = frameEl.getBoundingClientRect();
 
-          const overlayX = overlayRect.left - frameRect2.left;
-          const overlayY = overlayRect.top - frameRect2.top;
-          const overlayWidth = overlayRect.width;
-          const overlayHeight = overlayRect.height;
+            const overlayX = overlayRect.left - frameRect2.left;
+            const overlayY = overlayRect.top - frameRect2.top;
+            const overlayWidth = overlayRect.width;
+            const overlayHeight = overlayRect.height;
 
-          ctx.drawImage(depthOverlayImg, overlayX, overlayY, overlayWidth, overlayHeight);
+            ctx.drawImage(depthOverlayImg, overlayX, overlayY, overlayWidth, overlayHeight);
+          } catch (depthOverlayError) {
+            console.warn('Could not include depth overlay in exported draped view:', depthOverlayError);
+          }
         }
       } finally {
         URL.revokeObjectURL(svgUrl);
