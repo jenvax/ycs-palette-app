@@ -1883,11 +1883,11 @@
   }
 
   function reportRailScrollTop(builder) {
-    return Number(builder?.querySelector("[data-ycs-report-page-rail]")?.scrollTop) || 0;
+    return Number(builder?.querySelector(".ycs-report-page-rail")?.scrollTop) || 0;
   }
 
   function restoreReportRailScroll(scrollTop) {
-    const rail = detailEl.querySelector("[data-ycs-report-page-rail]");
+    const rail = detailEl.querySelector(".ycs-report-page-rail");
     if (rail) {
       rail.scrollTop = Math.max(Number(scrollTop) || 0, 0);
     }
