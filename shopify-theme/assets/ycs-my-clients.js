@@ -2341,6 +2341,21 @@
     return "";
   }
 
+  function grantCompletionText(result, fallbackPaletteName, didCreateClient) {
+    const customerName = customerDisplayName(result.customer);
+    const paletteName = result.paletteName || fallbackPaletteName;
+    const clientText = didCreateClient
+      ? " Added to My Clients."
+      : result.client
+        ? " My Clients record updated."
+        : " No My Clients record was created.";
+    const accessText = result.alreadyHadAccess
+      ? "already had access to"
+      : "now has access to";
+
+    return `Palette assigned: ${customerName} ${accessText} ${paletteName}.${clientText}${grantNotificationText(result.notification)}`;
+  }
+
   function customerDisplayName(customer) {
     const name = [customer?.firstName, customer?.lastName].filter(Boolean).join(" ").trim();
     return name || customer?.email || "customer";
@@ -2752,7 +2767,9 @@
 
     let createClient = false;
     if (!lookup.client) {
-      createClient = window.confirm("This Shopify customer is not currently in My Clients. Add them as a client?");
+      createClient = window.confirm(
+        "This Shopify customer is not currently in My Clients.\n\nSelect OK to add them as a client and grant palette access.\nSelect Cancel to grant palette access only."
+      );
     }
 
     setAdminGrantStatus("Granting palette access...", true);
@@ -2797,10 +2814,9 @@
       renderCards();
     }
 
-    setAdminGrantStatus(
-      `${customerDisplayName(result.customer)} now has access to ${result.paletteName || paletteName}.${grantNotificationText(result.notification)}`,
-      true
-    );
+    const completionMessage = grantCompletionText(result, paletteName, createClient && Boolean(result.client));
+    setAdminGrantStatus(completionMessage, true);
+    window.alert(completionMessage);
   }
 
   async function grantClientPaletteAccess(client) {
@@ -2848,7 +2864,9 @@
           }
         : entry
     ));
-    showClientById(client.clientRecordId, true, `Customer access granted to ${result.paletteName || paletteName}.${grantNotificationText(result.notification)}`);
+    const completionMessage = grantCompletionText(result, paletteName, false);
+    showClientById(client.clientRecordId, true, completionMessage);
+    window.alert(completionMessage);
   }
 
   async function saveClient(form) {
