@@ -45,6 +45,7 @@
     ["MO", "Medium Olive"],
     ["DO", "Deep Olive"]
   ];
+  const YCS_PALETTE_CODES = new Set(YCS_PALETTE_OPTIONS.map(([code]) => code));
 
   let clients = [];
   let activeReportDraft = null;
@@ -188,6 +189,17 @@
     const normalizedCode = String(code || "").trim().toUpperCase();
     const option = YCS_PALETTE_OPTIONS.find(([optionCode]) => optionCode === normalizedCode);
     return option ? option[1] : "";
+  }
+
+  function normalizePaletteCode(code) {
+    const normalizedCode = String(code || "").trim().toUpperCase();
+    return YCS_PALETTE_CODES.has(normalizedCode) ? normalizedCode : "";
+  }
+
+  function paletteTagsFromCustomer(customer) {
+    return (Array.isArray(customer?.tags) ? customer.tags : [])
+      .map(normalizePaletteCode)
+      .filter(Boolean);
   }
 
   function getPaletteName(code) {
@@ -2521,6 +2533,18 @@
     if (canCreateReports) {
       loadReportDraft(client).catch((error) => setReportStatus(error.message || "Unable to load report draft.", true));
     }
+
+    if (editMode && isAdmin) {
+      hydrateClientShopifyPaletteTags(client).catch((error) => {
+        const panel = detailEl.querySelector("[data-ycs-shopify-palette-tags-panel]");
+        if (panel) {
+          panel.innerHTML = `
+            <p class="ycs-clients__shopify-tags-title">Shopify Customer Palette Tags</p>
+            <p class="ycs-clients__shopify-tags-help">Unable to load Shopify palette tags: ${escapeHtml(error.message || "Request failed")}</p>
+          `;
+        }
+      });
+    }
   }
 
   function renderCreateClient(saveMessage) {
@@ -2574,6 +2598,7 @@
             <option value="${escapeHtml(code)}"${code === selectedPaletteCode ? " selected" : ""}>${escapeHtml(label)}</option>
           `).join("")}
         </select>
+        ${renderShopifyPaletteTagEditor(client, isCreate)}
         <textarea class="ycs-clients__textarea" name="notes" placeholder="Notes">${escapeHtml(client.notes)}</textarea>
         ${saveMessage ? `<p class="ycs-clients__save-message">${escapeHtml(saveMessage)}</p>` : ""}
         <div class="ycs-clients__form-actions">
@@ -2582,6 +2607,43 @@
           <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-cancel-client-edit>Cancel</button>
         </div>
       </form>
+    `;
+  }
+
+  function renderShopifyPaletteTagEditor(client, isCreate) {
+    if (!isAdmin || isCreate) return "";
+
+    const hasLookupKey = Boolean(client.shopifyCustomerId || client.email);
+    const isLoaded = client.shopifyPaletteTagsLoaded === true;
+    const tags = Array.isArray(client.shopifyPaletteTags) ? client.shopifyPaletteTags : [];
+
+    if (!hasLookupKey) {
+      return `
+        <section class="ycs-clients__shopify-tags" data-ycs-shopify-palette-tags-panel data-client-record-id="${escapeHtml(client.clientRecordId)}">
+          <p class="ycs-clients__shopify-tags-title">Shopify Customer Palette Tags</p>
+          <p class="ycs-clients__shopify-tags-help">Add the customer's email, then save or give a palette to connect their Shopify customer account.</p>
+        </section>
+      `;
+    }
+
+    return `
+      <section class="ycs-clients__shopify-tags" data-ycs-shopify-palette-tags-panel data-client-record-id="${escapeHtml(client.clientRecordId)}">
+        <p class="ycs-clients__shopify-tags-title">Shopify Customer Palette Tags</p>
+        ${!isLoaded ? '<p class="ycs-clients__shopify-tags-help">Loading Shopify palette tags...</p>' : ""}
+        ${isLoaded && !tags.length ? '<p class="ycs-clients__shopify-tags-help">No customer palette tags are currently assigned in Shopify.</p>' : ""}
+        ${isLoaded && tags.length ? `
+          <div class="ycs-clients__shopify-tag-list">
+            ${tags.map((tag) => `
+              <span class="ycs-clients__shopify-tag-pill" data-ycs-shopify-tag-pill data-tag-code="${escapeHtml(tag)}">
+                <span>${escapeHtml(paletteNameForCode(tag) || tag)}</span>
+                <button class="ycs-clients__shopify-tag-remove" type="button" aria-label="Remove ${escapeHtml(paletteNameForCode(tag) || tag)}" data-ycs-remove-shopify-tag="${escapeHtml(tag)}">x</button>
+                <input type="hidden" name="removeShopifyPaletteTags" value="" data-ycs-remove-shopify-tag-input data-tag-code="${escapeHtml(tag)}">
+              </span>
+            `).join("")}
+          </div>
+          <p class="ycs-clients__shopify-tags-help">Select x to remove a palette from the Shopify customer. The change is not applied until you save the client.</p>
+        ` : ""}
+      </section>
     `;
   }
 
@@ -2665,7 +2727,8 @@
     if (!form) return false;
 
     return Array.from(form.elements || []).some((element) => {
-      if (!element.name || element.type === "hidden" || element.type === "submit" || element.type === "button") return false;
+      if (!element.name || element.type === "submit" || element.type === "button") return false;
+      if (element.type === "hidden" && !element.dataset.ycsRemoveShopifyTagInput) return false;
       if (element.type === "checkbox" || element.type === "radio") return element.checked !== element.defaultChecked;
       return String(element.value || "") !== String(formElementInitialValue(element) || "");
     });
@@ -2778,6 +2841,53 @@
     return data;
   }
 
+  async function lookupShopifyCustomerPaletteTags(client) {
+    const url = new URL(`${apiBase}/api/admin-customer-palette-access`);
+    url.searchParams.set("action", "customerPaletteTags");
+    url.searchParams.set("viewerCustomerId", consultantId);
+    if (client.shopifyCustomerId) {
+      url.searchParams.set("customerId", client.shopifyCustomerId);
+    } else {
+      url.searchParams.set("email", client.email || "");
+    }
+
+    const response = await fetch(url.toString());
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Shopify palette tag lookup failed");
+    }
+
+    return data;
+  }
+
+  async function hydrateClientShopifyPaletteTags(client) {
+    if (!isAdmin || !client || (!client.shopifyCustomerId && !client.email) || client.shopifyPaletteTagsLoaded) return;
+
+    const result = await lookupShopifyCustomerPaletteTags(client);
+    const paletteTags = Array.isArray(result.paletteTags)
+      ? result.paletteTags.map(normalizePaletteCode).filter(Boolean)
+      : paletteTagsFromCustomer(result.customer);
+
+    clients = clients.map((entry) => (
+      entry.clientRecordId === client.clientRecordId
+        ? {
+            ...entry,
+            shopifyCustomerId: result.customer?.id || entry.shopifyCustomerId || "",
+            shopifyCustomerGid: result.customer?.gid || entry.shopifyCustomerGid || "",
+            shopifyPaletteTags: paletteTags,
+            shopifyPaletteTagsLoaded: true
+          }
+        : entry
+    ));
+
+    const updatedClient = clients.find((entry) => entry.clientRecordId === client.clientRecordId);
+    const panel = detailEl.querySelector("[data-ycs-shopify-palette-tags-panel]");
+    if (panel && updatedClient) {
+      panel.outerHTML = renderShopifyPaletteTagEditor(updatedClient, false);
+    }
+  }
+
   async function grantPaletteAccess(payload) {
     const response = await fetch(`${apiBase}/api/admin-customer-palette-access?action=grantPaletteAccess`, {
       method: "POST",
@@ -2792,6 +2902,24 @@
 
     if (!response.ok) {
       throw new Error(data.error || "Palette access grant failed");
+    }
+
+    return data;
+  }
+
+  async function removeShopifyPaletteTags(payload) {
+    const response = await fetch(`${apiBase}/api/admin-customer-palette-access?action=removePaletteTags`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        viewerCustomerId: consultantId,
+        ...payload
+      })
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Palette tag removal failed");
     }
 
     return data;
@@ -2846,6 +2974,8 @@
               ...result.client,
               paletteCode: result.paletteCode || paletteCode,
               paletteName: result.paletteName || paletteName,
+              shopifyPaletteTags: paletteTagsFromCustomer(result.customer),
+              shopifyPaletteTagsLoaded: true,
               updatedAt: new Date().toISOString()
             }
           : client
@@ -2863,6 +2993,8 @@
         adjustedPhotoUrl: "",
         primaryPhotoUrl: "",
         activePhotoUrl: "",
+        shopifyPaletteTags: paletteTagsFromCustomer(result.customer),
+        shopifyPaletteTagsLoaded: true,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       }, ...clients];
@@ -2916,6 +3048,8 @@
             paletteName: result.paletteName || paletteName,
             shopifyCustomerId: result.customer?.id || entry.shopifyCustomerId || "",
             shopifyCustomerGid: result.customer?.gid || entry.shopifyCustomerGid || "",
+            shopifyPaletteTags: paletteTagsFromCustomer(result.customer),
+            shopifyPaletteTagsLoaded: true,
             updatedAt: new Date().toISOString()
           }
         : entry
@@ -2936,6 +3070,10 @@
       notes: formData.get("notes")
     };
     payload.paletteName = paletteNameForCode(payload.paletteCode);
+    const removePaletteTags = formData.getAll("removeShopifyPaletteTags")
+      .map(normalizePaletteCode)
+      .filter(Boolean);
+    const existingClient = clients.find((client) => client.clientRecordId === payload.clientRecordId);
 
     setStatus("Saving client...", true);
     const response = await fetch(`${apiBase}/api/update-consultant-client`, {
@@ -2949,12 +3087,36 @@
       throw new Error(data.error || "Client update failed");
     }
 
+    let removedPaletteTags = [];
+    let refreshedShopifyCustomer = null;
+    if (removePaletteTags.length) {
+      setStatus("Removing Shopify palette access...", true);
+      const removalResult = await removeShopifyPaletteTags({
+        customerId: existingClient?.shopifyCustomerId || "",
+        email: payload.email || existingClient?.email || "",
+        paletteCodes: removePaletteTags
+      });
+      removedPaletteTags = Array.isArray(removalResult.removedTags) ? removalResult.removedTags : removePaletteTags;
+      refreshedShopifyCustomer = removalResult.customer || null;
+    }
+
     clients = clients.map((client) => (
       client.clientRecordId === payload.clientRecordId
-        ? { ...client, ...payload, updatedAt: new Date().toISOString() }
+        ? {
+            ...client,
+            ...payload,
+            shopifyCustomerId: refreshedShopifyCustomer?.id || client.shopifyCustomerId || "",
+            shopifyCustomerGid: refreshedShopifyCustomer?.gid || client.shopifyCustomerGid || "",
+            shopifyPaletteTags: refreshedShopifyCustomer ? paletteTagsFromCustomer(refreshedShopifyCustomer) : client.shopifyPaletteTags,
+            shopifyPaletteTagsLoaded: refreshedShopifyCustomer ? true : client.shopifyPaletteTagsLoaded,
+            updatedAt: new Date().toISOString()
+          }
         : client
     ));
-    showClientById(payload.clientRecordId, true, "Client saved.");
+    const removedText = removedPaletteTags.length
+      ? ` Removed palette access: ${removedPaletteTags.map((tag) => paletteNameForCode(tag) || tag).join(", ")}.`
+      : "";
+    showClientById(payload.clientRecordId, true, `Client saved.${removedText}`);
   }
 
   async function createClient(form, options = {}) {
@@ -3126,8 +3288,29 @@
     const duplicateReportPageButton = event.target.closest("[data-ycs-duplicate-report-page]");
     const moveReportPageButton = event.target.closest("[data-ycs-move-report-page]");
     const grantClientPaletteAccessButton = event.target.closest("[data-ycs-grant-client-palette-access]");
+    const removeShopifyTagButton = event.target.closest("[data-ycs-remove-shopify-tag]");
     const cancelClientEditButton = event.target.closest("[data-ycs-cancel-client-edit]");
     const leaveClientViewLink = event.target.closest("[data-ycs-leave-client-view]");
+
+    if (removeShopifyTagButton) {
+      event.preventDefault();
+      const tag = normalizePaletteCode(removeShopifyTagButton.dataset.ycsRemoveShopifyTag);
+      const pill = removeShopifyTagButton.closest("[data-ycs-shopify-tag-pill]");
+      const input = pill?.querySelector("[data-ycs-remove-shopify-tag-input]");
+      if (!tag || !pill || !input) return;
+
+      const shouldRemove = !pill.classList.contains("is-pending-remove");
+      pill.classList.toggle("is-pending-remove", shouldRemove);
+      input.value = shouldRemove ? tag : "";
+      removeShopifyTagButton.textContent = shouldRemove ? "Undo" : "x";
+      removeShopifyTagButton.setAttribute(
+        "aria-label",
+        shouldRemove
+          ? `Undo removing ${paletteNameForCode(tag) || tag}`
+          : `Remove ${paletteNameForCode(tag) || tag}`
+      );
+      return;
+    }
 
     if (leaveClientViewLink) {
       event.preventDefault();

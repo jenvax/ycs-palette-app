@@ -68,6 +68,11 @@ function normalizePaletteCode(value) {
   return PALETTE_CODES.has(code) ? code : "";
 }
 
+function uniquePaletteCodes(values) {
+  const codes = Array.isArray(values) ? values : [];
+  return Array.from(new Set(codes.map(normalizePaletteCode).filter(Boolean)));
+}
+
 function escapeFormulaString(value) {
   return String(value || "").replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
@@ -266,6 +271,12 @@ function serializeCustomer(customer) {
     state: String(customer.state || "").trim(),
     tags: Array.isArray(customer.tags) ? customer.tags : []
   };
+}
+
+function customerPaletteTags(customer) {
+  return (customer?.tags || [])
+    .map(normalizePaletteCode)
+    .filter(Boolean);
 }
 
 async function getCustomerById(customerId) {
@@ -580,6 +591,50 @@ async function addPaletteTagToCustomer({ customer, paletteCode }) {
   };
 }
 
+async function removePaletteTagsFromCustomer({ customer, paletteCodes }) {
+  const tags = uniquePaletteCodes(paletteCodes);
+  if (!tags.length) {
+    return { removedTags: [], customer };
+  }
+
+  const data = await shopifyAdminGraphQL({
+    query: `
+      mutation removePaletteTags($id: ID!, $tags: [String!]!) {
+        tagsRemove(id: $id, tags: $tags) {
+          node {
+            ... on Customer {
+              id
+              firstName
+              lastName
+              email
+              state
+              tags
+            }
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    `,
+    variables: {
+      id: customer.gid,
+      tags
+    }
+  });
+
+  const userErrors = data.tagsRemove?.userErrors || [];
+  if (userErrors.length) {
+    throw new Error(userErrors[0].message || "Unable to remove Shopify customer tag");
+  }
+
+  return {
+    removedTags: tags,
+    customer: serializeCustomer(data.tagsRemove?.node)
+  };
+}
+
 async function sendPaletteNotification({ customer, paletteCode, paletteName }) {
   const webhookUrl = cleanString(process.env.PALETTE_ACCESS_NOTIFICATION_WEBHOOK_URL);
   if (!webhookUrl) {
@@ -795,6 +850,74 @@ async function handleGrant({ request, corsHeaders }) {
   );
 }
 
+async function handleCustomerPaletteTags({ request, corsHeaders }) {
+  const url = new URL(request.url);
+  const viewerCustomerId = cleanString(url.searchParams.get("viewerCustomerId"));
+  const customerId = cleanString(url.searchParams.get("customerId"));
+  const email = cleanString(url.searchParams.get("email"));
+
+  await requireAdmin(viewerCustomerId);
+
+  const customer = customerId
+    ? await getCustomerById(customerId)
+    : await findCustomerByEmail(email);
+
+  if (!customer) {
+    return Response.json(
+      { error: "Shopify customer not found" },
+      { status: 404, headers: corsHeaders }
+    );
+  }
+
+  return Response.json(
+    {
+      customer,
+      paletteTags: customerPaletteTags(customer)
+    },
+    { headers: corsHeaders }
+  );
+}
+
+async function handleRemovePaletteTags({ request, corsHeaders }) {
+  const body = await request.json();
+  const viewerCustomerId = cleanString(body.viewerCustomerId);
+  const customerId = cleanString(body.customerId);
+  const email = cleanString(body.email);
+  const paletteCodes = uniquePaletteCodes(body.paletteCodes || body.tags || []);
+
+  await requireAdmin(viewerCustomerId);
+
+  if (!paletteCodes.length) {
+    return Response.json(
+      { error: "Select at least one palette tag to remove" },
+      { status: 400, headers: corsHeaders }
+    );
+  }
+
+  const customer = customerId
+    ? await getCustomerById(customerId)
+    : await findCustomerByEmail(email);
+
+  if (!customer) {
+    return Response.json(
+      { error: "Shopify customer not found" },
+      { status: 404, headers: corsHeaders }
+    );
+  }
+
+  const result = await removePaletteTagsFromCustomer({ customer, paletteCodes });
+
+  return Response.json(
+    {
+      success: true,
+      removedTags: result.removedTags,
+      customer: result.customer,
+      paletteTags: customerPaletteTags(result.customer)
+    },
+    { headers: corsHeaders }
+  );
+}
+
 export async function loader({ request }) {
   const origin = request.headers.get("Origin") || "";
   const corsHeaders = getCorsHeaders(origin);
@@ -812,6 +935,10 @@ export async function loader({ request }) {
 
     if (action === "diagnostics") {
       return await handleDiagnostics({ request, corsHeaders });
+    }
+
+    if (action === "customerPaletteTags") {
+      return await handleCustomerPaletteTags({ request, corsHeaders });
     }
 
     return Response.json(
@@ -836,6 +963,10 @@ export async function action({ request }) {
 
     if (actionName === "grantPaletteAccess") {
       return await handleGrant({ request, corsHeaders });
+    }
+
+    if (actionName === "removePaletteTags") {
+      return await handleRemovePaletteTags({ request, corsHeaders });
     }
 
     return Response.json(

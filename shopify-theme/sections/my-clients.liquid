@@ -745,6 +745,75 @@
     padding: 8px 12px;
   }
 
+  .ycs-clients__shopify-tags {
+    border: 1px solid #eadfd9;
+    border-radius: 8px;
+    padding: 12px;
+    background: #fffaf8;
+  }
+
+  .ycs-clients__shopify-tags-title {
+    margin: 0 0 8px;
+    color: #8a8178;
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  .ycs-clients__shopify-tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .ycs-clients__shopify-tag-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 34px;
+    border: 1px solid #ddd3c8;
+    border-radius: 999px;
+    padding: 4px 6px 4px 12px;
+    background: #fff;
+    color: #2f2a25;
+    font-size: 13px;
+    font-weight: 900;
+  }
+
+  .ycs-clients__shopify-tag-pill.is-pending-remove {
+    background: #fff5f7;
+    border-color: #f2c8d3;
+    color: #8f2540;
+    text-decoration: line-through;
+  }
+
+  .ycs-clients__shopify-tag-remove {
+    min-width: 24px;
+    min-height: 24px;
+    border: 0;
+    border-radius: 999px;
+    padding: 0 7px;
+    background: #efe7dc;
+    color: #2f2a25;
+    cursor: pointer;
+    font: inherit;
+    line-height: 1;
+  }
+
+  .ycs-clients__shopify-tag-pill.is-pending-remove .ycs-clients__shopify-tag-remove {
+    background: #bd3155;
+    color: #fff;
+    text-decoration: none;
+  }
+
+  .ycs-clients__shopify-tags-help {
+    margin: 8px 0 0;
+    color: #5f5a54;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
   .ycs-clients__form-actions {
     display: flex;
     flex-wrap: wrap;
