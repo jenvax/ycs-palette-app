@@ -2711,15 +2711,17 @@
   function promptClientGrantChoice(customer, paletteName) {
     return new Promise((resolve) => {
       const overlay = document.createElement("div");
+      const customerName = customerDisplayName(customer);
       overlay.className = "ycs-clients-discard";
       overlay.innerHTML = `
         <div class="ycs-clients-discard__dialog" role="dialog" aria-modal="true" aria-labelledby="ycs-clients-grant-choice-title">
-          <h2 id="ycs-clients-grant-choice-title">Add to My Clients?</h2>
-          <p>${escapeHtml(customerDisplayName(customer))} is not currently in My Clients. Choose how to grant access to ${escapeHtml(paletteName)}.</p>
+          <h2 id="ycs-clients-grant-choice-title">Give Client Access?</h2>
+          <p>${escapeHtml(customerName)} will receive access to the ${escapeHtml(paletteName)} color palette.</p>
+          <p>${escapeHtml(customerName)} isn't currently in My Clients. Would you also like to add them to your client list?</p>
           <div class="ycs-clients-discard__actions">
-            <button class="ycs-clients__button" type="button" data-ycs-grant-add-client>Add Client + Grant Access</button>
-            <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-grant-only>Grant Access Only</button>
-            <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-grant-close>Go Back</button>
+            <button class="ycs-clients__button" type="button" data-ycs-grant-add-client>Add to My Clients & Give Access</button>
+            <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-grant-only>Give Access Only</button>
+            <button class="ycs-clients__button ycs-clients__button--tertiary" type="button" data-ycs-grant-close>Cancel</button>
           </div>
         </div>
       `;
