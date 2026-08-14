@@ -2578,7 +2578,7 @@
         ${saveMessage ? `<p class="ycs-clients__save-message">${escapeHtml(saveMessage)}</p>` : ""}
         <div class="ycs-clients__form-actions">
           <button class="ycs-clients__button" type="submit">${isCreate ? "Create Client" : "Save Client"}</button>
-          ${canGrantPaletteAccess ? '<button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-grant-client-palette-access>Grant Customer Access to Palette</button>' : ""}
+          ${canGrantPaletteAccess ? '<button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-grant-client-palette-access>Give Color Palette to Customer</button>' : ""}
           <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-cancel-client-edit>Cancel</button>
         </div>
       </form>
