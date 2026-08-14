@@ -185,6 +185,7 @@ async function shopifyAdminGraphQL({ query, variables = {} }) {
   const { shop } = shopifyConfig();
   const storedAccessToken = await getStoredShopifyAccessToken(shop);
   const staticAccessToken = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
+  let firstError = null;
 
   if (storedAccessToken) {
     try {
@@ -195,6 +196,7 @@ async function shopifyAdminGraphQL({ query, variables = {} }) {
         variables
       });
     } catch (error) {
+      firstError = firstError || error;
       console.error("Stored Shopify Admin GraphQL session failed, trying static token:", error);
     }
   }
@@ -208,17 +210,22 @@ async function shopifyAdminGraphQL({ query, variables = {} }) {
         variables
       });
     } catch (error) {
+      firstError = firstError || error;
       console.error("Static Shopify Admin GraphQL token failed, trying generated app token:", error);
     }
   }
 
-  const accessToken = await getGeneratedShopifyAccessToken(shop);
-  return shopifyAdminGraphQLWithToken({
-    shop,
-    accessToken,
-    query,
-    variables
-  });
+  try {
+    const accessToken = await getGeneratedShopifyAccessToken(shop);
+    return shopifyAdminGraphQLWithToken({
+      shop,
+      accessToken,
+      query,
+      variables
+    });
+  } catch (error) {
+    throw firstError || error;
+  }
 }
 
 function serializeCustomer(customer) {
