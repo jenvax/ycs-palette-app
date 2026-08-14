@@ -85,7 +85,14 @@ function generateClientRecordId() {
 }
 
 function shopifyConfig() {
-  const shop = String(process.env.SHOPIFY_SYNC_SHOP || process.env.SHOPIFY_SHOP || "").trim();
+  let shop = String(process.env.SHOPIFY_SYNC_SHOP || process.env.SHOPIFY_SHOP || "")
+    .trim()
+    .replace(/^https?:\/\//, "")
+    .replace(/\/.*$/, "");
+
+  if (shop === "yourcolorstyle.com" || shop === "www.yourcolorstyle.com") {
+    shop = "yourcolorstyle.myshopify.com";
+  }
 
   if (!shop) {
     throw new Error("Missing Shopify Admin configuration");
@@ -148,10 +155,20 @@ async function shopifyAdminGraphQLWithToken({ shop, accessToken, query, variable
     body: JSON.stringify({ query, variables })
   });
 
-  const json = await response.json().catch(() => ({}));
+  const responseText = await response.text();
+  let json = {};
+  try {
+    json = responseText ? JSON.parse(responseText) : {};
+  } catch (_error) {
+    json = {};
+  }
 
   if (!response.ok || json.errors) {
-    throw getShopifyGraphQLError(response, json);
+    const error = getShopifyGraphQLError(response, json);
+    if (!json.errors && responseText) {
+      error.message = `${error.message} (${response.status})`;
+    }
+    throw error;
   }
 
   return json.data;
