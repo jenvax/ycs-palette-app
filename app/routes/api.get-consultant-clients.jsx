@@ -195,12 +195,24 @@ export async function loader({ request }) {
         "ClientNotes",
         "AnalysisNotes"
       ]);
+      const shopifyCustomerId = firstField(fields, [
+        "ShopifyCustomerId",
+        "ShopifyCustomerID",
+        "CustomerId",
+        "CustomerID"
+      ]);
+      const shopifyCustomerGid = firstField(fields, [
+        "ShopifyCustomerGid",
+        "ShopifyCustomerGID"
+      ]);
 
       return {
         clientRecordId: fields.ClientRecordId || "",
         firstName: fields.FirstName || "",
         lastName: fields.LastName || "",
         email: fields.Email || "",
+        shopifyCustomerId: shopifyCustomerId || "",
+        shopifyCustomerGid: shopifyCustomerGid || "",
         paletteCode: paletteCode || "",
         paletteName: paletteName || paletteNameForCode(paletteCode) || "",
         analysisStatus: status || "New",

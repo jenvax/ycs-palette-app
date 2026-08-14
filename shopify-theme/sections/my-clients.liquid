@@ -89,6 +89,7 @@
   data-customer-id="{{ customer.id }}"
   data-can-manage-clients="{{ can_manage_clients }}"
   data-can-create-reports="{{ can_create_reports }}"
+  data-is-admin="{{ actual_is_admin }}"
   data-app-base-url="https://ycs-palette-app.vercel.app"
 >
   {% if customer == nil %}
@@ -151,6 +152,44 @@
       </div>
       <a href="/pages/my-clients?newClient=1{% if admin_view_as != '' %}&viewAs={{ admin_view_as }}{% endif %}" class="ycs-clients__button" data-ycs-add-client>Add Client</a>
     </div>
+
+    {% if actual_is_admin %}
+      <section class="ycs-clients__admin-grant" data-ycs-admin-palette-grant>
+        <div>
+          <p class="ycs-clients__eyebrow">Admin</p>
+          <h2>Grant Customer Palette Access</h2>
+        </div>
+        <form class="ycs-clients__admin-grant-form" data-ycs-admin-palette-grant-form>
+          <input class="ycs-clients__input" name="email" type="email" placeholder="Customer email" required>
+          <select class="ycs-clients__input" name="paletteCode" required>
+            <option value="">Color palette</option>
+            <option value="CCL">Clear Cool Light</option>
+            <option value="CCM">Clear Cool Medium</option>
+            <option value="CCD">Clear Cool Deep</option>
+            <option value="CWL">Clear Warm Light</option>
+            <option value="CWM">Clear Warm Medium</option>
+            <option value="CWD">Clear Warm Deep</option>
+            <option value="SCL">Soft Cool Light</option>
+            <option value="SCM">Soft Cool Medium</option>
+            <option value="SCD">Soft Cool Deep</option>
+            <option value="SWL">Soft Warm Light</option>
+            <option value="SWM">Soft Warm Medium</option>
+            <option value="SWD">Soft Warm Deep</option>
+            <option value="CWLG">Clear Warm Light for Gray Hair</option>
+            <option value="CWMG">Clear Warm Medium for Gray Hair</option>
+            <option value="CWDG">Clear Warm Deep for Gray Hair</option>
+            <option value="SWLG">Soft Warm Light for Gray Hair</option>
+            <option value="SWMG">Soft Warm Medium for Gray Hair</option>
+            <option value="SWDG">Soft Warm Deep for Gray Hair</option>
+            <option value="LO">Light Olive</option>
+            <option value="MO">Medium Olive</option>
+            <option value="DO">Deep Olive</option>
+          </select>
+          <button class="ycs-clients__button" type="submit">Grant Customer Access to Palette</button>
+        </form>
+        <div class="ycs-clients__admin-grant-status" data-ycs-admin-palette-grant-status hidden></div>
+      </section>
+    {% endif %}
 
     <div class="ycs-clients__toolbar" data-ycs-client-list-controls>
       <input
@@ -267,6 +306,33 @@
     margin: 0;
     color: #5f5a54;
     font-size: 14px;
+  }
+
+  .ycs-clients__admin-grant {
+    border: 1px solid #eadfd9;
+    border-radius: 8px;
+    padding: 18px;
+    margin-bottom: 22px;
+    background: #fffaf8;
+  }
+
+  .ycs-clients__admin-grant h2 {
+    margin: 2px 0 14px;
+    font-size: 20px;
+  }
+
+  .ycs-clients__admin-grant-form {
+    display: grid;
+    grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .ycs-clients__admin-grant-status,
+  .ycs-clients__grant-status {
+    margin-top: 12px;
+    font-size: 14px;
+    color: #554842;
   }
 
   .ycs-clients__toolbar {
@@ -2069,6 +2135,10 @@
     .ycs-report-builder__header,
     .ycs-report-builder__layout {
       display: block;
+    }
+
+    .ycs-clients__admin-grant-form {
+      grid-template-columns: 1fr;
     }
 
     .ycs-clients__button {

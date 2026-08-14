@@ -5,9 +5,11 @@
   const apiBase = (root.dataset.appBaseUrl || "").replace(/\/$/, "");
   const consultantId = root.dataset.customerId || "";
   const canCreateReports = root.dataset.canCreateReports === "true";
+  const isAdmin = root.dataset.isAdmin === "true";
   const gridEl = root.querySelector("[data-ycs-client-grid]");
   const detailEl = root.querySelector("[data-ycs-client-detail]");
   const statusEl = root.querySelector("[data-ycs-client-status]");
+  const adminGrantStatusEl = root.querySelector("[data-ycs-admin-palette-grant-status]");
   const controlsEl = root.querySelector("[data-ycs-client-list-controls]");
   const searchEl = root.querySelector("[data-ycs-client-search]");
   const paletteFilterEl = root.querySelector("[data-ycs-client-palette-filter]");
@@ -2324,6 +2326,26 @@
     statusEl.hidden = !visible;
   }
 
+  function setAdminGrantStatus(message, visible) {
+    if (!adminGrantStatusEl) return;
+    adminGrantStatusEl.textContent = message || "";
+    adminGrantStatusEl.hidden = !visible;
+  }
+
+  function grantNotificationText(notification) {
+    if (notification?.sent) return " Notification email sent.";
+    if (notification?.reason === "notification_webhook_not_configured") {
+      return " Notification email is not configured yet.";
+    }
+    if (notification?.reason) return " Notification email was not sent.";
+    return "";
+  }
+
+  function customerDisplayName(customer) {
+    const name = [customer?.firstName, customer?.lastName].filter(Boolean).join(" ").trim();
+    return name || customer?.email || "customer";
+  }
+
   function buildPaletteFilter() {
     const seen = new Map();
     clients.forEach((client) => {
@@ -2517,6 +2539,7 @@
 
   function renderEditForm(client, saveMessage, isCreate) {
     const selectedPaletteCode = String(client.paletteCode || "").trim().toUpperCase();
+    const canGrantPaletteAccess = isAdmin && !isCreate;
     return `
       <form class="ycs-clients__edit-form" ${isCreate ? 'id="ycs-create-client-form" data-ycs-client-create-form' : "data-ycs-client-edit-form"}>
         <input type="hidden" name="clientRecordId" value="${escapeHtml(client.clientRecordId)}">
@@ -2533,6 +2556,7 @@
         ${saveMessage ? `<p class="ycs-clients__save-message">${escapeHtml(saveMessage)}</p>` : ""}
         <div class="ycs-clients__form-actions">
           <button class="ycs-clients__button" type="submit">${isCreate ? "Create Client" : "Save Client"}</button>
+          ${canGrantPaletteAccess ? '<button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-grant-client-palette-access>Grant Customer Access to Palette</button>' : ""}
           <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-cancel-client-edit>Cancel</button>
         </div>
       </form>
@@ -2669,6 +2693,164 @@
     return promptDiscardClientChanges();
   }
 
+  async function lookupShopifyCustomerByEmail(email) {
+    const url = new URL(`${apiBase}/api/admin-customer-palette-access`);
+    url.searchParams.set("action", "lookup");
+    url.searchParams.set("viewerCustomerId", consultantId);
+    url.searchParams.set("consultantId", consultantId);
+    url.searchParams.set("email", email);
+
+    const response = await fetch(url.toString());
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Customer lookup failed");
+    }
+
+    return data;
+  }
+
+  async function grantPaletteAccess(payload) {
+    const response = await fetch(`${apiBase}/api/admin-customer-palette-access?action=grantPaletteAccess`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        viewerCustomerId: consultantId,
+        consultantId,
+        ...payload
+      })
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Palette access grant failed");
+    }
+
+    return data;
+  }
+
+  async function submitAdminPaletteGrant(form) {
+    if (!isAdmin) return;
+
+    const formData = new FormData(form);
+    const email = String(formData.get("email") || "").trim();
+    const paletteCode = String(formData.get("paletteCode") || "").trim().toUpperCase();
+    const paletteName = paletteNameForCode(paletteCode);
+
+    if (!email || !paletteCode) {
+      setAdminGrantStatus("Enter a customer email and select a palette.", true);
+      return;
+    }
+
+    setAdminGrantStatus("Looking up Shopify customer...", true);
+    const lookup = await lookupShopifyCustomerByEmail(email);
+
+    if (!lookup.customer) {
+      setAdminGrantStatus("No Shopify customer was found for that email.", true);
+      return;
+    }
+
+    let createClient = false;
+    if (!lookup.client) {
+      createClient = window.confirm("This Shopify customer is not currently in My Clients. Add them as a client?");
+    }
+
+    setAdminGrantStatus("Granting palette access...", true);
+    const result = await grantPaletteAccess({
+      customerId: lookup.customer.id,
+      email,
+      paletteCode,
+      paletteName,
+      clientRecordId: lookup.client?.clientRecordId || "",
+      createClient
+    });
+
+    if (result.client && clients.some((client) => client.clientRecordId === result.client.clientRecordId)) {
+      clients = clients.map((client) => (
+        client.clientRecordId === result.client.clientRecordId
+          ? {
+              ...client,
+              ...result.client,
+              paletteCode: result.paletteCode || paletteCode,
+              paletteName: result.paletteName || paletteName,
+              updatedAt: new Date().toISOString()
+            }
+          : client
+      ));
+      buildPaletteFilter();
+      renderCards();
+    } else if (result.client) {
+      clients = [{
+        ...result.client,
+        paletteCode: result.paletteCode || paletteCode,
+        paletteName: result.paletteName || paletteName,
+        analysisStatus: "New",
+        notes: "",
+        originalPhotoUrl: "",
+        adjustedPhotoUrl: "",
+        primaryPhotoUrl: "",
+        activePhotoUrl: "",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }, ...clients];
+      buildPaletteFilter();
+      renderCards();
+    }
+
+    setAdminGrantStatus(
+      `${customerDisplayName(result.customer)} now has access to ${result.paletteName || paletteName}.${grantNotificationText(result.notification)}`,
+      true
+    );
+  }
+
+  async function grantClientPaletteAccess(client) {
+    if (!isAdmin || !client) return;
+    const paletteCode = String(client.paletteCode || "").trim().toUpperCase();
+    const paletteName = paletteNameForCode(paletteCode);
+
+    if (!client.email) {
+      setStatus("Add the client's email before granting customer access.", true);
+      return;
+    }
+
+    if (!paletteCode) {
+      setStatus("Select a color palette before granting customer access.", true);
+      return;
+    }
+
+    setStatus("Looking up Shopify customer...", true);
+    const lookup = await lookupShopifyCustomerByEmail(client.email);
+
+    if (!lookup.customer) {
+      setStatus("No Shopify customer was found for this client's email.", true);
+      return;
+    }
+
+    setStatus("Granting customer access...", true);
+    const result = await grantPaletteAccess({
+      customerId: lookup.customer.id,
+      email: client.email,
+      paletteCode,
+      paletteName,
+      clientRecordId: client.clientRecordId,
+      createClient: false
+    });
+
+    clients = clients.map((entry) => (
+      entry.clientRecordId === client.clientRecordId
+        ? {
+            ...entry,
+            paletteCode: result.paletteCode || paletteCode,
+            paletteName: result.paletteName || paletteName,
+            shopifyCustomerId: result.customer?.id || entry.shopifyCustomerId || "",
+            shopifyCustomerGid: result.customer?.gid || entry.shopifyCustomerGid || "",
+            updatedAt: new Date().toISOString()
+          }
+        : entry
+    ));
+    showClientById(client.clientRecordId, true, `Customer access granted to ${result.paletteName || paletteName}.${grantNotificationText(result.notification)}`);
+  }
+
   async function saveClient(form) {
     const formData = new FormData(form);
     const payload = {
@@ -2713,6 +2895,20 @@
     };
     payload.paletteName = paletteNameForCode(payload.paletteCode);
 
+    let linkedShopifyCustomer = null;
+    if (isAdmin && payload.email) {
+      try {
+        const lookup = await lookupShopifyCustomerByEmail(payload.email);
+        linkedShopifyCustomer = lookup.customer || null;
+        if (linkedShopifyCustomer) {
+          payload.shopifyCustomerId = linkedShopifyCustomer.id || "";
+          payload.shopifyCustomerGid = linkedShopifyCustomer.gid || "";
+        }
+      } catch (error) {
+        console.warn("Shopify customer link lookup failed during client create:", error);
+      }
+    }
+
     setStatus("Creating client...", true);
     const response = await fetch(`${apiBase}/api/create-consultant-client`, {
       method: "POST",
@@ -2730,6 +2926,8 @@
       firstName: data.firstName || payload.firstName,
       lastName: data.lastName || payload.lastName,
       email: data.email || payload.email || "",
+      shopifyCustomerId: data.shopifyCustomerId || "",
+      shopifyCustomerGid: data.shopifyCustomerGid || "",
       paletteCode: data.paletteCode || payload.paletteCode || "",
       paletteName: data.paletteName || payload.paletteName || "",
       notes: data.notes || payload.notes || "",
@@ -2752,7 +2950,7 @@
       window.location.href = photoPrepUrl(client);
       return client;
     }
-    showClientById(client.clientRecordId, true, "Client created.");
+    showClientById(client.clientRecordId, true, linkedShopifyCustomer ? "Client created and linked to Shopify customer." : "Client created.");
     return client;
   }
 
@@ -2846,6 +3044,7 @@
     const deleteReportPageButton = event.target.closest("[data-ycs-delete-report-page]");
     const duplicateReportPageButton = event.target.closest("[data-ycs-duplicate-report-page]");
     const moveReportPageButton = event.target.closest("[data-ycs-move-report-page]");
+    const grantClientPaletteAccessButton = event.target.closest("[data-ycs-grant-client-palette-access]");
     const cancelClientEditButton = event.target.closest("[data-ycs-cancel-client-edit]");
     const leaveClientViewLink = event.target.closest("[data-ycs-leave-client-view]");
 
@@ -2881,6 +3080,22 @@
         const nextUrl = listUrl();
         window.history.pushState({}, "", nextUrl);
         renderCards();
+      }
+      return;
+    }
+
+    if (grantClientPaletteAccessButton) {
+      event.preventDefault();
+      const activeForm = getActiveClientForm();
+      const clientRecordId = activeForm?.querySelector("[name='clientRecordId']")?.value || "";
+      try {
+        if (activeForm) {
+          await saveClient(activeForm);
+        }
+        const client = clients.find((item) => item.clientRecordId === clientRecordId);
+        await grantClientPaletteAccess(client);
+      } catch (error) {
+        setStatus(error.message || "Unable to grant customer palette access.", true);
       }
       return;
     }
@@ -3308,10 +3523,17 @@
   });
 
   root.addEventListener("submit", (event) => {
+    const adminGrantForm = event.target.closest("[data-ycs-admin-palette-grant-form]");
     const createForm = event.target.closest("[data-ycs-client-create-form]");
     const editForm = event.target.closest("[data-ycs-client-edit-form]");
-    if (!createForm && !editForm) return;
+    if (!adminGrantForm && !createForm && !editForm) return;
     event.preventDefault();
+
+    if (adminGrantForm) {
+      submitAdminPaletteGrant(adminGrantForm)
+        .catch((error) => setAdminGrantStatus(error.message || "Palette access grant failed.", true));
+      return;
+    }
 
     if (createForm) {
       const redirectToPhotoPrep = event.submitter?.dataset?.ycsCreateClientPhotoPrep !== undefined ||

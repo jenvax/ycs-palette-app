@@ -21,6 +21,22 @@ function cleanString(value) {
   return stringValue || null;
 }
 
+function normalizeCustomerId(value) {
+  return String(value || "").replace(/^gid:\/\/shopify\/Customer\//, "").trim();
+}
+
+function isUnknownAirtableFieldError(data) {
+  const message = String(data?.error?.message || "").toLowerCase();
+  return data?.error?.type === "UNKNOWN_FIELD_NAME" || message.includes("unknown field name");
+}
+
+function removeOptionalShopifyClientFields(fields) {
+  const nextFields = { ...fields };
+  delete nextFields.ShopifyCustomerId;
+  delete nextFields.ShopifyCustomerGid;
+  return nextFields;
+}
+
 async function patchAirtableRecord({ airtableBase, airtableTable, airtableToken, recordId, fields }) {
   const response = await fetch(
     `https://api.airtable.com/v0/${airtableBase}/${airtableTable}/${recordId}`,
@@ -60,11 +76,15 @@ export async function action({ request }) {
       email,
       paletteCode,
       paletteName,
+      shopifyCustomerId,
+      shopifyCustomerGid,
       notes
     } = body;
     const hasEmail = Object.prototype.hasOwnProperty.call(body, "email");
     const hasPaletteCode = Object.prototype.hasOwnProperty.call(body, "paletteCode");
     const hasPaletteName = Object.prototype.hasOwnProperty.call(body, "paletteName");
+    const hasShopifyCustomerId = Object.prototype.hasOwnProperty.call(body, "shopifyCustomerId");
+    const hasShopifyCustomerGid = Object.prototype.hasOwnProperty.call(body, "shopifyCustomerGid");
     const hasNotes = Object.prototype.hasOwnProperty.call(body, "notes");
 
     const safeClientRecordId = cleanString(clientRecordId);
@@ -73,6 +93,8 @@ export async function action({ request }) {
     const safeEmail = cleanString(email);
     const safePaletteCode = cleanString(paletteCode);
     const safePaletteName = cleanString(paletteName);
+    const safeShopifyCustomerId = normalizeCustomerId(shopifyCustomerId);
+    const safeShopifyCustomerGid = cleanString(shopifyCustomerGid);
     const safeNotes = cleanString(notes);
 
     if (!safeClientRecordId) {
@@ -126,15 +148,27 @@ export async function action({ request }) {
     if (hasEmail) baseFields.Email = safeEmail || null;
     if (hasPaletteCode) baseFields.AnalysisResultCode = safePaletteCode || null;
     if (hasPaletteName) baseFields.AnalysisResultLabel = safePaletteName || null;
+    if (hasShopifyCustomerId) baseFields.ShopifyCustomerId = safeShopifyCustomerId || null;
+    if (hasShopifyCustomerGid) baseFields.ShopifyCustomerGid = safeShopifyCustomerGid || null;
     if (hasNotes) baseFields.Notes = safeNotes || null;
 
-    const { response: patchRes, data: patchData } = await patchAirtableRecord({
+    let { response: patchRes, data: patchData } = await patchAirtableRecord({
       airtableBase,
       airtableTable,
       airtableToken,
       recordId: existing.id,
       fields: baseFields
     });
+
+    if (!patchRes?.ok && isUnknownAirtableFieldError(patchData)) {
+      ({ response: patchRes, data: patchData } = await patchAirtableRecord({
+        airtableBase,
+        airtableTable,
+        airtableToken,
+        recordId: existing.id,
+        fields: removeOptionalShopifyClientFields(baseFields)
+      }));
+    }
 
     if (!patchRes?.ok) {
       console.error("Airtable patch error:", patchData);
@@ -152,6 +186,8 @@ export async function action({ request }) {
         firstName: safeFirstName,
         lastName: safeLastName,
         email: safeEmail,
+        shopifyCustomerId: safeShopifyCustomerId || "",
+        shopifyCustomerGid: safeShopifyCustomerGid || "",
         paletteCode: safePaletteCode || "",
         paletteName: safePaletteName || "",
         notes: safeNotes || "",

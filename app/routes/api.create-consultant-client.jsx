@@ -21,6 +21,22 @@ function cleanString(value) {
   return stringValue || null;
 }
 
+function normalizeCustomerId(value) {
+  return String(value || "").replace(/^gid:\/\/shopify\/Customer\//, "").trim();
+}
+
+function isUnknownAirtableFieldError(data) {
+  const message = String(data?.error?.message || "").toLowerCase();
+  return data?.error?.type === "UNKNOWN_FIELD_NAME" || message.includes("unknown field name");
+}
+
+function removeOptionalShopifyClientFields(fields) {
+  const nextFields = { ...fields };
+  delete nextFields.ShopifyCustomerId;
+  delete nextFields.ShopifyCustomerGid;
+  return nextFields;
+}
+
 function generateClientRecordId() {
   const now = new Date();
   const yyyy = now.getFullYear();
@@ -52,6 +68,8 @@ export async function action({ request }) {
       email,
       paletteCode,
       paletteName,
+      shopifyCustomerId,
+      shopifyCustomerGid,
       notes
     } = await request.json();
 
@@ -61,6 +79,8 @@ export async function action({ request }) {
     const safeEmail = cleanString(email);
     const safePaletteCode = cleanString(paletteCode);
     const safePaletteName = cleanString(paletteName);
+    const safeShopifyCustomerId = normalizeCustomerId(shopifyCustomerId);
+    const safeShopifyCustomerGid = cleanString(shopifyCustomerGid);
     const safeNotes = cleanString(notes);
 
     if (!safeConsultantId) {
@@ -98,6 +118,8 @@ export async function action({ request }) {
       Email: safeEmail || undefined,
       AnalysisResultCode: safePaletteCode || undefined,
       AnalysisResultLabel: safePaletteName || undefined,
+      ShopifyCustomerId: safeShopifyCustomerId || undefined,
+      ShopifyCustomerGid: safeShopifyCustomerGid || undefined,
       Notes: safeNotes || undefined
     };
 
@@ -107,7 +129,7 @@ export async function action({ request }) {
       }
     });
 
-    const createRes = await fetch(
+    let createRes = await fetch(
       `https://api.airtable.com/v0/${airtableBase}/${airtableTable}`,
       {
         method: "POST",
@@ -119,7 +141,25 @@ export async function action({ request }) {
       }
     );
 
-    const createData = await createRes.json();
+    let createData = await createRes.json();
+
+    if (!createRes.ok && isUnknownAirtableFieldError(createData)) {
+      const fallbackFields = removeOptionalShopifyClientFields(fields);
+
+      createRes = await fetch(
+        `https://api.airtable.com/v0/${airtableBase}/${airtableTable}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${airtableToken}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ fields: fallbackFields })
+        }
+      );
+
+      createData = await createRes.json();
+    }
 
     if (!createRes.ok) {
       console.error("Airtable create consultant client error:", createData);
@@ -138,6 +178,8 @@ export async function action({ request }) {
         firstName: safeFirstName,
         lastName: safeLastName,
         email: safeEmail,
+        shopifyCustomerId: safeShopifyCustomerId || "",
+        shopifyCustomerGid: safeShopifyCustomerGid || "",
         paletteCode: safePaletteCode || "",
         paletteName: safePaletteName || "",
         notes: safeNotes || ""
