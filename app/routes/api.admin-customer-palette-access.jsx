@@ -181,6 +181,32 @@ async function shopifyAdminGraphQLWithToken({ shop, accessToken, query, variable
   return json.data;
 }
 
+async function getShopifyAccessScopesWithToken({ shop, accessToken }) {
+  const response = await fetch(`https://${shop}/admin/oauth/access_scopes.json`, {
+    headers: {
+      "X-Shopify-Access-Token": accessToken
+    }
+  });
+  const responseText = await response.text();
+  let json = {};
+
+  try {
+    json = responseText ? JSON.parse(responseText) : {};
+  } catch (_error) {
+    json = {};
+  }
+
+  if (!response.ok) {
+    const error = new Error(json.errors || json.error || `Access scope lookup failed (${response.status})`);
+    error.status = response.status;
+    throw error;
+  }
+
+  return (json.access_scopes || [])
+    .map((scope) => String(scope.handle || "").trim())
+    .filter(Boolean);
+}
+
 async function shopifyAdminGraphQL({ query, variables = {} }) {
   const { shop } = shopifyConfig();
   const storedAccessToken = await getStoredShopifyAccessToken(shop);
@@ -320,9 +346,9 @@ function airtableConfig() {
   return { baseId, token, tableName: "ConsultantClients" };
 }
 
-async function airtableRequest({ method = "GET", recordId, params, body }) {
+async function airtableRequest({ method = "GET", recordId, params, body, tableName: tableNameOverride }) {
   const { baseId, token, tableName } = airtableConfig();
-  const encodedTable = encodeURIComponent(tableName);
+  const encodedTable = encodeURIComponent(tableNameOverride || tableName);
   const url = new URL(`https://api.airtable.com/v0/${baseId}/${encodedTable}${recordId ? `/${recordId}` : ""}`);
 
   if (params) {
@@ -340,6 +366,42 @@ async function airtableRequest({ method = "GET", recordId, params, body }) {
   const data = await response.json().catch(() => ({}));
 
   return { response, data };
+}
+
+async function requireAdminForDiagnostics(viewerCustomerId) {
+  try {
+    return await requireAdmin(viewerCustomerId);
+  } catch (shopifyError) {
+    const safeCustomerId = normalizeCustomerId(viewerCustomerId);
+    if (!safeCustomerId) throw shopifyError;
+
+    const { response, data } = await airtableRequest({
+      tableName: "CustomerDirectory",
+      params: {
+        filterByFormula: `{CustomerId}="${escapeFormulaString(safeCustomerId)}"`,
+        maxRecords: "1"
+      }
+    });
+
+    if (!response.ok) throw shopifyError;
+
+    const fields = data.records?.[0]?.fields || {};
+    const tags = String(fields.ShopifyTags || fields.Tags || "")
+      .split(",")
+      .map((tag) => tag.trim().toUpperCase())
+      .filter(Boolean);
+    const isAdmin =
+      tags.includes("YCS_ADMIN") ||
+      fields.IsAdmin === true ||
+      String(fields.IsAdmin || "").toLowerCase() === "true";
+
+    if (!isAdmin) throw shopifyError;
+
+    return {
+      id: safeCustomerId,
+      tags
+    };
+  }
 }
 
 function serializeClient(record) {
@@ -580,6 +642,82 @@ async function handleLookup({ request, corsHeaders }) {
   );
 }
 
+async function handleDiagnostics({ request, corsHeaders }) {
+  const url = new URL(request.url);
+  const viewerCustomerId = cleanString(url.searchParams.get("viewerCustomerId"));
+
+  await requireAdminForDiagnostics(viewerCustomerId);
+
+  const { shop } = shopifyConfig();
+  const diagnostics = {
+    shop,
+    env: {
+      hasShopifyAdminAccessToken: Boolean(process.env.SHOPIFY_ADMIN_ACCESS_TOKEN),
+      hasShopifyApiKey: Boolean(process.env.SHOPIFY_API_KEY),
+      hasShopifyApiSecret: Boolean(process.env.SHOPIFY_API_SECRET || process.env.SHOPIFY_API_TOKEN)
+    },
+    storedSession: {
+      configured: false,
+      ok: false,
+      scopes: [],
+      error: ""
+    },
+    staticToken: {
+      configured: Boolean(process.env.SHOPIFY_ADMIN_ACCESS_TOKEN),
+      ok: false,
+      scopes: [],
+      error: ""
+    },
+    generatedToken: {
+      configured: Boolean(process.env.SHOPIFY_API_KEY && (process.env.SHOPIFY_API_SECRET || process.env.SHOPIFY_API_TOKEN)),
+      ok: false,
+      scopes: [],
+      error: ""
+    }
+  };
+
+  const storedAccessToken = await getStoredShopifyAccessToken(shop);
+  diagnostics.storedSession.configured = Boolean(storedAccessToken);
+  if (storedAccessToken) {
+    try {
+      diagnostics.storedSession.scopes = await getShopifyAccessScopesWithToken({
+        shop,
+        accessToken: storedAccessToken
+      });
+      diagnostics.storedSession.ok = true;
+    } catch (error) {
+      diagnostics.storedSession.error = error.message || "Stored session failed";
+    }
+  }
+
+  if (process.env.SHOPIFY_ADMIN_ACCESS_TOKEN) {
+    try {
+      diagnostics.staticToken.scopes = await getShopifyAccessScopesWithToken({
+        shop,
+        accessToken: process.env.SHOPIFY_ADMIN_ACCESS_TOKEN
+      });
+      diagnostics.staticToken.ok = true;
+    } catch (error) {
+      diagnostics.staticToken.error = error.message || "Static token failed";
+    }
+  }
+
+  if (diagnostics.generatedToken.configured) {
+    try {
+      const generatedAccessToken = await getGeneratedShopifyAccessToken(shop);
+      diagnostics.generatedToken.scopes = await getShopifyAccessScopesWithToken({
+        shop,
+        accessToken: generatedAccessToken
+      });
+      diagnostics.generatedToken.ok = true;
+    } catch (error) {
+      diagnostics.generatedToken.error = error.message || "Generated token failed";
+    }
+  }
+
+  return Response.json(diagnostics, { headers: corsHeaders });
+}
+
 async function handleGrant({ request, corsHeaders }) {
   const body = await request.json();
   const viewerCustomerId = cleanString(body.viewerCustomerId);
@@ -670,6 +808,10 @@ export async function loader({ request }) {
 
     if (action === "lookup") {
       return await handleLookup({ request, corsHeaders });
+    }
+
+    if (action === "diagnostics") {
+      return await handleDiagnostics({ request, corsHeaders });
     }
 
     return Response.json(
