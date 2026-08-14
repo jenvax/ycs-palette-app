@@ -2347,13 +2347,13 @@
     const clientText = didCreateClient
       ? " Added to My Clients."
       : result.client
-        ? " My Clients record updated."
-        : " No My Clients record was created.";
+        ? " Client record updated."
+        : " No client record was created.";
     const accessText = result.alreadyHadAccess
       ? "already had access to"
       : "now has access to";
 
-    return `Palette assigned: ${customerName} ${accessText} ${paletteName}.${clientText}${grantNotificationText(result.notification)}`;
+    return `Palette assigned: ${customerName} ${accessText} ${paletteName}.${clientText}`;
   }
 
   function customerDisplayName(customer) {
