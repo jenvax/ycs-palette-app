@@ -1,5 +1,7 @@
 /* global process */
 
+import { sessionStorage } from "../shopify.server";
+
 const PALETTE_CODES = new Set([
   "CCL", "CCM", "CCD",
   "CWL", "CWM", "CWD",
@@ -123,7 +125,12 @@ async function getShopifyAccessToken({ shop, apiKey, apiSecret }) {
   return data.access_token;
 }
 
-async function getShopifyAdminAccessToken(shop) {
+async function getStoredShopifyAccessToken(shop) {
+  const session = await sessionStorage.loadSession(`offline_${shop}`).catch(() => null);
+  return session?.accessToken || "";
+}
+
+async function getGeneratedShopifyAccessToken(shop) {
   const apiSecret = process.env.SHOPIFY_API_SECRET || process.env.SHOPIFY_API_TOKEN;
 
   if (!process.env.SHOPIFY_API_KEY || !apiSecret) {
@@ -176,7 +183,21 @@ async function shopifyAdminGraphQLWithToken({ shop, accessToken, query, variable
 
 async function shopifyAdminGraphQL({ query, variables = {} }) {
   const { shop } = shopifyConfig();
+  const storedAccessToken = await getStoredShopifyAccessToken(shop);
   const staticAccessToken = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
+
+  if (storedAccessToken) {
+    try {
+      return await shopifyAdminGraphQLWithToken({
+        shop,
+        accessToken: storedAccessToken,
+        query,
+        variables
+      });
+    } catch (error) {
+      console.error("Stored Shopify Admin GraphQL session failed, trying static token:", error);
+    }
+  }
 
   if (staticAccessToken) {
     try {
@@ -191,7 +212,7 @@ async function shopifyAdminGraphQL({ query, variables = {} }) {
     }
   }
 
-  const accessToken = await getShopifyAdminAccessToken(shop);
+  const accessToken = await getGeneratedShopifyAccessToken(shop);
   return shopifyAdminGraphQLWithToken({
     shop,
     accessToken,
