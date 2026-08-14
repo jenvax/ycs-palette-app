@@ -2560,12 +2560,14 @@
   function renderEditForm(client, saveMessage, isCreate) {
     const selectedPaletteCode = String(client.paletteCode || "").trim().toUpperCase();
     const canGrantPaletteAccess = isAdmin && !isCreate;
+    const nameRequired = isCreate ? "" : " required";
+    const emailRequired = isCreate ? " required" : "";
     return `
       <form class="ycs-clients__edit-form" ${isCreate ? 'id="ycs-create-client-form" data-ycs-client-create-form' : "data-ycs-client-edit-form"}>
         <input type="hidden" name="clientRecordId" value="${escapeHtml(client.clientRecordId)}">
-        <input class="ycs-clients__input" name="firstName" value="${escapeHtml(client.firstName)}" placeholder="First name" required>
-        <input class="ycs-clients__input" name="lastName" value="${escapeHtml(client.lastName)}" placeholder="Last name" required>
-        <input class="ycs-clients__input" name="email" value="${escapeHtml(client.email)}" placeholder="Email" type="email">
+        <input class="ycs-clients__input" name="firstName" value="${escapeHtml(client.firstName)}" placeholder="First name"${nameRequired}>
+        <input class="ycs-clients__input" name="lastName" value="${escapeHtml(client.lastName)}" placeholder="Last name"${nameRequired}>
+        <input class="ycs-clients__input" name="email" value="${escapeHtml(client.email)}" placeholder="Email" type="email"${emailRequired}>
         <select class="ycs-clients__input" name="paletteCode">
           <option value="">Color type</option>
           ${YCS_PALETTE_OPTIONS.map(([code, label]) => `
@@ -2974,12 +2976,18 @@
         const lookup = await lookupShopifyCustomerByEmail(payload.email);
         linkedShopifyCustomer = lookup.customer || null;
         if (linkedShopifyCustomer) {
+          payload.firstName = payload.firstName || linkedShopifyCustomer.firstName || payload.email.split("@")[0];
+          payload.lastName = payload.lastName || linkedShopifyCustomer.lastName || "Customer";
           payload.shopifyCustomerId = linkedShopifyCustomer.id || "";
           payload.shopifyCustomerGid = linkedShopifyCustomer.gid || "";
         }
       } catch (error) {
         console.warn("Shopify customer link lookup failed during client create:", error);
       }
+    }
+
+    if (!payload.firstName || !payload.lastName) {
+      throw new Error("Enter first and last name, or use the email address of an existing Shopify customer.");
     }
 
     setStatus("Creating client...", true);
