@@ -2708,6 +2708,50 @@
     return promptDiscardClientChanges();
   }
 
+  function promptClientGrantChoice(customer, paletteName) {
+    return new Promise((resolve) => {
+      const overlay = document.createElement("div");
+      overlay.className = "ycs-clients-discard";
+      overlay.innerHTML = `
+        <div class="ycs-clients-discard__dialog" role="dialog" aria-modal="true" aria-labelledby="ycs-clients-grant-choice-title">
+          <h2 id="ycs-clients-grant-choice-title">Add to My Clients?</h2>
+          <p>${escapeHtml(customerDisplayName(customer))} is not currently in My Clients. Choose how to grant access to ${escapeHtml(paletteName)}.</p>
+          <div class="ycs-clients-discard__actions">
+            <button class="ycs-clients__button" type="button" data-ycs-grant-add-client>Add Client + Grant Access</button>
+            <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-grant-only>Grant Access Only</button>
+            <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-grant-close>Go Back</button>
+          </div>
+        </div>
+      `;
+
+      const close = (choice) => {
+        overlay.remove();
+        resolve(choice);
+      };
+
+      overlay.addEventListener("click", (event) => {
+        if (event.target.closest("[data-ycs-grant-add-client]")) {
+          close("create");
+          return;
+        }
+        if (event.target.closest("[data-ycs-grant-only]")) {
+          close("grant-only");
+          return;
+        }
+        if (event.target === overlay || event.target.closest("[data-ycs-grant-close]")) {
+          close("cancel");
+        }
+      });
+
+      overlay.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") close("cancel");
+      });
+
+      document.body.appendChild(overlay);
+      overlay.querySelector("[data-ycs-grant-add-client]")?.focus();
+    });
+  }
+
   async function lookupShopifyCustomerByEmail(email) {
     const url = new URL(`${apiBase}/api/admin-customer-palette-access`);
     url.searchParams.set("action", "lookup");
@@ -2767,9 +2811,12 @@
 
     let createClient = false;
     if (!lookup.client) {
-      createClient = window.confirm(
-        "This Shopify customer is not currently in My Clients.\n\nSelect OK to add them as a client and grant palette access.\nSelect Cancel to grant palette access only."
-      );
+      const grantChoice = await promptClientGrantChoice(lookup.customer, paletteName);
+      if (grantChoice === "cancel") {
+        setAdminGrantStatus("Palette access grant canceled.", true);
+        return;
+      }
+      createClient = grantChoice === "create";
     }
 
     setAdminGrantStatus("Granting palette access...", true);
