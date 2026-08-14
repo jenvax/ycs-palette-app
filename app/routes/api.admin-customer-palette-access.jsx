@@ -86,17 +86,59 @@ function generateClientRecordId() {
 
 function shopifyConfig() {
   const shop = String(process.env.SHOPIFY_SYNC_SHOP || process.env.SHOPIFY_SHOP || "").trim();
-  const accessToken = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
 
-  if (!shop || !accessToken) {
+  if (!shop) {
     throw new Error("Missing Shopify Admin configuration");
   }
 
-  return { shop, accessToken };
+  return { shop };
 }
 
-async function shopifyAdminGraphQL({ query, variables = {} }) {
-  const { shop, accessToken } = shopifyConfig();
+async function getShopifyAccessToken({ shop, apiKey, apiSecret }) {
+  const response = await fetch(`https://${shop}/admin/oauth/access_token`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      client_id: apiKey,
+      client_secret: apiSecret,
+      grant_type: "client_credentials"
+    })
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok || !data.access_token) {
+    throw new Error(data.errors || data.error || "Failed to generate Shopify access token");
+  }
+
+  return data.access_token;
+}
+
+async function getShopifyAdminAccessToken(shop) {
+  const apiSecret = process.env.SHOPIFY_API_SECRET || process.env.SHOPIFY_API_TOKEN;
+
+  if (!process.env.SHOPIFY_API_KEY || !apiSecret) {
+    throw new Error("Missing Shopify API credentials");
+  }
+
+  return getShopifyAccessToken({
+    shop,
+    apiKey: process.env.SHOPIFY_API_KEY,
+    apiSecret
+  });
+}
+
+function getShopifyGraphQLError(response, json) {
+  const graphQLError = json.errors?.[0];
+  const userMessage = graphQLError?.message || json.error || "Shopify Admin GraphQL request failed";
+  const error = new Error(userMessage);
+  error.status = response.status || 500;
+  return error;
+}
+
+async function shopifyAdminGraphQLWithToken({ shop, accessToken, query, variables = {} }) {
   const response = await fetch(`https://${shop}/admin/api/2026-04/graphql.json`, {
     method: "POST",
     headers: {
@@ -109,10 +151,36 @@ async function shopifyAdminGraphQL({ query, variables = {} }) {
   const json = await response.json().catch(() => ({}));
 
   if (!response.ok || json.errors) {
-    throw new Error(json.errors?.[0]?.message || "Shopify Admin GraphQL request failed");
+    throw getShopifyGraphQLError(response, json);
   }
 
   return json.data;
+}
+
+async function shopifyAdminGraphQL({ query, variables = {} }) {
+  const { shop } = shopifyConfig();
+  const staticAccessToken = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
+
+  if (staticAccessToken) {
+    try {
+      return await shopifyAdminGraphQLWithToken({
+        shop,
+        accessToken: staticAccessToken,
+        query,
+        variables
+      });
+    } catch (error) {
+      console.error("Static Shopify Admin GraphQL token failed, trying generated app token:", error);
+    }
+  }
+
+  const accessToken = await getShopifyAdminAccessToken(shop);
+  return shopifyAdminGraphQLWithToken({
+    shop,
+    accessToken,
+    query,
+    variables
+  });
 }
 
 function serializeCustomer(customer) {
