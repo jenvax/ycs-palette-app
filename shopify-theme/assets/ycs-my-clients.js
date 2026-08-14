@@ -9,6 +9,7 @@
   const gridEl = root.querySelector("[data-ycs-client-grid]");
   const detailEl = root.querySelector("[data-ycs-client-detail]");
   const statusEl = root.querySelector("[data-ycs-client-status]");
+  const adminGrantEl = root.querySelector("[data-ycs-admin-palette-grant]");
   const adminGrantStatusEl = root.querySelector("[data-ycs-admin-palette-grant-status]");
   const controlsEl = root.querySelector("[data-ycs-client-list-controls]");
   const searchEl = root.querySelector("[data-ycs-client-search]");
@@ -2313,6 +2314,10 @@
       addClientEl.hidden = mode !== "list";
     }
 
+    if (adminGrantEl) {
+      adminGrantEl.hidden = mode !== "list";
+    }
+
     if (mode === "detail" || mode === "edit") {
       setSelectedClientNav(client);
     } else {
@@ -2965,6 +2970,7 @@
     let linkedShopifyCustomer = null;
     if (isAdmin && payload.email) {
       try {
+        setStatus("Looking up Shopify customer...", true);
         const lookup = await lookupShopifyCustomerByEmail(payload.email);
         linkedShopifyCustomer = lookup.customer || null;
         if (linkedShopifyCustomer) {
