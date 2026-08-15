@@ -2357,7 +2357,7 @@
     setStatusHtml(`
       <div class="ycs-clients__credit-status">
         <p>${escapeHtml(message || "You need at least 1 color palette credit to give a customer palette access.")}</p>
-        <a class="ycs-clients__button" href="/products/color-palette-credits">Purchase Color Palette Credits</a>
+        <a class="ycs-clients__button" href="/products/color-palette-credits">Buy Credits</a>
       </div>
     `, true);
   }
@@ -2368,6 +2368,7 @@
     tradePaletteCreditBalanceLoaded = true;
     tradePaletteCreditBalanceLoading = false;
     updateTradePaletteCreditStatus();
+    updateTradePaletteAccessControls();
   }
 
   function renderTradePaletteCreditStatus() {
@@ -2375,17 +2376,44 @@
     const balance = Number(tradePaletteCreditBalance || 0);
     const isLoaded = tradePaletteCreditBalanceLoaded;
     const text = isLoaded
-      ? `${balance} color palette credit${balance === 1 ? "" : "s"} available`
+      ? `Palette credits: ${balance}`
       : "Checking color palette credits...";
     const purchaseButton = isLoaded && balance <= 0
-      ? '<a class="ycs-clients__button ycs-clients__button--secondary" href="/products/color-palette-credits">Purchase Color Palette Credits</a>'
+      ? '<a class="ycs-clients__button ycs-clients__button--secondary" href="/products/color-palette-credits">Buy Credits</a>'
       : "";
 
     return `
       <div class="ycs-clients__palette-credit-status${isLoaded && balance <= 0 ? " is-empty" : ""}" data-ycs-trade-palette-credit-status>
         <p>${escapeHtml(text)}</p>
-        ${purchaseButton}
+      ${purchaseButton}
       </div>
+    `;
+  }
+
+  function hasTradePaletteCredits() {
+    if (!isTrade || isAdmin) return true;
+    if (!tradePaletteCreditBalanceLoaded) return true;
+    return Number(tradePaletteCreditBalance || 0) > 0;
+  }
+
+  function renderClientPaletteAccessSection(client) {
+    const paletteCode = String(client.paletteCode || "").trim().toUpperCase();
+    const assignedPalette = paletteNameForCode(paletteCode) || paletteLabel(client) || "No color palette assigned";
+    const canGrantPaletteAccess = isAdmin || isTrade;
+    const isDisabled = canGrantPaletteAccess && !hasTradePaletteCredits();
+    if (!canGrantPaletteAccess) return "";
+
+    return `
+      <section class="ycs-clients__section ycs-clients__palette-access-section">
+        <div class="ycs-clients__section-header">
+          <h3>Client Palette Access</h3>
+          <p>Give this client digital access to their assigned color palette when you're ready.</p>
+        </div>
+        <div class="ycs-clients__assigned-palette">${escapeHtml(assignedPalette)}</div>
+        ${renderTradePaletteCreditStatus()}
+        <button class="ycs-clients__button" type="button" data-ycs-grant-client-palette-access${isDisabled ? " disabled" : ""}>Give Client Palette Access</button>
+        ${isDisabled ? '<p class="ycs-clients__access-required" data-ycs-palette-credit-required>1 palette credit required</p>' : ""}
+      </section>
     `;
   }
 
@@ -2396,6 +2424,20 @@
     wrapper.innerHTML = renderTradePaletteCreditStatus().trim();
     const nextNode = wrapper.firstElementChild;
     if (nextNode) statusNode.replaceWith(nextNode);
+  }
+
+  function updateTradePaletteAccessControls() {
+    const button = detailEl.querySelector("[data-ycs-grant-client-palette-access]");
+    const section = detailEl.querySelector(".ycs-clients__palette-access-section");
+    if (!button || !section || !isTrade || isAdmin) return;
+    const shouldDisable = !hasTradePaletteCredits();
+    button.disabled = shouldDisable;
+    const existingMessage = section.querySelector("[data-ycs-palette-credit-required]");
+    if (shouldDisable && !existingMessage) {
+      button.insertAdjacentHTML("afterend", '<p class="ycs-clients__access-required" data-ycs-palette-credit-required>1 palette credit required</p>');
+    } else if (!shouldDisable && existingMessage) {
+      existingMessage.remove();
+    }
   }
 
   async function loadTradePaletteCreditBalance() {
@@ -2587,10 +2629,9 @@
     setStatus("", false);
 
     const palette = paletteLabel(client);
-    const status = displayStatus(client.analysisStatus);
-    const created = formatDate(client.createdAt);
     const updated = formatDate(client.updatedAt);
     const hasPhoto = clientHasPhoto(client);
+    const headerPalette = palette || "No color palette assigned";
 
     detailEl.innerHTML = `
       <div class="ycs-clients__detail-header${editMode ? " ycs-clients__detail-header--edit" : ""}">
@@ -2599,23 +2640,29 @@
           : `<a class="ycs-clients__detail-photo ycs-clients__detail-photo--upload" href="${escapeHtml(photoPrepUrl(client))}" data-ycs-leave-client-view>
               <span class="ycs-client-card__placeholder">Upload Photo</span>
             </a>`}
-        <div>
+        <div class="ycs-clients__detail-main">
           <h2>${escapeHtml(displayName(client))}</h2>
           <div class="ycs-clients__detail-meta${editMode ? " ycs-clients__detail-meta--edit" : ""}">
             <div>${escapeHtml(client.email || "No email")}</div>
-            ${palette ? `<div>Palette: ${escapeHtml(palette)}</div>` : ""}
-            ${status ? `<div>Status: ${escapeHtml(status)}</div>` : ""}
-            ${created ? `<div>Created: ${escapeHtml(created)}</div>` : ""}
-            ${updated ? `<div>Updated: ${escapeHtml(updated)}</div>` : ""}
+            <div>${escapeHtml(headerPalette)}${updated ? ` · Updated ${escapeHtml(updated)}` : ""}</div>
             ${client.notes && !editMode ? `<div>Notes: ${escapeHtml(client.notes)}</div>` : ""}
           </div>
           <div class="ycs-clients__detail-actions">
             ${editMode ? "" : `<button class="ycs-clients__button" type="button" data-ycs-edit-client="${escapeHtml(client.clientRecordId)}">View/Edit</button>`}
-            <button class="ycs-clients__button ycs-clients__button--danger" type="button" data-ycs-delete-client="${escapeHtml(client.clientRecordId)}">Delete</button>
-            <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-manage-client-photos="${escapeHtml(client.clientRecordId)}">Manage Client Photos</button>
+            <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-manage-client-photos="${escapeHtml(client.clientRecordId)}">Manage Photos</button>
             ${canCreateReports ? `<button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-show-report-builder>Report Builder</button>` : ""}
           </div>
-          ${editMode ? renderEditForm(client, saveMessage) : ""}
+          ${editMode ? `
+            ${renderEditForm(client, saveMessage)}
+            ${renderClientPaletteAccessSection(client)}
+            <div class="ycs-clients__destructive-action">
+              <button class="ycs-clients__text-danger" type="button" data-ycs-delete-client="${escapeHtml(client.clientRecordId)}">Delete Client</button>
+            </div>
+          ` : `
+            <div class="ycs-clients__destructive-action">
+              <button class="ycs-clients__text-danger" type="button" data-ycs-delete-client="${escapeHtml(client.clientRecordId)}">Delete Client</button>
+            </div>
+          `}
         </div>
       </div>
       <div class="ycs-client-photo-manager" data-ycs-client-photo-manager hidden></div>
@@ -2675,32 +2722,44 @@
 
   function renderEditForm(client, saveMessage, isCreate) {
     const selectedPaletteCode = String(client.paletteCode || "").trim().toUpperCase();
-    const canGrantPaletteAccess = !isCreate && (isAdmin || isTrade);
+    const showPaletteEmailHelp = !isCreate && (isAdmin || isTrade);
     const nameRequired = isCreate ? "" : " required";
     const emailHelpId = "ycs-client-email-palette-access-help";
     return `
       <form class="ycs-clients__edit-form" ${isCreate ? 'id="ycs-create-client-form" data-ycs-client-create-form' : "data-ycs-client-edit-form"}>
+        ${!isCreate ? '<h3>Client Details</h3>' : ""}
         <input type="hidden" name="clientRecordId" value="${escapeHtml(client.clientRecordId)}">
-        <input class="ycs-clients__input" name="firstName" value="${escapeHtml(client.firstName)}" placeholder="First name"${nameRequired}>
-        <input class="ycs-clients__input" name="lastName" value="${escapeHtml(client.lastName)}" placeholder="Last name"${nameRequired}>
+        <label class="ycs-clients__field">
+          <span>First Name</span>
+          <input class="ycs-clients__input" name="firstName" value="${escapeHtml(client.firstName)}" placeholder="First name"${nameRequired}>
+        </label>
+        <label class="ycs-clients__field">
+          <span>Last Name</span>
+          <input class="ycs-clients__input" name="lastName" value="${escapeHtml(client.lastName)}" placeholder="Last name"${nameRequired}>
+        </label>
         <div class="ycs-clients__field" data-ycs-palette-email-field>
-          <input class="ycs-clients__input" name="email" value="${escapeHtml(client.email)}" placeholder="Email" type="email" data-ycs-client-email-input${canGrantPaletteAccess ? ` aria-describedby="${emailHelpId}"` : ""}>
-          ${canGrantPaletteAccess ? `<p class="ycs-clients__field-help" id="${emailHelpId}" data-ycs-palette-email-help>Email is only required when giving this client palette access.</p>` : ""}
+          <label for="ycs-client-email-input">Email</label>
+          <input class="ycs-clients__input" id="ycs-client-email-input" name="email" value="${escapeHtml(client.email)}" placeholder="Email" type="email" data-ycs-client-email-input${showPaletteEmailHelp ? ` aria-describedby="${emailHelpId}"` : ""}>
+          ${showPaletteEmailHelp ? `<p class="ycs-clients__field-help" id="${emailHelpId}" data-ycs-palette-email-help>Email is required before giving this client digital palette access.</p>` : ""}
         </div>
-        <select class="ycs-clients__input" name="paletteCode">
-          <option value="">Color type</option>
-          ${YCS_PALETTE_OPTIONS.map(([code, label]) => `
-            <option value="${escapeHtml(code)}"${code === selectedPaletteCode ? " selected" : ""}>${escapeHtml(label)}</option>
-          `).join("")}
-        </select>
+        <label class="ycs-clients__field">
+          <span>Color Palette</span>
+          <select class="ycs-clients__input" name="paletteCode">
+            <option value="">Color type</option>
+            ${YCS_PALETTE_OPTIONS.map(([code, label]) => `
+              <option value="${escapeHtml(code)}"${code === selectedPaletteCode ? " selected" : ""}>${escapeHtml(label)}</option>
+            `).join("")}
+          </select>
+        </label>
         ${renderShopifyPaletteTagEditor(client, isCreate)}
-        <textarea class="ycs-clients__textarea" name="notes" placeholder="Notes">${escapeHtml(client.notes)}</textarea>
+        <label class="ycs-clients__field">
+          <span>Notes</span>
+          <textarea class="ycs-clients__textarea" name="notes" placeholder="Notes">${escapeHtml(client.notes)}</textarea>
+        </label>
         ${saveMessage ? `<p class="ycs-clients__save-message">${escapeHtml(saveMessage)}</p>` : ""}
-        ${canGrantPaletteAccess ? renderTradePaletteCreditStatus() : ""}
         <div class="ycs-clients__form-actions">
-          <button class="ycs-clients__button" type="submit">${isCreate ? "Create Client" : "Save Client"}</button>
-          ${canGrantPaletteAccess ? '<button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-grant-client-palette-access>Give Color Palette to Customer</button>' : ""}
-          <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-cancel-client-edit>Cancel</button>
+          <button class="ycs-clients__button" type="submit">${isCreate ? "Create Client" : "Save Changes"}</button>
+          <button class="ycs-clients__button ycs-clients__button--tertiary" type="button" data-ycs-cancel-client-edit>Cancel</button>
         </div>
       </form>
     `;

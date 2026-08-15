@@ -567,6 +567,11 @@
     padding-inline: 8px;
   }
 
+  .ycs-clients__button[disabled] {
+    cursor: not-allowed;
+    opacity: .45;
+  }
+
   .ycs-clients__detail {
     border: 1px solid #ece7df;
     border-radius: 18px;
@@ -578,12 +583,12 @@
   .ycs-clients__detail-header {
     display: grid;
     grid-template-columns: 220px 1fr;
-    gap: 18px;
+    gap: 24px;
     align-items: start;
   }
 
   .ycs-clients__detail-header--edit {
-    gap: 14px;
+    gap: 24px;
   }
 
   .ycs-clients__detail-photo {
@@ -627,6 +632,12 @@
   .ycs-clients__detail h2 {
     margin: 0 0 6px;
     font-size: 30px;
+  }
+
+  .ycs-clients__detail-main {
+    display: grid;
+    gap: 16px;
+    max-width: 560px;
   }
 
   .ycs-clients__detail-meta {
@@ -780,9 +791,19 @@
 
   .ycs-clients__edit-form {
     display: grid;
-    gap: 7px;
-    margin-top: 10px;
-    max-width: 480px;
+    gap: 12px;
+    margin-top: 6px;
+    max-width: 520px;
+    border-top: 1px solid #ece7df;
+    padding-top: 18px;
+  }
+
+  .ycs-clients__edit-form h3,
+  .ycs-clients__section h3 {
+    margin: 0;
+    color: #2f2a25;
+    font-size: 18px;
+    line-height: 1.25;
   }
 
   .ycs-clients__edit-form .ycs-clients__input {
@@ -793,6 +814,14 @@
   .ycs-clients__field {
     display: grid;
     gap: 5px;
+  }
+
+  .ycs-clients__field > span,
+  .ycs-clients__field > label {
+    color: #5f5348;
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: .04em;
   }
 
   .ycs-clients__field.has-error .ycs-clients__input {
@@ -884,11 +913,18 @@
   .ycs-clients__form-actions {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: 10px;
+    margin-top: 2px;
   }
 
   .ycs-clients__form-actions .ycs-clients__button {
-    flex: 1 1 180px;
+    flex: 0 1 auto;
+  }
+
+  .ycs-clients__form-actions .ycs-clients__button--tertiary {
+    min-height: 34px;
+    padding-inline: 10px;
   }
 
   .ycs-clients__textarea {
@@ -901,6 +937,59 @@
     color: #4f8a5f;
     font-size: 13px;
     font-weight: 800;
+  }
+
+  .ycs-clients__section {
+    display: grid;
+    gap: 12px;
+    max-width: 520px;
+    border-top: 1px solid #ece7df;
+    padding-top: 18px;
+  }
+
+  .ycs-clients__section-header {
+    display: grid;
+    gap: 4px;
+  }
+
+  .ycs-clients__section-header p {
+    margin: 0;
+    color: #625c55;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .ycs-clients__assigned-palette {
+    color: #2f2a25;
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 1.2;
+  }
+
+  .ycs-clients__access-required {
+    margin: -4px 0 0;
+    color: #bd3155;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .ycs-clients__destructive-action {
+    max-width: 520px;
+    border-top: 1px solid #f2e3e7;
+    padding-top: 12px;
+  }
+
+  .ycs-clients__text-danger {
+    border: 0;
+    background: transparent;
+    color: #bd3155;
+    cursor: pointer;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 800;
+    padding: 0;
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
 
   .ycs-clients-discard {
