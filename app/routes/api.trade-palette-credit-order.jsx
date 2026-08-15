@@ -63,7 +63,8 @@ export async function loader({ request }) {
     return Response.json(
       {
         error: error.message || "Order credit lookup failed",
-        shopifyErrors: error.shopifyErrors || undefined
+        shopifyErrors: error.shopifyErrors || undefined,
+        authAttempts: error.authAttempts || undefined
       },
       { status: error.status || 500 }
     );
@@ -86,7 +87,8 @@ export async function action({ request }) {
     return Response.json(
       {
         error: error.message || "Order credit backfill failed",
-        shopifyErrors: error.shopifyErrors || undefined
+        shopifyErrors: error.shopifyErrors || undefined,
+        authAttempts: error.authAttempts || undefined
       },
       { status: error.status || 500 }
     );

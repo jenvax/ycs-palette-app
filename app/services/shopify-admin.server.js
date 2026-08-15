@@ -65,8 +65,13 @@ async function getGeneratedShopifyAccessToken(shop) {
 }
 
 function graphqlError(response, json) {
-  const graphQLError = json.errors?.[0];
-  const error = new Error(graphQLError?.message || json.error || "Shopify Admin GraphQL request failed");
+  const graphQLError = Array.isArray(json.errors) ? json.errors[0] : null;
+  const errorMessage =
+    graphQLError?.message ||
+    (typeof json.errors === "string" ? json.errors : "") ||
+    json.error ||
+    "Shopify Admin GraphQL request failed";
+  const error = new Error(errorMessage);
   error.status = response.status || 500;
   error.shopifyErrors = json.errors || [];
   error.shopifyResponse = json;
@@ -95,7 +100,19 @@ export async function shopifyAdminGraphQL({ query, variables = {} }) {
   const { shop } = shopifyConfig();
   const storedAccessToken = await getStoredShopifyAccessToken(shop);
   const staticAccessToken = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
-  let firstError = null;
+  const attempts = [];
+
+  function captureAttempt(source, error) {
+    attempts.push({
+      source,
+      configured: true,
+      status: error.status || 500,
+      message: error.message || "Shopify Admin GraphQL request failed",
+      shopifyErrors: error.shopifyErrors || []
+    });
+    error.authAttempts = attempts;
+    return error;
+  }
 
   if (storedAccessToken) {
     try {
@@ -106,9 +123,11 @@ export async function shopifyAdminGraphQL({ query, variables = {} }) {
         variables
       });
     } catch (error) {
-      firstError = firstError || error;
+      captureAttempt("storedSession", error);
       console.error("Stored Shopify Admin GraphQL session failed, trying static token:", error);
     }
+  } else {
+    attempts.push({ source: "storedSession", configured: false });
   }
 
   if (staticAccessToken) {
@@ -120,9 +139,11 @@ export async function shopifyAdminGraphQL({ query, variables = {} }) {
         variables
       });
     } catch (error) {
-      firstError = firstError || error;
+      captureAttempt("staticAccessToken", error);
       console.error("Static Shopify Admin GraphQL token failed, trying generated app token:", error);
     }
+  } else {
+    attempts.push({ source: "staticAccessToken", configured: false });
   }
 
   try {
@@ -134,6 +155,6 @@ export async function shopifyAdminGraphQL({ query, variables = {} }) {
       variables
     });
   } catch (error) {
-    throw firstError || error;
+    throw captureAttempt("generatedAppToken", error);
   }
 }
