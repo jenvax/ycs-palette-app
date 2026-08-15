@@ -835,7 +835,7 @@
 
   .ycs-clients__field {
     display: grid;
-    gap: 3px;
+    gap: 2px;
   }
 
   .ycs-clients__field > span,
@@ -852,11 +852,15 @@
   }
 
   .ycs-clients__field-help {
-    margin: 1px 0 0;
+    margin: 1px 0 0 !important;
     color: #7a6e63;
     font-size: 12px;
     font-weight: 700;
     line-height: 1.35;
+  }
+
+  .ycs-clients__field input + .ycs-clients__field-help {
+    margin-top: 2px !important;
   }
 
   .ycs-clients__field-help.is-error {

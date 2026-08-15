@@ -780,6 +780,7 @@ async function handleGrant({ request, corsHeaders }) {
   const paletteCode = normalizePaletteCode(body.paletteCode);
   const paletteName = cleanString(body.paletteName) || PALETTE_NAMES[paletteCode] || paletteCode;
   const shouldCreateClient = body.createClient === true;
+  const shouldUpdateClientPalette = body.updateClientPalette !== false;
 
   await requireAdmin(viewerCustomerId);
 
@@ -817,15 +818,18 @@ async function handleGrant({ request, corsHeaders }) {
       paletteName
     });
   } else if (client) {
+    const fields = {
+      Email: client.email || customer.email,
+      ShopifyCustomerId: customer.id,
+      ShopifyCustomerGid: customer.gid
+    };
+    if (shouldUpdateClientPalette) {
+      fields.AnalysisResultCode = paletteCode;
+      fields.AnalysisResultLabel = paletteName;
+    }
     client = await updateClientRecord({
       client,
-      fields: {
-        AnalysisResultCode: paletteCode,
-        AnalysisResultLabel: paletteName,
-        Email: client.email || customer.email,
-        ShopifyCustomerId: customer.id,
-        ShopifyCustomerGid: customer.gid
-      }
+      fields
     });
   }
 

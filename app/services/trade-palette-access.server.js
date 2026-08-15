@@ -170,14 +170,23 @@ export async function findClientForTrade({ consultantId, clientRecordId, fetcher
   return serializeClient(data.records?.[0]);
 }
 
-async function updateClientShopifyLink({ client, customer, paletteCode, paletteName, fetcher = fetch }) {
+async function updateClientShopifyLink({
+  client,
+  customer,
+  paletteCode,
+  paletteName,
+  updateClientPalette = true,
+  fetcher = fetch
+}) {
   const fields = {
-    AnalysisResultCode: paletteCode,
-    AnalysisResultLabel: paletteName,
     Email: client.email || customer.email,
     ShopifyCustomerId: customer.id,
     ShopifyCustomerGid: customer.gid
   };
+  if (updateClientPalette) {
+    fields.AnalysisResultCode = paletteCode;
+    fields.AnalysisResultLabel = paletteName;
+  }
 
   try {
     const data = await airtableRequest({
@@ -337,6 +346,7 @@ export async function giveTradeClientPaletteAccess({
   clientRecordId,
   paletteCode,
   paletteName,
+  updateClientPalette = true,
   fetcher = fetch
 }) {
   const safeConsultantId = cleanString(consultantId);
@@ -398,6 +408,7 @@ export async function giveTradeClientPaletteAccess({
     customer: tagResult.customer || customerResult.customer,
     paletteCode: safePaletteCode,
     paletteName: safePaletteName,
+    updateClientPalette,
     fetcher
   });
 

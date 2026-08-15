@@ -2390,6 +2390,20 @@
     `;
   }
 
+  function renderPaletteSelectOptions(selectedPaletteCode) {
+    const selectedCode = String(selectedPaletteCode || "").trim().toUpperCase();
+    return YCS_PALETTE_OPTIONS.map(([code, label]) => `
+      <option value="${escapeHtml(code)}"${code === selectedCode ? " selected" : ""}>${escapeHtml(label)}</option>
+    `).join("");
+  }
+
+  function getPaletteAccessSelection(client) {
+    const select = detailEl.querySelector("[data-ycs-palette-access-select]");
+    const paletteCode = String(select?.value || client.paletteCode || "").trim().toUpperCase();
+    const paletteName = paletteNameForCode(paletteCode);
+    return { paletteCode, paletteName };
+  }
+
   function hasTradePaletteCredits() {
     if (!isTrade || isAdmin) return true;
     if (!tradePaletteCreditBalanceLoaded) return true;
@@ -2398,7 +2412,6 @@
 
   function renderClientPaletteAccessSection(client) {
     const paletteCode = String(client.paletteCode || "").trim().toUpperCase();
-    const assignedPalette = paletteNameForCode(paletteCode) || paletteLabel(client) || "No color palette assigned";
     const canGrantPaletteAccess = isAdmin || isTrade;
     const isDisabled = canGrantPaletteAccess && !hasTradePaletteCredits();
     if (!canGrantPaletteAccess) return "";
@@ -2407,9 +2420,15 @@
       <section class="ycs-clients__section ycs-clients__palette-access-section">
         <div class="ycs-clients__section-header">
           <h3>Client Palette Access</h3>
-          <p>Give this client digital access to their assigned color palette when you're ready.</p>
+          <p>Give this client digital access to a color palette when you're ready.</p>
         </div>
-        <div class="ycs-clients__assigned-palette">${escapeHtml(assignedPalette)}</div>
+        <label class="ycs-clients__field">
+          <span>Color Palette</span>
+          <select class="ycs-clients__input" name="accessPaletteCode" data-ycs-palette-access-select>
+            <option value="">Select a color palette</option>
+            ${renderPaletteSelectOptions(paletteCode)}
+          </select>
+        </label>
         ${renderTradePaletteCreditStatus()}
         <button class="ycs-clients__button" type="button" data-ycs-grant-client-palette-access${isDisabled ? " disabled" : ""}>Give Client Palette Access</button>
         ${isDisabled ? '<p class="ycs-clients__access-required" data-ycs-palette-credit-required>1 palette credit required</p>' : ""}
@@ -2748,9 +2767,7 @@
           <span>Color Palette</span>
           <select class="ycs-clients__input" name="paletteCode">
             <option value="">Color type</option>
-            ${YCS_PALETTE_OPTIONS.map(([code, label]) => `
-              <option value="${escapeHtml(code)}"${code === selectedPaletteCode ? " selected" : ""}>${escapeHtml(label)}</option>
-            `).join("")}
+            ${renderPaletteSelectOptions(selectedPaletteCode)}
           </select>
         </label>
         ${renderShopifyPaletteTagEditor(client, isCreate)}
@@ -3190,8 +3207,7 @@
       return giveTradeClientPaletteAccessForTrade(client);
     }
     if (!isAdmin) return;
-    const paletteCode = String(client.paletteCode || "").trim().toUpperCase();
-    const paletteName = paletteNameForCode(paletteCode);
+    const { paletteCode, paletteName } = getPaletteAccessSelection(client);
 
     if (!client.email) {
       showPaletteAccessEmailRequirement();
@@ -3218,15 +3234,14 @@
       paletteCode,
       paletteName,
       clientRecordId: client.clientRecordId,
-      createClient: false
+      createClient: false,
+      updateClientPalette: false
     });
 
     clients = clients.map((entry) => (
       entry.clientRecordId === client.clientRecordId
         ? {
             ...entry,
-            paletteCode: result.paletteCode || paletteCode,
-            paletteName: result.paletteName || paletteName,
             shopifyCustomerId: result.customer?.id || entry.shopifyCustomerId || "",
             shopifyCustomerGid: result.customer?.gid || entry.shopifyCustomerGid || "",
             shopifyPaletteTags: paletteTagsFromCustomer(result.customer),
@@ -3241,8 +3256,7 @@
   }
 
   async function giveTradeClientPaletteAccessForTrade(client) {
-    const paletteCode = String(client.paletteCode || "").trim().toUpperCase();
-    const paletteName = paletteNameForCode(paletteCode);
+    const { paletteCode, paletteName } = getPaletteAccessSelection(client);
 
     if (!client.email) {
       showPaletteAccessEmailRequirement();
@@ -3264,7 +3278,8 @@
     const result = await giveTradeClientPaletteAccess({
       clientRecordId: client.clientRecordId,
       paletteCode,
-      paletteName
+      paletteName,
+      updateClientPalette: false
     });
 
     clients = clients.map((entry) => (
@@ -3272,8 +3287,8 @@
         ? {
             ...entry,
             ...(result.client || {}),
-            paletteCode: result.paletteCode || paletteCode,
-            paletteName: result.paletteName || paletteName,
+            paletteCode: entry.paletteCode,
+            paletteName: entry.paletteName,
             shopifyCustomerId: result.customer?.id || entry.shopifyCustomerId || "",
             shopifyCustomerGid: result.customer?.gid || entry.shopifyCustomerGid || "",
             updatedAt: new Date().toISOString()

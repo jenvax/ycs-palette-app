@@ -1464,7 +1464,8 @@ export async function action({ request }) {
         consultantId: loggedInCustomerId,
         clientRecordId: body.clientRecordId,
         paletteCode: body.paletteCode,
-        paletteName: body.paletteName
+        paletteName: body.paletteName,
+        updateClientPalette: body.updateClientPalette
       });
 
       return Response.json(result);
