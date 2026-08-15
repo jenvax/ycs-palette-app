@@ -30,6 +30,32 @@ function lineItemIdFromPayload(lineItem) {
     cleanString(lineItem.id);
 }
 
+export function orderToPaidWebhookPayload(order) {
+  if (!order) return null;
+
+  return {
+    id: cleanString(order.legacyResourceId) || normalizeShopifyGid(order.id, "Order"),
+    admin_graphql_api_id: order.id,
+    name: cleanString(order.name),
+    customer: order.customer
+      ? {
+          id: cleanString(order.customer.legacyResourceId) || normalizeShopifyGid(order.customer.id, "Customer"),
+          admin_graphql_api_id: order.customer.id,
+          email: cleanString(order.customer.email),
+          first_name: cleanString(order.customer.firstName),
+          last_name: cleanString(order.customer.lastName)
+        }
+      : null,
+    line_items: (order.lineItems?.nodes || []).map((lineItem) => ({
+      id: normalizeShopifyGid(lineItem.id, "LineItem"),
+      admin_graphql_api_id: lineItem.id,
+      sku: cleanString(lineItem.sku || lineItem.variant?.sku),
+      title: cleanString(lineItem.title),
+      quantity: Number(lineItem.quantity) || 1
+    }))
+  };
+}
+
 export function creditLineItemsFromOrder(payload) {
   return (Array.isArray(payload.line_items) ? payload.line_items : [])
     .map((lineItem) => {
