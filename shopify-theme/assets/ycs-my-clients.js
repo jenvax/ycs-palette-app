@@ -2640,7 +2640,7 @@
           : `<a class="ycs-clients__detail-photo ycs-clients__detail-photo--upload" href="${escapeHtml(photoPrepUrl(client))}" data-ycs-leave-client-view>
               <span class="ycs-client-card__placeholder">Upload Photo</span>
             </a>`}
-        <div class="ycs-clients__detail-main">
+        <div class="ycs-clients__detail-main${editMode ? " ycs-clients__detail-main--edit" : ""}">
           <h2>${escapeHtml(displayName(client))}</h2>
           <div class="ycs-clients__detail-meta${editMode ? " ycs-clients__detail-meta--edit" : ""}">
             <div>${escapeHtml(client.email || "No email")}</div>
@@ -2653,8 +2653,10 @@
             ${canCreateReports ? `<button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-show-report-builder>Report Builder</button>` : ""}
           </div>
           ${editMode ? `
-            ${renderEditForm(client, saveMessage)}
-            ${renderClientPaletteAccessSection(client)}
+            <div class="ycs-clients__edit-layout">
+              ${renderEditForm(client, saveMessage)}
+              ${renderClientPaletteAccessSection(client)}
+            </div>
             <div class="ycs-clients__destructive-action">
               <button class="ycs-clients__text-danger" type="button" data-ycs-delete-client="${escapeHtml(client.clientRecordId)}">Delete Client</button>
             </div>

@@ -630,24 +630,30 @@
   }
 
   .ycs-clients__detail h2 {
-    margin: 0 0 6px;
+    margin: 0;
     font-size: 30px;
+    line-height: 1.12;
   }
 
   .ycs-clients__detail-main {
     display: grid;
-    gap: 16px;
+    gap: 10px;
     max-width: 560px;
+  }
+
+  .ycs-clients__detail-main--edit {
+    max-width: 980px;
   }
 
   .ycs-clients__detail-meta {
     color: #625c55;
-    line-height: 1.5;
+    line-height: 1.35;
   }
 
   .ycs-clients__detail-meta--edit {
     font-size: 13px;
-    line-height: 1.35;
+    line-height: 1.25;
+    margin-top: -4px;
   }
 
   .ycs-clients__photo-list {
@@ -791,11 +797,27 @@
 
   .ycs-clients__edit-form {
     display: grid;
-    gap: 12px;
+    gap: 8px;
     margin-top: 6px;
     max-width: 520px;
     border-top: 1px solid #ece7df;
-    padding-top: 18px;
+    padding-top: 14px;
+  }
+
+  .ycs-clients__edit-layout {
+    display: grid;
+    grid-template-columns: minmax(320px, 520px) minmax(260px, 340px);
+    gap: 20px;
+    align-items: start;
+    border-top: 1px solid #ece7df;
+    padding-top: 14px;
+  }
+
+  .ycs-clients__edit-layout .ycs-clients__edit-form,
+  .ycs-clients__edit-layout .ycs-clients__section {
+    border-top: 0;
+    margin-top: 0;
+    padding-top: 0;
   }
 
   .ycs-clients__edit-form h3,
@@ -807,13 +829,13 @@
   }
 
   .ycs-clients__edit-form .ycs-clients__input {
-    min-height: 38px;
+    min-height: 36px;
     padding: 8px 12px;
   }
 
   .ycs-clients__field {
     display: grid;
-    gap: 5px;
+    gap: 3px;
   }
 
   .ycs-clients__field > span,
@@ -830,7 +852,7 @@
   }
 
   .ycs-clients__field-help {
-    margin: 0;
+    margin: 1px 0 0;
     color: #7a6e63;
     font-size: 12px;
     font-weight: 700;
@@ -928,7 +950,7 @@
   }
 
   .ycs-clients__textarea {
-    min-height: 78px;
+    min-height: 72px;
     resize: vertical;
   }
 
@@ -941,10 +963,10 @@
 
   .ycs-clients__section {
     display: grid;
-    gap: 12px;
+    gap: 10px;
     max-width: 520px;
     border-top: 1px solid #ece7df;
-    padding-top: 18px;
+    padding-top: 14px;
   }
 
   .ycs-clients__section-header {
@@ -2341,6 +2363,10 @@
   }
 
   @media (max-width: 1100px) {
+    .ycs-clients__edit-layout {
+      grid-template-columns: minmax(320px, 1fr) minmax(240px, 320px);
+    }
+
     .ycs-report-builder__layout {
       grid-template-columns: 154px minmax(0, 1fr);
     }
@@ -2359,6 +2385,12 @@
     .ycs-report-form {
       max-height: none;
       padding-right: 0;
+    }
+  }
+
+  @media (max-width: 900px) {
+    .ycs-clients__edit-layout {
+      grid-template-columns: 1fr;
     }
   }
 
