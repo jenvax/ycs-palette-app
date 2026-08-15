@@ -758,6 +758,28 @@
     padding: 8px 12px;
   }
 
+  .ycs-clients__field {
+    display: grid;
+    gap: 5px;
+  }
+
+  .ycs-clients__field.has-error .ycs-clients__input {
+    border-color: #bd3155;
+    box-shadow: 0 0 0 2px rgba(189, 49, 85, .12);
+  }
+
+  .ycs-clients__field-help {
+    margin: 0;
+    color: #7a6e63;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.35;
+  }
+
+  .ycs-clients__field-help.is-error {
+    color: #bd3155;
+  }
+
   .ycs-clients__shopify-tags {
     border: 1px solid #eadfd9;
     border-radius: 8px;

@@ -2359,6 +2359,25 @@
     `, true);
   }
 
+  function setPaletteAccessEmailHelp(message, isError) {
+    const helpEl = detailEl.querySelector("[data-ycs-palette-email-help]");
+    const fieldEl = detailEl.querySelector("[data-ycs-palette-email-field]");
+    const emailInput = detailEl.querySelector("[data-ycs-client-email-input]");
+    if (helpEl) {
+      helpEl.textContent = message || "Email is only required when giving this client palette access.";
+      helpEl.classList.toggle("is-error", Boolean(isError));
+    }
+    if (fieldEl) fieldEl.classList.toggle("has-error", Boolean(isError));
+    if (emailInput) emailInput.setAttribute("aria-invalid", isError ? "true" : "false");
+  }
+
+  function showPaletteAccessEmailRequirement() {
+    setStatus("", false);
+    setPaletteAccessEmailHelp("Add the client's email to give them palette access.", true);
+    const emailInput = detailEl.querySelector("[data-ycs-client-email-input]");
+    if (emailInput) emailInput.focus();
+  }
+
   function setAdminGrantStatus(message, visible) {
     if (!adminGrantStatusEl) return;
     adminGrantStatusEl.textContent = message || "";
@@ -2601,12 +2620,16 @@
     const selectedPaletteCode = String(client.paletteCode || "").trim().toUpperCase();
     const canGrantPaletteAccess = !isCreate && (isAdmin || isTrade);
     const nameRequired = isCreate ? "" : " required";
+    const emailHelpId = "ycs-client-email-palette-access-help";
     return `
       <form class="ycs-clients__edit-form" ${isCreate ? 'id="ycs-create-client-form" data-ycs-client-create-form' : "data-ycs-client-edit-form"}>
         <input type="hidden" name="clientRecordId" value="${escapeHtml(client.clientRecordId)}">
         <input class="ycs-clients__input" name="firstName" value="${escapeHtml(client.firstName)}" placeholder="First name"${nameRequired}>
         <input class="ycs-clients__input" name="lastName" value="${escapeHtml(client.lastName)}" placeholder="Last name"${nameRequired}>
-        <input class="ycs-clients__input" name="email" value="${escapeHtml(client.email)}" placeholder="Email" type="email">
+        <div class="ycs-clients__field" data-ycs-palette-email-field>
+          <input class="ycs-clients__input" name="email" value="${escapeHtml(client.email)}" placeholder="Email" type="email" data-ycs-client-email-input${canGrantPaletteAccess ? ` aria-describedby="${emailHelpId}"` : ""}>
+          ${canGrantPaletteAccess ? `<p class="ycs-clients__field-help" id="${emailHelpId}" data-ycs-palette-email-help>Email is only required when giving this client palette access.</p>` : ""}
+        </div>
         <select class="ycs-clients__input" name="paletteCode">
           <option value="">Color type</option>
           ${YCS_PALETTE_OPTIONS.map(([code, label]) => `
@@ -3051,7 +3074,7 @@
     const paletteName = paletteNameForCode(paletteCode);
 
     if (!client.email) {
-      setStatus("Add the client's email before granting customer access.", true);
+      showPaletteAccessEmailRequirement();
       return;
     }
 
@@ -3102,7 +3125,7 @@
     const paletteName = paletteNameForCode(paletteCode);
 
     if (!client.email) {
-      setStatus("Add the client's email before giving customer access.", true);
+      showPaletteAccessEmailRequirement();
       return;
     }
 
@@ -3835,6 +3858,10 @@
   });
 
   root.addEventListener("input", (event) => {
+    if (event.target.closest("[data-ycs-client-email-input]")) {
+      setPaletteAccessEmailHelp("", false);
+    }
+
     if (!canCreateReports) return;
     if (!event.target.closest("[data-ycs-report-form]")) return;
     updateReportPreview();
