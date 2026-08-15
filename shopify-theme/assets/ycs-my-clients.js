@@ -2601,13 +2601,12 @@
     const selectedPaletteCode = String(client.paletteCode || "").trim().toUpperCase();
     const canGrantPaletteAccess = !isCreate && (isAdmin || isTrade);
     const nameRequired = isCreate ? "" : " required";
-    const emailRequired = isCreate ? " required" : "";
     return `
       <form class="ycs-clients__edit-form" ${isCreate ? 'id="ycs-create-client-form" data-ycs-client-create-form' : "data-ycs-client-edit-form"}>
         <input type="hidden" name="clientRecordId" value="${escapeHtml(client.clientRecordId)}">
         <input class="ycs-clients__input" name="firstName" value="${escapeHtml(client.firstName)}" placeholder="First name"${nameRequired}>
         <input class="ycs-clients__input" name="lastName" value="${escapeHtml(client.lastName)}" placeholder="Last name"${nameRequired}>
-        <input class="ycs-clients__input" name="email" value="${escapeHtml(client.email)}" placeholder="Email" type="email"${emailRequired}>
+        <input class="ycs-clients__input" name="email" value="${escapeHtml(client.email)}" placeholder="Email" type="email">
         <select class="ycs-clients__input" name="paletteCode">
           <option value="">Color type</option>
           ${YCS_PALETTE_OPTIONS.map(([code, label]) => `
