@@ -325,6 +325,66 @@ async function addPaletteTagToCustomer({ customer, paletteCode }) {
   };
 }
 
+function shouldSendLegacyAccountInvite(customer) {
+  const state = cleanString(customer?.state).toUpperCase();
+  return Boolean(customer?.gid && customer?.email && (state === "DISABLED" || state === "INVITED"));
+}
+
+async function sendLegacyAccountInviteEmail(customer) {
+  if (!shouldSendLegacyAccountInvite(customer)) {
+    return {
+      sent: false,
+      skipped: true,
+      reason: customer?.state ? `account_${cleanString(customer.state).toLowerCase()}` : "missing_customer"
+    };
+  }
+
+  try {
+    const data = await shopifyAdminGraphQL({
+      query: `
+        mutation sendCustomerAccountInvite($customerId: ID!) {
+          customerSendAccountInviteEmail(customerId: $customerId) {
+            customer {
+              id
+              email
+              state
+            }
+            userErrors {
+              field
+              message
+            }
+          }
+        }
+      `,
+      variables: {
+        customerId: customer.gid
+      }
+    });
+
+    const userErrors = data.customerSendAccountInviteEmail?.userErrors || [];
+    if (userErrors.length) {
+      return {
+        sent: false,
+        skipped: false,
+        reason: "shopify_user_error",
+        message: userErrors[0].message || "Unable to send account invite"
+      };
+    }
+
+    return {
+      sent: true,
+      customer: serializeCustomer(data.customerSendAccountInviteEmail?.customer) || customer
+    };
+  } catch (error) {
+    return {
+      sent: false,
+      skipped: false,
+      reason: "shopify_request_failed",
+      message: error.message || "Unable to send account invite"
+    };
+  }
+}
+
 async function findOrCreateShopifyCustomerForClient({ client, paletteCode }) {
   const existing = await findShopifyCustomerByEmail(client.email);
   if (existing) {
@@ -403,6 +463,7 @@ export async function giveTradeClientPaletteAccess({
         customer: customerResult.customer,
         paletteCode: safePaletteCode
       });
+  const accountInvite = await sendLegacyAccountInviteEmail(tagResult.customer || customerResult.customer);
   const updatedClient = await updateClientShopifyLink({
     client,
     customer: tagResult.customer || customerResult.customer,
@@ -445,6 +506,7 @@ export async function giveTradeClientPaletteAccess({
     paletteName: safePaletteName,
     createdCustomer: customerResult.createdCustomer,
     alreadyHadAccess: tagResult.alreadyHadAccess,
+    accountInvite,
     creditUsed: creditEventCreated,
     creditEvent: usageEvent,
     balance: endingBalance.balance

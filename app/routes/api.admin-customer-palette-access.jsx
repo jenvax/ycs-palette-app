@@ -591,6 +591,66 @@ async function addPaletteTagToCustomer({ customer, paletteCode }) {
   };
 }
 
+function shouldSendLegacyAccountInvite(customer) {
+  const state = String(customer?.state || "").trim().toUpperCase();
+  return Boolean(customer?.gid && customer?.email && (state === "DISABLED" || state === "INVITED"));
+}
+
+async function sendLegacyAccountInviteEmail(customer) {
+  if (!shouldSendLegacyAccountInvite(customer)) {
+    return {
+      sent: false,
+      skipped: true,
+      reason: customer?.state ? `account_${String(customer.state || "").trim().toLowerCase()}` : "missing_customer"
+    };
+  }
+
+  try {
+    const data = await shopifyAdminGraphQL({
+      query: `
+        mutation sendCustomerAccountInvite($customerId: ID!) {
+          customerSendAccountInviteEmail(customerId: $customerId) {
+            customer {
+              id
+              email
+              state
+            }
+            userErrors {
+              field
+              message
+            }
+          }
+        }
+      `,
+      variables: {
+        customerId: customer.gid
+      }
+    });
+
+    const userErrors = data.customerSendAccountInviteEmail?.userErrors || [];
+    if (userErrors.length) {
+      return {
+        sent: false,
+        skipped: false,
+        reason: "shopify_user_error",
+        message: userErrors[0].message || "Unable to send account invite"
+      };
+    }
+
+    return {
+      sent: true,
+      customer: serializeCustomer(data.customerSendAccountInviteEmail?.customer) || customer
+    };
+  } catch (error) {
+    return {
+      sent: false,
+      skipped: false,
+      reason: "shopify_request_failed",
+      message: error.message || "Unable to send account invite"
+    };
+  }
+}
+
 async function removePaletteTagsFromCustomer({ customer, paletteCodes }) {
   const tags = uniquePaletteCodes(paletteCodes);
   if (!tags.length) {
@@ -834,6 +894,7 @@ async function handleGrant({ request, corsHeaders }) {
   }
 
   const tagResult = await addPaletteTagToCustomer({ customer, paletteCode });
+  const accountInvite = await sendLegacyAccountInviteEmail(tagResult.customer || customer);
   const notification = await sendPaletteNotification({
     customer: tagResult.customer || customer,
     paletteCode,
@@ -848,6 +909,7 @@ async function handleGrant({ request, corsHeaders }) {
       paletteCode,
       paletteName,
       alreadyHadAccess: tagResult.alreadyHadAccess,
+      accountInvite,
       notification
     },
     { headers: corsHeaders }
