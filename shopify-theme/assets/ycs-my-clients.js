@@ -2344,6 +2344,21 @@
     statusEl.hidden = !visible;
   }
 
+  function setStatusHtml(html, visible) {
+    if (!statusEl) return;
+    statusEl.innerHTML = html || "";
+    statusEl.hidden = !visible;
+  }
+
+  function showPurchaseCreditsStatus(message) {
+    setStatusHtml(`
+      <div class="ycs-clients__credit-status">
+        <p>${escapeHtml(message || "You need at least 1 color palette credit to give a customer palette access.")}</p>
+        <a class="ycs-clients__button" href="/products/color-palette-credits">Purchase Color Palette Credits</a>
+      </div>
+    `, true);
+  }
+
   function setAdminGrantStatus(message, visible) {
     if (!adminGrantStatusEl) return;
     adminGrantStatusEl.textContent = message || "";
@@ -2917,7 +2932,11 @@
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error || "Unable to give customer palette access.");
+      const error = new Error(data.error || "Unable to give customer palette access.");
+      error.status = response.status;
+      error.balance = data.balance;
+      error.needsCredits = response.status === 402;
+      throw error;
     }
 
     return data;
@@ -3430,7 +3449,11 @@
         const client = clients.find((item) => item.clientRecordId === clientRecordId);
         await grantClientPaletteAccess(client);
       } catch (error) {
-        setStatus(error.message || "Unable to grant customer palette access.", true);
+        if (error.needsCredits) {
+          showPurchaseCreditsStatus(error.message);
+        } else {
+          setStatus(error.message || "Unable to grant customer palette access.", true);
+        }
       }
       return;
     }
