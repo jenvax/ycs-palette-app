@@ -22,6 +22,9 @@
   const photoPrepNavLink = root.querySelector("[data-ycs-clients-nav-photo-prep]");
   const structuredNavLink = root.querySelector("[data-ycs-clients-nav-structured]");
   const lipNavLink = root.querySelector("[data-ycs-clients-nav-lip]");
+  let tradePaletteCreditBalance = null;
+  let tradePaletteCreditBalanceLoaded = false;
+  let tradePaletteCreditBalanceLoading = false;
 
   const YCS_PALETTE_OPTIONS = [
     ["CCL", "Clear Cool Light"],
@@ -2359,6 +2362,60 @@
     `, true);
   }
 
+  function setTradePaletteCreditBalance(balance) {
+    const numericBalance = Number(balance);
+    tradePaletteCreditBalance = Number.isFinite(numericBalance) ? numericBalance : 0;
+    tradePaletteCreditBalanceLoaded = true;
+    tradePaletteCreditBalanceLoading = false;
+    updateTradePaletteCreditStatus();
+  }
+
+  function renderTradePaletteCreditStatus() {
+    if (!isTrade || isAdmin) return "";
+    const balance = Number(tradePaletteCreditBalance || 0);
+    const isLoaded = tradePaletteCreditBalanceLoaded;
+    const text = isLoaded
+      ? `${balance} color palette credit${balance === 1 ? "" : "s"} available`
+      : "Checking color palette credits...";
+    const purchaseButton = isLoaded && balance <= 0
+      ? '<a class="ycs-clients__button ycs-clients__button--secondary" href="/products/color-palette-credits">Purchase Color Palette Credits</a>'
+      : "";
+
+    return `
+      <div class="ycs-clients__palette-credit-status${isLoaded && balance <= 0 ? " is-empty" : ""}" data-ycs-trade-palette-credit-status>
+        <p>${escapeHtml(text)}</p>
+        ${purchaseButton}
+      </div>
+    `;
+  }
+
+  function updateTradePaletteCreditStatus() {
+    const statusNode = detailEl.querySelector("[data-ycs-trade-palette-credit-status]");
+    if (!statusNode) return;
+    const wrapper = document.createElement("div");
+    wrapper.innerHTML = renderTradePaletteCreditStatus().trim();
+    const nextNode = wrapper.firstElementChild;
+    if (nextNode) statusNode.replaceWith(nextNode);
+  }
+
+  async function loadTradePaletteCreditBalance() {
+    if (!isTrade || isAdmin || !consultantId || tradePaletteCreditBalanceLoading) return;
+    tradePaletteCreditBalanceLoading = true;
+    try {
+      const response = await fetch(`${apiBase}/api/trade-palette-credits?tradeCustomerId=${encodeURIComponent(consultantId)}`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Credit balance lookup failed");
+      setTradePaletteCreditBalance(data.balance);
+    } catch (error) {
+      tradePaletteCreditBalanceLoading = false;
+      const statusNode = detailEl.querySelector("[data-ycs-trade-palette-credit-status]");
+      if (statusNode) {
+        statusNode.classList.add("is-empty");
+        statusNode.innerHTML = "<p>Unable to load color palette credits.</p>";
+      }
+    }
+  }
+
   function setPaletteAccessEmailHelp(message, isError) {
     const helpEl = detailEl.querySelector("[data-ycs-palette-email-help]");
     const fieldEl = detailEl.querySelector("[data-ycs-palette-email-field]");
@@ -2639,6 +2696,7 @@
         ${renderShopifyPaletteTagEditor(client, isCreate)}
         <textarea class="ycs-clients__textarea" name="notes" placeholder="Notes">${escapeHtml(client.notes)}</textarea>
         ${saveMessage ? `<p class="ycs-clients__save-message">${escapeHtml(saveMessage)}</p>` : ""}
+        ${canGrantPaletteAccess ? renderTradePaletteCreditStatus() : ""}
         <div class="ycs-clients__form-actions">
           <button class="ycs-clients__button" type="submit">${isCreate ? "Create Client" : "Save Client"}</button>
           ${canGrantPaletteAccess ? '<button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-grant-client-palette-access>Give Color Palette to Customer</button>' : ""}
@@ -2693,6 +2751,7 @@
     }
 
     renderDetail(client, editMode, saveMessage);
+    if (editMode) loadTradePaletteCreditBalance();
   }
 
   async function showClientPhotoManager(clientRecordId) {
@@ -3167,6 +3226,7 @@
     const customerText = result.createdCustomer ? " A customer account was created." : "";
     const creditText = result.alreadyHadAccess ? " No credit was used because this customer already had access." : remainingText;
     const completionMessage = `Palette assigned: ${displayName(client)} now has access to ${paletteName}.${customerText}${creditText}`;
+    if (Number.isFinite(Number(result.balance))) setTradePaletteCreditBalance(result.balance);
     showClientById(client.clientRecordId, true, completionMessage);
     window.alert(completionMessage);
   }

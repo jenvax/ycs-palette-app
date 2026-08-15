@@ -382,6 +382,38 @@
     margin: 0;
   }
 
+  .ycs-clients__palette-credit-status {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    border: 1px solid #d8eadb;
+    border-radius: 8px;
+    padding: 10px 12px;
+    background: #f7fbf6;
+    color: #416b4a;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .ycs-clients__palette-credit-status.is-empty {
+    border-color: #eadfd9;
+    background: #fffaf8;
+    color: #5f5a54;
+  }
+
+  .ycs-clients__palette-credit-status p {
+    margin: 0;
+  }
+
+  .ycs-clients__palette-credit-status .ycs-clients__button {
+    flex: 0 1 auto;
+    min-height: 34px;
+    padding: 8px 14px;
+    font-size: 12px;
+  }
+
   .ycs-clients__grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
