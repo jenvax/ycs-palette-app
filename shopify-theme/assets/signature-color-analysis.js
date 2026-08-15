@@ -3581,21 +3581,12 @@ return null;
       const canvasSafePhotoUrl = await getCanvasSafeImageUrl(state.loadedImageUrl);
       const uploadedImg = await loadImage(canvasSafePhotoUrl);
 
-      const naturalWidth = uploadedImg.naturalWidth;
-      const naturalHeight = uploadedImg.naturalHeight;
-
-      const fitScale = Math.min(frameWidth / naturalWidth, frameHeight / naturalHeight);
-      const baseWidth = naturalWidth * fitScale;
-      const baseHeight = naturalHeight * fitScale;
-
-      const drawWidth = baseWidth * state.scale;
-      const drawHeight = baseHeight * state.scale;
-
-      const centerX = frameWidth / 2 + state.x;
-      const centerY = frameHeight / 2 + state.y;
-
-      const drawX = centerX - drawWidth / 2;
-      const drawY = centerY - drawHeight / 2;
+      const photoEl = isRight ? rightImg : leftImg;
+      const photoRect = photoEl.getBoundingClientRect();
+      const drawX = photoRect.left - frameRect.left;
+      const drawY = photoRect.top - frameRect.top;
+      const drawWidth = photoRect.width;
+      const drawHeight = photoRect.height;
 
       ctx.filter = state.grayscale ? 'grayscale(1)' : 'none';
       ctx.drawImage(uploadedImg, drawX, drawY, drawWidth, drawHeight);

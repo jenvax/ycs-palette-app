@@ -3657,21 +3657,12 @@ return null;
       const canvasSafePhotoUrl = await getCanvasSafeImageUrl(state.loadedImageUrl);
       const uploadedImg = await loadImage(canvasSafePhotoUrl);
 
-      const naturalWidth = uploadedImg.naturalWidth;
-      const naturalHeight = uploadedImg.naturalHeight;
-
-      const fitScale = Math.min(frameWidth / naturalWidth, frameHeight / naturalHeight);
-      const baseWidth = naturalWidth * fitScale;
-      const baseHeight = naturalHeight * fitScale;
-
-      const drawWidth = baseWidth * state.scale;
-      const drawHeight = baseHeight * state.scale;
-
-      const centerX = frameWidth / 2 + state.x;
-      const centerY = frameHeight / 2 + state.y;
-
-      const drawX = centerX - drawWidth / 2;
-      const drawY = centerY - drawHeight / 2;
+      const photoEl = isRight ? rightImg : leftImg;
+      const photoRect = photoEl.getBoundingClientRect();
+      const drawX = photoRect.left - frameRect.left;
+      const drawY = photoRect.top - frameRect.top;
+      const drawWidth = photoRect.width;
+      const drawHeight = photoRect.height;
 
       ctx.filter = state.analysisMode === 'comparison'
         ? 'none'
@@ -3695,7 +3686,14 @@ return null;
       ) {
         if (isCanvasExportSafe(lipCanvas)) {
           try {
-            ctx.drawImage(lipCanvas, drawX, drawY, drawWidth, drawHeight);
+            const lipRect = lipCanvas.getBoundingClientRect();
+            ctx.drawImage(
+              lipCanvas,
+              lipRect.left - frameRect.left,
+              lipRect.top - frameRect.top,
+              lipRect.width,
+              lipRect.height
+            );
           } catch (lipExportError) {
             console.warn('Could not include lips in exported draped view:', lipExportError);
             drawExportLipFallback(ctx, drawX, drawY, drawWidth, drawHeight, lipColor, lipOpacity);

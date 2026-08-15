@@ -1100,21 +1100,11 @@ replaceButtons.forEach(function (btn) {
 
       const uploadedImg = await loadImage(targetImg.src);
 
-      const naturalWidth = uploadedImg.naturalWidth;
-      const naturalHeight = uploadedImg.naturalHeight;
-
-      const fitScale = Math.min(frameWidth / naturalWidth, frameHeight / naturalHeight);
-      const baseWidth = naturalWidth * fitScale;
-      const baseHeight = naturalHeight * fitScale;
-
-      const drawWidth = baseWidth * state.scale;
-      const drawHeight = baseHeight * state.scale;
-
-      const centerX = frameWidth / 2 + state.x;
-      const centerY = frameHeight / 2 + state.y;
-
-      const drawX = centerX - drawWidth / 2;
-      const drawY = centerY - drawHeight / 2;
+      const imgRect = targetImg.getBoundingClientRect();
+      const drawX = imgRect.left - frameRect.left;
+      const drawY = imgRect.top - frameRect.top;
+      const drawWidth = imgRect.width;
+      const drawHeight = imgRect.height;
 
       ctx.drawImage(uploadedImg, drawX, drawY, drawWidth, drawHeight);
 
