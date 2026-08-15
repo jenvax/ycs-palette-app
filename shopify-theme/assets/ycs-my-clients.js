@@ -3424,10 +3424,11 @@
 
     if (cancelClientEditButton) {
       event.preventDefault();
-      if (!(await confirmDiscardClientChanges())) return;
       const activeForm = getActiveClientForm();
+      const isCreateForm = activeForm?.matches("[data-ycs-client-create-form]");
+      if (!isCreateForm && !(await confirmDiscardClientChanges())) return;
       const clientRecordId = activeForm?.querySelector("[name='clientRecordId']")?.value || "";
-      if (clientRecordId) {
+      if (clientRecordId && !isCreateForm) {
         showClientById(clientRecordId, false);
       } else {
         const nextUrl = listUrl();
