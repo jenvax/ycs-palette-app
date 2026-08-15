@@ -68,6 +68,8 @@ function graphqlError(response, json) {
   const graphQLError = json.errors?.[0];
   const error = new Error(graphQLError?.message || json.error || "Shopify Admin GraphQL request failed");
   error.status = response.status || 500;
+  error.shopifyErrors = json.errors || [];
+  error.shopifyResponse = json;
   return error;
 }
 

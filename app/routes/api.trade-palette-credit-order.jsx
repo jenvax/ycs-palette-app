@@ -61,7 +61,10 @@ export async function loader({ request }) {
     });
   } catch (error) {
     return Response.json(
-      { error: error.message || "Order credit lookup failed" },
+      {
+        error: error.message || "Order credit lookup failed",
+        shopifyErrors: error.shopifyErrors || undefined
+      },
       { status: error.status || 500 }
     );
   }
@@ -81,7 +84,10 @@ export async function action({ request }) {
     });
   } catch (error) {
     return Response.json(
-      { error: error.message || "Order credit backfill failed" },
+      {
+        error: error.message || "Order credit backfill failed",
+        shopifyErrors: error.shopifyErrors || undefined
+      },
       { status: error.status || 500 }
     );
   }
