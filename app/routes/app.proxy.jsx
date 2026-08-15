@@ -3,6 +3,7 @@ import {
   getDrapingRecencyBuckets,
   isDueForDraping
 } from "../services/draping-stats.server.js";
+import { giveTradeClientPaletteAccess } from "../services/trade-palette-access.server.js";
 import { authenticate } from "../shopify.server";
 import crypto from "node:crypto";
 
@@ -1432,6 +1433,52 @@ export async function action({ request }) {
       { error: "Missing Airtable server configuration" },
       { status: 500 }
     );
+  }
+
+  if (actionName === "tradeClientPaletteAccess") {
+    try {
+      try {
+        await authenticate.public.appProxy(request);
+      } catch (authError) {
+        const hasValidProxySignature = verifyAppProxySignature(url, process.env.SHOPIFY_API_SECRET);
+        if (!hasValidProxySignature) {
+          console.error("tradeClientPaletteAccess proxy authentication failed:", authError);
+          return Response.json(
+            { error: "Signed storefront request required to give palette access" },
+            { status: 401 }
+          );
+        }
+      }
+
+      const loggedInCustomerId = normalizeCustomerId(url.searchParams.get("logged_in_customer_id"));
+      const body = await request.json();
+
+      if (!loggedInCustomerId) {
+        return Response.json(
+          { error: "You must be signed in to give customer palette access" },
+          { status: 401 }
+        );
+      }
+
+      const result = await giveTradeClientPaletteAccess({
+        consultantId: loggedInCustomerId,
+        clientRecordId: body.clientRecordId,
+        paletteCode: body.paletteCode,
+        paletteName: body.paletteName
+      });
+
+      return Response.json(result);
+    } catch (error) {
+      if (error instanceof Response) throw error;
+      console.error("tradeClientPaletteAccess failed:", error);
+      return Response.json(
+        {
+          error: error.message || "Unable to give customer palette access",
+          balance: error.balance
+        },
+        { status: error.status || 500 }
+      );
+    }
   }
 
   if (actionName === "deleteSavedDrapedImages") {

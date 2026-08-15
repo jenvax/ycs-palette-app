@@ -6,6 +6,7 @@
   const consultantId = root.dataset.customerId || "";
   const canCreateReports = root.dataset.canCreateReports === "true";
   const isAdmin = root.dataset.isAdmin === "true";
+  const isTrade = root.dataset.isTrade === "true";
   const gridEl = root.querySelector("[data-ycs-client-grid]");
   const detailEl = root.querySelector("[data-ycs-client-detail]");
   const statusEl = root.querySelector("[data-ycs-client-status]");
@@ -2583,7 +2584,7 @@
 
   function renderEditForm(client, saveMessage, isCreate) {
     const selectedPaletteCode = String(client.paletteCode || "").trim().toUpperCase();
-    const canGrantPaletteAccess = isAdmin && !isCreate;
+    const canGrantPaletteAccess = !isCreate && (isAdmin || isTrade);
     const nameRequired = isCreate ? "" : " required";
     const emailRequired = isCreate ? " required" : "";
     return `
@@ -2907,6 +2908,21 @@
     return data;
   }
 
+  async function giveTradeClientPaletteAccess(payload) {
+    const response = await fetch(`/apps/palette-data?action=tradeClientPaletteAccess`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Unable to give customer palette access.");
+    }
+
+    return data;
+  }
+
   async function removeShopifyPaletteTags(payload) {
     const response = await fetch(`${apiBase}/api/admin-customer-palette-access?action=removePaletteTags`, {
       method: "POST",
@@ -3008,7 +3024,11 @@
   }
 
   async function grantClientPaletteAccess(client) {
-    if (!isAdmin || !client) return;
+    if (!client) return;
+    if (!isAdmin && isTrade) {
+      return giveTradeClientPaletteAccessForTrade(client);
+    }
+    if (!isAdmin) return;
     const paletteCode = String(client.paletteCode || "").trim().toUpperCase();
     const paletteName = paletteNameForCode(paletteCode);
 
@@ -3055,6 +3075,57 @@
         : entry
     ));
     const completionMessage = grantCompletionText(result, paletteName, false);
+    showClientById(client.clientRecordId, true, completionMessage);
+    window.alert(completionMessage);
+  }
+
+  async function giveTradeClientPaletteAccessForTrade(client) {
+    const paletteCode = String(client.paletteCode || "").trim().toUpperCase();
+    const paletteName = paletteNameForCode(paletteCode);
+
+    if (!client.email) {
+      setStatus("Add the client's email before giving customer access.", true);
+      return;
+    }
+
+    if (!paletteCode) {
+      setStatus("Select a color palette before giving customer access.", true);
+      return;
+    }
+
+    const confirmed = window.confirm(`Give ${displayName(client)} access to ${paletteName}? This will use 1 color palette credit.`);
+    if (!confirmed) {
+      setStatus("Palette access was not changed.", true);
+      return;
+    }
+
+    setStatus("Giving customer palette access...", true);
+    const result = await giveTradeClientPaletteAccess({
+      clientRecordId: client.clientRecordId,
+      paletteCode,
+      paletteName
+    });
+
+    clients = clients.map((entry) => (
+      entry.clientRecordId === client.clientRecordId
+        ? {
+            ...entry,
+            ...(result.client || {}),
+            paletteCode: result.paletteCode || paletteCode,
+            paletteName: result.paletteName || paletteName,
+            shopifyCustomerId: result.customer?.id || entry.shopifyCustomerId || "",
+            shopifyCustomerGid: result.customer?.gid || entry.shopifyCustomerGid || "",
+            updatedAt: new Date().toISOString()
+          }
+        : entry
+    ));
+
+    const remainingText = Number.isFinite(Number(result.balance))
+      ? ` ${Number(result.balance)} color palette credit${Number(result.balance) === 1 ? "" : "s"} remaining.`
+      : "";
+    const customerText = result.createdCustomer ? " A customer account was created." : "";
+    const creditText = result.alreadyHadAccess ? " No credit was used because this customer already had access." : remainingText;
+    const completionMessage = `Palette assigned: ${displayName(client)} now has access to ${paletteName}.${customerText}${creditText}`;
     showClientById(client.clientRecordId, true, completionMessage);
     window.alert(completionMessage);
   }
