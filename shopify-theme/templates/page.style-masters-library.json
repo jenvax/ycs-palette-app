@@ -23,6 +23,24 @@
     "style_masters_library_ainLLC": {
       "type": "style-masters-library",
       "blocks": {
+        "download_3WfYNT": {
+          "type": "download",
+          "settings": {
+            "issue_period": "2026-08",
+            "entitlement_code": "STYLEMASTERS_2026_08",
+            "issue_product_handle": "style-masters-magazine-august-2026",
+            "product_url": "/products/style-masters-magazine-august-2026",
+            "cover_image": "shopify://shop_images/YCS_August_Ezine_-_Fall_Colors_2026.png",
+            "title": "August 2026 – Pantone Fall/Winter Colors",
+            "description": "<p><strong>&gt;&gt;</strong><a href=\"https://hueandstripe.com/catalog/1676H&SLOdt\" title=\"https://hueandstripe.com/catalog/1676H&SLOdt\"><strong>Shop the Looks</strong></a><strong>&lt;&lt;</strong></p><p><strong>Magazine and Replay Password: </strong>PantoneColors2026<br/>(password is case sensitive)</p>",
+            "resource_1_label": "Download the Magazine (PW: PantoneColors2026)",
+            "resource_1_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/Style_Masters_Magazine_-_Fall_Colors_2026.pdf?v=1785505758",
+            "resource_2_label": "Watch the Replay (PW: PantoneColors2026)",
+            "resource_2_url": "https://vimeo.com/1216108708?fl=ml&fe=ec&share=copy",
+            "resource_3_label": "Download the Live Call PDF",
+            "resource_3_url": "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/August_SM_Monthly_Draping.pdf?v=1786020721"
+          }
+        },
         "download_rXpbbT": {
           "type": "download",
           "settings": {
@@ -456,6 +474,7 @@
         }
       },
       "block_order": [
+        "download_3WfYNT",
         "download_rXpbbT",
         "download_iwYtmw",
         "download_VEJjgt",
