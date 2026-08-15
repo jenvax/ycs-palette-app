@@ -17,13 +17,14 @@ function escapeFormulaString(value) {
 function airtableConfig() {
   const baseId = process.env.AIRTABLE_BASE_ID;
   const token = process.env.AIRTABLE_TOKEN;
+  const schemaToken = process.env.AIRTABLE_SCHEMA_TOKEN || token;
   const tableName = process.env.AIRTABLE_TRADE_PALETTE_CREDITS_TABLE || DEFAULT_CREDIT_LEDGER_TABLE;
 
   if (!baseId || !token) {
     throw new Error("Missing Airtable configuration");
   }
 
-  return { baseId, token, tableName };
+  return { baseId, token, schemaToken, tableName };
 }
 
 async function parseAirtableResponse(response) {
@@ -76,6 +77,64 @@ async function airtableRequest({
   return data;
 }
 
+function isMissingTableError(error) {
+  const message = String(error?.message || "").toLowerCase();
+  return error?.status === 404 ||
+    ["TABLE_NOT_FOUND", "NOT_FOUND", "INVALID_PERMISSIONS_OR_MODEL_NOT_FOUND"].includes(error?.data?.error?.type) ||
+    message.includes("requested model was not found");
+}
+
+async function ensureCreditLedgerTable({ fetcher = fetch } = {}) {
+  const { baseId, schemaToken, tableName } = airtableConfig();
+  if (!schemaToken) {
+    throw new Error("Missing Airtable schema token");
+  }
+
+  const response = await fetcher(`https://api.airtable.com/v0/meta/bases/${baseId}/tables`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${schemaToken}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      name: tableName,
+      description: "Ledger of TRADE customer color palette credit purchases and usage.",
+      fields: [
+        { name: "Key", type: "singleLineText" },
+        { name: "TradeCustomerId", type: "singleLineText" },
+        { name: "EventType", type: "singleLineText" },
+        { name: "Quantity", type: "number", options: { precision: 0 } },
+        { name: "SourceType", type: "singleLineText" },
+        { name: "SourceId", type: "singleLineText" },
+        { name: "SourceLineItemId", type: "singleLineText" },
+        { name: "ClientRecordId", type: "singleLineText" },
+        { name: "ClientEmail", type: "singleLineText" },
+        { name: "PaletteCode", type: "singleLineText" },
+        { name: "Notes", type: "multilineText" },
+        { name: "CreatedAt", type: "singleLineText" }
+      ]
+    })
+  });
+  const data = await parseAirtableResponse(response);
+
+  if (!response.ok && data?.error?.type !== "DUPLICATE_TABLE_NAME") {
+    const error = new Error(data?.error?.message || data?.error?.type || "Unable to create Airtable credit ledger table");
+    error.status = response.status || 500;
+    error.data = data;
+    throw error;
+  }
+}
+
+async function withCreditLedgerTableSetup(callback, { fetcher = fetch } = {}) {
+  try {
+    return await callback();
+  } catch (error) {
+    if (!isMissingTableError(error)) throw error;
+    await ensureCreditLedgerTable({ fetcher });
+    return callback();
+  }
+}
+
 async function fetchAllCreditEvents({ tradeCustomerId, fetcher = fetch }) {
   const safeTradeCustomerId = cleanString(tradeCustomerId);
   if (!safeTradeCustomerId) {
@@ -86,14 +145,14 @@ async function fetchAllCreditEvents({ tradeCustomerId, fetcher = fetch }) {
   let offset = "";
 
   do {
-    const data = await airtableRequest({
+    const data = await withCreditLedgerTableSetup(() => airtableRequest({
       fetcher,
       searchParams: {
         filterByFormula: `{TradeCustomerId}="${escapeFormulaString(safeTradeCustomerId)}"`,
         pageSize: 100,
         offset
       }
-    });
+    }), { fetcher });
 
     records.push(...(data.records || []));
     offset = data.offset || "";
@@ -106,13 +165,13 @@ async function findCreditEventByKey({ key, fetcher = fetch }) {
   const safeKey = cleanString(key);
   if (!safeKey) return null;
 
-  const data = await airtableRequest({
+  const data = await withCreditLedgerTableSetup(() => airtableRequest({
     fetcher,
     searchParams: {
       filterByFormula: `{Key}="${escapeFormulaString(safeKey)}"`,
       maxRecords: 1
     }
-  });
+  }), { fetcher });
 
   const record = data.records?.[0];
   return record ? serializeCreditEvent(record) : null;
@@ -248,11 +307,11 @@ export async function recordTradePaletteCreditEvent({
     }
   });
 
-  const record = await airtableRequest({
+  const record = await withCreditLedgerTableSetup(() => airtableRequest({
     method: "POST",
     body: { fields },
     fetcher
-  });
+  }), { fetcher });
 
   return {
     created: true,

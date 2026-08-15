@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   buildCreditEventKey,
   calculateCreditBalance,
+  getTradePaletteCreditBalance,
   recordTradePaletteCreditEvent
 } from "../app/services/trade-palette-credits.server.js";
 
@@ -112,3 +113,44 @@ test("recordTradePaletteCreditEvent returns existing event when key already exis
   assert.equal(calls.length, 1);
 }
 );
+
+test("getTradePaletteCreditBalance creates the ledger table when Airtable reports it missing", async () => {
+  process.env.AIRTABLE_BASE_ID = "app_test";
+  process.env.AIRTABLE_TOKEN = "pat_data";
+  process.env.AIRTABLE_SCHEMA_TOKEN = "pat_schema";
+  process.env.AIRTABLE_TRADE_PALETTE_CREDITS_TABLE = "TradePaletteCreditLedger";
+
+  let readAttempts = 0;
+  const calls = [];
+  const fetcher = async (url, options = {}) => {
+    calls.push({ url, options });
+
+    if (url.includes("/meta/bases/")) {
+      return responseJson({ id: "tbl_created", name: "TradePaletteCreditLedger" });
+    }
+
+    readAttempts += 1;
+    if (readAttempts === 1) {
+      return responseJson({
+        error: {
+          type: "TABLE_NOT_FOUND",
+          message: "Table not found"
+        }
+      }, 404);
+    }
+
+    return responseJson({ records: [] });
+  };
+
+  const result = await getTradePaletteCreditBalance({
+    tradeCustomerId: "6426707558624",
+    fetcher
+  });
+
+  assert.equal(result.balance, 0);
+  assert.equal(readAttempts, 2);
+  assert.ok(calls.some((call) => call.url.includes("/meta/bases/app_test/tables")));
+  const createCall = calls.find((call) => call.url.includes("/meta/bases/app_test/tables"));
+  assert.equal(createCall.options.method, "POST");
+  assert.equal(createCall.options.headers.Authorization, "Bearer pat_schema");
+});
