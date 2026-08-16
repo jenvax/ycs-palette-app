@@ -80,12 +80,11 @@ The Color Analysis Tools button appears when the customer has any of:
 - `CATOOLGROWTH`
 - `CATOOLFREE`
 - `DIYCATOOL`
+- `FREEDIYCATOOL`
 
 The Color Analysis Tools button links to:
 
 - `/pages/my-palettes?view=catools`
-
-Important current-code detail: `FREEDIYCATOOL` is recognized inside the tools page and Color Analysis Tool code, but it is not currently included in the My Account button gate. If a `FREEDIYCATOOL` customer should see the Color Analysis Tools button from My Account, that must be added to `customers/account.liquid`.
 
 The Style Masters Hub button appears when the customer has:
 
@@ -158,7 +157,6 @@ On normal My Color Palettes, PDF buttons are shown for rendered palette cards wh
 
 - customer is `YCS_ADMIN`
 - customer is `TRADE` or unexpired `TRADEJULYCOHORT`
-- customer has `VIP`
 - customer has the specific palette tag for that palette
 
 On the dedicated Color Analysis Tools section, all-PDF access is granted to:
@@ -168,7 +166,7 @@ On the dedicated Color Analysis Tools section, all-PDF access is granted to:
 
 Otherwise the customer needs the specific palette tag for that palette.
 
-`CATOOL` and `CATOOLGROWTH` users do not get all printable PDFs by role alone. They see a PDF button only when they personally have that palette tag, unless they also have another tag such as `VIP`.
+`CATOOL` and `CATOOLGROWTH` users do not get all printable PDFs by role alone. They see a PDF button only when they personally have that palette tag. A `VIP` tag does not grant a PDF button for any color palette.
 
 ## My Clients
 
@@ -453,7 +451,7 @@ In View/Edit Client, the Client Palette Access card displays the available color
 
 Photo upload credits are checked by the app backend when uploading or replacing photos.
 
-Monthly limits by current behavior:
+Monthly photo upload limits by current behavior:
 
 - `YCS_ADMIN`: unlimited
 - `CATOOL`: 5
@@ -461,6 +459,9 @@ Monthly limits by current behavior:
 - `TRADE`: 15
 - unexpired `TRADEJULYCOHORT`: 15
 - `VIP`: 5 personal photo uploads
+
+Fixed, non-monthly personal/sample upload allotments by current behavior:
+
 - `DRAPINGSTUDIO`: 5 personal photo uploads
 - `DRAPINGSTUDIOSTARTER`: 2 personal photo uploads
 - `SAMPLE`: 1 sample/trial upload
