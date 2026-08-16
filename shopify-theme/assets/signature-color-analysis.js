@@ -977,10 +977,12 @@ async function drawRealisticDrapeTexture(ctx, options) {
   });
 
   paletteEls.forEach(function (el) {
-  const code = getSignatureColorTypeCode();
-  el.textContent = code;
-  el.hidden = !code;
-});
+    const panelEl = el.closest('.ycs-analysis-stage-panel');
+    const panel = panelEl && panelEl.dataset.panel === 'right' ? 'right' : 'left';
+    const code = getSignatureColorTypeCode(panel);
+    el.textContent = code;
+    el.hidden = !code;
+  });
 
   if (leftColorEl) {
     leftColorEl.textContent = state.leftColorName || '';
@@ -991,7 +993,18 @@ async function drawRealisticDrapeTexture(ctx, options) {
   }
 }
 
-function getSignatureColorTypeCode() {
+function getSignatureColorTypeCode(panel) {
+  if (IS_SIGNATURE_MODE) {
+    const isRight = panel === 'right';
+    const sideCode = isRight
+      ? state.signature.rightPaletteCode || (signatureRightPaletteSelect && signatureRightPaletteSelect.value)
+      : state.signature.leftPaletteCode || (signatureLeftPaletteSelect && signatureLeftPaletteSelect.value);
+
+    if (sideCode && sideCode !== DRAPING_PALETTE_CODE) {
+      return String(sideCode).trim().toUpperCase();
+    }
+  }
+
   return (
     state.customerPaletteCode ||
     getCustomerPaletteCode() ||
@@ -2047,6 +2060,8 @@ async function renderSignatureSide(panel) {
   } else {
     state.signature.leftPaletteCode = paletteCode;
   }
+
+  syncSignatureFrameLabels();
 
   const colors = await fetchPaletteColors(paletteCode);
   const lipColors = await fetchSignatureLipColors(paletteCode);
@@ -3676,7 +3691,7 @@ if (lipCanvas) {
       }
       drawSignatureExportLabels(ctx, canvas, {
   firstName: state.clientFirstName || getClientFirstName(),
-  paletteCode: getSignatureColorTypeCode(),
+  paletteCode: getSignatureColorTypeCode(panel),
   colorName: colorName,
   lipName: lipName,
   lipColor: lipColor,
