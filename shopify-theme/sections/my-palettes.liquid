@@ -218,6 +218,11 @@
   {% assign should_show_sample_palette = true %}
 {% endif %}
 
+{% assign can_access_my_photos = false %}
+{% if has_real_palette or palette_access_string contains ',VIP,' or has_draping_studio_access or is_sample_user %}
+  {% assign can_access_my_photos = true %}
+{% endif %}
+
   {% if customer == nil %}
     <div class="ycs-my-palettes__header">
       <p class="ycs-my-palettes__kicker">Your Color Style</p>
@@ -479,7 +484,7 @@
         {% endif %}
 
         {% unless is_color_analysis_tools_page %}
-        {% if has_real_palette %}
+        {% if can_access_my_photos %}
         <div class="ycs-palette-card ycs-palette-card--studio">
           <div class="ycs-palette-card__top">
             <div
