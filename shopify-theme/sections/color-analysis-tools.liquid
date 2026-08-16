@@ -730,17 +730,14 @@
                       Open Palette
                     </a>
 
-                    {% assign palette_pdf_url = block.settings.printable_pdf_url | default: block.settings.mobile_pdf_url %}
-                    {% if palette_pdf_url != blank or actual_is_admin %}
-                      {% if can_access_all_printable_pdfs or palette_access_string contains palette_token %}
-                        <button
-                          type="button"
-                          class="ycs-palette-card__button ycs-palette-card__button--secondary"
-                          data-ycs-pdf-palette-code="{{ palette_code | escape }}"
-                          data-ycs-pdf-palette-title="{{ block.settings.title | escape }}">
-                          PDF
-                        </button>
-                      {% endif %}
+                    {% if can_access_all_printable_pdfs or palette_access_string contains palette_token %}
+                      <button
+                        type="button"
+                        class="ycs-palette-card__button ycs-palette-card__button--secondary"
+                        data-ycs-pdf-palette-code="{{ palette_code | escape }}"
+                        data-ycs-pdf-palette-title="{{ block.settings.title | escape }}">
+                        PDF
+                      </button>
                     {% endif %}
                   </div>
                 </div>

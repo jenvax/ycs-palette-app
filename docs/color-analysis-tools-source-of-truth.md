@@ -143,6 +143,16 @@ On the Color Analysis Tools page only, the following roles see all standard YCS 
 - `CATOOL`
 - `CATOOLGROWTH`
 
+The standard YCS palette set is:
+
+- `CCL`, `CCM`, `CCD`
+- `CWL`, `CWM`, `CWD`
+- `SCL`, `SCM`, `SCD`
+- `SWL`, `SWM`, `SWD`
+- `CWLG`, `CWMG`, `CWDG`
+- `SWLG`, `SWMG`, `SWDG`
+- `LO`, `MO`, `DO`
+
 The following tool roles can use tools but do not receive all-palette access from the tools-page all-access gate:
 
 - `CATOOLFREE`
@@ -166,7 +176,7 @@ On the dedicated Color Analysis Tools section, all-PDF access is granted to:
 
 Otherwise the customer needs the specific palette tag for that palette.
 
-`CATOOL` and `CATOOLGROWTH` users do not get all printable PDFs by role alone. They see a PDF button only when they personally have that palette tag. A `VIP` tag does not grant a PDF button for any color palette.
+`CATOOL` and `CATOOLGROWTH` users see all standard YCS palette cards in the tools view, but they do not get all PDF buttons by role alone. They see a PDF button only when they personally have that palette tag. `VIP` does not grant a PDF button for any color palette.
 
 ## My Clients
 
