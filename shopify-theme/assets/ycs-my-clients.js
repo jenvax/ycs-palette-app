@@ -217,9 +217,12 @@
     try {
       return JSON.parse(text);
     } catch (_error) {
-      const error = new Error(fallbackMessage || "The server returned an unexpected response.");
+      const contentType = response.headers.get("content-type") || "unknown content type";
+      const preview = text.replace(/\s+/g, " ").trim().slice(0, 160);
+      const details = `Status ${response.status}; ${contentType}${preview ? `; ${preview}` : ""}`;
+      const error = new Error(`${fallbackMessage || "The server returned an unexpected response."} ${details}`);
       error.status = response.status;
-      error.preview = text.slice(0, 180);
+      error.preview = preview;
       throw error;
     }
   }
@@ -3131,7 +3134,10 @@
   async function giveTradeClientPaletteAccess(payload) {
     const response = await fetch(`/apps/palette-data?action=tradeClientPaletteAccess`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json"
+      },
       credentials: "same-origin",
       body: JSON.stringify(payload)
     });
