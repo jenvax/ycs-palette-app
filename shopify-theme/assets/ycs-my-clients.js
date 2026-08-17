@@ -2396,7 +2396,7 @@
     const balance = Number(tradePaletteCreditBalance || 0);
     const isLoaded = tradePaletteCreditBalanceLoaded;
     const text = isLoaded
-      ? `Palette credits: ${balance}`
+      ? `${balance} palette ${balance === 1 ? "credit" : "credits"} available`
       : "Checking color palette credits...";
     const purchaseButton = isLoaded && balance <= 0
       ? '<a class="ycs-clients__button ycs-clients__button--secondary" href="/products/color-palette-credits">Buy Credits</a>'
@@ -2440,10 +2440,8 @@
     const canGrantPaletteAccess = isAdmin || isTrade;
     const isDisabled = canGrantPaletteAccess && !hasTradePaletteCredits();
     if (!canGrantPaletteAccess) return "";
-    const sectionTitle = isAdmin ? "Client Palette Access" : "Client Color Palette";
-    const sectionIntro = isAdmin
-      ? "Give this client digital access to a color palette when you're ready."
-      : "Choose the color palette you want to share with this client.";
+    const sectionTitle = "Digital Palette Access";
+    const sectionIntro = "Give this client private access to their digital color palette.";
     const buttonText = isAdmin ? "Give Client Palette Access" : "Create Palette Link";
     const access = !isAdmin && isTrade ? paletteAccessFromClient(client) : null;
     const accessPaletteCode = normalizePaletteCode(access?.paletteCode);
@@ -2466,11 +2464,11 @@
           <section class="ycs-clients__section ycs-clients__palette-access-section" data-ycs-client-palette-card>
             <div class="ycs-clients__section-header">
               <h3>${escapeHtml(sectionTitle)}</h3>
-              <p>Replace ${escapeHtml(accessPaletteName)} with another palette.</p>
+              <p>${escapeHtml(sectionIntro)}</p>
             </div>
             <p class="ycs-clients__palette-current">${escapeHtml(accessPaletteName)}</p>
             <label class="ycs-clients__field">
-              <span>Replacement Palette</span>
+              <span>Palette to Share</span>
               <select class="ycs-clients__input" name="replacementPaletteCode" data-ycs-palette-replacement-select>
                 ${renderPaletteSelectOptions(accessPaletteCode)}
               </select>
@@ -2487,6 +2485,7 @@
         <section class="ycs-clients__section ycs-clients__palette-access-section" data-ycs-client-palette-card>
           <div class="ycs-clients__section-header">
             <h3>${escapeHtml(sectionTitle)}</h3>
+            <p>${escapeHtml(sectionIntro)}</p>
           </div>
           <p class="ycs-clients__palette-current">${escapeHtml(accessPaletteName)}</p>
           <p class="ycs-clients__palette-ready">&#10003; Ready to share with ${escapeHtml(displayName(client))}</p>
@@ -2506,7 +2505,7 @@
           <p>${escapeHtml(sectionIntro)}</p>
         </div>
         <label class="ycs-clients__field">
-          <span>Color Palette</span>
+          <span>Palette to Share</span>
           <select class="ycs-clients__input" name="accessPaletteCode" data-ycs-palette-access-select>
             <option value="">Select a color palette</option>
             ${renderPaletteSelectOptions(paletteCode)}
@@ -2886,6 +2885,7 @@
     const showPaletteEmailHelp = !isCreate && isAdmin;
     const nameRequired = isCreate ? "" : " required";
     const emailHelpId = "ycs-client-email-palette-access-help";
+    const analysisResultHelpId = "ycs-client-analysis-result-help";
     return `
       <form class="ycs-clients__edit-form" ${isCreate ? 'id="ycs-create-client-form" data-ycs-client-create-form' : "data-ycs-client-edit-form"}>
         ${!isCreate ? '<h3>Client Details</h3>' : ""}
@@ -2904,11 +2904,12 @@
           ${showPaletteEmailHelp ? `<p class="ycs-clients__field-help" id="${emailHelpId}" data-ycs-palette-email-help>Email is required before giving this client digital palette access.</p>` : ""}
         </div>
         <label class="ycs-clients__field">
-          <span>Color Palette</span>
-          <select class="ycs-clients__input" name="paletteCode">
+          <span>${isCreate ? "Color Palette" : "Analysis Result"}</span>
+          <select class="ycs-clients__input" name="paletteCode"${!isCreate ? ` aria-describedby="${analysisResultHelpId}"` : ""}>
             <option value="">Color type</option>
             ${renderPaletteSelectOptions(selectedPaletteCode)}
           </select>
+          ${!isCreate ? `<p class="ycs-clients__field-help" id="${analysisResultHelpId}">Used for this client&rsquo;s analysis, photos, and report.</p>` : ""}
         </label>
         ${renderShopifyPaletteTagEditor(client, isCreate)}
         <label class="ycs-clients__field">
