@@ -1164,21 +1164,25 @@
     const isChecked = page[`image${slot}Checked`] === true;
     const caption = String(page[`image${slot}Caption`] || "").trim();
     const figureBody = `
-      <figure class="ycs-report-custom-photo-figure${isChecked ? " is-selected" : ""}">
-        <div class="ycs-report-custom-photo-frame">
-          ${isChecked ? `<img class="ycs-report-checkmark" src="${REPORT_CHECKMARK_URL}" alt="">` : ""}
-          ${renderReportImage(imageUrl, label, "ycs-report-preview__custom-photo")}
-        </div>
-        ${caption ? `<figcaption class="ycs-report-custom-photo-caption">${escapeHtml(caption)}</figcaption>` : ""}
-      </figure>
+      <div class="ycs-report-comparison-image-space">
+        ${isChecked ? `<img class="ycs-report-checkmark" src="${REPORT_CHECKMARK_URL}" alt="">` : ""}
+        ${imageUrl
+          ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(label)}">`
+          : `<div class="ycs-report-preview__image--empty">${escapeHtml(label)} image</div>`}
+      </div>
+      ${caption ? `<span class="ycs-report-comparison-caption">${escapeHtml(caption)}</span>` : ""}
     `;
 
-    return renderPreviewImageTarget(
-      `customPages.${page.id}.image${slot}Url`,
-      label,
-      figureBody,
-      options.interactive
-    );
+    return `
+      <figure${isChecked ? ` class="is-selected"` : ""}>
+        ${renderPreviewImageTarget(
+          `customPages.${page.id}.image${slot}Url`,
+          label,
+          figureBody,
+          options.interactive
+        )}
+      </figure>
+    `;
   }
 
   function renderCustomReportPage(draft, page, pageNumber, options = {}) {
@@ -1189,7 +1193,7 @@
         <section class="ycs-report-page ycs-report-page--custom-photos ycs-report-page--custom-photos-four" data-report-page="${pageNumber}">
           ${renderReportBrand(draft)}
           <h1>${escapeHtml(page.title || "Custom Page")}</h1>
-          <div class="ycs-report-custom-photo-grid ycs-report-custom-photo-grid--four">
+          <div class="ycs-report-comparison-grid ycs-report-comparison-grid--two ycs-report-custom-photo-grid ycs-report-custom-photo-grid--four">
             ${renderCustomReportPhoto(page, 1, "Top left photo", options)}
             ${renderCustomReportPhoto(page, 2, "Top right photo", options)}
             ${renderCustomReportPhoto(page, 3, "Bottom left photo", options)}
@@ -1205,7 +1209,7 @@
         <section class="ycs-report-page ycs-report-page--custom-photos" data-report-page="${pageNumber}">
           ${renderReportBrand(draft)}
           <h1>${escapeHtml(page.title || "Custom Page")}</h1>
-          <div class="ycs-report-custom-photo-grid">
+          <div class="ycs-report-comparison-grid ycs-report-comparison-grid--two ycs-report-custom-photo-grid">
             ${renderCustomReportPhoto(page, 1, "Left photo", options)}
             ${renderCustomReportPhoto(page, 2, "Right photo", options)}
           </div>
