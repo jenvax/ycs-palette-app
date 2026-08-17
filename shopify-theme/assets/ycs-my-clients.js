@@ -613,9 +613,11 @@
     const base = defaultReportDraft(client);
     const incoming = savedDraft && typeof savedDraft === "object" ? savedDraft : {};
     const incomingLogoUrl = String(incoming.brandLogoUrl || "").trim();
+    const reportCustomerName = String(incoming.customerName || "").trim() || base.customerName;
     return {
       ...base,
       ...incoming,
+      customerName: reportCustomerName,
       brandLogoUrl: incomingLogoUrl === YCS_REPORT_LOGO_URL ? "" : incomingLogoUrl,
       selectedDrapeImageUrl: base.selectedDrapeImageUrl,
       coverPhotoScale: Math.min(Math.max(Number(incoming.coverPhotoScale) || base.coverPhotoScale, 0.7), 2.4),
@@ -1375,7 +1377,8 @@
                 <label>Move left / right<input name="coverPhotoX" type="range" min="-120" max="120" step="2" value="${escapeHtml(draft.coverPhotoX)}"></label>
                 <label>Move up / down<input name="coverPhotoY" type="range" min="-120" max="120" step="2" value="${escapeHtml(draft.coverPhotoY)}"></label>
               </div>
-              <label>Customer name<input name="customerName" value="${escapeHtml(draft.customerName)}"></label>
+              <label>Report customer name<input name="customerName" value="${escapeHtml(draft.customerName)}"></label>
+              <p class="ycs-report-form__hint">This changes the name on the report cover only. It does not change the client name in My Clients.</p>
               <label>Report date<input name="reportDate" type="date" value="${escapeHtml(draft.reportDate)}"></label>
               <label>Color type<select name="paletteCode">${paletteOptions}</select></label>
               <label>Color type display name<input name="paletteName" value="${escapeHtml(draft.paletteName)}"></label>
