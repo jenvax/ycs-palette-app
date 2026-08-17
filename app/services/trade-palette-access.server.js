@@ -4,6 +4,10 @@ import {
   getTradePaletteCreditBalance,
   recordTradePaletteCreditEvent
 } from "./trade-palette-credits.server.js";
+import {
+  createClientPaletteAccess,
+  findActiveClientPaletteAccess
+} from "./trade-client-palette-links.server.js";
 
 function cleanString(value) {
   return String(value || "").trim();
@@ -435,47 +439,56 @@ export async function giveTradeClientPaletteAccess({
     throw error;
   }
 
-  if (!client.email) {
-    throw new Error("Add the client's email before giving color palette access.");
-  }
-
   const existingUsageKey = `${safeConsultantId}__usage__palette_access__${client.clientRecordId}__${safePaletteCode}`;
+  const existingAccess = await findActiveClientPaletteAccess({
+    consultantId: safeConsultantId,
+    clientRecordId: client.clientRecordId,
+    paletteCode: safePaletteCode,
+    fetcher
+  });
   const startingBalance = await getTradePaletteCreditBalance({
     tradeCustomerId: safeConsultantId,
     fetcher
   });
   const alreadyRecordedUsage = startingBalance.events.some((event) => event.key === existingUsageKey);
 
-  if (!alreadyRecordedUsage && startingBalance.balance < 1) {
+  if (!existingAccess && !alreadyRecordedUsage && startingBalance.balance < 1) {
     const error = new Error("You need at least 1 color palette credit to give a customer palette access.");
     error.status = 402;
     error.balance = startingBalance.balance;
     throw error;
   }
 
-  const customerResult = await findOrCreateShopifyCustomerForClient({
-    client,
-    paletteCode: safePaletteCode
-  });
-  const tagResult = customerResult.createdCustomer
-    ? { alreadyHadAccess: false, customer: customerResult.customer }
-    : await addPaletteTagToCustomer({
-        customer: customerResult.customer,
-        paletteCode: safePaletteCode
-      });
-  const accountInvite = await sendLegacyAccountInviteEmail(tagResult.customer || customerResult.customer);
-  const updatedClient = await updateClientShopifyLink({
-    client,
-    customer: tagResult.customer || customerResult.customer,
-    paletteCode: safePaletteCode,
-    paletteName: safePaletteName,
-    updateClientPalette,
-    fetcher
-  });
+  let updatedClient = client;
+  if (updateClientPalette) {
+    const fields = {
+      AnalysisResultCode: safePaletteCode,
+      AnalysisResultLabel: safePaletteName
+    };
+    const data = await airtableRequest({
+      method: "PATCH",
+      recordId: client.airtableRecordId,
+      body: { fields, typecast: true },
+      fetcher
+    });
+    updatedClient = serializeClient(data);
+  }
+
+  const accessResult = existingAccess
+    ? { created: false, access: existingAccess }
+    : await createClientPaletteAccess({
+      consultantId: safeConsultantId,
+      clientRecordId: client.clientRecordId,
+      clientEmail: client.email,
+      clientName: [client.firstName, client.lastName].filter(Boolean).join(" ").trim(),
+      paletteCode: safePaletteCode,
+      paletteName: safePaletteName,
+      fetcher
+    });
 
   let usageEvent = null;
   let creditEventCreated = false;
-  if (!tagResult.alreadyHadAccess) {
+  if (accessResult.created) {
     const usageResult = await recordTradePaletteCreditEvent({
       tradeCustomerId: safeConsultantId,
       eventType: "usage",
@@ -485,7 +498,7 @@ export async function giveTradeClientPaletteAccess({
       clientRecordId: client.clientRecordId,
       clientEmail: client.email,
       paletteCode: safePaletteCode,
-      notes: `${safePaletteName} access for ${client.email}`,
+      notes: `${safePaletteName} access link for ${client.email || client.clientRecordId}`,
       idempotencyKey: existingUsageKey,
       fetcher
     });
@@ -501,12 +514,13 @@ export async function giveTradeClientPaletteAccess({
   return {
     success: true,
     client: updatedClient,
-    customer: tagResult.customer || customerResult.customer,
+    access: accessResult.access,
+    accessUrl: accessResult.access?.accessUrl || "",
     paletteCode: safePaletteCode,
     paletteName: safePaletteName,
-    createdCustomer: customerResult.createdCustomer,
-    alreadyHadAccess: tagResult.alreadyHadAccess,
-    accountInvite,
+    createdCustomer: false,
+    createdAccessLink: accessResult.created,
+    alreadyHadAccess: !accessResult.created,
     creditUsed: creditEventCreated,
     creditEvent: usageEvent,
     balance: endingBalance.balance

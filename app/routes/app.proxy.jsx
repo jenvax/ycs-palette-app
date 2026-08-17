@@ -3,6 +3,7 @@ import {
   getDrapingRecencyBuckets,
   isDueForDraping
 } from "../services/draping-stats.server.js";
+import { validateClientPaletteAccessToken } from "../services/trade-client-palette-links.server.js";
 import { giveTradeClientPaletteAccess } from "../services/trade-palette-access.server.js";
 import { authenticate } from "../shopify.server";
 import crypto from "node:crypto";
@@ -20,6 +21,15 @@ function normalizeList(value) {
 
 function normalizeHex(value) {
   return String(value || "").trim().toLowerCase();
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function escapeFormulaValue(value) {
@@ -809,6 +819,187 @@ async function syncCustomerDirectoryFromShopify({ shop, accessToken, baseId, tok
   };
 }
 
+function clientPaletteAccessHtml(access) {
+  const paletteCode = access.paletteCode;
+  const paletteName = access.paletteName || access.paletteCode;
+  const clientName = access.clientName || "Your client";
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapeHtml(paletteName)} Color Palette</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #2f2a25;
+      --muted: #6b625a;
+      --line: #e8ded4;
+      --paper: #fffaf6;
+      --accent: #0b0b0b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #fff;
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.45;
+    }
+    .ycs-client-palette {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 32px 18px 48px;
+    }
+    .ycs-client-palette__header {
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 22px;
+      padding-bottom: 20px;
+    }
+    .ycs-client-palette__kicker {
+      margin: 0 0 6px;
+      color: #9a8d7f;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(34px, 6vw, 64px);
+      font-weight: 400;
+      letter-spacing: 0;
+      line-height: 1.05;
+    }
+    .ycs-client-palette__intro {
+      max-width: 720px;
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 18px;
+    }
+    .ycs-client-palette__status {
+      margin: 20px 0;
+      color: var(--muted);
+      font-size: 16px;
+    }
+    .ycs-client-palette__sections {
+      display: grid;
+      gap: 26px;
+    }
+    .ycs-client-palette__section h2 {
+      margin: 0 0 12px;
+      font-size: 22px;
+      font-weight: 700;
+    }
+    .ycs-client-palette__grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+      gap: 12px;
+    }
+    .ycs-client-swatch {
+      min-height: 128px;
+      border: 1px solid rgba(0,0,0,.08);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--paper);
+      box-shadow: 0 8px 22px rgba(47,42,37,.08);
+    }
+    .ycs-client-swatch__color {
+      height: 84px;
+      border-bottom: 1px solid rgba(0,0,0,.08);
+    }
+    .ycs-client-swatch__body {
+      padding: 9px 10px 11px;
+    }
+    .ycs-client-swatch__name {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .ycs-client-swatch__hex {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    @media (max-width: 640px) {
+      .ycs-client-palette { padding-top: 24px; }
+      .ycs-client-palette__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <main class="ycs-client-palette" data-palette-code="${escapeHtml(paletteCode)}">
+    <header class="ycs-client-palette__header">
+      <p class="ycs-client-palette__kicker">Your Color Palette</p>
+      <h1>${escapeHtml(paletteName)}</h1>
+      <p class="ycs-client-palette__intro">${escapeHtml(clientName)}, this private link gives you access to your assigned color palette.</p>
+    </header>
+    <p class="ycs-client-palette__status" data-status>Loading colors...</p>
+    <div class="ycs-client-palette__sections" data-sections></div>
+  </main>
+  <script>
+    const root = document.querySelector('[data-palette-code]');
+    const statusEl = document.querySelector('[data-status]');
+    const sectionsEl = document.querySelector('[data-sections]');
+    const paletteCode = root.dataset.paletteCode;
+    const categoryOrder = [
+      'Best', 'Reds', 'Oranges', 'Golden Yellows', 'Yellows', 'Yellow Greens',
+      'Greens', 'Aquas/Teals', 'Blues', 'Indigos', 'Purples', 'Plums',
+      'Magentas', 'Pinks', 'Neutrals'
+    ];
+
+    function escapeHtml(value) {
+      return String(value || '').replace(/[&<>"']/g, function (char) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char];
+      });
+    }
+
+    function colorCategories(color) {
+      const categories = Array.isArray(color.categories) && color.categories.length
+        ? color.categories
+        : [color.category || 'Other'];
+      const next = color.isBest ? ['Best'].concat(categories) : categories;
+      return next.filter(Boolean);
+    }
+
+    function render(colors) {
+      const grouped = {};
+      colors.forEach(function (color) {
+        colorCategories(color).forEach(function (category) {
+          if (!grouped[category]) grouped[category] = [];
+          grouped[category].push(color);
+        });
+      });
+      const ordered = categoryOrder.filter(function (category) { return grouped[category]?.length; })
+        .concat(Object.keys(grouped).filter(function (category) { return categoryOrder.indexOf(category) === -1; }).sort());
+      sectionsEl.innerHTML = ordered.map(function (category) {
+        return '<section class="ycs-client-palette__section"><h2>' + escapeHtml(category) + '</h2><div class="ycs-client-palette__grid">' +
+          grouped[category].map(function (color) {
+            const hex = color.hex || color.color || '#ffffff';
+            return '<article class="ycs-client-swatch"><div class="ycs-client-swatch__color" style="background:' + escapeHtml(hex) + '"></div><div class="ycs-client-swatch__body"><span class="ycs-client-swatch__name">' + escapeHtml(color.name) + '</span><span class="ycs-client-swatch__hex">' + escapeHtml(hex) + '</span></div></article>';
+          }).join('') +
+        '</div></section>';
+      }).join('');
+      statusEl.textContent = '';
+    }
+
+    fetch('/apps/palette-data?palette=' + encodeURIComponent(paletteCode), { credentials: 'same-origin' })
+      .then(function (response) { return response.json().then(function (data) {
+        if (!response.ok || !Array.isArray(data.colors)) throw new Error(data.error || 'Unable to load palette colors.');
+        if (!data.colors.length) throw new Error('No colors were found for this palette.');
+        render(data.colors);
+      }); })
+      .catch(function (error) {
+        statusEl.textContent = error.message || 'Unable to load this palette.';
+      });
+  </script>
+</body>
+</html>`;
+}
+
 export async function loader({ request }) {
   const url = new URL(request.url);
   const rawPaletteCode = String(url.searchParams.get("palette") || "").trim();
@@ -829,6 +1020,49 @@ export async function loader({ request }) {
       { error: "Missing Airtable server configuration" },
       { status: 500 }
     );
+  }
+
+  if (action === "clientPaletteView") {
+    try {
+      const access = await validateClientPaletteAccessToken({
+        token: url.searchParams.get("token")
+      });
+
+      return new Response(clientPaletteAccessHtml(access), {
+        status: 200,
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "no-store"
+        }
+      });
+    } catch (error) {
+      return new Response(`<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Palette Link Unavailable</title>
+  <style>
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #2f2a25; background: #fffaf6; }
+    main { max-width: 620px; margin: 0 auto; padding: 72px 20px; }
+    h1 { margin: 0 0 12px; font-size: 42px; font-weight: 400; letter-spacing: 0; }
+    p { margin: 0; color: #625c55; font-size: 18px; line-height: 1.45; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Palette link unavailable</h1>
+    <p>${escapeHtml(error.message || "This palette access link is not valid.")}</p>
+  </main>
+</body>
+</html>`, {
+        status: error.status || 404,
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "no-store"
+        }
+      });
+    }
   }
 
   if (action === "getSignatureLipColors") {

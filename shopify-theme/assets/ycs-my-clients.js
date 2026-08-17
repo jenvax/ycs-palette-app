@@ -2418,12 +2418,17 @@
     const canGrantPaletteAccess = isAdmin || isTrade;
     const isDisabled = canGrantPaletteAccess && !hasTradePaletteCredits();
     if (!canGrantPaletteAccess) return "";
+    const sectionTitle = isAdmin ? "Client Palette Access" : "Private Palette Link";
+    const sectionIntro = isAdmin
+      ? "Give this client digital access to a color palette when you're ready."
+      : "Create a private one-palette link to share directly with this client.";
+    const buttonText = isAdmin ? "Give Client Palette Access" : "Create Private Palette Link";
 
     return `
       <section class="ycs-clients__section ycs-clients__palette-access-section">
         <div class="ycs-clients__section-header">
-          <h3>Client Palette Access</h3>
-          <p>Give this client digital access to a color palette when you're ready.</p>
+          <h3>${escapeHtml(sectionTitle)}</h3>
+          <p>${escapeHtml(sectionIntro)}</p>
         </div>
         <label class="ycs-clients__field">
           <span>Color Palette</span>
@@ -2433,7 +2438,7 @@
           </select>
         </label>
         ${renderTradePaletteCreditStatus()}
-        <button class="ycs-clients__button" type="button" data-ycs-grant-client-palette-access${isDisabled ? " disabled" : ""}>Give Client Palette Access</button>
+        <button class="ycs-clients__button" type="button" data-ycs-grant-client-palette-access${isDisabled ? " disabled" : ""}>${escapeHtml(buttonText)}</button>
         ${isDisabled ? '<p class="ycs-clients__access-required" data-ycs-palette-credit-required>1 palette credit required</p>' : ""}
       </section>
     `;
@@ -2497,6 +2502,30 @@
     setPaletteAccessEmailHelp("Add the client's email to give them palette access.", true);
     const emailInput = detailEl.querySelector("[data-ycs-client-email-input]");
     if (emailInput) emailInput.focus();
+  }
+
+  function showTradePaletteAccessLink(result, client, paletteName, message) {
+    const accessUrl = String(result.accessUrl || result.access?.accessUrl || "").trim();
+    const remainingText = Number.isFinite(Number(result.balance))
+      ? `${Number(result.balance)} color palette credit${Number(result.balance) === 1 ? "" : "s"} remaining.`
+      : "";
+    const createdText = result.createdAccessLink
+      ? "A private palette link was created."
+      : "This client already had a private link for this palette.";
+    const statusMessage = message || `Palette link ready for ${displayName(client)}. ${createdText} ${remainingText}`.trim();
+
+    if (!accessUrl) {
+      setStatus(statusMessage, true);
+      return;
+    }
+
+    setStatusHtml(`
+      <div class="ycs-clients__credit-status">
+        <p>${escapeHtml(statusMessage)}</p>
+        <a class="ycs-clients__button" href="${escapeHtml(accessUrl)}" target="_blank" rel="noopener">Open Palette Link</a>
+        <input class="ycs-clients__input" type="text" value="${escapeHtml(accessUrl)}" readonly onclick="this.select()">
+      </div>
+    `, true);
   }
 
   function setAdminGrantStatus(message, visible) {
@@ -2746,7 +2775,7 @@
 
   function renderEditForm(client, saveMessage, isCreate) {
     const selectedPaletteCode = String(client.paletteCode || "").trim().toUpperCase();
-    const showPaletteEmailHelp = !isCreate && (isAdmin || isTrade);
+    const showPaletteEmailHelp = !isCreate && isAdmin;
     const nameRequired = isCreate ? "" : " required";
     const emailHelpId = "ycs-client-email-palette-access-help";
     return `
@@ -3261,23 +3290,18 @@
   async function giveTradeClientPaletteAccessForTrade(client) {
     const { paletteCode, paletteName } = getPaletteAccessSelection(client);
 
-    if (!client.email) {
-      showPaletteAccessEmailRequirement();
-      return;
-    }
-
     if (!paletteCode) {
       setStatus("Select a color palette before giving customer access.", true);
       return;
     }
 
-    const confirmed = window.confirm(`Give ${displayName(client)} access to ${paletteName}? This will use 1 color palette credit.`);
+    const confirmed = window.confirm(`Create a private ${paletteName} palette link for ${displayName(client)}? This will use 1 color palette credit.`);
     if (!confirmed) {
       setStatus("Palette access was not changed.", true);
       return;
     }
 
-    setStatus("Giving customer palette access...", true);
+    setStatus("Creating private palette link...", true);
     const result = await giveTradeClientPaletteAccess({
       clientRecordId: client.clientRecordId,
       paletteCode,
@@ -3292,22 +3316,21 @@
             ...(result.client || {}),
             paletteCode: entry.paletteCode,
             paletteName: entry.paletteName,
-            shopifyCustomerId: result.customer?.id || entry.shopifyCustomerId || "",
-            shopifyCustomerGid: result.customer?.gid || entry.shopifyCustomerGid || "",
             updatedAt: new Date().toISOString()
           }
         : entry
     ));
 
+    const accessUrl = String(result.accessUrl || result.access?.accessUrl || "").trim();
     const remainingText = Number.isFinite(Number(result.balance))
       ? ` ${Number(result.balance)} color palette credit${Number(result.balance) === 1 ? "" : "s"} remaining.`
       : "";
-    const customerText = result.createdCustomer ? " A customer account was created." : "";
-    const creditText = result.alreadyHadAccess ? " No credit was used because this customer already had access." : remainingText;
-    const completionMessage = `Palette assigned: ${displayName(client)} now has access to ${paletteName}.${customerText}${creditText}`;
+    const creditText = result.alreadyHadAccess ? " No credit was used because this client already had a link for this palette." : remainingText;
+    const completionMessage = `Palette link ready: ${displayName(client)} can access ${paletteName}.${creditText}`;
     if (Number.isFinite(Number(result.balance))) setTradePaletteCreditBalance(result.balance);
     showClientById(client.clientRecordId, true, completionMessage);
-    window.alert(completionMessage);
+    showTradePaletteAccessLink(result, client, paletteName, completionMessage);
+    window.alert(accessUrl ? `${completionMessage}\n\n${accessUrl}` : completionMessage);
   }
 
   async function saveClient(form) {

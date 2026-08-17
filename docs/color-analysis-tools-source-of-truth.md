@@ -27,7 +27,9 @@ Primary code areas:
   - `app/routes/api.trade-palette-credit-order.jsx`
   - `app/routes/webhooks.orders.paid.jsx`
   - `app/routes/api.save-draped-image.jsx`
+  - `app/routes/app.proxy.jsx`
   - `app/services/trade-palette-access.server.js`
+  - `app/services/trade-client-palette-links.server.js`
   - `app/services/trade-palette-credits.server.js`
   - `app/services/palette-credit-orders.server.js`
   - `app/services/shopify-admin.server.js`
@@ -344,7 +346,9 @@ There are two current palette-assignment entry points:
 - standalone YCS_ADMIN panel on My Clients: "Give Color Palette to Customer"
 - View/Edit Client Client Palette Access card
 
-Palette access means the app adds the selected YCS palette code as a Shopify customer tag. That tag controls what the customer sees in My Color Palettes.
+Admin palette access means the app adds the selected YCS palette code as a Shopify customer tag. That tag controls what the customer sees in My Color Palettes.
+
+Trade palette access is intentionally separate. TRADE consultant clients should not be pulled into the YCS customer-account ecosystem. Instead, the app creates a private one-palette link that the consultant can share directly with the client.
 
 ### Standalone YCS_ADMIN Flow
 
@@ -391,34 +395,40 @@ The system:
 
 ### TRADE View/Edit Client Flow
 
-TRADE users can give palette access to their own clients from View/Edit Client.
+TRADE users can create private palette links for their own clients from View/Edit Client.
 
 Requirements:
 
-- client email
 - selected color palette in the Client Palette Access card
-- at least 1 color palette credit, unless usage for that exact client/palette has already been recorded
+- at least 1 color palette credit, unless an active private link already exists for that exact client/palette
+
+Client email is optional for the TRADE private-link flow.
 
 The system:
 
 1. Verifies the logged-in customer has `TRADE`, unexpired `TRADEJULYCOHORT`, or `YCS_ADMIN`.
 2. Finds the Airtable client by `consultantId` and `clientRecordId`.
-3. Requires the client email.
-4. Looks for an existing Shopify customer by email.
-5. Uses the existing Shopify customer if found.
-6. Creates a Shopify customer behind the scenes if none exists.
-7. Adds the selected palette tag.
-8. Links the Shopify customer ID/GID to the client record.
-9. Sends a legacy customer account invite when Shopify reports the customer account state is `DISABLED` or `INVITED`.
-10. Records a `usage` event for -1 color palette credit when the palette tag was newly added.
+3. Looks for an existing active private link for that consultant/client/palette.
+4. Creates a secure private palette link if one does not already exist.
+5. Stores the hashed token and link metadata in Airtable.
+6. Records a `usage` event for -1 color palette credit only when a new private link is created.
+7. Shows the consultant the private link so it can be opened or copied.
 
-TRADE palette access currently sends the Shopify legacy account invite when needed. It does not use the optional `PALETTE_ACCESS_NOTIFICATION_WEBHOOK_URL` notification flow that the admin palette-access endpoint uses.
+The TRADE private-link flow does not:
 
-If the Shopify customer already had that palette tag:
+- look up the client in Shopify
+- create a Shopify customer
+- add Shopify customer tags
+- link Shopify customer ID/GID to the client record
+- send a Shopify legacy account activation invite
+- send the optional admin palette-access notification webhook
 
-- no new palette tag is added
+If the same consultant/client/palette already has an active private link:
+
+- the existing link is reused
 - no new credit usage event is recorded
-- the client can still be linked to the Shopify customer
+
+The private link opens a one-palette storefront view through the app proxy. It does not require customer login and does not send the client to My Account or My Color Palettes.
 
 The Client Palette Access card has its own palette selector. Choosing a palette there does not have to change the client's assigned Color Palette field. This allows a user to give multiple palettes to the same client over time.
 
