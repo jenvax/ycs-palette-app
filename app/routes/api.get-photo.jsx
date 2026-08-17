@@ -23,6 +23,9 @@ function cleanString(value) {
   const stringValue = String(value || "").trim();
   return stringValue || null;
 }
+function isAirtableRecordId(value) {
+  return String(value || "").startsWith("rec");
+}
 function parseJson(value) {
   try {
     return value ? JSON.parse(value) : null;
@@ -89,7 +92,9 @@ const notArchivedFormula =
 
 if (isConsultantClient) {
   tableName = "ConsultantClients";
-  filterFormula = `{ClientRecordId}="${clientRecordId}"`;
+  filterFormula = isAirtableRecordId(clientRecordId)
+    ? `RECORD_ID()="${clientRecordId}"`
+    : `{ClientRecordId}="${clientRecordId}"`;
 } else if (isSpecificPhoto) {
   if (photoId.startsWith("rec") && !photoSource) {
     return Response.json(

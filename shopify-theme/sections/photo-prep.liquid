@@ -3031,7 +3031,7 @@ state.previewOffsetY = 0;
     recentClientsList.innerHTML = clients.map(function (client) {
       const fullName = [client.firstName || '', client.lastName || ''].filter(Boolean).join(' ').trim() || 'Unnamed client';
       const email = client.email || 'No email';
-      const clientRecordId = client.clientRecordId || '';
+      const clientRecordId = client.clientRecordId || client.airtableRecordId || '';
       const hasPhoto = clientHasSavedPhoto(client);
 
       return `
@@ -4530,7 +4530,10 @@ if (addMemberPhotoBtn) {
   if (!openBtn) return;
 
   const clientRecordId = String(openBtn.dataset.clientRecordId || '').trim();
-  if (!clientRecordId) return;
+  if (!clientRecordId) {
+    alert('This client is missing an ID and cannot be opened. Refresh the page and try again.');
+    return;
+  }
 
   if (openBtn.dataset.hasPhoto === 'true') {
     window.location.href = colorAnalysisToolUrl(clientRecordId);

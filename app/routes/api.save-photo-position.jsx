@@ -20,6 +20,9 @@ function cleanString(value) {
   const stringValue = String(value || "").trim();
   return stringValue || null;
 }
+function isAirtableRecordId(value) {
+  return String(value || "").startsWith("rec");
+}
 
 function getCustomerPhotoLookup({ photoId, photoSource, customerId }) {
   if (photoId?.startsWith("rec") && !photoSource) {
@@ -105,7 +108,9 @@ export async function action({ request }) {
     const lookup = isConsultantClient
       ? {
           tableName: "ConsultantClients",
-          formula: `{ClientRecordId}="${recordId}"`
+          formula: isAirtableRecordId(recordId)
+            ? `RECORD_ID()="${recordId}"`
+            : `{ClientRecordId}="${recordId}"`
         }
       : getCustomerPhotoLookup({
           photoId: safePhotoId,

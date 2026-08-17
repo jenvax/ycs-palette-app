@@ -210,7 +210,8 @@ export async function loader({ request }) {
       ]);
 
       return {
-        clientRecordId: fields.ClientRecordId || "",
+        clientRecordId: fields.ClientRecordId || record.id || "",
+        airtableRecordId: record.id || "",
         firstName: fields.FirstName || "",
         lastName: fields.LastName || "",
         email: fields.Email || "",

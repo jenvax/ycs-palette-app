@@ -36,6 +36,9 @@ function cleanString(value) {
   const stringValue = String(value || "").trim();
   return stringValue || null;
 }
+function isAirtableRecordId(value) {
+  return String(value || "").startsWith("rec");
+}
 
 function toBool(value) {
   return value === true || String(value || "").trim().toLowerCase() === "true";
@@ -205,8 +208,13 @@ export async function action({ request }) {
     const airtableTable = isConsultantClient ? "ConsultantClients" : "CustomerPhotos";
     const lookupField = isConsultantClient ? "ClientRecordId" : "CustomerId";
 
+    const lookupFormula =
+      isConsultantClient && isAirtableRecordId(recordId)
+        ? `RECORD_ID()="${recordId}"`
+        : `{${lookupField}}="${recordId}"`;
+
     const findRes = await fetch(
-      `https://api.airtable.com/v0/${airtableBase}/${airtableTable}?filterByFormula=${encodeURIComponent(`{${lookupField}}="${recordId}"`)}`,
+      `https://api.airtable.com/v0/${airtableBase}/${airtableTable}?filterByFormula=${encodeURIComponent(lookupFormula)}`,
       {
         headers: {
           Authorization: `Bearer ${airtableToken}`

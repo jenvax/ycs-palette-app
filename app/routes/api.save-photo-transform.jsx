@@ -20,6 +20,9 @@ function cleanString(value) {
   const stringValue = String(value || "").trim();
   return stringValue || null;
 }
+function isAirtableRecordId(value) {
+  return String(value || "").startsWith("rec");
+}
 
 function parseJson(value) {
   try {
@@ -127,7 +130,9 @@ const airtableTable = isConsultantClient
 let lookupFormula;
 
 if (isConsultantClient) {
-  lookupFormula = `{ClientRecordId}="${safeClientRecordId}"`;
+  lookupFormula = isAirtableRecordId(safeClientRecordId)
+    ? `RECORD_ID()="${safeClientRecordId}"`
+    : `{ClientRecordId}="${safeClientRecordId}"`;
 } else if (isSpecificCustomerPhoto) {
   if (safePhotoId.startsWith("rec")) {
     // Airtable record ID → ONLY use RECORD_ID()
