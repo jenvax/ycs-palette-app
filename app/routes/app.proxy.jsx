@@ -904,7 +904,7 @@ function clientPaletteAccessHtml(access) {
     }
     .ycs-client-palette__grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(58px, 58px));
+      grid-template-columns: repeat(auto-fill, minmax(76px, 76px));
       column-gap: 6px;
       row-gap: 16px;
     }
@@ -924,7 +924,7 @@ function clientPaletteAccessHtml(access) {
     .ycs-client-swatch__name {
       display: block;
       color: #111;
-      font-size: 10px;
+      font-size: 12px;
       font-weight: 600;
       line-height: 1.15;
     }
@@ -943,9 +943,14 @@ function clientPaletteAccessHtml(access) {
         margin-bottom: 14px;
       }
       .ycs-client-palette__grid {
-        grid-template-columns: repeat(4, minmax(0, 58px));
+        grid-template-columns: repeat(4, minmax(0, 76px));
         column-gap: 6px;
         row-gap: 16px;
+      }
+    }
+    @media (max-width: 360px) {
+      .ycs-client-palette__grid {
+        grid-template-columns: repeat(4, minmax(0, calc((100% - 18px) / 4)));
       }
     }
   </style>
