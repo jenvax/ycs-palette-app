@@ -908,7 +908,7 @@ function clientPaletteAccessHtml(access) {
       width: 100%;
       aspect-ratio: 1 / 1;
       border-radius: 8px;
-      box-shadow: 4px 7px 0 rgba(0,0,0,.06);
+      box-shadow: 4px 4px 0 rgba(0,0,0,.06);
     }
     .ycs-client-swatch__body {
       padding: 8px 2px 0;
