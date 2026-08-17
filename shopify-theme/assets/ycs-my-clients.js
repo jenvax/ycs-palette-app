@@ -3132,17 +3132,32 @@
   }
 
   async function giveTradeClientPaletteAccess(payload) {
-    const url = new URL("/apps/palette-data", window.location.origin);
-    url.searchParams.set("action", "tradeClientPaletteAccess");
-    url.searchParams.set("clientRecordId", payload.clientRecordId || "");
-    url.searchParams.set("paletteCode", payload.paletteCode || "");
-    url.searchParams.set("paletteName", payload.paletteName || "");
-    url.searchParams.set("updateClientPalette", payload.updateClientPalette ? "1" : "0");
+    const tokenUrl = new URL("/apps/palette-data", window.location.origin);
+    tokenUrl.searchParams.set("action", "tradePaletteAccessToken");
 
-    const response = await fetch(url.toString(), {
+    const tokenResponse = await fetch(tokenUrl.toString(), {
       method: "GET",
       headers: { "Accept": "application/json" },
       credentials: "same-origin"
+    });
+    const tokenData = await readJsonResponse(tokenResponse, "Unable to prepare the private palette link. Please try again.");
+
+    if (!tokenResponse.ok || !tokenData.token) {
+      const error = new Error(tokenData.error || "Unable to prepare the private palette link.");
+      error.status = tokenResponse.status;
+      throw error;
+    }
+
+    const response = await fetch(`${apiBase}/api/trade-client-palette-access`, {
+      method: "POST",
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        token: tokenData.token,
+        ...payload
+      })
     });
     const data = await readJsonResponse(response, "Unable to create the private palette link. Please try again.");
 

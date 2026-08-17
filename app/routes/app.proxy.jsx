@@ -4,6 +4,7 @@ import {
   isDueForDraping
 } from "../services/draping-stats.server.js";
 import { validateClientPaletteAccessToken } from "../services/trade-client-palette-links.server.js";
+import { createTradePaletteAccessToken } from "../services/trade-palette-access-token.server.js";
 import { giveTradeClientPaletteAccess } from "../services/trade-palette-access.server.js";
 import { authenticate } from "../shopify.server";
 import crypto from "node:crypto";
@@ -1020,6 +1021,42 @@ export async function loader({ request }) {
       { error: "Missing Airtable server configuration" },
       { status: 500 }
     );
+  }
+
+  if (action === "tradePaletteAccessToken") {
+    try {
+      try {
+        await authenticate.public.appProxy(request);
+      } catch (authError) {
+        const hasValidProxySignature = verifyAppProxySignature(url, process.env.SHOPIFY_API_SECRET);
+        if (!hasValidProxySignature) {
+          console.error("tradePaletteAccessToken proxy authentication failed:", authError);
+          return Response.json(
+            { error: "Signed storefront request required to create palette access token" },
+            { status: 401 }
+          );
+        }
+      }
+
+      const safeLoggedInCustomerId = normalizeCustomerId(loggedInCustomerId);
+      if (!safeLoggedInCustomerId) {
+        return Response.json(
+          { error: "You must be signed in to create a private palette link" },
+          { status: 401 }
+        );
+      }
+
+      return Response.json({
+        success: true,
+        token: createTradePaletteAccessToken({ consultantId: safeLoggedInCustomerId })
+      });
+    } catch (error) {
+      console.error("tradePaletteAccessToken failed:", error);
+      return Response.json(
+        { error: error.message || "Unable to prepare private palette link" },
+        { status: error.status || 500 }
+      );
+    }
   }
 
   if (action === "tradeClientPaletteAccess") {

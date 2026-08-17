@@ -23,12 +23,14 @@ Primary code areas:
   - `app/routes/api.create-consultant-client.jsx`
   - `app/routes/api.update-consultant-client.jsx`
   - `app/routes/api.admin-customer-palette-access.jsx`
+  - `app/routes/api.trade-client-palette-access.jsx`
   - `app/routes/api.trade-palette-credits.jsx`
   - `app/routes/api.trade-palette-credit-order.jsx`
   - `app/routes/webhooks.orders.paid.jsx`
   - `app/routes/api.save-draped-image.jsx`
   - `app/routes/app.proxy.jsx`
   - `app/services/trade-palette-access.server.js`
+  - `app/services/trade-palette-access-token.server.js`
   - `app/services/trade-client-palette-links.server.js`
   - `app/services/trade-palette-credits.server.js`
   - `app/services/palette-credit-orders.server.js`
@@ -407,12 +409,14 @@ Client email is optional for the TRADE private-link flow.
 The system:
 
 1. Verifies the logged-in customer has `TRADE`, unexpired `TRADEJULYCOHORT`, or `YCS_ADMIN`.
-2. Finds the Airtable client by `consultantId` and `clientRecordId`.
-3. Looks for an existing active private link for that consultant/client/palette.
-4. Creates a secure private palette link if one does not already exist.
-5. Stores the hashed token and link metadata in Airtable.
-6. Records a `usage` event for -1 color palette credit only when a new private link is created.
-7. Shows the consultant the private link so it can be opened or copied.
+2. Uses Shopify's signed app-proxy request to mint a short-lived palette-access action token for the logged-in consultant.
+3. Calls the direct app JSON endpoint with that signed token.
+4. Finds the Airtable client by the consultant ID embedded in the token and the requested `clientRecordId`.
+5. Looks for an existing active private link for that consultant/client/palette.
+6. Creates a secure private palette link if one does not already exist.
+7. Stores the hashed token and link metadata in Airtable.
+8. Records a `usage` event for -1 color palette credit only when a new private link is created.
+9. Shows the consultant the private link so it can be opened or copied.
 
 The TRADE private-link flow does not:
 
