@@ -3472,7 +3472,7 @@
     setStatus(completionMessage, true);
   }
 
-  async function copyTradeClientPaletteLink(client) {
+  async function copyTradeClientPaletteLink(client, triggerButton) {
     const accessUrl = String(paletteAccessFromClient(client)?.accessUrl || "").trim();
     if (!accessUrl) {
       setStatus("No palette link is ready to copy.", true);
@@ -3491,7 +3491,15 @@
       document.execCommand("copy");
       input.remove();
     }
-    setStatus("Link copied", true);
+    setStatus("", false);
+    if (!triggerButton) return;
+    const originalText = triggerButton.textContent;
+    triggerButton.textContent = "Copied";
+    triggerButton.disabled = true;
+    window.setTimeout(() => {
+      triggerButton.textContent = originalText || "Copy Link";
+      triggerButton.disabled = false;
+    }, 1600);
   }
 
   function startReplaceTradeClientPalette(client) {
@@ -3801,7 +3809,7 @@
 
       try {
         if (copyClientPaletteLinkButton) {
-          await copyTradeClientPaletteLink(client);
+          await copyTradeClientPaletteLink(client, copyClientPaletteLinkButton);
         } else if (startReplaceClientPaletteButton) {
           startReplaceTradeClientPalette(client);
         } else if (cancelReplaceClientPaletteButton) {
