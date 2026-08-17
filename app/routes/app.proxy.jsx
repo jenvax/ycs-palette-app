@@ -904,7 +904,7 @@ function clientPaletteAccessHtml(access) {
     }
     .ycs-client-palette__grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(76px, 76px));
+      grid-template-columns: repeat(auto-fill, 115px);
       column-gap: 6px;
       row-gap: 16px;
     }
@@ -943,12 +943,12 @@ function clientPaletteAccessHtml(access) {
         margin-bottom: 14px;
       }
       .ycs-client-palette__grid {
-        grid-template-columns: repeat(4, minmax(0, 76px));
+        grid-template-columns: repeat(4, 115px);
         column-gap: 6px;
         row-gap: 16px;
       }
     }
-    @media (max-width: 360px) {
+    @media (max-width: 500px) {
       .ycs-client-palette__grid {
         grid-template-columns: repeat(4, minmax(0, calc((100% - 18px) / 4)));
       }
