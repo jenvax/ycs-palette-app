@@ -824,6 +824,7 @@ function clientPaletteAccessHtml(access) {
   const paletteCode = access.paletteCode;
   const paletteName = access.paletteName || access.paletteCode;
   const clientName = access.clientName || "Your client";
+  const logoUrl = "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/YourColorStyle_Logo-120.png?v=1643287573";
 
   return `<!doctype html>
 <html lang="en">
@@ -855,8 +856,14 @@ function clientPaletteAccessHtml(access) {
     }
     .ycs-client-palette__header {
       border-bottom: 1px solid var(--line);
-      margin-bottom: 22px;
-      padding-bottom: 20px;
+      margin-bottom: 28px;
+      padding-bottom: 24px;
+    }
+    .ycs-client-palette__logo {
+      display: block;
+      width: 54px;
+      height: auto;
+      margin: 0 0 18px;
     }
     .ycs-client-palette__kicker {
       margin: 0 0 6px;
@@ -873,9 +880,15 @@ function clientPaletteAccessHtml(access) {
       letter-spacing: 0;
       line-height: 1.05;
     }
+    .ycs-client-palette__prepared {
+      margin: 10px 0 0;
+      color: var(--ink);
+      font-size: clamp(18px, 2.6vw, 24px);
+      font-weight: 600;
+    }
     .ycs-client-palette__intro {
       max-width: 720px;
-      margin: 12px 0 0;
+      margin: 14px 0 0;
       color: var(--muted);
       font-size: 18px;
     }
@@ -923,6 +936,13 @@ function clientPaletteAccessHtml(access) {
     }
     @media (max-width: 640px) {
       .ycs-client-palette { padding-top: 24px; }
+      .ycs-client-palette__logo {
+        width: 46px;
+        margin-bottom: 14px;
+      }
+      .ycs-client-palette__intro {
+        font-size: 16px;
+      }
       .ycs-client-palette__grid {
         grid-template-columns: repeat(4, minmax(0, 1fr));
         column-gap: 6px;
@@ -941,9 +961,11 @@ function clientPaletteAccessHtml(access) {
 <body>
   <main class="ycs-client-palette" data-palette-code="${escapeHtml(paletteCode)}">
     <header class="ycs-client-palette__header">
-      <p class="ycs-client-palette__kicker">Your Color Palette</p>
+      <img class="ycs-client-palette__logo" src="${escapeHtml(logoUrl)}" alt="Your Color Style">
+      <p class="ycs-client-palette__kicker">Your Personal Color Palette</p>
       <h1>${escapeHtml(paletteName)}</h1>
-      <p class="ycs-client-palette__intro">${escapeHtml(clientName)}, this private link gives you access to your assigned color palette.</p>
+      <p class="ycs-client-palette__prepared">Prepared for ${escapeHtml(clientName)}</p>
+      <p class="ycs-client-palette__intro">Your consultant has selected this Your Color Style™ palette especially for you. Use it as your guide for choosing colors that complement your natural coloring.</p>
     </header>
     <p class="ycs-client-palette__status" data-status>Loading colors...</p>
     <div class="ycs-client-palette__sections" data-sections></div>
