@@ -2417,7 +2417,8 @@
     `).join("");
   }
 
-  function getPaletteAccessSelection(client) {
+  function getPaletteAccessSelection(client, selectionOverride) {
+    if (selectionOverride?.paletteCode) return selectionOverride;
     const select = detailEl.querySelector("[data-ycs-palette-access-select]");
     const paletteCode = String(select?.value || client.paletteCode || "").trim().toUpperCase();
     const paletteName = paletteNameForCode(paletteCode);
@@ -3377,13 +3378,13 @@
     window.alert(completionMessage);
   }
 
-  async function grantClientPaletteAccess(client) {
+  async function grantClientPaletteAccess(client, selectionOverride) {
     if (!client) return;
     if (!isAdmin && isTrade) {
-      return giveTradeClientPaletteAccessForTrade(client);
+      return giveTradeClientPaletteAccessForTrade(client, selectionOverride);
     }
     if (!isAdmin) return;
-    const { paletteCode, paletteName } = getPaletteAccessSelection(client);
+    const { paletteCode, paletteName } = getPaletteAccessSelection(client, selectionOverride);
 
     if (!client.email) {
       showPaletteAccessEmailRequirement();
@@ -3431,8 +3432,8 @@
     window.alert(completionMessage);
   }
 
-  async function giveTradeClientPaletteAccessForTrade(client) {
-    const { paletteCode, paletteName } = getPaletteAccessSelection(client);
+  async function giveTradeClientPaletteAccessForTrade(client, selectionOverride) {
+    const { paletteCode, paletteName } = getPaletteAccessSelection(client, selectionOverride);
 
     if (!paletteCode) {
       setStatus("Select a color palette before creating the client palette.", true);
@@ -3887,12 +3888,17 @@
       event.preventDefault();
       const activeForm = getActiveClientForm();
       const clientRecordId = activeForm?.querySelector("[name='clientRecordId']")?.value || "";
+      const selectedPaletteCode = String(activeForm?.querySelector("[name='accessPaletteCode']")?.value || "").trim().toUpperCase();
+      const selectedPaletteName = paletteNameForCode(selectedPaletteCode);
+      const paletteAccessSelection = selectedPaletteCode
+        ? { paletteCode: selectedPaletteCode, paletteName: selectedPaletteName }
+        : null;
       try {
         if (activeForm) {
           await saveClient(activeForm);
         }
         const client = clients.find((item) => item.clientRecordId === clientRecordId);
-        await grantClientPaletteAccess(client);
+        await grantClientPaletteAccess(client, paletteAccessSelection);
       } catch (error) {
         if (error.needsCredits) {
           showPurchaseCreditsStatus(error.message);
