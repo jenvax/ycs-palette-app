@@ -3888,13 +3888,17 @@
       event.preventDefault();
       const activeForm = getActiveClientForm();
       const clientRecordId = activeForm?.querySelector("[name='clientRecordId']")?.value || "";
-      const selectedPaletteCode = String(activeForm?.querySelector("[name='accessPaletteCode']")?.value || "").trim().toUpperCase();
+      const selectedPaletteCode = String(
+        activeForm?.querySelector("[name='accessPaletteCode']")?.value ||
+        detailEl.querySelector("[name='accessPaletteCode']")?.value ||
+        ""
+      ).trim().toUpperCase();
       const selectedPaletteName = paletteNameForCode(selectedPaletteCode);
       const paletteAccessSelection = selectedPaletteCode
         ? { paletteCode: selectedPaletteCode, paletteName: selectedPaletteName }
         : null;
       try {
-        if (activeForm) {
+        if (activeForm && (isAdmin || !isTrade)) {
           await saveClient(activeForm);
         }
         const client = clients.find((item) => item.clientRecordId === clientRecordId);
