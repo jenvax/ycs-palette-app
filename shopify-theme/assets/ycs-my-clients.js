@@ -622,7 +622,7 @@
 
   function normalizeCustomPageTemplate(template) {
     const value = String(template || "").trim();
-    if (value === "photos" || value === "photos3" || value === "photos4") return value;
+    if (value === "photos" || value === "photos3" || value === "photos4" || value === "photos6") return value;
     return "letter";
   }
 
@@ -650,14 +650,20 @@
           image2Url: String(page.image2Url || ""),
           image3Url: String(page.image3Url || ""),
           image4Url: String(page.image4Url || ""),
+          image5Url: String(page.image5Url || ""),
+          image6Url: String(page.image6Url || ""),
           image1Checked: page.image1Checked === true,
           image2Checked: page.image2Checked === true,
           image3Checked: page.image3Checked === true,
           image4Checked: page.image4Checked === true,
+          image5Checked: page.image5Checked === true,
+          image6Checked: page.image6Checked === true,
           image1Caption: String(page.image1Caption || ""),
           image2Caption: String(page.image2Caption || ""),
           image3Caption: String(page.image3Caption || ""),
-          image4Caption: String(page.image4Caption || "")
+          image4Caption: String(page.image4Caption || ""),
+          image5Caption: String(page.image5Caption || ""),
+          image6Caption: String(page.image6Caption || "")
         }))
         : [],
       reportPageOrder: Array.isArray(incoming.reportPageOrder) ? incoming.reportPageOrder : [],
@@ -989,8 +995,8 @@
           const id = String(page.id || makeCustomReportPageId());
           const template = normalizeCustomPageTemplate(page.template);
           const pageNumber = reportPageNumberForCustomPage(draft, id);
-          const isPhotoTemplate = template === "photos" || template === "photos3" || template === "photos4";
-          const templateLabel = template === "photos4" ? "Four-photo page" : (template === "photos3" ? "Three-photo page" : (template === "photos" ? "Photo page" : "Letter page"));
+          const isPhotoTemplate = template === "photos" || template === "photos3" || template === "photos4" || template === "photos6";
+          const templateLabel = template === "photos6" ? "Six-photo page" : (template === "photos4" ? "Four-photo page" : (template === "photos3" ? "Three-photo page" : (template === "photos" ? "Photo page" : "Letter page")));
           return `
             <div class="ycs-report-form-page" data-ycs-report-controls-page="${pageNumber}"${pageNumber === activeReportPage ? "" : " hidden"}>
               <div class="ycs-report-form-page__head">
@@ -1005,20 +1011,29 @@
                   <option value="photos"${template === "photos" ? " selected" : ""}>Title, two photos, copy</option>
                   <option value="photos3"${template === "photos3" ? " selected" : ""}>Title, three photos, copy</option>
                   <option value="photos4"${template === "photos4" ? " selected" : ""}>Title, four photos</option>
+                  <option value="photos6"${template === "photos6" ? " selected" : ""}>Title, six photos, copy</option>
                 </select>
               </label>
               <input type="hidden" name="customPages.${escapeHtml(id)}.image1Url" value="${escapeHtml(page.image1Url || "")}">
               <input type="hidden" name="customPages.${escapeHtml(id)}.image2Url" value="${escapeHtml(page.image2Url || "")}">
               <input type="hidden" name="customPages.${escapeHtml(id)}.image3Url" value="${escapeHtml(page.image3Url || "")}">
               <input type="hidden" name="customPages.${escapeHtml(id)}.image4Url" value="${escapeHtml(page.image4Url || "")}">
+              <input type="hidden" name="customPages.${escapeHtml(id)}.image5Url" value="${escapeHtml(page.image5Url || "")}">
+              <input type="hidden" name="customPages.${escapeHtml(id)}.image6Url" value="${escapeHtml(page.image6Url || "")}">
               ${isPhotoTemplate ? `
                 <label>Title<input name="customPages.${escapeHtml(id)}.title" value="${escapeHtml(page.title || "")}"></label>
-                ${renderCustomPhotoControls(page, id, 1, template === "photos4" ? "Top left photo" : "Left photo")}
-                ${renderCustomPhotoControls(page, id, 2, template === "photos4" ? "Top right photo" : (template === "photos3" ? "Center photo" : "Right photo"))}
+                ${renderCustomPhotoControls(page, id, 1, template === "photos4" || template === "photos6" ? "Top left photo" : "Left photo")}
+                ${renderCustomPhotoControls(page, id, 2, template === "photos4" ? "Top right photo" : (template === "photos6" ? "Top center photo" : (template === "photos3" ? "Center photo" : "Right photo")))}
                 ${template === "photos3" ? renderCustomPhotoControls(page, id, 3, "Right photo") : ""}
                 ${template === "photos4" ? `
                   ${renderCustomPhotoControls(page, id, 3, "Bottom left photo")}
                   ${renderCustomPhotoControls(page, id, 4, "Bottom right photo")}
+                ` : ""}
+                ${template === "photos6" ? `
+                  ${renderCustomPhotoControls(page, id, 3, "Top right photo")}
+                  ${renderCustomPhotoControls(page, id, 4, "Bottom left photo")}
+                  ${renderCustomPhotoControls(page, id, 5, "Bottom center photo")}
+                  ${renderCustomPhotoControls(page, id, 6, "Bottom right photo")}
                 ` : ""}
               ` : ""}
               ${template !== "photos4" ? `<label>Copy<textarea name="customPages.${escapeHtml(id)}.copy">${escapeHtml(page.copy || "")}</textarea></label>` : ""}
@@ -1082,6 +1097,7 @@
               <button type="button" data-ycs-add-custom-report-page="photos">2-photo page</button>
               <button type="button" data-ycs-add-custom-report-page="photos3">3-photo page</button>
               <button type="button" data-ycs-add-custom-report-page="photos4">4-photo page</button>
+              <button type="button" data-ycs-add-custom-report-page="photos6">6-photo page</button>
             </div>
           </details>
         </div>
@@ -1200,6 +1216,25 @@
             ${renderCustomReportPhoto(page, 1, "Left photo", options)}
             ${renderCustomReportPhoto(page, 2, "Center photo", options)}
             ${renderCustomReportPhoto(page, 3, "Right photo", options)}
+          </div>
+          <div class="ycs-report-copy ycs-report-copy--custom">${paragraphHtml(page.copy)}</div>
+          ${renderReportFooter(draft, pageNumber)}
+        </section>
+      `;
+    }
+
+    if (template === "photos6") {
+      return `
+        <section class="ycs-report-page ycs-report-page--comparison-copy ycs-report-page--custom-photos ycs-report-page--custom-photos-six" data-report-page="${pageNumber}">
+          ${renderReportBrand(draft)}
+          <h1>${escapeHtml(page.title || "Custom Page")}</h1>
+          <div class="ycs-report-comparison-grid ycs-report-comparison-grid--three ycs-report-custom-photo-grid ycs-report-custom-photo-grid--six">
+            ${renderCustomReportPhoto(page, 1, "Top left photo", options)}
+            ${renderCustomReportPhoto(page, 2, "Top center photo", options)}
+            ${renderCustomReportPhoto(page, 3, "Top right photo", options)}
+            ${renderCustomReportPhoto(page, 4, "Bottom left photo", options)}
+            ${renderCustomReportPhoto(page, 5, "Bottom center photo", options)}
+            ${renderCustomReportPhoto(page, 6, "Bottom right photo", options)}
           </div>
           <div class="ycs-report-copy ycs-report-copy--custom">${paragraphHtml(page.copy)}</div>
           ${renderReportFooter(draft, pageNumber)}
@@ -1595,14 +1630,20 @@
         image2Url: fieldValue("image2Url"),
         image3Url: fieldValue("image3Url"),
         image4Url: fieldValue("image4Url"),
+        image5Url: fieldValue("image5Url"),
+        image6Url: fieldValue("image6Url"),
         image1Checked: formData.has(`customPages.${id}.image1Checked`),
         image2Checked: formData.has(`customPages.${id}.image2Checked`),
         image3Checked: formData.has(`customPages.${id}.image3Checked`),
         image4Checked: formData.has(`customPages.${id}.image4Checked`),
+        image5Checked: formData.has(`customPages.${id}.image5Checked`),
+        image6Checked: formData.has(`customPages.${id}.image6Checked`),
         image1Caption: fieldValue("image1Caption"),
         image2Caption: fieldValue("image2Caption"),
         image3Caption: fieldValue("image3Caption"),
-        image4Caption: fieldValue("image4Caption")
+        image4Caption: fieldValue("image4Caption"),
+        image5Caption: fieldValue("image5Caption"),
+        image6Caption: fieldValue("image6Caption")
       };
     });
     draft.reportPageOrder = normalizeReportPageOrder(draft);
@@ -4083,14 +4124,20 @@
         image2Url: "",
         image3Url: "",
         image4Url: "",
+        image5Url: "",
+        image6Url: "",
         image1Checked: false,
         image2Checked: false,
         image3Checked: false,
         image4Checked: false,
+        image5Checked: false,
+        image6Checked: false,
         image1Caption: "",
         image2Caption: "",
         image3Caption: "",
-        image4Caption: ""
+        image4Caption: "",
+        image5Caption: "",
+        image6Caption: ""
       };
       activeReportDraft.customPages = [...reportCustomPages(activeReportDraft), newPage];
       const order = normalizeReportPageOrder(activeReportDraft).filter((entry) => !(entry.type === "custom" && entry.key === newPage.id));
