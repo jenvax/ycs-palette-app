@@ -886,12 +886,6 @@ function clientPaletteAccessHtml(access) {
       font-size: clamp(18px, 2.6vw, 24px);
       font-weight: 600;
     }
-    .ycs-client-palette__intro {
-      max-width: 720px;
-      margin: 14px 0 0;
-      color: var(--muted);
-      font-size: 18px;
-    }
     .ycs-client-palette__status {
       margin: 20px 0;
       color: var(--muted);
@@ -934,14 +928,19 @@ function clientPaletteAccessHtml(access) {
       font-weight: 600;
       line-height: 1.15;
     }
+    .ycs-client-palette__footer {
+      margin: 44px 0 0;
+      border-top: 1px solid var(--line);
+      padding-top: 18px;
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+    }
     @media (max-width: 640px) {
       .ycs-client-palette { padding-top: 24px; }
       .ycs-client-palette__logo {
         width: 46px;
         margin-bottom: 14px;
-      }
-      .ycs-client-palette__intro {
-        font-size: 16px;
       }
       .ycs-client-palette__grid {
         grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -965,10 +964,10 @@ function clientPaletteAccessHtml(access) {
       <p class="ycs-client-palette__kicker">Your Personal Color Palette</p>
       <h1>${escapeHtml(paletteName)}</h1>
       <p class="ycs-client-palette__prepared">Prepared for ${escapeHtml(clientName)}</p>
-      <p class="ycs-client-palette__intro">Your consultant has selected this Your Color Style™ palette especially for you. Use it as your guide for choosing colors that complement your natural coloring.</p>
     </header>
     <p class="ycs-client-palette__status" data-status>Loading colors...</p>
     <div class="ycs-client-palette__sections" data-sections></div>
+    <footer class="ycs-client-palette__footer">Powered by Your Color Style™</footer>
   </main>
   <script>
     const root = document.querySelector('[data-palette-code]');
