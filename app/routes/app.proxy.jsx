@@ -920,7 +920,23 @@ function clientPaletteAccessHtml(access) {
     }
     @media (max-width: 640px) {
       .ycs-client-palette { padding-top: 24px; }
-      .ycs-client-palette__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .ycs-client-palette__grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .ycs-client-swatch {
+        min-height: 94px;
+      }
+      .ycs-client-swatch__color {
+        height: 56px;
+      }
+      .ycs-client-swatch__body {
+        padding: 7px 6px 8px;
+      }
+      .ycs-client-swatch__name {
+        font-size: 11px;
+        line-height: 1.15;
+      }
     }
   </style>
 </head>
