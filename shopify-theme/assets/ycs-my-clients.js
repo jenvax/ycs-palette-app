@@ -3132,14 +3132,17 @@
   }
 
   async function giveTradeClientPaletteAccess(payload) {
-    const response = await fetch(`/apps/palette-data?action=tradeClientPaletteAccess`, {
-      method: "POST",
-      headers: {
-        "Accept": "application/json",
-        "Content-Type": "application/json"
-      },
-      credentials: "same-origin",
-      body: JSON.stringify(payload)
+    const url = new URL("/apps/palette-data", window.location.origin);
+    url.searchParams.set("action", "tradeClientPaletteAccess");
+    url.searchParams.set("clientRecordId", payload.clientRecordId || "");
+    url.searchParams.set("paletteCode", payload.paletteCode || "");
+    url.searchParams.set("paletteName", payload.paletteName || "");
+    url.searchParams.set("updateClientPalette", payload.updateClientPalette ? "1" : "0");
+
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers: { "Accept": "application/json" },
+      credentials: "same-origin"
     });
     const data = await readJsonResponse(response, "Unable to create the private palette link. Please try again.");
 

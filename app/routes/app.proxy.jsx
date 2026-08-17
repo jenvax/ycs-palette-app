@@ -1022,6 +1022,51 @@ export async function loader({ request }) {
     );
   }
 
+  if (action === "tradeClientPaletteAccess") {
+    try {
+      try {
+        await authenticate.public.appProxy(request);
+      } catch (authError) {
+        const hasValidProxySignature = verifyAppProxySignature(url, process.env.SHOPIFY_API_SECRET);
+        if (!hasValidProxySignature) {
+          console.error("tradeClientPaletteAccess loader proxy authentication failed:", authError);
+          return Response.json(
+            { error: "Signed storefront request required to create a private palette link" },
+            { status: 401 }
+          );
+        }
+      }
+
+      const safeLoggedInCustomerId = normalizeCustomerId(loggedInCustomerId);
+      if (!safeLoggedInCustomerId) {
+        return Response.json(
+          { error: "You must be signed in to create a private palette link" },
+          { status: 401 }
+        );
+      }
+
+      const result = await giveTradeClientPaletteAccess({
+        consultantId: safeLoggedInCustomerId,
+        clientRecordId: url.searchParams.get("clientRecordId"),
+        paletteCode: url.searchParams.get("paletteCode"),
+        paletteName: url.searchParams.get("paletteName"),
+        updateClientPalette: parseTruthy(url.searchParams.get("updateClientPalette"))
+      });
+
+      return Response.json(result);
+    } catch (error) {
+      if (error instanceof Response) throw error;
+      console.error("tradeClientPaletteAccess loader failed:", error);
+      return Response.json(
+        {
+          error: error.message || "Unable to create private palette link",
+          balance: error.balance
+        },
+        { status: error.status || 500 }
+      );
+    }
+  }
+
   if (action === "clientPaletteView") {
     try {
       const access = await validateClientPaletteAccessToken({
