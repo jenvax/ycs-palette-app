@@ -1,5 +1,7 @@
 /* global process */
 
+import { findActiveClientPaletteAccessForClients } from "../services/trade-client-palette-links.server.js";
+
 function getCorsHeaders(origin) {
   const allowedOrigins = [
     "https://yourcolorstyle.com",
@@ -101,6 +103,7 @@ export async function loader({ request }) {
   try {
     const url = new URL(request.url);
     const consultantId = cleanString(url.searchParams.get("consultantId"));
+    const includePaletteAccess = url.searchParams.get("includePaletteAccess") === "1";
 
     if (!consultantId) {
       return Response.json(
@@ -148,7 +151,7 @@ export async function loader({ request }) {
       );
     }
 
-    const clients = (data.records || []).map((record) => {
+    let clients = (data.records || []).map((record) => {
       const fields = record.fields || {};
       const originalPhotoUrl = firstField(fields, [
         "OriginalPhotoUrl",
@@ -225,6 +228,28 @@ export async function loader({ request }) {
         updatedAt: firstField(fields, ["UpdatedAt", "LastUpdated", "ModifiedAt", "Last Modified"]) || record.createdTime || ""
       };
     });
+
+    if (includePaletteAccess && clients.length) {
+      try {
+        const accessByClientRecordId = await findActiveClientPaletteAccessForClients({
+          consultantId,
+          clientRecordIds: clients.map((client) => client.clientRecordId)
+        });
+
+        clients = clients.map((client) => ({
+          ...client,
+          paletteAccess: accessByClientRecordId.get(client.clientRecordId) || null,
+          paletteAccessLoaded: true
+        }));
+      } catch (error) {
+        console.error("Palette access summary lookup failed:", error);
+        clients = clients.map((client) => ({
+          ...client,
+          paletteAccess: null,
+          paletteAccessLoaded: false
+        }));
+      }
+    }
 
     return Response.json(
       { clients },

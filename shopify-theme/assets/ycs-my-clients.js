@@ -3737,7 +3737,10 @@
     }
 
     setStatus("Loading clients...", true);
-    const response = await fetch(`${apiBase}/api/get-consultant-clients?consultantId=${encodeURIComponent(consultantId)}`);
+    const clientsUrl = new URL(`${apiBase}/api/get-consultant-clients`);
+    clientsUrl.searchParams.set("consultantId", consultantId);
+    if (isTrade && !isAdmin) clientsUrl.searchParams.set("includePaletteAccess", "1");
+    const response = await fetch(clientsUrl.toString());
     const data = await response.json();
 
     if (!response.ok) {

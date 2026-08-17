@@ -208,6 +208,44 @@ export async function findActiveClientPaletteAccessForClient({
   return records[0] || null;
 }
 
+export async function findActiveClientPaletteAccessForClients({
+  consultantId,
+  clientRecordIds,
+  fetcher = fetch
+}) {
+  const safeConsultantId = cleanString(consultantId);
+  const safeClientRecordIds = Array.from(new Set((clientRecordIds || []).map(cleanString).filter(Boolean)));
+  if (!safeConsultantId || !safeClientRecordIds.length) return new Map();
+
+  const accessByClientRecordId = new Map();
+  const chunkSize = 20;
+
+  for (let index = 0; index < safeClientRecordIds.length; index += chunkSize) {
+    const chunk = safeClientRecordIds.slice(index, index + chunkSize);
+    const clientClauses = chunk
+      .map((clientRecordId) => `{ClientRecordId}="${escapeFormulaString(clientRecordId)}"`)
+      .join(",");
+    const formula = `AND({ConsultantId}="${escapeFormulaString(safeConsultantId)}",{Status}="active",OR(${clientClauses}))`;
+    const data = await withAccessTableSetup(() => airtableRequest({
+      searchParams: {
+        filterByFormula: formula,
+        "sort[0][field]": "CreatedAt",
+        "sort[0][direction]": "desc",
+        maxRecords: 100
+      },
+      fetcher
+    }), { fetcher });
+
+    (data.records || []).map(serializeAccessRecord).filter(Boolean).forEach((access) => {
+      if (!accessByClientRecordId.has(access.clientRecordId)) {
+        accessByClientRecordId.set(access.clientRecordId, access);
+      }
+    });
+  }
+
+  return accessByClientRecordId;
+}
+
 async function findActiveClientPaletteAccessRecordsForClient({
   consultantId,
   clientRecordId,
