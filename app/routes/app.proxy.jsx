@@ -918,13 +918,6 @@ function clientPaletteAccessHtml(access) {
       font-size: 13px;
       font-weight: 700;
     }
-    .ycs-client-swatch__hex {
-      display: block;
-      margin-top: 2px;
-      color: var(--muted);
-      font-size: 12px;
-      text-transform: uppercase;
-    }
     @media (max-width: 640px) {
       .ycs-client-palette { padding-top: 24px; }
       .ycs-client-palette__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -980,7 +973,7 @@ function clientPaletteAccessHtml(access) {
         return '<section class="ycs-client-palette__section"><h2>' + escapeHtml(category) + '</h2><div class="ycs-client-palette__grid">' +
           grouped[category].map(function (color) {
             const hex = color.hex || color.color || '#ffffff';
-            return '<article class="ycs-client-swatch"><div class="ycs-client-swatch__color" style="background:' + escapeHtml(hex) + '"></div><div class="ycs-client-swatch__body"><span class="ycs-client-swatch__name">' + escapeHtml(color.name) + '</span><span class="ycs-client-swatch__hex">' + escapeHtml(hex) + '</span></div></article>';
+            return '<article class="ycs-client-swatch"><div class="ycs-client-swatch__color" style="background:' + escapeHtml(hex) + '"></div><div class="ycs-client-swatch__body"><span class="ycs-client-swatch__name">' + escapeHtml(color.name) + '</span></div></article>';
           }).join('') +
         '</div></section>';
       }).join('');
