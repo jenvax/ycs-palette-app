@@ -850,9 +850,9 @@ function clientPaletteAccessHtml(access) {
       line-height: 1.45;
     }
     .ycs-client-palette {
-      max-width: 1180px;
+      width: min(1440px, calc(100% - 96px));
       margin: 0 auto;
-      padding: 32px 18px 48px;
+      padding: 52px 0 48px;
     }
     .ycs-client-palette__header {
       border-bottom: 1px solid var(--line);
@@ -904,9 +904,9 @@ function clientPaletteAccessHtml(access) {
     }
     .ycs-client-palette__grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(76px, 76px));
-      column-gap: 6px;
-      row-gap: 16px;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      column-gap: 12px;
+      row-gap: 42px;
     }
     .ycs-client-swatch {
       min-width: 0;
@@ -914,17 +914,17 @@ function clientPaletteAccessHtml(access) {
     .ycs-client-swatch__color {
       width: 100%;
       aspect-ratio: 1 / 1;
-      border-radius: 8px;
-      box-shadow: 4px 4px 0 rgba(0,0,0,.06);
+      border-radius: 14px;
+      box-shadow: 6px 6px 0 rgba(0,0,0,.06);
     }
     .ycs-client-swatch__body {
-      padding: 6px 2px 0;
+      padding: 10px 2px 0;
       text-align: center;
     }
     .ycs-client-swatch__name {
       display: block;
       color: #111;
-      font-size: 12px;
+      font-size: 18px;
       font-weight: 600;
       line-height: 1.15;
     }
@@ -936,16 +936,42 @@ function clientPaletteAccessHtml(access) {
       font-size: 13px;
       text-align: center;
     }
+    @media (max-width: 1100px) {
+      .ycs-client-palette__grid {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+      }
+    }
+    @media (max-width: 900px) {
+      .ycs-client-palette__grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+      .ycs-client-swatch__name {
+        font-size: 15px;
+      }
+    }
     @media (max-width: 640px) {
-      .ycs-client-palette { padding-top: 24px; }
+      .ycs-client-palette {
+        width: auto;
+        padding: 24px 18px 48px;
+      }
       .ycs-client-palette__logo {
         width: 46px;
         margin-bottom: 14px;
       }
       .ycs-client-palette__grid {
-        grid-template-columns: repeat(4, minmax(0, 76px));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         column-gap: 6px;
         row-gap: 16px;
+      }
+      .ycs-client-swatch__color {
+        border-radius: 8px;
+        box-shadow: 4px 4px 0 rgba(0,0,0,.06);
+      }
+      .ycs-client-swatch__body {
+        padding-top: 6px;
+      }
+      .ycs-client-swatch__name {
+        font-size: 10px;
       }
     }
     @media (max-width: 360px) {
