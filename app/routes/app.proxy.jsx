@@ -904,9 +904,9 @@ function clientPaletteAccessHtml(access) {
     }
     .ycs-client-palette__grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
-      column-gap: 10px;
-      row-gap: 26px;
+      grid-template-columns: repeat(auto-fill, minmax(58px, 58px));
+      column-gap: 6px;
+      row-gap: 16px;
     }
     .ycs-client-swatch {
       min-width: 0;
@@ -918,13 +918,13 @@ function clientPaletteAccessHtml(access) {
       box-shadow: 4px 4px 0 rgba(0,0,0,.06);
     }
     .ycs-client-swatch__body {
-      padding: 8px 2px 0;
+      padding: 6px 2px 0;
       text-align: center;
     }
     .ycs-client-swatch__name {
       display: block;
       color: #111;
-      font-size: 15px;
+      font-size: 10px;
       font-weight: 600;
       line-height: 1.15;
     }
@@ -943,16 +943,9 @@ function clientPaletteAccessHtml(access) {
         margin-bottom: 14px;
       }
       .ycs-client-palette__grid {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 58px));
         column-gap: 6px;
         row-gap: 16px;
-      }
-      .ycs-client-swatch__body {
-        padding-top: 6px;
-      }
-      .ycs-client-swatch__name {
-        font-size: 10px;
-        line-height: 1.15;
       }
     }
   </style>
@@ -1069,7 +1062,7 @@ export async function loader({ request }) {
       const safeLoggedInCustomerId = normalizeCustomerId(loggedInCustomerId);
       if (!safeLoggedInCustomerId) {
         return Response.json(
-          { error: "You must be signed in to create a private palette link" },
+          { error: "You must be signed in to create the client color palette" },
           { status: 401 }
         );
       }
@@ -1081,7 +1074,7 @@ export async function loader({ request }) {
     } catch (error) {
       console.error("tradePaletteAccessToken failed:", error);
       return Response.json(
-        { error: error.message || "Unable to prepare private palette link" },
+        { error: error.message || "Unable to prepare the client color palette" },
         { status: error.status || 500 }
       );
     }
@@ -1096,7 +1089,7 @@ export async function loader({ request }) {
         if (!hasValidProxySignature) {
           console.error("tradeClientPaletteAccess loader proxy authentication failed:", authError);
           return Response.json(
-            { error: "Signed storefront request required to create a private palette link" },
+            { error: "Signed storefront request required to create the client color palette" },
             { status: 401 }
           );
         }
@@ -1105,7 +1098,7 @@ export async function loader({ request }) {
       const safeLoggedInCustomerId = normalizeCustomerId(loggedInCustomerId);
       if (!safeLoggedInCustomerId) {
         return Response.json(
-          { error: "You must be signed in to create a private palette link" },
+          { error: "You must be signed in to create the client color palette" },
           { status: 401 }
         );
       }
@@ -1124,7 +1117,7 @@ export async function loader({ request }) {
       console.error("tradeClientPaletteAccess loader failed:", error);
       return Response.json(
         {
-          error: error.message || "Unable to create private palette link",
+          error: error.message || "Unable to create the client color palette",
           balance: error.balance
         },
         { status: error.status || 500 }

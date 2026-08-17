@@ -6,7 +6,8 @@ import {
 } from "./trade-palette-credits.server.js";
 import {
   createClientPaletteAccess,
-  findActiveClientPaletteAccess
+  findActiveClientPaletteAccessForClient,
+  replaceClientPaletteAccess
 } from "./trade-client-palette-links.server.js";
 
 function cleanString(value) {
@@ -423,7 +424,7 @@ export async function giveTradeClientPaletteAccess({
   }
 
   if (!safePaletteCode) {
-    throw new Error("Select a valid color palette before giving customer access.");
+    throw new Error("Select a valid color palette before creating the client color palette.");
   }
 
   if (verifyShopifyAccess) {
@@ -443,10 +444,9 @@ export async function giveTradeClientPaletteAccess({
   }
 
   const existingUsageKey = `${safeConsultantId}__usage__palette_access__${client.clientRecordId}__${safePaletteCode}`;
-  const existingAccess = await findActiveClientPaletteAccess({
+  const existingAccess = await findActiveClientPaletteAccessForClient({
     consultantId: safeConsultantId,
     clientRecordId: client.clientRecordId,
-    paletteCode: safePaletteCode,
     fetcher
   });
   const startingBalance = await getTradePaletteCreditBalance({
@@ -527,5 +527,111 @@ export async function giveTradeClientPaletteAccess({
     creditUsed: creditEventCreated,
     creditEvent: usageEvent,
     balance: endingBalance.balance
+  };
+}
+
+export async function getTradeClientPaletteAccess({
+  consultantId,
+  clientRecordId,
+  fetcher = fetch
+}) {
+  const safeConsultantId = cleanString(consultantId);
+  if (!safeConsultantId) {
+    throw new Error("Missing consultantId");
+  }
+
+  const client = await findClientForTrade({
+    consultantId: safeConsultantId,
+    clientRecordId,
+    fetcher
+  });
+
+  if (!client) {
+    const error = new Error("Client record not found");
+    error.status = 404;
+    throw error;
+  }
+
+  const access = await findActiveClientPaletteAccessForClient({
+    consultantId: safeConsultantId,
+    clientRecordId: client.clientRecordId,
+    fetcher
+  });
+
+  return {
+    success: true,
+    client,
+    access,
+    accessUrl: access?.accessUrl || ""
+  };
+}
+
+export async function replaceTradeClientPaletteAccess({
+  consultantId,
+  clientRecordId,
+  paletteCode,
+  paletteName,
+  updateClientPalette = true,
+  fetcher = fetch
+}) {
+  const safeConsultantId = cleanString(consultantId);
+  const safePaletteCode = normalizePaletteCode(paletteCode);
+  const safePaletteName = cleanString(paletteName) || PALETTE_NAMES[safePaletteCode] || safePaletteCode;
+
+  if (!safeConsultantId) {
+    throw new Error("Missing consultantId");
+  }
+
+  if (!safePaletteCode) {
+    throw new Error("Select a valid color palette before replacing this client's palette.");
+  }
+
+  const client = await findClientForTrade({
+    consultantId: safeConsultantId,
+    clientRecordId,
+    fetcher
+  });
+
+  if (!client) {
+    const error = new Error("Client record not found");
+    error.status = 404;
+    throw error;
+  }
+
+  let updatedClient = client;
+  if (updateClientPalette) {
+    const data = await airtableRequest({
+      method: "PATCH",
+      recordId: client.airtableRecordId,
+      body: {
+        fields: {
+          AnalysisResultCode: safePaletteCode,
+          AnalysisResultLabel: safePaletteName
+        },
+        typecast: true
+      },
+      fetcher
+    });
+    updatedClient = serializeClient(data);
+  }
+
+  const access = await replaceClientPaletteAccess({
+    consultantId: safeConsultantId,
+    clientRecordId: client.clientRecordId,
+    clientEmail: client.email,
+    clientName: [client.firstName, client.lastName].filter(Boolean).join(" ").trim(),
+    paletteCode: safePaletteCode,
+    paletteName: safePaletteName,
+    fetcher
+  });
+
+  return {
+    success: true,
+    client: updatedClient,
+    access,
+    accessUrl: access?.accessUrl || "",
+    paletteCode: safePaletteCode,
+    paletteName: safePaletteName,
+    creditUsed: false
   };
 }

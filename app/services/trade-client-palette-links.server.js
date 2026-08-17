@@ -193,6 +193,105 @@ export async function findActiveClientPaletteAccess({
   return serializeAccessRecord(data.records?.[0]);
 }
 
+export async function findActiveClientPaletteAccessForClient({
+  consultantId,
+  clientRecordId,
+  fetcher = fetch
+}) {
+  const records = await findActiveClientPaletteAccessRecordsForClient({
+    consultantId,
+    clientRecordId,
+    maxRecords: 1,
+    fetcher
+  });
+
+  return records[0] || null;
+}
+
+async function findActiveClientPaletteAccessRecordsForClient({
+  consultantId,
+  clientRecordId,
+  maxRecords = 100,
+  fetcher = fetch
+}) {
+  const safeConsultantId = cleanString(consultantId);
+  const safeClientRecordId = cleanString(clientRecordId);
+  if (!safeConsultantId || !safeClientRecordId) return [];
+
+  const formula = `AND({ConsultantId}="${escapeFormulaString(safeConsultantId)}",{ClientRecordId}="${escapeFormulaString(safeClientRecordId)}",{Status}="active")`;
+  const data = await withAccessTableSetup(() => airtableRequest({
+    searchParams: {
+      filterByFormula: formula,
+      "sort[0][field]": "CreatedAt",
+      "sort[0][direction]": "desc",
+      maxRecords
+    },
+    fetcher
+  }), { fetcher });
+
+  return (data.records || []).map(serializeAccessRecord).filter(Boolean);
+}
+
+export async function replaceClientPaletteAccess({
+  consultantId,
+  clientRecordId,
+  clientEmail,
+  clientName,
+  paletteCode,
+  paletteName,
+  fetcher = fetch
+}) {
+  const safeConsultantId = cleanString(consultantId);
+  const safeClientRecordId = cleanString(clientRecordId);
+  const safePaletteCode = normalizePaletteCode(paletteCode);
+  const safePaletteName = cleanString(paletteName) || PALETTE_NAMES[safePaletteCode] || safePaletteCode;
+
+  if (!safeConsultantId || !safeClientRecordId || !safePaletteCode) {
+    throw new Error("Missing palette replacement data");
+  }
+
+  const existingRecords = await findActiveClientPaletteAccessRecordsForClient({
+    consultantId: safeConsultantId,
+    clientRecordId: safeClientRecordId,
+    fetcher
+  });
+  const existing = existingRecords[0];
+
+  if (!existing?.id) {
+    const error = new Error("No palette link was found for this client.");
+    error.status = 404;
+    throw error;
+  }
+
+  const fields = {
+    ClientEmail: cleanString(clientEmail) || undefined,
+    ClientName: cleanString(clientName) || undefined,
+    PaletteCode: safePaletteCode,
+    PaletteName: safePaletteName,
+    Status: "active"
+  };
+
+  Object.keys(fields).forEach((fieldName) => {
+    if (fields[fieldName] === undefined) delete fields[fieldName];
+  });
+
+  const record = await airtableRequest({
+    method: "PATCH",
+    recordId: existing.id,
+    body: { fields },
+    fetcher
+  });
+
+  await Promise.all(existingRecords.slice(1).map((staleRecord) => airtableRequest({
+    method: "PATCH",
+    recordId: staleRecord.id,
+    body: { fields: { Status: "replaced" } },
+    fetcher
+  })));
+
+  return serializeAccessRecord(record);
+}
+
 export async function createClientPaletteAccess({
   consultantId,
   clientRecordId,
@@ -209,6 +308,20 @@ export async function createClientPaletteAccess({
 
   if (!safeConsultantId || !safeClientRecordId || !safePaletteCode) {
     throw new Error("Missing palette access link data");
+  }
+
+  const existingClientAccess = await findActiveClientPaletteAccessForClient({
+    consultantId: safeConsultantId,
+    clientRecordId: safeClientRecordId,
+    fetcher
+  });
+
+  if (existingClientAccess?.accessUrl) {
+    return {
+      created: false,
+      access: existingClientAccess,
+      alreadyHadClientAccess: true
+    };
   }
 
   const existing = await findActiveClientPaletteAccess({

@@ -2424,6 +2424,10 @@
     return { paletteCode, paletteName };
   }
 
+  function paletteAccessFromClient(client) {
+    return client?.paletteAccess && client.paletteAccess.accessUrl ? client.paletteAccess : null;
+  }
+
   function hasTradePaletteCredits() {
     if (!isTrade || isAdmin) return true;
     if (!tradePaletteCreditBalanceLoaded) return true;
@@ -2435,11 +2439,64 @@
     const canGrantPaletteAccess = isAdmin || isTrade;
     const isDisabled = canGrantPaletteAccess && !hasTradePaletteCredits();
     if (!canGrantPaletteAccess) return "";
-    const sectionTitle = isAdmin ? "Client Palette Access" : "Private Palette Link";
+    const sectionTitle = isAdmin ? "Client Palette Access" : "Client Color Palette";
     const sectionIntro = isAdmin
       ? "Give this client digital access to a color palette when you're ready."
-      : "Create a private one-palette link to share directly with this client.";
-    const buttonText = isAdmin ? "Give Client Palette Access" : "Create Private Palette Link";
+      : "Choose the color palette you want to share with this client.";
+    const buttonText = isAdmin ? "Give Client Palette Access" : "Create Palette Link";
+    const access = !isAdmin && isTrade ? paletteAccessFromClient(client) : null;
+    const accessPaletteCode = normalizePaletteCode(access?.paletteCode);
+    const accessPaletteName = access?.paletteName || paletteNameForCode(accessPaletteCode) || accessPaletteCode;
+
+    if (!isAdmin && isTrade && !client.paletteAccessLoaded) {
+      return `
+        <section class="ycs-clients__section ycs-clients__palette-access-section" data-ycs-client-palette-card>
+          <div class="ycs-clients__section-header">
+            <h3>${escapeHtml(sectionTitle)}</h3>
+            <p>Checking this client's shared palette...</p>
+          </div>
+        </section>
+      `;
+    }
+
+    if (!isAdmin && isTrade && access) {
+      if (client.paletteReplaceOpen) {
+        return `
+          <section class="ycs-clients__section ycs-clients__palette-access-section" data-ycs-client-palette-card>
+            <div class="ycs-clients__section-header">
+              <h3>${escapeHtml(sectionTitle)}</h3>
+              <p>Replace ${escapeHtml(accessPaletteName)} with another palette.</p>
+            </div>
+            <p class="ycs-clients__palette-current">${escapeHtml(accessPaletteName)}</p>
+            <label class="ycs-clients__field">
+              <span>Replacement Palette</span>
+              <select class="ycs-clients__input" name="replacementPaletteCode" data-ycs-palette-replacement-select>
+                ${renderPaletteSelectOptions(accessPaletteCode)}
+              </select>
+            </label>
+            <div class="ycs-clients__form-actions">
+              <button class="ycs-clients__button" type="button" data-ycs-confirm-replace-client-palette>Replace Palette</button>
+              <button class="ycs-clients__button ycs-clients__button--tertiary" type="button" data-ycs-cancel-replace-client-palette>Cancel</button>
+            </div>
+          </section>
+        `;
+      }
+
+      return `
+        <section class="ycs-clients__section ycs-clients__palette-access-section" data-ycs-client-palette-card>
+          <div class="ycs-clients__section-header">
+            <h3>${escapeHtml(sectionTitle)}</h3>
+          </div>
+          <p class="ycs-clients__palette-current">${escapeHtml(accessPaletteName)}</p>
+          <p class="ycs-clients__palette-ready">&#10003; Ready to share with ${escapeHtml(displayName(client))}</p>
+          <div class="ycs-clients__form-actions">
+            <a class="ycs-clients__button" href="${escapeHtml(access.accessUrl)}" target="_blank" rel="noopener">Open Palette</a>
+            <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-copy-client-palette-link>Copy Link</button>
+          </div>
+          <button class="ycs-clients__button ycs-clients__button--tertiary" type="button" data-ycs-start-replace-client-palette>Replace Palette</button>
+        </section>
+      `;
+    }
 
     return `
       <section class="ycs-clients__section ycs-clients__palette-access-section">
@@ -2521,28 +2578,54 @@
     if (emailInput) emailInput.focus();
   }
 
-  function showTradePaletteAccessLink(result, client, paletteName, message) {
-    const accessUrl = String(result.accessUrl || result.access?.accessUrl || "").trim();
-    const remainingText = Number.isFinite(Number(result.balance))
-      ? `${Number(result.balance)} color palette credit${Number(result.balance) === 1 ? "" : "s"} remaining.`
-      : "";
-    const createdText = result.createdAccessLink
-      ? "A private palette link was created."
-      : "This client already had a private link for this palette.";
-    const statusMessage = message || `Palette link ready for ${displayName(client)}. ${createdText} ${remainingText}`.trim();
+  function updateTradeClientPaletteAccessInState(clientRecordId, result, options = {}) {
+    clients = clients.map((entry) => {
+      if (entry.clientRecordId !== clientRecordId) return entry;
+      const shouldUpdateTimestamp = Boolean(
+        options.updated ||
+        result.createdAccessLink ||
+        result.creditUsed ||
+        result.paletteCode ||
+        result.paletteName
+      );
+      const nextClient = {
+        ...entry,
+        ...(result.client || {}),
+        paletteAccess: result.access || entry.paletteAccess || null,
+        paletteAccessLoaded: true,
+        paletteReplaceOpen: Boolean(options.paletteReplaceOpen),
+        updatedAt: shouldUpdateTimestamp ? new Date().toISOString() : entry.updatedAt
+      };
+      if (result.paletteCode) nextClient.paletteCode = result.paletteCode;
+      if (result.paletteName) nextClient.paletteName = result.paletteName;
+      return nextClient;
+    });
+  }
 
-    if (!accessUrl) {
-      setStatus(statusMessage, true);
-      return;
+  function rerenderTradePaletteAccessCard(clientRecordId) {
+    const client = clients.find((entry) => entry.clientRecordId === clientRecordId);
+    const section = detailEl.querySelector(".ycs-clients__palette-access-section");
+    if (!client || !section) return;
+    const wrapper = document.createElement("div");
+    wrapper.innerHTML = renderClientPaletteAccessSection(client).trim();
+    const nextSection = wrapper.firstElementChild;
+    if (nextSection) section.replaceWith(nextSection);
+  }
+
+  async function hydrateTradeClientPaletteAccess(client) {
+    if (!isTrade || isAdmin || !client?.clientRecordId || client.paletteAccessLoaded) return;
+    try {
+      const result = await getTradeClientPaletteAccess(client);
+      updateTradeClientPaletteAccessInState(client.clientRecordId, result);
+      rerenderTradePaletteAccessCard(client.clientRecordId);
+    } catch (_error) {
+      clients = clients.map((entry) => (
+        entry.clientRecordId === client.clientRecordId
+          ? { ...entry, paletteAccess: null, paletteAccessLoaded: true, paletteReplaceOpen: false }
+          : entry
+      ));
+      rerenderTradePaletteAccessCard(client.clientRecordId);
     }
-
-    setStatusHtml(`
-      <div class="ycs-clients__credit-status">
-        <p>${escapeHtml(statusMessage)}</p>
-        <a class="ycs-clients__button" href="${escapeHtml(accessUrl)}" target="_blank" rel="noopener">Open Palette Link</a>
-        <input class="ycs-clients__input" type="text" value="${escapeHtml(accessUrl)}" readonly onclick="this.select()">
-      </div>
-    `, true);
   }
 
   function setAdminGrantStatus(message, visible) {
@@ -2752,6 +2835,13 @@
             <p class="ycs-clients__shopify-tags-help">Unable to load Shopify palette tags: ${escapeHtml(error.message || "Request failed")}</p>
           `;
         }
+      });
+    }
+
+    if (editMode && isTrade && !isAdmin) {
+      hydrateTradeClientPaletteAccess(client).catch(() => {
+        updateTradeClientPaletteAccessInState(client.clientRecordId, { access: null });
+        rerenderTradePaletteAccessCard(client.clientRecordId);
       });
     }
   }
@@ -3131,7 +3221,7 @@
     return data;
   }
 
-  async function giveTradeClientPaletteAccess(payload) {
+  async function tradePaletteAccessRequest(mode, payload = {}) {
     const tokenUrl = new URL("/apps/palette-data", window.location.origin);
     tokenUrl.searchParams.set("action", "tradePaletteAccessToken");
 
@@ -3140,10 +3230,10 @@
       headers: { "Accept": "application/json" },
       credentials: "same-origin"
     });
-    const tokenData = await readJsonResponse(tokenResponse, "Unable to prepare the private palette link. Please try again.");
+    const tokenData = await readJsonResponse(tokenResponse, "Unable to prepare the client color palette. Please try again.");
 
     if (!tokenResponse.ok || !tokenData.token) {
-      const error = new Error(tokenData.error || "Unable to prepare the private palette link.");
+      const error = new Error(tokenData.error || "Unable to prepare the client color palette.");
       error.status = tokenResponse.status;
       throw error;
     }
@@ -3155,14 +3245,15 @@
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
+        mode,
         token: tokenData.token,
         ...payload
       })
     });
-    const data = await readJsonResponse(response, "Unable to create the private palette link. Please try again.");
+    const data = await readJsonResponse(response, "Unable to create the client color palette. Please try again.");
 
     if (!response.ok) {
-      const error = new Error(data.error || "Unable to create the private palette link.");
+      const error = new Error(data.error || "Unable to create the client color palette.");
       error.status = response.status;
       error.balance = data.balance;
       error.needsCredits = response.status === 402;
@@ -3170,6 +3261,20 @@
     }
 
     return data;
+  }
+
+  async function getTradeClientPaletteAccess(client) {
+    return tradePaletteAccessRequest("get", {
+      clientRecordId: client.clientRecordId
+    });
+  }
+
+  async function giveTradeClientPaletteAccess(payload) {
+    return tradePaletteAccessRequest("create", payload);
+  }
+
+  async function replaceTradeClientPaletteAccess(payload) {
+    return tradePaletteAccessRequest("replace", payload);
   }
 
   async function removeShopifyPaletteTags(payload) {
@@ -3330,17 +3435,17 @@
     const { paletteCode, paletteName } = getPaletteAccessSelection(client);
 
     if (!paletteCode) {
-      setStatus("Select a color palette before giving customer access.", true);
+      setStatus("Select a color palette before creating the client palette.", true);
       return;
     }
 
-    const confirmed = window.confirm(`Create a private ${paletteName} palette link for ${displayName(client)}? This will use 1 color palette credit.`);
+    const confirmed = window.confirm(`Create ${paletteName} palette for ${displayName(client)}? This will use 1 color palette credit.`);
     if (!confirmed) {
-      setStatus("Palette access was not changed.", true);
+      setStatus("Client color palette was not changed.", true);
       return;
     }
 
-    setStatus("Creating private palette link...", true);
+    setStatus("Creating client color palette...", true);
     const result = await giveTradeClientPaletteAccess({
       clientRecordId: client.clientRecordId,
       paletteCode,
@@ -3360,16 +3465,94 @@
         : entry
     ));
 
-    const accessUrl = String(result.accessUrl || result.access?.accessUrl || "").trim();
-    const remainingText = Number.isFinite(Number(result.balance))
-      ? ` ${Number(result.balance)} color palette credit${Number(result.balance) === 1 ? "" : "s"} remaining.`
-      : "";
-    const creditText = result.alreadyHadAccess ? " No credit was used because this client already had a link for this palette." : remainingText;
-    const completionMessage = `Palette link ready: ${displayName(client)} can access ${paletteName}.${creditText}`;
+    const completionMessage = `Palette link created for ${displayName(client)}. ${paletteName} is ready to share.`;
     if (Number.isFinite(Number(result.balance))) setTradePaletteCreditBalance(result.balance);
+    updateTradeClientPaletteAccessInState(client.clientRecordId, result);
     showClientById(client.clientRecordId, true, completionMessage);
-    showTradePaletteAccessLink(result, client, paletteName, completionMessage);
-    window.alert(accessUrl ? `${completionMessage}\n\n${accessUrl}` : completionMessage);
+    setStatus(completionMessage, true);
+  }
+
+  async function copyTradeClientPaletteLink(client) {
+    const accessUrl = String(paletteAccessFromClient(client)?.accessUrl || "").trim();
+    if (!accessUrl) {
+      setStatus("No palette link is ready to copy.", true);
+      return;
+    }
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(accessUrl);
+    } else {
+      const input = document.createElement("input");
+      input.value = accessUrl;
+      input.setAttribute("readonly", "");
+      input.style.position = "fixed";
+      input.style.left = "-9999px";
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand("copy");
+      input.remove();
+    }
+    setStatus("Link copied", true);
+  }
+
+  function startReplaceTradeClientPalette(client) {
+    clients = clients.map((entry) => (
+      entry.clientRecordId === client.clientRecordId
+        ? { ...entry, paletteReplaceOpen: true }
+        : entry
+    ));
+    rerenderTradePaletteAccessCard(client.clientRecordId);
+  }
+
+  function cancelReplaceTradeClientPalette(client) {
+    clients = clients.map((entry) => (
+      entry.clientRecordId === client.clientRecordId
+        ? { ...entry, paletteReplaceOpen: false }
+        : entry
+    ));
+    rerenderTradePaletteAccessCard(client.clientRecordId);
+  }
+
+  async function replaceTradeClientPaletteForTrade(client) {
+    const access = paletteAccessFromClient(client);
+    const select = detailEl.querySelector("[data-ycs-palette-replacement-select]");
+    const replacementCode = normalizePaletteCode(select?.value);
+    const replacementName = paletteNameForCode(replacementCode);
+    const currentName = access?.paletteName || paletteNameForCode(access?.paletteCode) || access?.paletteCode || "the current palette";
+
+    if (!access) {
+      setStatus("No shared palette was found for this client.", true);
+      return;
+    }
+
+    if (!replacementCode) {
+      setStatus("Select a replacement palette.", true);
+      return;
+    }
+
+    if (replacementCode === normalizePaletteCode(access.paletteCode)) {
+      cancelReplaceTradeClientPalette(client);
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Replace ${displayName(client)}'s palette?\n\n` +
+      `This will replace ${currentName} with ${replacementName}.\n\n` +
+      `The client will no longer have access to ${currentName} through this link.\n\n` +
+      `Their existing palette link will open ${replacementName} instead.`
+    );
+    if (!confirmed) return;
+
+    setStatus("Updating client color palette...", true);
+    const result = await replaceTradeClientPaletteAccess({
+      clientRecordId: client.clientRecordId,
+      paletteCode: replacementCode,
+      paletteName: replacementName,
+      updateClientPalette: true
+    });
+    const completionMessage = `${displayName(client)}'s palette was updated to ${replacementName}.`;
+    updateTradeClientPaletteAccessInState(client.clientRecordId, result, { paletteReplaceOpen: false });
+    showClientById(client.clientRecordId, true, completionMessage);
+    setStatus(completionMessage, true);
   }
 
   async function saveClient(form) {
@@ -3601,9 +3784,36 @@
     const duplicateReportPageButton = event.target.closest("[data-ycs-duplicate-report-page]");
     const moveReportPageButton = event.target.closest("[data-ycs-move-report-page]");
     const grantClientPaletteAccessButton = event.target.closest("[data-ycs-grant-client-palette-access]");
+    const copyClientPaletteLinkButton = event.target.closest("[data-ycs-copy-client-palette-link]");
+    const startReplaceClientPaletteButton = event.target.closest("[data-ycs-start-replace-client-palette]");
+    const cancelReplaceClientPaletteButton = event.target.closest("[data-ycs-cancel-replace-client-palette]");
+    const confirmReplaceClientPaletteButton = event.target.closest("[data-ycs-confirm-replace-client-palette]");
     const removeShopifyTagButton = event.target.closest("[data-ycs-remove-shopify-tag]");
     const cancelClientEditButton = event.target.closest("[data-ycs-cancel-client-edit]");
     const leaveClientViewLink = event.target.closest("[data-ycs-leave-client-view]");
+
+    if (copyClientPaletteLinkButton || startReplaceClientPaletteButton || cancelReplaceClientPaletteButton || confirmReplaceClientPaletteButton) {
+      event.preventDefault();
+      const activeForm = getActiveClientForm();
+      const clientRecordId = activeForm?.querySelector("[name='clientRecordId']")?.value || "";
+      const client = clients.find((item) => item.clientRecordId === clientRecordId);
+      if (!client) return;
+
+      try {
+        if (copyClientPaletteLinkButton) {
+          await copyTradeClientPaletteLink(client);
+        } else if (startReplaceClientPaletteButton) {
+          startReplaceTradeClientPalette(client);
+        } else if (cancelReplaceClientPaletteButton) {
+          cancelReplaceTradeClientPalette(client);
+        } else if (confirmReplaceClientPaletteButton) {
+          await replaceTradeClientPaletteForTrade(client);
+        }
+      } catch (error) {
+        setStatus(error.message || "Unable to update client color palette.", true);
+      }
+      return;
+    }
 
     if (removeShopifyTagButton) {
       event.preventDefault();

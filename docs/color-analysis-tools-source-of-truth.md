@@ -397,26 +397,35 @@ The system:
 
 ### TRADE View/Edit Client Flow
 
-TRADE users can create private palette links for their own clients from View/Edit Client.
+TRADE users can create and manage a client color palette link for their own clients from View/Edit Client.
 
 Requirements:
 
-- selected color palette in the Client Palette Access card
-- at least 1 color palette credit, unless an active private link already exists for that exact client/palette
+- selected color palette in the Client Color Palette card
+- at least 1 color palette credit when initially creating the client palette link
 
 Client email is optional for the TRADE private-link flow.
 
-The system:
+When the client does not already have a palette link, the system:
 
 1. Verifies the logged-in customer has `TRADE`, unexpired `TRADEJULYCOHORT`, or `YCS_ADMIN`.
 2. Uses Shopify's signed app-proxy request to mint a short-lived palette-access action token for the logged-in consultant.
 3. Calls the direct app JSON endpoint with that signed token.
 4. Finds the Airtable client by the consultant ID embedded in the token and the requested `clientRecordId`.
-5. Looks for an existing active private link for that consultant/client/palette.
-6. Creates a secure private palette link if one does not already exist.
+5. Looks for an existing active private link for that consultant/client.
+6. Creates a secure private palette link if one does not already exist for the client.
 7. Stores the hashed token and link metadata in Airtable.
-8. Records a `usage` event for -1 color palette credit only when a new private link is created.
-9. Shows the consultant the private link so it can be opened or copied.
+8. Records a `usage` event for -1 color palette credit only when a new link is created.
+9. Shows the consultant a compact Client Color Palette card with Open Palette, Copy Link, and Replace Palette actions.
+
+When the client already has a palette link:
+
+- the Client Color Palette card shows the current palette name
+- the consultant can open the palette or copy the link
+- the raw URL is not shown in the normal management view
+- the consultant can replace the palette after confirming the change
+- replacing the palette updates the existing Airtable access record, preserves the same URL/token, and costs 0 additional credits
+- the client continues to have one active palette through that shared link
 
 The TRADE private-link flow does not:
 
@@ -428,14 +437,14 @@ The TRADE private-link flow does not:
 - send a Shopify legacy account activation invite
 - send the optional admin palette-access notification webhook
 
-If the same consultant/client/palette already has an active private link:
+If the same consultant/client already has an active private link:
 
 - the existing link is reused
 - no new credit usage event is recorded
 
 The private link opens a one-palette storefront view through the app proxy. It does not require customer login and does not send the client to My Account or My Color Palettes.
 
-The Client Palette Access card has its own palette selector. Choosing a palette there does not have to change the client's assigned Color Palette field. This allows a user to give multiple palettes to the same client over time.
+The Client Color Palette card has its own palette selector before link creation. Choosing a palette there does not have to change the client's assigned Color Palette field. When replacing an existing client palette, the replacement updates both the shared palette link and the client's assigned Color Palette field.
 
 ## TRADE Color Palette Credits
 

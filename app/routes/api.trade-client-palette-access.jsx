@@ -1,5 +1,9 @@
 import { verifyTradePaletteAccessToken } from "../services/trade-palette-access-token.server.js";
-import { giveTradeClientPaletteAccess } from "../services/trade-palette-access.server.js";
+import {
+  getTradeClientPaletteAccess,
+  giveTradeClientPaletteAccess,
+  replaceTradeClientPaletteAccess
+} from "../services/trade-palette-access.server.js";
 
 function getCorsHeaders(origin) {
   const allowedOrigins = [
@@ -46,21 +50,35 @@ export async function action({ request }) {
   try {
     const body = await request.json();
     const { consultantId } = verifyTradePaletteAccessToken(body.token);
-    const result = await giveTradeClientPaletteAccess({
-      consultantId,
-      clientRecordId: body.clientRecordId,
-      paletteCode: body.paletteCode,
-      paletteName: body.paletteName,
-      updateClientPalette: body.updateClientPalette,
-      verifyShopifyAccess: false
-    });
+    const mode = String(body.mode || "create").trim().toLowerCase();
+    const result = mode === "get"
+      ? await getTradeClientPaletteAccess({
+          consultantId,
+          clientRecordId: body.clientRecordId
+        })
+      : mode === "replace"
+        ? await replaceTradeClientPaletteAccess({
+            consultantId,
+            clientRecordId: body.clientRecordId,
+            paletteCode: body.paletteCode,
+            paletteName: body.paletteName,
+            updateClientPalette: body.updateClientPalette
+          })
+        : await giveTradeClientPaletteAccess({
+            consultantId,
+            clientRecordId: body.clientRecordId,
+            paletteCode: body.paletteCode,
+            paletteName: body.paletteName,
+            updateClientPalette: body.updateClientPalette,
+            verifyShopifyAccess: false
+          });
 
     return Response.json(result, { headers: corsHeaders });
   } catch (error) {
     console.error("trade-client-palette-access failed:", error);
     return Response.json(
       {
-        error: error.message || "Unable to create private palette link",
+        error: error.message || "Unable to create the client color palette",
         balance: error.balance
       },
       { status: error.status || 500, headers: corsHeaders }
