@@ -420,6 +420,7 @@ The system:
 
 The TRADE private-link flow does not:
 
+- call Shopify Admin GraphQL to create the private link
 - look up the client in Shopify
 - create a Shopify customer
 - add Shopify customer tags

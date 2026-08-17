@@ -51,7 +51,8 @@ export async function action({ request }) {
       clientRecordId: body.clientRecordId,
       paletteCode: body.paletteCode,
       paletteName: body.paletteName,
-      updateClientPalette: body.updateClientPalette
+      updateClientPalette: body.updateClientPalette,
+      verifyShopifyAccess: false
     });
 
     return Response.json(result, { headers: corsHeaders });

@@ -411,6 +411,7 @@ export async function giveTradeClientPaletteAccess({
   paletteCode,
   paletteName,
   updateClientPalette = true,
+  verifyShopifyAccess = true,
   fetcher = fetch
 }) {
   const safeConsultantId = cleanString(consultantId);
@@ -425,7 +426,9 @@ export async function giveTradeClientPaletteAccess({
     throw new Error("Select a valid color palette before giving customer access.");
   }
 
-  await requireTradePaletteAccess(safeConsultantId);
+  if (verifyShopifyAccess) {
+    await requireTradePaletteAccess(safeConsultantId);
+  }
 
   const client = await findClientForTrade({
     consultantId: safeConsultantId,
