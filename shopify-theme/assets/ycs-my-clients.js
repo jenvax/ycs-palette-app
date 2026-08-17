@@ -622,7 +622,7 @@
 
   function normalizeCustomPageTemplate(template) {
     const value = String(template || "").trim();
-    if (value === "photos" || value === "photos4") return value;
+    if (value === "photos" || value === "photos3" || value === "photos4") return value;
     return "letter";
   }
 
@@ -989,8 +989,8 @@
           const id = String(page.id || makeCustomReportPageId());
           const template = normalizeCustomPageTemplate(page.template);
           const pageNumber = reportPageNumberForCustomPage(draft, id);
-          const isPhotoTemplate = template === "photos" || template === "photos4";
-          const templateLabel = template === "photos4" ? "Four-photo page" : (template === "photos" ? "Photo page" : "Letter page");
+          const isPhotoTemplate = template === "photos" || template === "photos3" || template === "photos4";
+          const templateLabel = template === "photos4" ? "Four-photo page" : (template === "photos3" ? "Three-photo page" : (template === "photos" ? "Photo page" : "Letter page"));
           return `
             <div class="ycs-report-form-page" data-ycs-report-controls-page="${pageNumber}"${pageNumber === activeReportPage ? "" : " hidden"}>
               <div class="ycs-report-form-page__head">
@@ -1003,6 +1003,7 @@
                 <select name="customPages.${escapeHtml(id)}.template">
                   <option value="letter"${template === "letter" ? " selected" : ""}>Letter Page</option>
                   <option value="photos"${template === "photos" ? " selected" : ""}>Title, two photos, copy</option>
+                  <option value="photos3"${template === "photos3" ? " selected" : ""}>Title, three photos, copy</option>
                   <option value="photos4"${template === "photos4" ? " selected" : ""}>Title, four photos</option>
                 </select>
               </label>
@@ -1013,7 +1014,8 @@
               ${isPhotoTemplate ? `
                 <label>Title<input name="customPages.${escapeHtml(id)}.title" value="${escapeHtml(page.title || "")}"></label>
                 ${renderCustomPhotoControls(page, id, 1, template === "photos4" ? "Top left photo" : "Left photo")}
-                ${renderCustomPhotoControls(page, id, 2, template === "photos4" ? "Top right photo" : "Right photo")}
+                ${renderCustomPhotoControls(page, id, 2, template === "photos4" ? "Top right photo" : (template === "photos3" ? "Center photo" : "Right photo"))}
+                ${template === "photos3" ? renderCustomPhotoControls(page, id, 3, "Right photo") : ""}
                 ${template === "photos4" ? `
                   ${renderCustomPhotoControls(page, id, 3, "Bottom left photo")}
                   ${renderCustomPhotoControls(page, id, 4, "Bottom right photo")}
@@ -1078,6 +1080,7 @@
             <div class="ycs-report-page-add__menu">
               <span>${escapeHtml(insertPageLabel)}</span>
               <button type="button" data-ycs-add-custom-report-page="photos">2-photo page</button>
+              <button type="button" data-ycs-add-custom-report-page="photos3">3-photo page</button>
               <button type="button" data-ycs-add-custom-report-page="photos4">4-photo page</button>
             </div>
           </details>
@@ -1187,6 +1190,22 @@
 
   function renderCustomReportPage(draft, page, pageNumber, options = {}) {
     const template = normalizeCustomPageTemplate(page.template);
+
+    if (template === "photos3") {
+      return `
+        <section class="ycs-report-page ycs-report-page--comparison-copy ycs-report-page--custom-photos" data-report-page="${pageNumber}">
+          ${renderReportBrand(draft)}
+          <h1>${escapeHtml(page.title || "Custom Page")}</h1>
+          <div class="ycs-report-comparison-grid ycs-report-comparison-grid--three ycs-report-custom-photo-grid">
+            ${renderCustomReportPhoto(page, 1, "Left photo", options)}
+            ${renderCustomReportPhoto(page, 2, "Center photo", options)}
+            ${renderCustomReportPhoto(page, 3, "Right photo", options)}
+          </div>
+          <div class="ycs-report-copy ycs-report-copy--custom">${paragraphHtml(page.copy)}</div>
+          ${renderReportFooter(draft, pageNumber)}
+        </section>
+      `;
+    }
 
     if (template === "photos4") {
       return `
