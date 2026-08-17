@@ -210,6 +210,20 @@
     return paletteNames[String(code || "").trim().toUpperCase()] || String(code || "").trim();
   }
 
+  async function readJsonResponse(response, fallbackMessage) {
+    const text = await response.text();
+    if (!text) return {};
+
+    try {
+      return JSON.parse(text);
+    } catch (_error) {
+      const error = new Error(fallbackMessage || "The server returned an unexpected response.");
+      error.status = response.status;
+      error.preview = text.slice(0, 180);
+      throw error;
+    }
+  }
+
   function getDepthFromPalette(code) {
     const upperCode = String(code || "").trim().toUpperCase();
     if (upperCode.endsWith("L") || upperCode.endsWith("LG") || upperCode === "LO") return "Light";
@@ -3118,12 +3132,13 @@
     const response = await fetch(`/apps/palette-data?action=tradeClientPaletteAccess`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
       body: JSON.stringify(payload)
     });
-    const data = await response.json();
+    const data = await readJsonResponse(response, "Unable to create the private palette link. Please try again.");
 
     if (!response.ok) {
-      const error = new Error(data.error || "Unable to give customer palette access.");
+      const error = new Error(data.error || "Unable to create the private palette link.");
       error.status = response.status;
       error.balance = data.balance;
       error.needsCredits = response.status === 402;
