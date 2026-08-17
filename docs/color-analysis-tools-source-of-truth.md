@@ -307,7 +307,7 @@ The screen displays:
 - otherwise an Upload Photo placeholder
 - client name
 - email, or `No email`
-- color palette/color type
+- analysis result/color palette, when one is saved on the client record
 - created date
 - updated date
 
@@ -318,7 +318,10 @@ The edit form includes:
 - First Name
 - Last Name
 - Email
-- Color Palette
+- Analysis Result
+  - helper text: `Used for this client's analysis, photos, and report.`
+  - this is the color type/result stored on the client record
+  - it is used by the client's analysis workflow, photos, and report builder
 - Notes
 - Save Changes
 - Cancel
@@ -328,8 +331,21 @@ The screen can also include:
 - Delete Client
 - Manage Client Photos
 - Report Builder
-- Client Palette Access card
+- Digital Palette Access card, for `YCS_ADMIN` and `TRADE`
 - Shopify Customer Palette Tags, for `YCS_ADMIN`
+
+### Analysis Result Versus Digital Palette Access
+
+View/Edit Client has two related but separate palette concepts:
+
+- **Analysis Result** is the left-side client record field. It represents the consultant/admin's analysis result for that client and is used for the client's analysis, photos, and report.
+- **Digital Palette Access** is the right-side sharing/access card. It controls what digital palette is given or shared with the client.
+
+The Digital Palette Access card has its own selector labeled **Palette to Share**. The selector defaults to the client's Analysis Result when no separate access palette has been chosen.
+
+For TRADE users, creating a private palette link from the Digital Palette Access card does not require the Analysis Result field to be saved first. The palette chosen in **Palette to Share** is the palette used for the private link.
+
+For YCS_ADMIN users, the Digital Palette Access card gives Shopify customer access to the chosen palette by adding the palette tag to the Shopify customer.
 
 ## Shopify Customer Palette Tags In View/Edit Client
 
@@ -346,7 +362,7 @@ TRADE users do not see Shopify customer tags.
 There are two current palette-assignment entry points:
 
 - standalone YCS_ADMIN panel on My Clients: "Give Color Palette to Customer"
-- View/Edit Client Client Palette Access card
+- View/Edit Client Digital Palette Access card
 
 Admin palette access means the app adds the selected YCS palette code as a Shopify customer tag. That tag controls what the customer sees in My Color Palettes.
 
@@ -383,25 +399,40 @@ The confirmation message for that case is:
 
 ### YCS_ADMIN View/Edit Client Flow
 
-In View/Edit Client, `YCS_ADMIN` can give the selected palette to the client.
+In View/Edit Client, `YCS_ADMIN` can give the client digital access to a palette through the **Digital Palette Access** card.
+
+The card displays:
+
+- heading: `Digital Palette Access`
+- helper text: `Give this client private access to their digital color palette.`
+- selector label: `Palette to Share`
+- button: `Give Client Palette Access`
 
 The system:
 
 1. Requires the client email.
 2. Looks up the Shopify customer by email.
 3. Requires the Shopify customer to exist.
-4. Adds the selected palette tag to the Shopify customer.
+4. Adds the selected `Palette to Share` tag to the Shopify customer.
 5. Links the client record to the Shopify customer.
 6. Sends a legacy customer account invite when Shopify reports the customer account state is `DISABLED` or `INVITED`.
 7. Attempts the optional palette-access notification webhook if `PALETTE_ACCESS_NOTIFICATION_WEBHOOK_URL` is configured.
 
 ### TRADE View/Edit Client Flow
 
-TRADE users can create and manage a client color palette link for their own clients from View/Edit Client.
+TRADE users can create and manage a private digital palette link for their own clients from View/Edit Client through the **Digital Palette Access** card.
+
+The card displays:
+
+- heading: `Digital Palette Access`
+- helper text: `Give this client private access to their digital color palette.`
+- selector label: `Palette to Share`
+- credit balance, such as `4 palette credits available`
+- button: `Create Palette Link`
 
 Requirements:
 
-- selected color palette in the Client Color Palette card
+- selected palette in the `Palette to Share` selector
 - at least 1 color palette credit when initially creating the client palette link
 
 Client email is optional for the TRADE private-link flow.
@@ -416,11 +447,11 @@ When the client does not already have a palette link, the system:
 6. Creates a secure private palette link if one does not already exist for the client.
 7. Stores the hashed token and link metadata in Airtable.
 8. Records a `usage` event for -1 color palette credit only when a new link is created.
-9. Shows the consultant a compact Client Color Palette card with Open Palette, Copy Link, and Replace Palette actions.
+9. Shows the consultant a compact Digital Palette Access card with Open Palette, Copy Link, and Replace Palette actions.
 
 When the client already has a palette link:
 
-- the Client Color Palette card shows the current palette name
+- the Digital Palette Access card shows the current palette name
 - the consultant can open the palette or copy the link
 - the raw URL is not shown in the normal management view
 - the consultant can replace the palette after confirming the change
@@ -444,7 +475,7 @@ If the same consultant/client already has an active private link:
 
 The private link opens a one-palette storefront view through the app proxy. It does not require customer login and does not send the client to My Account or My Color Palettes.
 
-The Client Color Palette card has its own palette selector before link creation. Choosing a palette there does not have to change the client's assigned Color Palette field. When replacing an existing client palette, the replacement updates both the shared palette link and the client's assigned Color Palette field.
+The Digital Palette Access card has its own **Palette to Share** selector before link creation. Choosing a palette there does not have to change the client's left-side **Analysis Result** field. When replacing an existing client palette, the replacement updates both the shared palette link and the client's saved palette/result field.
 
 ## TRADE Color Palette Credits
 
@@ -477,7 +508,7 @@ The webhook:
 
 If a TRADE user buys another package of the same SKU, the app records a separate purchase event keyed to that order and line item. The balance increases again.
 
-In View/Edit Client, the Client Palette Access card displays the available color palette credit balance. If the balance is zero, the UI shows an action to buy credits and links to:
+In View/Edit Client, the Digital Palette Access card displays the available color palette credit balance as `[number] palette credit(s) available`. If the balance is zero, the UI shows an action to buy credits and links to:
 
 - `/products/color-palette-credits`
 
