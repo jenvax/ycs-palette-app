@@ -911,11 +911,33 @@ function clientPaletteAccessHtml(access) {
     .ycs-client-swatch {
       min-width: 0;
     }
+    .ycs-client-swatch__button {
+      display: block;
+      width: 100%;
+      border: 0;
+      padding: 0;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      font: inherit;
+      text-align: inherit;
+    }
     .ycs-client-swatch__color {
       width: 100%;
       aspect-ratio: 1 / 1;
       border-radius: 8px;
       box-shadow: 4px 4px 0 rgba(0,0,0,.06);
+      transition: transform .16s ease, box-shadow .16s ease;
+    }
+    .ycs-client-swatch__button:hover .ycs-client-swatch__color,
+    .ycs-client-swatch__button:focus-visible .ycs-client-swatch__color {
+      box-shadow: 4px 4px 0 rgba(0,0,0,.1);
+      transform: translateY(-1px);
+    }
+    .ycs-client-swatch__button:focus-visible {
+      border-radius: 10px;
+      outline: 2px solid #2f2a25;
+      outline-offset: 5px;
     }
     .ycs-client-swatch__body {
       padding: 6px 2px 0;
@@ -935,6 +957,61 @@ function clientPaletteAccessHtml(access) {
       color: var(--muted);
       font-size: 13px;
       text-align: center;
+    }
+    .ycs-color-viewer {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: none;
+      align-items: stretch;
+      justify-content: stretch;
+      background: #fff;
+    }
+    .ycs-color-viewer.is-open {
+      display: flex;
+    }
+    .ycs-color-viewer__color {
+      position: absolute;
+      inset: 0;
+      background: var(--viewer-color, #fff);
+    }
+    .ycs-color-viewer__panel {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      width: 100%;
+      min-height: 100%;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 24px;
+      color: #111;
+    }
+    .ycs-color-viewer__name {
+      align-self: flex-start;
+      margin: 0;
+      border-radius: 999px;
+      background: rgba(255,255,255,.82);
+      padding: 9px 14px;
+      font-size: 20px;
+      font-weight: 800;
+      line-height: 1.1;
+      box-shadow: 0 8px 22px rgba(0,0,0,.12);
+    }
+    .ycs-color-viewer__close {
+      align-self: flex-end;
+      border: 0;
+      border-radius: 999px;
+      background: rgba(255,255,255,.86);
+      color: #111;
+      cursor: pointer;
+      font: inherit;
+      font-size: 16px;
+      font-weight: 800;
+      padding: 11px 18px;
+      box-shadow: 0 8px 22px rgba(0,0,0,.14);
+    }
+    body.ycs-color-viewer-open {
+      overflow: hidden;
     }
     @media (max-width: 640px) {
       .ycs-client-palette { padding-top: 24px; }
@@ -962,10 +1039,22 @@ function clientPaletteAccessHtml(access) {
     <div class="ycs-client-palette__sections" data-sections></div>
     <footer class="ycs-client-palette__footer">Powered by Your Color Style™</footer>
   </main>
+  <div class="ycs-color-viewer" data-color-viewer aria-hidden="true">
+    <div class="ycs-color-viewer__color" data-color-viewer-color></div>
+    <div class="ycs-color-viewer__panel" role="dialog" aria-modal="true" aria-labelledby="ycs-color-viewer-name">
+      <button class="ycs-color-viewer__close" type="button" data-color-viewer-close>Close</button>
+      <p class="ycs-color-viewer__name" id="ycs-color-viewer-name" data-color-viewer-name></p>
+    </div>
+  </div>
   <script>
     const root = document.querySelector('[data-palette-code]');
     const statusEl = document.querySelector('[data-status]');
     const sectionsEl = document.querySelector('[data-sections]');
+    const viewerEl = document.querySelector('[data-color-viewer]');
+    const viewerColorEl = document.querySelector('[data-color-viewer-color]');
+    const viewerNameEl = document.querySelector('[data-color-viewer-name]');
+    const viewerCloseEl = document.querySelector('[data-color-viewer-close]');
+    let lastSwatchButton = null;
     const paletteCode = root.dataset.paletteCode;
     const categoryOrder = [
       'Best', 'Reds', 'Oranges', 'Golden Yellows', 'Yellows', 'Yellow Greens',
@@ -987,6 +1076,28 @@ function clientPaletteAccessHtml(access) {
       return next.filter(Boolean);
     }
 
+    function openColorViewer(name, hex, trigger) {
+      if (!viewerEl || !viewerColorEl || !viewerNameEl) return;
+      lastSwatchButton = trigger || null;
+      viewerColorEl.style.setProperty('--viewer-color', hex || '#ffffff');
+      viewerNameEl.textContent = name || '';
+      viewerEl.classList.add('is-open');
+      viewerEl.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('ycs-color-viewer-open');
+      if (viewerCloseEl) viewerCloseEl.focus();
+    }
+
+    function closeColorViewer() {
+      if (!viewerEl) return;
+      viewerEl.classList.remove('is-open');
+      viewerEl.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('ycs-color-viewer-open');
+      if (lastSwatchButton && typeof lastSwatchButton.focus === 'function') {
+        lastSwatchButton.focus();
+      }
+      lastSwatchButton = null;
+    }
+
     function render(colors) {
       const grouped = {};
       colors.forEach(function (color) {
@@ -1001,12 +1112,30 @@ function clientPaletteAccessHtml(access) {
         return '<section class="ycs-client-palette__section"><h2>' + escapeHtml(category) + '</h2><div class="ycs-client-palette__grid">' +
           grouped[category].map(function (color) {
             const hex = color.hex || color.color || '#ffffff';
-            return '<article class="ycs-client-swatch"><div class="ycs-client-swatch__color" style="background:' + escapeHtml(hex) + '"></div><div class="ycs-client-swatch__body"><span class="ycs-client-swatch__name">' + escapeHtml(color.name) + '</span></div></article>';
+            return '<article class="ycs-client-swatch"><button class="ycs-client-swatch__button" type="button" data-color-name="' + escapeHtml(color.name) + '" data-color-hex="' + escapeHtml(hex) + '" aria-label="View ' + escapeHtml(color.name) + ' full screen"><div class="ycs-client-swatch__color" style="background:' + escapeHtml(hex) + '"></div><div class="ycs-client-swatch__body"><span class="ycs-client-swatch__name">' + escapeHtml(color.name) + '</span></div></button></article>';
           }).join('') +
         '</div></section>';
       }).join('');
       statusEl.textContent = '';
     }
+
+    sectionsEl.addEventListener('click', function (event) {
+      const button = event.target.closest('[data-color-hex]');
+      if (!button) return;
+      openColorViewer(button.dataset.colorName || '', button.dataset.colorHex || '#ffffff', button);
+    });
+
+    if (viewerCloseEl) {
+      viewerCloseEl.addEventListener('click', closeColorViewer);
+    }
+    if (viewerEl) {
+      viewerEl.addEventListener('click', function (event) {
+        if (event.target === viewerEl || event.target === viewerColorEl) closeColorViewer();
+      });
+    }
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && viewerEl?.classList.contains('is-open')) closeColorViewer();
+    });
 
     fetch('/apps/palette-data?palette=' + encodeURIComponent(paletteCode), { credentials: 'same-origin' })
       .then(function (response) { return response.json().then(function (data) {
