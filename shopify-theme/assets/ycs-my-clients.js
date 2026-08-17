@@ -649,7 +649,15 @@
           image1Url: String(page.image1Url || ""),
           image2Url: String(page.image2Url || ""),
           image3Url: String(page.image3Url || ""),
-          image4Url: String(page.image4Url || "")
+          image4Url: String(page.image4Url || ""),
+          image1Checked: page.image1Checked === true,
+          image2Checked: page.image2Checked === true,
+          image3Checked: page.image3Checked === true,
+          image4Checked: page.image4Checked === true,
+          image1Caption: String(page.image1Caption || ""),
+          image2Caption: String(page.image2Caption || ""),
+          image3Caption: String(page.image3Caption || ""),
+          image4Caption: String(page.image4Caption || "")
         }))
         : [],
       reportPageOrder: Array.isArray(incoming.reportPageOrder) ? incoming.reportPageOrder : [],
@@ -953,6 +961,27 @@
     `;
   }
 
+  function renderCustomPhotoControls(page, id, slot, title) {
+    const imageField = `image${slot}Url`;
+    const checkedField = `image${slot}Checked`;
+    const captionField = `image${slot}Caption`;
+    return `
+      <div class="ycs-report-custom-photo-control">
+        ${renderSavedImagePicker({
+          fieldName: `customPages.${id}.${imageField}`,
+          title,
+          selectedUrl: page[imageField],
+          preferredChoice: ""
+        })}
+        <label class="ycs-report-checkbox">
+          <input name="customPages.${escapeHtml(id)}.${checkedField}" type="checkbox" value="1"${page[checkedField] === true ? " checked" : ""}>
+          <span>Show check mark</span>
+        </label>
+        <label>Caption<input name="customPages.${escapeHtml(id)}.${captionField}" value="${escapeHtml(page[captionField] || "")}" placeholder="Optional caption"></label>
+      </div>
+    `;
+  }
+
   function renderCustomPagesForm(draft) {
     const customPages = reportCustomPages(draft);
     return `
@@ -983,31 +1012,11 @@
               <input type="hidden" name="customPages.${escapeHtml(id)}.image4Url" value="${escapeHtml(page.image4Url || "")}">
               ${isPhotoTemplate ? `
                 <label>Title<input name="customPages.${escapeHtml(id)}.title" value="${escapeHtml(page.title || "")}"></label>
-                ${renderSavedImagePicker({
-                  fieldName: `customPages.${id}.image1Url`,
-                  title: template === "photos4" ? "Top left photo" : "Left photo",
-                  selectedUrl: page.image1Url,
-                  preferredChoice: ""
-                })}
-                ${renderSavedImagePicker({
-                  fieldName: `customPages.${id}.image2Url`,
-                  title: template === "photos4" ? "Top right photo" : "Right photo",
-                  selectedUrl: page.image2Url,
-                  preferredChoice: ""
-                })}
+                ${renderCustomPhotoControls(page, id, 1, template === "photos4" ? "Top left photo" : "Left photo")}
+                ${renderCustomPhotoControls(page, id, 2, template === "photos4" ? "Top right photo" : "Right photo")}
                 ${template === "photos4" ? `
-                  ${renderSavedImagePicker({
-                    fieldName: `customPages.${id}.image3Url`,
-                    title: "Bottom left photo",
-                    selectedUrl: page.image3Url,
-                    preferredChoice: ""
-                  })}
-                  ${renderSavedImagePicker({
-                    fieldName: `customPages.${id}.image4Url`,
-                    title: "Bottom right photo",
-                    selectedUrl: page.image4Url,
-                    preferredChoice: ""
-                  })}
+                  ${renderCustomPhotoControls(page, id, 3, "Bottom left photo")}
+                  ${renderCustomPhotoControls(page, id, 4, "Bottom right photo")}
                 ` : ""}
               ` : ""}
               ${template !== "photos4" ? `<label>Copy<textarea name="customPages.${escapeHtml(id)}.copy">${escapeHtml(page.copy || "")}</textarea></label>` : ""}
@@ -1150,6 +1159,28 @@
     `;
   }
 
+  function renderCustomReportPhoto(page, slot, label, options = {}) {
+    const imageUrl = page[`image${slot}Url`] || "";
+    const isChecked = page[`image${slot}Checked`] === true;
+    const caption = String(page[`image${slot}Caption`] || "").trim();
+    const figureBody = `
+      <figure class="ycs-report-custom-photo-figure${isChecked ? " is-selected" : ""}">
+        <div class="ycs-report-custom-photo-frame">
+          ${isChecked ? `<img class="ycs-report-checkmark" src="${REPORT_CHECKMARK_URL}" alt="">` : ""}
+          ${renderReportImage(imageUrl, label, "ycs-report-preview__custom-photo")}
+        </div>
+        ${caption ? `<figcaption class="ycs-report-custom-photo-caption">${escapeHtml(caption)}</figcaption>` : ""}
+      </figure>
+    `;
+
+    return renderPreviewImageTarget(
+      `customPages.${page.id}.image${slot}Url`,
+      label,
+      figureBody,
+      options.interactive
+    );
+  }
+
   function renderCustomReportPage(draft, page, pageNumber, options = {}) {
     const template = normalizeCustomPageTemplate(page.template);
 
@@ -1159,30 +1190,10 @@
           ${renderReportBrand(draft)}
           <h1>${escapeHtml(page.title || "Custom Page")}</h1>
           <div class="ycs-report-custom-photo-grid ycs-report-custom-photo-grid--four">
-            ${renderPreviewImageTarget(
-              `customPages.${page.id}.image1Url`,
-              "Top left photo",
-              renderReportImage(page.image1Url, "Top left photo", "ycs-report-preview__custom-photo"),
-              options.interactive
-            )}
-            ${renderPreviewImageTarget(
-              `customPages.${page.id}.image2Url`,
-              "Top right photo",
-              renderReportImage(page.image2Url, "Top right photo", "ycs-report-preview__custom-photo"),
-              options.interactive
-            )}
-            ${renderPreviewImageTarget(
-              `customPages.${page.id}.image3Url`,
-              "Bottom left photo",
-              renderReportImage(page.image3Url, "Bottom left photo", "ycs-report-preview__custom-photo"),
-              options.interactive
-            )}
-            ${renderPreviewImageTarget(
-              `customPages.${page.id}.image4Url`,
-              "Bottom right photo",
-              renderReportImage(page.image4Url, "Bottom right photo", "ycs-report-preview__custom-photo"),
-              options.interactive
-            )}
+            ${renderCustomReportPhoto(page, 1, "Top left photo", options)}
+            ${renderCustomReportPhoto(page, 2, "Top right photo", options)}
+            ${renderCustomReportPhoto(page, 3, "Bottom left photo", options)}
+            ${renderCustomReportPhoto(page, 4, "Bottom right photo", options)}
           </div>
           ${renderReportFooter(draft, pageNumber)}
         </section>
@@ -1195,18 +1206,8 @@
           ${renderReportBrand(draft)}
           <h1>${escapeHtml(page.title || "Custom Page")}</h1>
           <div class="ycs-report-custom-photo-grid">
-            ${renderPreviewImageTarget(
-              `customPages.${page.id}.image1Url`,
-              "Left photo",
-              renderReportImage(page.image1Url, "Left photo", "ycs-report-preview__custom-photo"),
-              options.interactive
-            )}
-            ${renderPreviewImageTarget(
-              `customPages.${page.id}.image2Url`,
-              "Right photo",
-              renderReportImage(page.image2Url, "Right photo", "ycs-report-preview__custom-photo"),
-              options.interactive
-            )}
+            ${renderCustomReportPhoto(page, 1, "Left photo", options)}
+            ${renderCustomReportPhoto(page, 2, "Right photo", options)}
           </div>
           <div class="ycs-report-copy ycs-report-copy--custom">${paragraphHtml(page.copy)}</div>
           ${renderReportFooter(draft, pageNumber)}
@@ -1570,7 +1571,15 @@
         image1Url: fieldValue("image1Url"),
         image2Url: fieldValue("image2Url"),
         image3Url: fieldValue("image3Url"),
-        image4Url: fieldValue("image4Url")
+        image4Url: fieldValue("image4Url"),
+        image1Checked: formData.has(`customPages.${id}.image1Checked`),
+        image2Checked: formData.has(`customPages.${id}.image2Checked`),
+        image3Checked: formData.has(`customPages.${id}.image3Checked`),
+        image4Checked: formData.has(`customPages.${id}.image4Checked`),
+        image1Caption: fieldValue("image1Caption"),
+        image2Caption: fieldValue("image2Caption"),
+        image3Caption: fieldValue("image3Caption"),
+        image4Caption: fieldValue("image4Caption")
       };
     });
     draft.reportPageOrder = normalizeReportPageOrder(draft);
@@ -4050,7 +4059,15 @@
         image1Url: "",
         image2Url: "",
         image3Url: "",
-        image4Url: ""
+        image4Url: "",
+        image1Checked: false,
+        image2Checked: false,
+        image3Checked: false,
+        image4Checked: false,
+        image1Caption: "",
+        image2Caption: "",
+        image3Caption: "",
+        image4Caption: ""
       };
       activeReportDraft.customPages = [...reportCustomPages(activeReportDraft), newPage];
       const order = normalizeReportPageOrder(activeReportDraft).filter((entry) => !(entry.type === "custom" && entry.key === newPage.id));
