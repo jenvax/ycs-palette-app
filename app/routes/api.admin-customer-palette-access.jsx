@@ -109,22 +109,31 @@ function shopifyConfig() {
 }
 
 async function getShopifyAccessToken({ shop, apiKey, apiSecret }) {
+  const body = new URLSearchParams({
+    grant_type: "client_credentials",
+    client_id: apiKey,
+    client_secret: apiSecret
+  });
+
   const response = await fetch(`https://${shop}/admin/oauth/access_token`, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json"
+      "Content-Type": "application/x-www-form-urlencoded"
     },
-    body: JSON.stringify({
-      client_id: apiKey,
-      client_secret: apiSecret,
-      grant_type: "client_credentials"
-    })
+    body
   });
 
-  const data = await response.json().catch(() => ({}));
+  const responseText = await response.text();
+  let data = {};
+  try {
+    data = responseText ? JSON.parse(responseText) : {};
+  } catch (_error) {
+    data = {};
+  }
 
   if (!response.ok || !data.access_token) {
-    throw new Error(data.errors || data.error || "Failed to generate Shopify access token");
+    const message = data.errors || data.error || `Failed to generate Shopify access token (${response.status})`;
+    throw new Error(message);
   }
 
   return data.access_token;

@@ -225,18 +225,26 @@ async function withWardrobeTableSetup(callback) {
 }
 
 async function getShopifyAccessToken({ shop, apiKey, apiSecret }) {
+  const body = new URLSearchParams({
+    grant_type: "client_credentials",
+    client_id: apiKey,
+    client_secret: apiSecret
+  });
+
   const response = await fetch(`https://${shop}/admin/oauth/access_token`, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json"
+      "Content-Type": "application/x-www-form-urlencoded"
     },
-    body: JSON.stringify({
-      client_id: apiKey,
-      client_secret: apiSecret,
-      grant_type: "client_credentials"
-    })
+    body
   });
-  const data = await response.json().catch(() => ({}));
+  const responseText = await response.text();
+  let data = {};
+  try {
+    data = responseText ? JSON.parse(responseText) : {};
+  } catch (_error) {
+    data = {};
+  }
 
   if (!response.ok || !data.access_token) {
     const error = new Error("Failed to generate Shopify access token");
