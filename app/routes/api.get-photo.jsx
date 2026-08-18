@@ -33,6 +33,9 @@ function parseJson(value) {
     return null;
   }
 }
+function normalizePaletteCode(value) {
+  return String(value || "").trim().toUpperCase();
+}
 export async function loader({ request }) {
   const origin = request.headers.get("Origin") || "";
   const corsHeaders = getCorsHeaders(origin);
@@ -62,7 +65,8 @@ export async function loader({ request }) {
           clientRecordId: null,
           firstName: null,
           lastName: null,
-          email: null
+          email: null,
+          customerPaletteCode: null
         },
         { status: 200, headers: corsHeaders }
       );
@@ -217,6 +221,13 @@ const activePhotoUrl =
 const activePhotoSessionKey =
   activePhotoUrl ||
   null;
+const customerPaletteCode =
+  normalizePaletteCode(
+    fields.AnalysisResultCode ||
+    fields.PaletteCode ||
+    fields.CustomerPaletteCode ||
+    ""
+  ) || null;
 
     return Response.json(
       {
@@ -234,6 +245,7 @@ const activePhotoSessionKey =
         firstName: fields.FirstName || null,
         lastName: fields.LastName || null,
         email: fields.Email || null,
+        customerPaletteCode,
         recordType: isConsultantClient ? "consultant_client" : "shopify_customer"
       },
       { status: 200, headers: corsHeaders }

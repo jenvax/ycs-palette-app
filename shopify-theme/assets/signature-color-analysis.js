@@ -994,21 +994,9 @@ async function drawRealisticDrapeTexture(ctx, options) {
 }
 
 function getSignatureColorTypeCode(panel) {
-  if (IS_SIGNATURE_MODE) {
-    const isRight = panel === 'right';
-    const sideCode = isRight
-      ? state.signature.rightPaletteCode || (signatureRightPaletteSelect && signatureRightPaletteSelect.value)
-      : state.signature.leftPaletteCode || (signatureLeftPaletteSelect && signatureLeftPaletteSelect.value);
-
-    if (sideCode && sideCode !== DRAPING_PALETTE_CODE) {
-      return String(sideCode).trim().toUpperCase();
-    }
-  }
-
   return (
     state.customerPaletteCode ||
     getCustomerPaletteCode() ||
-    (state.analysisResult && state.analysisResult.resultCode) ||
     ''
   );
 }
@@ -3442,6 +3430,7 @@ requestAnimationFrame(function () {
     state.clientFirstName = data.firstName || getClientFirstName() || '';
 state.clientLastName = data.lastName || getClientLastName() || '';
 state.customerPaletteCode = getCustomerPaletteCode() || data.customerPaletteCode || '';
+syncSignatureFrameLabels();
 
     if (!res.ok) {
       throw new Error(data.error || 'Could not load photo');
