@@ -347,6 +347,48 @@ async function findCustomerByEmail(email) {
   return customers[0] || null;
 }
 
+async function createShopifyCustomer({ email, firstName, lastName }) {
+  const safeEmail = cleanString(email);
+  if (!safeEmail) {
+    throw new Error("Customer email is required to create a Shopify account");
+  }
+
+  const data = await shopifyAdminGraphQL({
+    query: `
+      mutation createCustomer($input: CustomerInput!) {
+        customerCreate(input: $input) {
+          customer {
+            id
+            firstName
+            lastName
+            email
+            state
+            tags
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    `,
+    variables: {
+      input: {
+        email: safeEmail,
+        firstName: cleanString(firstName) || undefined,
+        lastName: cleanString(lastName) || undefined
+      }
+    }
+  });
+
+  const userErrors = data.customerCreate?.userErrors || [];
+  if (userErrors.length) {
+    throw new Error(userErrors[0].message || "Unable to create Shopify customer");
+  }
+
+  return serializeCustomer(data.customerCreate?.customer);
+}
+
 async function requireAdmin(viewerCustomerId) {
   const customer = await getCustomerById(viewerCustomerId);
   const tags = customer?.tags || [];
@@ -855,6 +897,7 @@ async function handleGrant({ request, corsHeaders }) {
   const paletteName = cleanString(body.paletteName) || PALETTE_NAMES[paletteCode] || paletteCode;
   const shouldCreateClient = body.createClient === true;
   const shouldUpdateClientPalette = body.updateClientPalette !== false;
+  let createdShopifyCustomer = false;
 
   await requireAdmin(viewerCustomerId);
 
@@ -874,10 +917,17 @@ async function handleGrant({ request, corsHeaders }) {
   }
 
   if (!customer) {
-    return Response.json(
-      { error: "Shopify customer not found" },
-      { status: 404, headers: corsHeaders }
-    );
+    let clientForName = null;
+    if (body.clientRecordId) {
+      clientForName = await findClientByRecordId(body.clientRecordId);
+    }
+
+    customer = await createShopifyCustomer({
+      email: body.email || clientForName?.email,
+      firstName: body.firstName || clientForName?.firstName,
+      lastName: body.lastName || clientForName?.lastName
+    });
+    createdShopifyCustomer = true;
   }
 
   let client = body.clientRecordId
@@ -923,6 +973,7 @@ async function handleGrant({ request, corsHeaders }) {
       paletteCode,
       paletteName,
       alreadyHadAccess: tagResult.alreadyHadAccess,
+      createdShopifyCustomer,
       accountInvite,
       notification
     },

@@ -2841,11 +2841,16 @@
       : result.client
         ? " Client record updated."
         : " No client record was created.";
+    const accountText = result.createdShopifyCustomer
+      ? result.accountInvite?.sent
+        ? " Shopify customer account created and activation email sent."
+        : " Shopify customer account created."
+      : "";
     const accessText = result.alreadyHadAccess
       ? "already had access to"
       : "now has access to";
 
-    return `Palette assigned: ${customerName} ${accessText} ${paletteName}.${clientText}`;
+    return `Palette assigned: ${customerName} ${accessText} ${paletteName}.${clientText}${accountText}`;
   }
 
   function customerDisplayName(customer) {
@@ -3504,23 +3509,28 @@
     const lookup = await lookupShopifyCustomerByEmail(email);
 
     if (!lookup.customer) {
-      setAdminGrantStatus("No Shopify customer was found for that email.", true);
-      return;
+      const shouldCreateCustomer = window.confirm(`No Shopify customer was found for ${email}. Create a Shopify customer account and give access to ${paletteName}?`);
+      if (!shouldCreateCustomer) {
+        setAdminGrantStatus("Palette access grant canceled.", true);
+        return;
+      }
     }
 
     let createClient = false;
     if (!lookup.client) {
-      const grantChoice = await promptClientGrantChoice(lookup.customer, paletteName);
-      if (grantChoice === "cancel") {
-        setAdminGrantStatus("Palette access grant canceled.", true);
-        return;
+      if (lookup.customer) {
+        const grantChoice = await promptClientGrantChoice(lookup.customer, paletteName);
+        if (grantChoice === "cancel") {
+          setAdminGrantStatus("Palette access grant canceled.", true);
+          return;
+        }
+        createClient = grantChoice === "create";
       }
-      createClient = grantChoice === "create";
     }
 
-    setAdminGrantStatus("Granting palette access...", true);
+    setAdminGrantStatus(lookup.customer ? "Granting palette access..." : "Creating Shopify customer account...", true);
     const result = await grantPaletteAccess({
-      customerId: lookup.customer.id,
+      customerId: lookup.customer?.id || "",
       email,
       paletteCode,
       paletteName,
@@ -3590,14 +3600,10 @@
     setStatus("Looking up Shopify customer...", true);
     const lookup = await lookupShopifyCustomerByEmail(client.email);
 
-    if (!lookup.customer) {
-      setStatus("No Shopify customer was found for this client's email.", true);
-      return;
-    }
+    setStatus(lookup.customer ? "Granting customer access..." : "Creating Shopify customer account...", true);
 
-    setStatus("Granting customer access...", true);
     const result = await grantPaletteAccess({
-      customerId: lookup.customer.id,
+      customerId: lookup.customer?.id || "",
       email: client.email,
       paletteCode,
       paletteName,
