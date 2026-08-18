@@ -1290,7 +1290,10 @@
           const textColor = swatchTextColor(swatch.color);
           return `
             <figure class="ycs-report-swatch">
-              <div class="ycs-report-swatch__color" style="background: ${escapeHtml(swatch.color)}; color: ${escapeHtml(textColor)};">
+              <div class="ycs-report-swatch__color" style="background-color: ${escapeHtml(swatch.color)}; color: ${escapeHtml(textColor)};">
+                <svg class="ycs-report-swatch__fill" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                  <rect width="100" height="100" fill="${escapeHtml(swatch.color)}"></rect>
+                </svg>
                 ${swatch.name ? `<span>${escapeHtml(swatch.name)}</span>` : ""}
               </div>
               ${swatch.caption ? `<figcaption>${escapeHtml(swatch.caption)}</figcaption>` : ""}
