@@ -150,8 +150,13 @@ async function getGeneratedShopifyAccessToken(shop) {
 }
 
 function getShopifyGraphQLError(response, json) {
-  const graphQLError = json.errors?.[0];
-  const userMessage = graphQLError?.message || json.error || "Shopify Admin GraphQL request failed";
+  const firstError = Array.isArray(json.errors) ? json.errors[0] : json.errors;
+  const userMessage =
+    firstError?.message ||
+    (typeof firstError === "string" ? firstError : "") ||
+    (firstError ? JSON.stringify(firstError) : "") ||
+    json.error ||
+    "Shopify Admin GraphQL request failed";
   const error = new Error(userMessage);
   error.status = response.status || 500;
   return error;
