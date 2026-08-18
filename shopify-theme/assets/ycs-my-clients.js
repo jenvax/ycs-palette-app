@@ -82,7 +82,13 @@
   const BASE_REPORT_PAGE_COUNT = 7;
   const LOCKED_REPORT_PAGE_COUNT = 3;
   const MAX_CUSTOM_SWATCHES = 12;
+  const LOCKED_REPORT_PAGES = [
+    { key: "cover", pageNumber: 1, label: "Cover" },
+    { key: "intro", pageNumber: 2, label: "Intro Letter" },
+    { key: "howItWorks", pageNumber: 3, label: "How It Works" }
+  ];
   const MOVABLE_BUILT_IN_REPORT_PAGES = ["depth", "temperature", "chroma", "palette"];
+  const HIDEABLE_REPORT_PAGE_KEYS = [...LOCKED_REPORT_PAGES.map((page) => page.key), ...MOVABLE_BUILT_IN_REPORT_PAGES];
   const YCS_REPORT_LOGO_URL = "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/YourColorStyle_Logo-120.png?v=1643287573";
   const REPORT_CHECKMARK_URL = "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/green-check-mark.png?v=1740232016";
   const paletteNames = {
@@ -288,6 +294,31 @@
 
   function reportCustomPages(draft) {
     return Array.isArray(draft?.customPages) ? draft.customPages : [];
+  }
+
+  function normalizeHiddenReportPages(value) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+    return HIDEABLE_REPORT_PAGE_KEYS.reduce((hiddenPages, key) => {
+      if (value[key] === true || value[key] === "true" || value[key] === "1") {
+        hiddenPages[key] = true;
+      }
+      return hiddenPages;
+    }, {});
+  }
+
+  function isReportPageHidden(draft, key) {
+    return normalizeHiddenReportPages(draft?.hiddenReportPages)[key] === true;
+  }
+
+  function isHideableReportPageEntry(entry) {
+    return !!entry && entry.type === "builtIn" && !entry.duplicateOf && HIDEABLE_REPORT_PAGE_KEYS.includes(entry.key);
+  }
+
+  function reportPageVisibilityInputs(draft) {
+    const hiddenPages = normalizeHiddenReportPages(draft?.hiddenReportPages);
+    return HIDEABLE_REPORT_PAGE_KEYS.map((key) => (
+      `<input type="hidden" name="hiddenReportPages.${escapeHtml(key)}" value="${hiddenPages[key] ? "1" : "0"}">`
+    )).join("");
   }
 
   function builtInReportPageLabel(key) {
@@ -609,6 +640,7 @@
       customPages: [],
       reportPageOrder: [],
       pageCopies: {},
+      hiddenReportPages: {},
       text: {
         intro: `Dear ${firstName},\n\nOne of my favorite parts of creating a Signature Color Analysis is discovering the quiet beauty that makes someone unique. Your best colors reflect the natural harmony already present in your features.\n\nYou are ${paletteName}, a palette built around ${temperature.toLowerCase()} undertones, ${depth.toLowerCase()} depth, and ${chroma.toLowerCase()} color. Together, these qualities create a look that feels refined, approachable, and effortlessly polished.\n\nThe colors throughout this guide were selected because they work with your natural coloring, not against it. My hope is that this guide makes choosing colors feel simple.\n\nWarmly,\nJen Vax`,
         howItWorks: "Your best colors are based on how color interacts with your natural features. At Your Color Style, we use a simple 3-step process to identify the colors that make you look more vibrant, healthy, and put together.",
@@ -709,6 +741,7 @@
         }))
         : [],
       reportPageOrder: Array.isArray(incoming.reportPageOrder) ? incoming.reportPageOrder : [],
+      hiddenReportPages: normalizeHiddenReportPages(incoming.hiddenReportPages),
       pageCopies: Object.entries(reportPageCopies(incoming)).reduce((copies, entryPair) => {
         const [id, fields] = entryPair;
         if (!fields || typeof fields !== "object" || Array.isArray(fields)) return copies;
@@ -1117,11 +1150,10 @@
   }
 
   function renderReportPageRail(draft, orderedReportPages, insertPageLabel) {
-    const lockedPages = [
-      { pageNumber: 1, label: "Cover" },
-      { pageNumber: 2, label: "Intro Letter" },
-      { pageNumber: 3, label: "How It Works" }
-    ];
+    const renderVisibilityButton = (key) => {
+      const isHidden = isReportPageHidden(draft, key);
+      return `<button type="button" data-ycs-toggle-report-page-visibility="${escapeHtml(key)}" data-ycs-report-page-hidden="${isHidden ? "true" : "false"}">${isHidden ? "Show" : "Hide"}</button>`;
+    };
 
     return `
       <aside class="ycs-report-page-rail" aria-label="Report pages">
@@ -1129,31 +1161,38 @@
           <span>Pages</span>
         </div>
         <div class="ycs-report-page-rail__list" data-ycs-report-page-rail>
-          ${lockedPages.map((page) => `
-            <button
-              type="button"
-              class="ycs-report-page-rail__item${page.pageNumber === activeReportPage ? " is-active" : ""} is-locked"
-              data-ycs-report-page-button="${page.pageNumber}">
-              <span class="ycs-report-page-rail__thumb">${page.pageNumber}</span>
-              <span class="ycs-report-page-rail__label">${escapeHtml(page.label)}</span>
-            </button>
-          `).join("")}
+          ${LOCKED_REPORT_PAGES.map((page) => {
+            const isHidden = isReportPageHidden(draft, page.key);
+            return `
+            <div class="ycs-report-page-rail__item${page.pageNumber === activeReportPage ? " is-active" : ""}${isHidden ? " is-hidden" : ""} is-locked">
+              <button type="button" class="ycs-report-page-rail__select" data-ycs-report-page-button="${page.pageNumber}">
+                <span class="ycs-report-page-rail__thumb">${page.pageNumber}</span>
+                <span class="ycs-report-page-rail__label">${escapeHtml(page.label)}${isHidden ? `<span class="ycs-report-page-rail__badge">Hidden</span>` : ""}</span>
+              </button>
+              <div class="ycs-report-page-rail__actions">
+                ${renderVisibilityButton(page.key)}
+              </div>
+            </div>
+          `;
+          }).join("")}
           ${orderedReportPages.map((entry, index) => {
             const pageNumber = LOCKED_REPORT_PAGE_COUNT + index + 1;
             const label = reportPageEntryLabel(draft, entry);
+            const isHidden = isHideableReportPageEntry(entry) && isReportPageHidden(draft, entry.key);
             return `
               <div
-                class="ycs-report-page-rail__item${pageNumber === activeReportPage ? " is-active" : ""}"
+                class="ycs-report-page-rail__item${pageNumber === activeReportPage ? " is-active" : ""}${isHidden ? " is-hidden" : ""}"
                 data-ycs-report-page-order-id="${escapeHtml(entry.id)}"
                 data-ycs-report-page-order-index="${index}">
                 <button type="button" class="ycs-report-page-rail__select" data-ycs-report-page-button="${pageNumber}">
                   <span class="ycs-report-page-rail__thumb">${pageNumber}</span>
-                  <span class="ycs-report-page-rail__label">${escapeHtml(label)}</span>
+                  <span class="ycs-report-page-rail__label">${escapeHtml(label)}${isHidden ? `<span class="ycs-report-page-rail__badge">Hidden</span>` : ""}</span>
                 </button>
                 <div class="ycs-report-page-rail__actions">
                   <button type="button" data-ycs-move-report-page="${escapeHtml(entry.id)}" data-ycs-move-report-page-direction="-1" aria-label="Move page ${pageNumber} up"${index === 0 ? " disabled" : ""}>↑</button>
                   <button type="button" data-ycs-move-report-page="${escapeHtml(entry.id)}" data-ycs-move-report-page-direction="1" aria-label="Move page ${pageNumber} down"${index === orderedReportPages.length - 1 ? " disabled" : ""}>↓</button>
                   <button type="button" data-ycs-duplicate-report-page="${escapeHtml(entry.id)}">Copy</button>
+                  ${isHideableReportPageEntry(entry) ? renderVisibilityButton(entry.key) : ""}
                   ${canDeleteReportPageEntry(entry) ? `<button type="button" class="ycs-report-page-rail__delete" data-ycs-delete-report-page="${escapeHtml(entry.id)}">Delete</button>` : ""}
                 </div>
               </div>
@@ -1393,6 +1432,18 @@
     `;
   }
 
+  function renderHiddenReportPagePlaceholder(draft, pageNumber, label) {
+    return `
+      <section class="ycs-report-page ycs-report-page--hidden-placeholder" data-report-page="${pageNumber}">
+        ${renderReportBrand(draft)}
+        <div class="ycs-report-hidden-page">
+          <h1>${escapeHtml(label)}</h1>
+          <p>This page is hidden and will not appear in the PDF.</p>
+        </div>
+      </section>
+    `;
+  }
+
   function reportPagesHtml(draft, options = {}) {
     const name = draft.customerName || "Client";
     const builtInRenderers = {
@@ -1445,7 +1496,16 @@
       `
     };
 
-    const pages = [`
+    const pages = [];
+    const pushLockedPage = (key, pageNumber, label, html) => {
+      if (isReportPageHidden(draft, key)) {
+        if (options.interactive) pages.push(renderHiddenReportPagePlaceholder(draft, pageNumber, label));
+        return;
+      }
+      pages.push(html);
+    };
+
+    pushLockedPage("cover", 1, "Cover", `
       <section class="ycs-report-page ycs-report-page--cover" data-report-page="1">
         ${renderReportBrand(draft)}
         <div class="ycs-report-cover-title">
@@ -1459,13 +1519,15 @@
         </div>
         ${renderReportFooter(draft)}
       </section>
-      `, `
+      `);
+    pushLockedPage("intro", 2, "Intro Letter", `
       <section class="ycs-report-page ycs-report-page--letter" data-report-page="2">
         ${renderReportBrand(draft)}
         <div class="ycs-report-copy ycs-report-copy--letter">${paragraphHtml(draft.text.intro)}</div>
         ${renderReportFooter(draft, 2)}
       </section>
-      `, `
+      `);
+    pushLockedPage("howItWorks", 3, "How It Works", `
       <section class="ycs-report-page ycs-report-page--science" data-report-page="3">
         ${renderReportBrand(draft)}
         <h1>How Your Color Analysis Works</h1>
@@ -1489,11 +1551,15 @@
         </div>
         ${renderReportFooter(draft, 3)}
       </section>
-      `];
+      `);
 
     normalizeReportPageOrder(draft).forEach((entry, index) => {
       const pageNumber = LOCKED_REPORT_PAGE_COUNT + index + 1;
       if (entry.type === "builtIn" && builtInRenderers[entry.key]) {
+        if (isHideableReportPageEntry(entry) && isReportPageHidden(draft, entry.key)) {
+          if (options.interactive) pages.push(renderHiddenReportPagePlaceholder(draft, pageNumber, reportPageEntryLabel(draft, entry)));
+          return;
+        }
         pages.push(builtInRenderers[entry.key](pageNumber, entry));
         return;
       }
@@ -1553,6 +1619,7 @@
           <form class="ycs-report-form" data-ycs-report-form>
             <input type="hidden" name="clientRecordId" value="${escapeHtml(client.clientRecordId)}">
             <input type="hidden" name="selectedDrapeImageUrl" value="${escapeHtml(draft.selectedDrapeImageUrl)}">
+            ${reportPageVisibilityInputs(draft)}
             ${renderReportControlsPage(1, "Cover", `
               ${renderReportLogoControls(draft)}
               <div class="ycs-report-cover-controls">
@@ -1722,6 +1789,11 @@
     draft.undertone = getTemperatureFromPalette(paletteCode);
     draft.chroma = getChromaFromPalette(paletteCode);
     draft.pageCopies = { ...reportPageCopies(draft) };
+    draft.hiddenReportPages = HIDEABLE_REPORT_PAGE_KEYS.reduce((hiddenPages, key) => {
+      const formKey = `hiddenReportPages.${key}`;
+      if (formData.get(formKey) === "1") hiddenPages[key] = true;
+      return hiddenPages;
+    }, {});
     draft.text = { ...draft.text };
 
     Array.from(form.elements).forEach((element) => {
@@ -3992,6 +4064,7 @@
     const deleteReportPageButton = event.target.closest("[data-ycs-delete-report-page]");
     const duplicateReportPageButton = event.target.closest("[data-ycs-duplicate-report-page]");
     const moveReportPageButton = event.target.closest("[data-ycs-move-report-page]");
+    const toggleReportPageVisibilityButton = event.target.closest("[data-ycs-toggle-report-page-visibility]");
     const grantClientPaletteAccessButton = event.target.closest("[data-ycs-grant-client-palette-access]");
     const copyClientPaletteLinkButton = event.target.closest("[data-ycs-copy-client-palette-link]");
     const startReplaceClientPaletteButton = event.target.closest("[data-ycs-start-replace-client-palette]");
@@ -4203,6 +4276,32 @@
     if (printReportButton) {
       if (!canCreateReports) return;
       printReport();
+    }
+
+    if (toggleReportPageVisibilityButton) {
+      if (!canCreateReports) return;
+      event.preventDefault();
+      const pageKey = String(toggleReportPageVisibilityButton.dataset.ycsToggleReportPageVisibility || "").trim();
+      if (!HIDEABLE_REPORT_PAGE_KEYS.includes(pageKey)) return;
+      const client = clients.find((item) => item.clientRecordId === activeReportClientId);
+      const builder = detailEl.querySelector("[data-ycs-report-builder]");
+      const form = builder?.querySelector("[data-ycs-report-form]");
+      if (!client || !builder || !form) return;
+
+      activeReportDraft = readReportDraftFromForm(form, client);
+      const nextHiddenPages = normalizeHiddenReportPages(activeReportDraft.hiddenReportPages);
+      if (nextHiddenPages[pageKey]) {
+        delete nextHiddenPages[pageKey];
+      } else {
+        nextHiddenPages[pageKey] = true;
+      }
+      activeReportDraft.hiddenReportPages = nextHiddenPages;
+      const railScrollTop = reportRailScrollTop(builder);
+      const nextPage = activeReportPage;
+      builder.outerHTML = renderReportBuilder(client, false);
+      restoreReportRailScroll(railScrollTop);
+      applyActiveReportPage(nextPage);
+      return;
     }
 
     if (reportPageButton) {
