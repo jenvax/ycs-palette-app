@@ -1588,9 +1588,12 @@ function applySharedLipState(shared) {
     };
   }
 
+  function currentImageTransform() {
+    return 'translate(calc(-50% + ' + state.x + 'px), calc(-50% + ' + state.y + 'px)) scale(' + state.scale + ')';
+  }
+
   function updateImageTransform() {
-    const transform =
-      'translate(calc(-50% + ' + state.x + 'px), calc(-50% + ' + state.y + 'px)) scale(' + state.scale + ')';
+    const transform = currentImageTransform();
 
     leftImg.style.transform = transform;
     rightImg.style.transform = transform;
@@ -1613,15 +1616,19 @@ function applySharedLipState(shared) {
   }
 
   function applySavedTransform(transform) {
+    const x = transform ? Number(transform.x) : NaN;
+    const y = transform ? Number(transform.y) : NaN;
+    const scale = transform ? Number(transform.scale) : NaN;
+
     if (
       transform &&
-      typeof transform.x === 'number' &&
-      typeof transform.y === 'number' &&
-      typeof transform.scale === 'number'
+      Number.isFinite(x) &&
+      Number.isFinite(y) &&
+      Number.isFinite(scale)
     ) {
-      state.x = transform.x;
-      state.y = transform.y;
-      state.scale = clampScale(transform.scale);
+      state.x = x;
+      state.y = y;
+      state.scale = clampScale(scale);
     } else {
       state.x = 0;
       state.y = 0;
@@ -1630,6 +1637,15 @@ function applySharedLipState(shared) {
 
     syncZoomSliders(state.scale);
     updateImageTransform();
+  }
+
+  function reapplyImageTransformAfterRender() {
+    updateImageTransform();
+    requestAnimationFrame(function () {
+      updateImageTransform();
+      requestAnimationFrame(updateImageTransform);
+    });
+    window.setTimeout(updateImageTransform, 80);
   }
 
   function getAnalysisStatePayload() {
@@ -1854,6 +1870,7 @@ function applySharedLipState(shared) {
         }
 
         applySavedTransform(parsed.photoTransform);
+        reapplyImageTransformAfterRender();
         alert('Saved position restored.');
       } catch (error) {
         console.warn('Could not restore trial transform', error);
@@ -1889,6 +1906,7 @@ function applySharedLipState(shared) {
       }
 
       applySavedTransform(data.photoTransform);
+      reapplyImageTransformAfterRender();
       hideLoading();
       alert('Saved position restored.');
     } catch (error) {
