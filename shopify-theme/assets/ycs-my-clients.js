@@ -81,6 +81,7 @@
   const REPORT_TYPE = "signature_first_section";
   const BASE_REPORT_PAGE_COUNT = 7;
   const LOCKED_REPORT_PAGE_COUNT = 3;
+  const MAX_CUSTOM_SWATCHES = 12;
   const MOVABLE_BUILT_IN_REPORT_PAGES = ["depth", "temperature", "chroma", "palette"];
   const YCS_REPORT_LOGO_URL = "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/YourColorStyle_Logo-120.png?v=1643287573";
   const REPORT_CHECKMARK_URL = "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/green-check-mark.png?v=1740232016";
@@ -622,8 +623,48 @@
 
   function normalizeCustomPageTemplate(template) {
     const value = String(template || "").trim();
-    if (value === "photos" || value === "photos3" || value === "photos4" || value === "photos6") return value;
+    if (value === "photos" || value === "photos3" || value === "photos4" || value === "photos6" || value === "swatches") return value;
     return "letter";
+  }
+
+  function normalizeHexColor(value) {
+    const raw = String(value || "").trim();
+    const match = raw.match(/^#?([0-9a-f]{3}|[0-9a-f]{6})$/i);
+    if (!match) return "";
+
+    const hex = match[1].length === 3
+      ? match[1].split("").map((char) => `${char}${char}`).join("")
+      : match[1];
+
+    return `#${hex.toUpperCase()}`;
+  }
+
+  function swatchTextColor(hexColor) {
+    const hex = normalizeHexColor(hexColor).replace("#", "");
+    if (hex.length !== 6) return "#111111";
+
+    const red = parseInt(hex.slice(0, 2), 16);
+    const green = parseInt(hex.slice(2, 4), 16);
+    const blue = parseInt(hex.slice(4, 6), 16);
+    const luminance = ((red * 299) + (green * 587) + (blue * 114)) / 1000;
+
+    return luminance >= 150 ? "#111111" : "#FFFFFF";
+  }
+
+  function normalizeCustomSwatches(swatches) {
+    const source = Array.isArray(swatches) ? swatches : [];
+    return Array.from({ length: MAX_CUSTOM_SWATCHES }, (_item, index) => {
+      const swatch = source[index] || {};
+      return {
+        color: normalizeHexColor(swatch.color),
+        name: String(swatch.name || ""),
+        caption: String(swatch.caption || "")
+      };
+    });
+  }
+
+  function customPageSwatches(page) {
+    return normalizeCustomSwatches(page?.swatches);
   }
 
   function mergeReportDraft(client, savedDraft) {
@@ -663,7 +704,8 @@
           image3Caption: String(page.image3Caption || ""),
           image4Caption: String(page.image4Caption || ""),
           image5Caption: String(page.image5Caption || ""),
-          image6Caption: String(page.image6Caption || "")
+          image6Caption: String(page.image6Caption || ""),
+          swatches: normalizeCustomSwatches(page.swatches)
         }))
         : [],
       reportPageOrder: Array.isArray(incoming.reportPageOrder) ? incoming.reportPageOrder : [],
@@ -988,6 +1030,30 @@
     `;
   }
 
+  function renderCustomSwatchControls(page, id) {
+    return `
+      <div class="ycs-report-custom-swatch-controls">
+        ${customPageSwatches(page).map((swatch, index) => {
+          const slot = index + 1;
+          return `
+            <fieldset class="ycs-report-custom-swatch-control">
+              <legend>Swatch ${slot}</legend>
+              <label>Color
+                <input name="customPages.${escapeHtml(id)}.swatches.${index}.color" value="${escapeHtml(swatch.color)}" placeholder="#A94F2E">
+              </label>
+              <label>Color name
+                <input name="customPages.${escapeHtml(id)}.swatches.${index}.name" value="${escapeHtml(swatch.name)}" placeholder="Optional name">
+              </label>
+              <label>Caption
+                <input name="customPages.${escapeHtml(id)}.swatches.${index}.caption" value="${escapeHtml(swatch.caption)}" placeholder="Optional caption">
+              </label>
+            </fieldset>
+          `;
+        }).join("")}
+      </div>
+    `;
+  }
+
   function renderCustomPagesForm(draft) {
     const customPages = reportCustomPages(draft);
     return `
@@ -996,7 +1062,8 @@
           const template = normalizeCustomPageTemplate(page.template);
           const pageNumber = reportPageNumberForCustomPage(draft, id);
           const isPhotoTemplate = template === "photos" || template === "photos3" || template === "photos4" || template === "photos6";
-          const templateLabel = template === "photos6" ? "Six-photo page" : (template === "photos4" ? "Four-photo page" : (template === "photos3" ? "Three-photo page" : (template === "photos" ? "Photo page" : "Letter page")));
+          const isSwatchTemplate = template === "swatches";
+          const templateLabel = template === "swatches" ? "Color swatch page" : (template === "photos6" ? "Six-photo page" : (template === "photos4" ? "Four-photo page" : (template === "photos3" ? "Three-photo page" : (template === "photos" ? "Photo page" : "Letter page"))));
           return `
             <div class="ycs-report-form-page" data-ycs-report-controls-page="${pageNumber}"${pageNumber === activeReportPage ? "" : " hidden"}>
               <div class="ycs-report-form-page__head">
@@ -1012,6 +1079,7 @@
                   <option value="photos3"${template === "photos3" ? " selected" : ""}>Title, three photos, copy</option>
                   <option value="photos4"${template === "photos4" ? " selected" : ""}>Title, four photos</option>
                   <option value="photos6"${template === "photos6" ? " selected" : ""}>Title, six photos, copy</option>
+                  <option value="swatches"${template === "swatches" ? " selected" : ""}>Color swatch page</option>
                 </select>
               </label>
               <input type="hidden" name="customPages.${escapeHtml(id)}.image1Url" value="${escapeHtml(page.image1Url || "")}">
@@ -1036,7 +1104,11 @@
                   ${renderCustomPhotoControls(page, id, 6, "Bottom right photo")}
                 ` : ""}
               ` : ""}
-              ${template !== "photos4" ? `<label>Copy<textarea name="customPages.${escapeHtml(id)}.copy">${escapeHtml(page.copy || "")}</textarea></label>` : ""}
+              ${isSwatchTemplate ? `
+                <label>Title<input name="customPages.${escapeHtml(id)}.title" value="${escapeHtml(page.title || "")}"></label>
+                ${renderCustomSwatchControls(page, id)}
+              ` : ""}
+              ${template !== "photos4" && !isSwatchTemplate ? `<label>Copy<textarea name="customPages.${escapeHtml(id)}.copy">${escapeHtml(page.copy || "")}</textarea></label>` : ""}
               </fieldset>
             </div>
           `;
@@ -1091,13 +1163,14 @@
         <div class="ycs-report-page-add">
           <button type="button" class="ycs-report-page-add__primary" data-ycs-add-custom-report-page="letter">Add Page</button>
           <details class="ycs-report-page-add__more">
-            <summary>Photo page types</summary>
+            <summary>Custom page types</summary>
             <div class="ycs-report-page-add__menu">
               <span>${escapeHtml(insertPageLabel)}</span>
               <button type="button" data-ycs-add-custom-report-page="photos">2-photo page</button>
               <button type="button" data-ycs-add-custom-report-page="photos3">3-photo page</button>
               <button type="button" data-ycs-add-custom-report-page="photos4">4-photo page</button>
               <button type="button" data-ycs-add-custom-report-page="photos6">6-photo page</button>
+              <button type="button" data-ycs-add-custom-report-page="swatches">Color swatch page</button>
             </div>
           </details>
         </div>
@@ -1204,8 +1277,43 @@
     `;
   }
 
+  function renderCustomReportSwatches(page) {
+    const swatches = customPageSwatches(page).filter((swatch) => swatch.color);
+
+    if (!swatches.length) {
+      return '<div class="ycs-report-swatch-empty">Add colors in the page settings.</div>';
+    }
+
+    return `
+      <div class="ycs-report-swatch-grid" data-swatch-count="${swatches.length}">
+        ${swatches.map((swatch) => {
+          const textColor = swatchTextColor(swatch.color);
+          return `
+            <figure class="ycs-report-swatch">
+              <div class="ycs-report-swatch__color" style="background: ${escapeHtml(swatch.color)}; color: ${escapeHtml(textColor)};">
+                ${swatch.name ? `<span>${escapeHtml(swatch.name)}</span>` : ""}
+              </div>
+              ${swatch.caption ? `<figcaption>${escapeHtml(swatch.caption)}</figcaption>` : ""}
+            </figure>
+          `;
+        }).join("")}
+      </div>
+    `;
+  }
+
   function renderCustomReportPage(draft, page, pageNumber, options = {}) {
     const template = normalizeCustomPageTemplate(page.template);
+
+    if (template === "swatches") {
+      return `
+        <section class="ycs-report-page ycs-report-page--custom-swatches" data-report-page="${pageNumber}">
+          ${renderReportBrand(draft)}
+          <h1>${escapeHtml(page.title || "Recommended Colors")}</h1>
+          ${renderCustomReportSwatches(page)}
+          ${renderReportFooter(draft, pageNumber)}
+        </section>
+      `;
+    }
 
     if (template === "photos3") {
       return `
@@ -1621,6 +1729,11 @@
     draft.customPages = Array.from(form.querySelectorAll("[data-ycs-custom-report-page]")).map((pageEl) => {
       const id = String(pageEl.dataset.reportCustomPageId || makeCustomReportPageId());
       const fieldValue = (fieldName) => String(formData.get(`customPages.${id}.${fieldName}`) || "").trim();
+      const swatches = Array.from({ length: MAX_CUSTOM_SWATCHES }, (_item, index) => ({
+        color: normalizeHexColor(formData.get(`customPages.${id}.swatches.${index}.color`)),
+        name: String(formData.get(`customPages.${id}.swatches.${index}.name`) || "").trim(),
+        caption: String(formData.get(`customPages.${id}.swatches.${index}.caption`) || "").trim()
+      }));
       return {
         id,
         template: normalizeCustomPageTemplate(fieldValue("template")),
@@ -1643,7 +1756,8 @@
         image3Caption: fieldValue("image3Caption"),
         image4Caption: fieldValue("image4Caption"),
         image5Caption: fieldValue("image5Caption"),
-        image6Caption: fieldValue("image6Caption")
+        image6Caption: fieldValue("image6Caption"),
+        swatches
       };
     });
     draft.reportPageOrder = normalizeReportPageOrder(draft);
@@ -4118,7 +4232,7 @@
       const newPage = {
         id: makeCustomReportPageId(),
         template,
-        title: template === "letter" ? "" : "New Page",
+        title: template === "letter" ? "" : (template === "swatches" ? "Recommended Colors" : "New Page"),
         copy: "",
         image1Url: "",
         image2Url: "",
@@ -4137,7 +4251,8 @@
         image3Caption: "",
         image4Caption: "",
         image5Caption: "",
-        image6Caption: ""
+        image6Caption: "",
+        swatches: normalizeCustomSwatches([])
       };
       activeReportDraft.customPages = [...reportCustomPages(activeReportDraft), newPage];
       const order = normalizeReportPageOrder(activeReportDraft).filter((entry) => !(entry.type === "custom" && entry.key === newPage.id));
