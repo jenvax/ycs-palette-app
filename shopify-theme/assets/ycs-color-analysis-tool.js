@@ -3523,6 +3523,40 @@ return null;
     return color + '-' + firstName + '-' + lastName + '.png';
   }
 
+  function canvasToPngBlob(canvas) {
+    return new Promise(function (resolve, reject) {
+      if (!canvas || typeof canvas.toBlob !== 'function') {
+        reject(new Error('Canvas export is not available.'));
+        return;
+      }
+
+      canvas.toBlob(function (blob) {
+        if (blob) {
+          resolve(blob);
+        } else {
+          reject(new Error('Could not create PNG download.'));
+        }
+      }, 'image/png');
+    });
+  }
+
+  function downloadBlob(blob, fileName) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+
+    link.href = url;
+    link.download = fileName;
+    link.style.display = 'none';
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    window.setTimeout(function () {
+      URL.revokeObjectURL(url);
+    }, 1000);
+  }
+
   async function getCanvasSafeImageUrl(src) {
     const imageUrl = String(src || '').trim();
     if (!imageUrl || !APP_BASE_URL) return imageUrl;
@@ -3794,16 +3828,11 @@ return null;
       drawExportColorLabel(ctx, frameWidth, frameHeight, colorName, panel);
 
       const fileName = buildDrapedExportFileName(colorName);
-      const dataUrl = canvas.toDataURL('image/png');
-
-      const link = document.createElement('a');
-      link.href = dataUrl;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+      const pngBlob = await canvasToPngBlob(canvas);
+      downloadBlob(pngBlob, fileName);
 
       try {
+        const dataUrl = canvas.toDataURL('image/png');
         await saveDrapedImageForReport({
           imageBase64: dataUrl,
           clientRecordId: CLIENT_RECORD_ID,
