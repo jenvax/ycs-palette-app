@@ -523,6 +523,7 @@
           </div>
           <div class="ycs-custom-palettes__actions">
             <button type="button" class="ycs-palette-card__button" data-ycs-custom-action="create-palette">Create Palette</button>
+            <button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="import-csv">Upload CSV</button>
             <button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="manage-colors">{% if actual_is_admin %}Manage Colors{% else %}Manage My Colors{% endif %}</button>
           </div>
         </div>
@@ -1725,6 +1726,23 @@
   background: #fffafb;
 }
 
+.ycs-custom-help-text {
+  margin: -6px 0 0;
+  color: #6f625c;
+  font-size: 13px;
+}
+
+.ycs-custom-import-preview {
+  display: grid;
+  gap: 8px;
+  max-height: 260px;
+  overflow: auto;
+  padding: 10px;
+  border: 1px solid #eee3e6;
+  border-radius: 12px;
+  background: #fffafb;
+}
+
 @media (max-width: 720px) {
   .ycs-admin-preview {
     align-items: flex-start;
@@ -1770,7 +1788,7 @@
     scope: root.dataset.scope || 'private'
   };
   const isStyleMastersAdmin = context.scope === 'stylemasters';
-  const state = { colors: [], palettes: [], activePalette: null, colorSearch: '' };
+  const state = { colors: [], palettes: [], activePalette: null, colorSearch: '', csvImportColors: [] };
 
   function escapeHtml(value) {
     return String(value || '').replace(/[&<>"']/g, function (char) {
@@ -1789,6 +1807,82 @@
   function normalizeHexInput(value) {
     const raw = String(value || '').trim().replace(/^#/, '');
     return /^[0-9a-fA-F]{6}$/.test(raw) ? '#' + raw.toUpperCase() : '';
+  }
+
+  function normalizeCsvHeader(value) {
+    return String(value || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+  }
+
+  function parseCsvRows(text) {
+    const rows = [];
+    let row = [];
+    let value = '';
+    let inQuotes = false;
+
+    String(text || '').replace(/^\uFEFF/, '').split('').forEach(function (char, index, chars) {
+      const nextChar = chars[index + 1];
+
+      if (char === '"') {
+        if (inQuotes && nextChar === '"') {
+          value += '"';
+          chars[index + 1] = '';
+        } else {
+          inQuotes = !inQuotes;
+        }
+        return;
+      }
+
+      if (char === ',' && !inQuotes) {
+        row.push(value.trim());
+        value = '';
+        return;
+      }
+
+      if ((char === '\n' || char === '\r') && !inQuotes) {
+        if (char === '\r' && nextChar === '\n') return;
+        row.push(value.trim());
+        if (row.some(function (cell) { return cell; })) rows.push(row);
+        row = [];
+        value = '';
+        return;
+      }
+
+      value += char;
+    });
+
+    row.push(value.trim());
+    if (row.some(function (cell) { return cell; })) rows.push(row);
+    return rows;
+  }
+
+  function parseColorCsv(text) {
+    const rows = parseCsvRows(text);
+    if (!rows.length) return [];
+
+    const firstRowHeaders = rows[0].map(normalizeCsvHeader);
+    let nameIndex = firstRowHeaders.findIndex(function (header) {
+      return ['name', 'colorname', 'colourname', 'color'].includes(header);
+    });
+    let hexIndex = firstRowHeaders.findIndex(function (header) {
+      return ['hex', 'hexcode', 'colorhex', 'colourhex'].includes(header);
+    });
+    const hasHeader = nameIndex !== -1 && hexIndex !== -1;
+    const dataRows = hasHeader ? rows.slice(1) : rows;
+
+    if (!hasHeader) {
+      nameIndex = 0;
+      hexIndex = 1;
+    }
+
+    return dataRows.map(function (row, index) {
+      return {
+        name: row[nameIndex] || '',
+        hexCode: normalizeHexInput(row[hexIndex] || ''),
+        rowNumber: index + (hasHeader ? 2 : 1)
+      };
+    }).filter(function (color) {
+      return color.name || color.hexCode;
+    });
   }
 
   async function requestJson(action, payload) {
@@ -1878,6 +1972,7 @@
   function closeModal() {
     modal.hidden = true;
     state.activePalette = null;
+    state.csvImportColors = [];
   }
 
   function colorRows(colors, selectable, paletteColorIds) {
@@ -2039,6 +2134,36 @@
         '<label>Palette Name<input name="name" required value="' + escapeHtml((palette && palette.name) || '') + '"></label>' +
         (error ? '<p class="ycs-custom-error">' + escapeHtml(error) + '</p>' : '') +
         '<div class="ycs-custom-form__actions"><button type="submit" class="ycs-palette-card__button">Save</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-close>Cancel</button></div>' +
+      '</form>');
+  }
+
+  function importPreviewRows(colors) {
+    if (!colors.length) {
+      return '<p class="ycs-custom-empty-text">Choose a CSV with color names and hex codes.</p>';
+    }
+
+    return '<div class="ycs-custom-import-preview">' + colors.slice(0, 25).map(function (color) {
+      const isValid = color.name && color.hexCode;
+      return '<div class="ycs-custom-row">' +
+        '<div class="ycs-custom-row__main">' +
+          '<span class="ycs-custom-swatch" style="background:' + escapeHtml(color.hexCode || '#FFFFFF') + '"></span>' +
+          '<div><p class="ycs-custom-row__name">' + escapeHtml(color.name || 'Missing color name') + '</p><p class="ycs-custom-row__meta">' + (isValid ? escapeHtml(color.hexCode) : 'Row ' + color.rowNumber + ' needs a name and valid hex code') + '</p></div>' +
+        '</div>' +
+      '</div>';
+    }).join('') + (colors.length > 25 ? '<p class="ycs-custom-batch-summary">+' + (colors.length - 25) + ' more colors</p>' : '') + '</div>';
+  }
+
+  function renderCsvImport(error, colors, paletteName) {
+    const parsedColors = Array.isArray(colors) ? colors : [];
+    const hasInvalid = parsedColors.some(function (color) { return !color.name || !color.hexCode; });
+    openModal('Upload Color Palette CSV',
+      '<form class="ycs-custom-form" data-ycs-csv-import-form>' +
+        '<label>Palette Name<input name="name" required value="' + escapeHtml(paletteName || '') + '"></label>' +
+        '<label>CSV File<input name="csvFile" type="file" accept=".csv,text/csv"' + (parsedColors.length ? '' : ' required') + '></label>' +
+        '<p class="ycs-custom-help-text">Use columns named Name and Hex, or Color Name and Hex Code. Two-column CSV files are read as name, hex.</p>' +
+        '<div data-ycs-csv-preview>' + importPreviewRows(parsedColors) + '</div>' +
+        (error ? '<p class="ycs-custom-error">' + escapeHtml(error) + '</p>' : '') +
+        '<div class="ycs-custom-form__actions"><button type="submit" class="ycs-palette-card__button"' + (parsedColors.length && !hasInvalid ? '' : ' disabled') + '>Import Palette</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-close>Cancel</button></div>' +
       '</form>');
   }
 
@@ -2519,6 +2644,10 @@
     const action = button.dataset.ycsCustomAction;
     const palette = state.palettes.find(function (item) { return item.id === button.dataset.paletteId; });
     if (action === 'create-palette') renderPaletteForm('Create Custom Palette', 'createPalette');
+    if (action === 'import-csv') {
+      state.csvImportColors = [];
+      renderCsvImport();
+    }
     if (action === 'manage-colors') renderMyColors();
     if (action === 'open-palette' && palette) renderPaletteDetail(palette);
     if (action === 'create-pdf' && palette) createPalettePdf(palette);
@@ -2632,12 +2761,44 @@
     }
   });
 
+  modal.addEventListener('change', function (event) {
+    if (!event.target.matches('input[name="csvFile"]')) return;
+
+    const form = event.target.closest('[data-ycs-csv-import-form]');
+    const file = event.target.files && event.target.files[0];
+    const paletteName = form ? new FormData(form).get('name') : '';
+
+    if (!file) {
+      state.csvImportColors = [];
+      renderCsvImport('', state.csvImportColors, paletteName);
+      return;
+    }
+
+    if (!/\.csv$/i.test(file.name) && file.type && file.type !== 'text/csv') {
+      state.csvImportColors = [];
+      renderCsvImport('Choose a CSV file.', state.csvImportColors, paletteName);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function () {
+      state.csvImportColors = parseColorCsv(reader.result || '');
+      renderCsvImport('', state.csvImportColors, paletteName || file.name.replace(/\.csv$/i, ''));
+    };
+    reader.onerror = function () {
+      state.csvImportColors = [];
+      renderCsvImport('Unable to read this CSV file.', state.csvImportColors, paletteName);
+    };
+    reader.readAsText(file);
+  });
+
   modal.addEventListener('submit', function (event) {
     const colorForm = event.target.closest('[data-ycs-color-form]');
     const paletteForm = event.target.closest('[data-ycs-palette-form]');
     const colorPalettesForm = event.target.closest('[data-ycs-color-palettes-form]');
     const batchColorPaletteForm = event.target.closest('[data-ycs-batch-color-palette-form]');
-    if (!colorForm && !paletteForm && !colorPalettesForm && !batchColorPaletteForm) return;
+    const csvImportForm = event.target.closest('[data-ycs-csv-import-form]');
+    if (!colorForm && !paletteForm && !colorPalettesForm && !batchColorPaletteForm && !csvImportForm) return;
     event.preventDefault();
 
     if (colorForm) {
@@ -2695,6 +2856,29 @@
         return refreshAfterMutation('Selected colors assigned to palette.');
       }).then(renderMyColors).catch(function (error) {
         renderBatchAssignColors(colorIds, error.message);
+      });
+    }
+
+    if (csvImportForm) {
+      const formData = new FormData(csvImportForm);
+      const colors = state.csvImportColors || [];
+      const hasInvalid = colors.some(function (color) { return !color.name || !color.hexCode; });
+
+      if (!colors.length || hasInvalid) {
+        renderCsvImport('Choose a CSV with valid color names and hex codes.', colors, formData.get('name'));
+        return;
+      }
+
+      requestJson('importPaletteCsv', {
+        name: formData.get('name'),
+        colors: colors
+      }).then(function (json) {
+        state.csvImportColors = [];
+        return refreshAfterMutation('Custom palette imported from CSV.').then(function () {
+          renderPaletteDetail(json.palette);
+        });
+      }).catch(function (error) {
+        renderCsvImport(error.message, colors, formData.get('name'));
       });
     }
   });

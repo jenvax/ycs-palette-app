@@ -668,6 +668,67 @@ export async function action({ request }) {
       return Response.json({ palette: paletteShellFromRecord(record) }, { headers: corsHeaders });
     }
 
+    if (actionName === "importPaletteCsv") {
+      const name = cleanString(body.name);
+      const rawColors = Array.isArray(body.colors) ? body.colors : [];
+
+      if (!name) return Response.json({ error: "Palette name is required" }, { status: 400, headers: corsHeaders });
+      if (!rawColors.length) return Response.json({ error: "Add at least one color to import" }, { status: 400, headers: corsHeaders });
+      if (rawColors.length > 150) {
+        return Response.json(
+          { error: "CSV import is limited to 150 colors at a time" },
+          { status: 400, headers: corsHeaders }
+        );
+      }
+
+      const colors = rawColors.map((color, index) => ({
+        name: cleanString(color?.name),
+        hexCode: normalizeHex(color?.hexCode || color?.hex),
+        rowNumber: Number(color?.rowNumber || index + 1)
+      }));
+      const invalidColor = colors.find((color) => !color.name || !color.hexCode);
+
+      if (invalidColor) {
+        return Response.json(
+          { error: `CSV row ${invalidColor.rowNumber} needs a color name and valid six-character hex code` },
+          { status: 400, headers: corsHeaders }
+        );
+      }
+
+      const paletteRecord = await createRecord(PALETTES_TABLE, {
+        PaletteId: makeId("cpalette"),
+        OwnerCustomerId: ownerCustomerId,
+        Name: name,
+        VisibleToVip: false,
+        CreatedAt: nowIso,
+        UpdatedAt: nowIso
+      });
+      const paletteId = paletteRecord.fields?.PaletteId;
+
+      for (const [index, color] of colors.entries()) {
+        const colorRecord = await createRecord(COLORS_TABLE, {
+          ColorId: makeId("ccolor"),
+          OwnerCustomerId: ownerCustomerId,
+          Name: color.name,
+          HexCode: color.hexCode,
+          CreatedAt: nowIso,
+          UpdatedAt: nowIso
+        });
+
+        await createRecord(PALETTE_COLORS_TABLE, {
+          PaletteColorId: makeId("cpcolor"),
+          OwnerCustomerId: ownerCustomerId,
+          PaletteId: paletteId,
+          ColorId: colorRecord.fields?.ColorId,
+          DisplayOrder: index,
+          CreatedAt: nowIso,
+          UpdatedAt: nowIso
+        });
+      }
+
+      return Response.json({ palette: await readPalette(ownerCustomerId, paletteId) }, { headers: corsHeaders });
+    }
+
     if (actionName === "renamePalette") {
       const paletteId = cleanString(body.paletteId);
       const name = cleanString(body.name);
