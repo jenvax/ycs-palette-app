@@ -324,7 +324,7 @@ async function authorizeAccess({ customerId, hasGrowthAccess, scope }) {
     };
   }
 
-  return { ok: false, status: 403, error: "CATOOLGROWTH access required" };
+  return { ok: false, status: 403, error: "CATOOLGROWTH or YCSPRO access required" };
 }
 
 function requireEditAccess(auth) {

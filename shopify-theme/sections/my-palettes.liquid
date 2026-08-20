@@ -86,7 +86,7 @@
   {% endif %}
 
   {% assign is_catool_growth = false %}
-  {% if customer and palette_access_string contains ',CATOOLGROWTH,' %}
+  {% if customer and palette_access_string contains ',CATOOLGROWTH,' or palette_access_string contains ',YCSPRO,' %}
     {% assign is_catool_growth = true %}
   {% endif %}
 
@@ -649,7 +649,7 @@
 
     {% if is_color_analysis_tools_page and can_use_analysis_tool == false %}
       <div class="ycs-my-palettes__empty">
-        Color Analysis Tools are not available on this account. Please confirm this customer has a TRADE, CATOOL, DIYCATOOL, FREEDIYCATOOL, CATOOLFREE, CATOOLGROWTH, or YCS_ADMIN tag.
+        Color Analysis Tools are not available on this account. Please confirm this customer has a TRADE, CATOOL, DIYCATOOL, FREEDIYCATOOL, CATOOLFREE, CATOOLGROWTH, YCSPRO, or YCS_ADMIN tag.
       </div>
     {% endif %}
 

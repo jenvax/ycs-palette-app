@@ -45,7 +45,7 @@
 {% endif %}
 
 {% assign is_catool_growth = false %}
-{% if palette_access_string contains ',CATOOLGROWTH,' %}
+{% if palette_access_string contains ',CATOOLGROWTH,' or palette_access_string contains ',YCSPRO,' %}
   {% assign is_catool_growth = true %}
 {% endif %}
 

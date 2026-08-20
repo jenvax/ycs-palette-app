@@ -60,7 +60,7 @@ Show Style Masters Hub button if:
   {% endif %}
 
   {% assign has_color_analysis_tool = false %}
-  {% if palette_access_string contains ',CATOOL,' or palette_access_string contains ',CATOOLGROWTH,' or palette_access_string contains ',CATOOLFREE,' or palette_access_string contains ',DIYCATOOL,' or palette_access_string contains ',FREEDIYCATOOL,' or palette_access_string contains ',YCS_ADMIN,' %}
+  {% if palette_access_string contains ',CATOOL,' or palette_access_string contains ',CATOOLGROWTH,' or palette_access_string contains ',YCSPRO,' or palette_access_string contains ',CATOOLFREE,' or palette_access_string contains ',DIYCATOOL,' or palette_access_string contains ',FREEDIYCATOOL,' or palette_access_string contains ',YCS_ADMIN,' %}
     {% assign has_color_analysis_tool = true %}
   {% endif %}
 

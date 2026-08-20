@@ -44,7 +44,7 @@
 {% endif %}
 
 {% assign is_catool_growth = false %}
-{% if customer and palette_access_string contains ',CATOOLGROWTH,' %}
+{% if customer and palette_access_string contains ',CATOOLGROWTH,' or palette_access_string contains ',YCSPRO,' %}
   {% assign is_catool_growth = true %}
 {% endif %}
 
@@ -101,7 +101,7 @@
   {% elsif can_manage_clients == false %}
     <div class="ycs-clients__empty">
       <h1>Access denied</h1>
-      <p>This page is available with Trade, CATOOL, CATOOLGROWTH, and admin access.</p>
+      <p>This page is available with Trade, CATOOL, CATOOLGROWTH, YCSPRO, and admin access.</p>
     </div>
   {% else %}
     <div class="ycs-clients__topbar">

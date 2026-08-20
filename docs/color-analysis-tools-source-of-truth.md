@@ -47,6 +47,7 @@ Customer permissions are controlled primarily by Shopify customer tags. Tag chec
 - `TRADEJULYCOHORT`, treated as TRADE only until August 25, 2026
 - `CATOOL`
 - `CATOOLGROWTH`
+- `YCSPRO`
 - `CATOOLFREE`
 - `DIYCATOOL`
 - `FREEDIYCATOOL`
@@ -82,6 +83,7 @@ The Color Analysis Tools button appears when the customer has any of:
 - unexpired `TRADEJULYCOHORT`
 - `CATOOL`
 - `CATOOLGROWTH`
+- `YCSPRO`
 - `CATOOLFREE`
 - `DIYCATOOL`
 - `FREEDIYCATOOL`
@@ -122,7 +124,7 @@ The page can show:
 - Color Analysis Tool card
 - Training Curriculum card
 - YCS digital palette cards
-- Custom palette management, for CATOOLGROWTH and actual YCS_ADMIN
+- Custom palette management, for CATOOLGROWTH, YCSPRO, and actual YCS_ADMIN
 
 ### Who Can Use The Color Analysis Tools Page
 
@@ -133,6 +135,7 @@ The tools page is available to:
 - unexpired `TRADEJULYCOHORT`
 - `CATOOL`
 - `CATOOLGROWTH`
+- `YCSPRO`
 - `CATOOLFREE`
 - `DIYCATOOL`
 - `FREEDIYCATOOL`
@@ -146,6 +149,7 @@ On the Color Analysis Tools page only, the following roles see all standard YCS 
 - unexpired `TRADEJULYCOHORT`
 - `CATOOL`
 - `CATOOLGROWTH`
+- `YCSPRO`
 
 The standard YCS palette set is:
 
@@ -180,7 +184,7 @@ On the dedicated Color Analysis Tools section, all-PDF access is granted to:
 
 Otherwise the customer needs the specific palette tag for that palette.
 
-`CATOOL` and `CATOOLGROWTH` users see all standard YCS palette cards in the tools view, but they do not get all PDF buttons by role alone. They see a PDF button only when they personally have that palette tag. `VIP` does not grant a PDF button for any color palette.
+`CATOOL`, `CATOOLGROWTH`, and `YCSPRO` users see all standard YCS palette cards in the tools view, but they do not get all PDF buttons by role alone. They see a PDF button only when they personally have that palette tag. `VIP` does not grant a PDF button for any color palette.
 
 ## My Clients
 
@@ -191,6 +195,7 @@ My Clients is available to users who can manage clients:
 - unexpired `TRADEJULYCOHORT`
 - `CATOOL`
 - `CATOOLGROWTH`
+- `YCSPRO`
 
 `CATOOLFREE`, `DIYCATOOL`, and `FREEDIYCATOOL` can use tool flows in other places, but they are not currently included in the My Clients page gate.
 
@@ -278,7 +283,7 @@ If no matching Shopify customer exists and first or last name is missing:
 
 ### Non-Admin Add Client Behavior
 
-For `TRADE`, unexpired `TRADEJULYCOHORT`, `CATOOL`, and `CATOOLGROWTH`:
+For `TRADE`, unexpired `TRADEJULYCOHORT`, `CATOOL`, `CATOOLGROWTH`, and `YCSPRO`:
 
 - Add Client creates an Airtable client record only
 - Shopify is not looked up during client creation
@@ -521,6 +526,7 @@ Monthly photo upload limits by current behavior:
 - `YCS_ADMIN`: unlimited
 - `CATOOL`: 5
 - `CATOOLGROWTH`: 15
+- `YCSPRO`: 15
 - `TRADE`: 15
 - unexpired `TRADEJULYCOHORT`: 15
 - `VIP`: 5 personal photo uploads
@@ -765,7 +771,7 @@ The studio:
 - supports Save Position and Restore Saved Position
 - provides a palette selector for each side
 - lists all standard YCS palettes
-- shows CATOOLGROWTH custom palettes at the top of the selector when available
+- shows CATOOLGROWTH/YCSPRO custom palettes at the top of the selector when available
 - supports lip shape editing and hiding/showing lips
 - loads lip colors for the selected palette when a lip shape exists
 
@@ -873,6 +879,7 @@ Report Builder is available on View/Edit Client for:
 - unexpired `TRADEJULYCOHORT`
 - `CATOOL`
 - `CATOOLGROWTH`
+- `YCSPRO`
 
 Report Builder:
 

@@ -896,7 +896,7 @@
     const hasAdminAccess = PALETTE_ACCESS.includes(',YCS_ADMIN,');
 const hasTradeAccess = PALETTE_ACCESS.includes(',TRADE,') || app.dataset.isTradeJulyCohort === 'true';
 const hasCatoolAccess = PALETTE_ACCESS.includes(',CATOOL,');
-const hasCatoolGrowthAccess = PALETTE_ACCESS.includes(',CATOOLGROWTH,');
+const hasCatoolGrowthAccess = PALETTE_ACCESS.includes(',CATOOLGROWTH,') || PALETTE_ACCESS.includes(',YCSPRO,');
 
 const hasAllPaletteAccess =
   hasAdminAccess ||
