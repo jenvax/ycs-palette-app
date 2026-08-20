@@ -1598,9 +1598,7 @@ function applySharedLipState(shared) {
     leftImg.style.transform = transform;
     rightImg.style.transform = transform;
 
-    const filterValue = state.analysisMode === 'comparison'
-      ? 'none'
-      : (state.grayscale ? 'grayscale(1)' : 'none');
+    const filterValue = shouldApplyGrayscale() ? 'grayscale(1)' : 'none';
     leftImg.style.filter = filterValue;
     leftImg.style.webkitFilter = filterValue;
     rightImg.style.filter = filterValue;
@@ -2720,6 +2718,18 @@ function updateBackLink() {
     );
   }
 
+  function isDepthStepVisible() {
+    return !!(
+      state.analysisMode !== 'comparison' &&
+      depthStepEl &&
+      !depthStepEl.hidden
+    );
+  }
+
+  function shouldApplyGrayscale() {
+    return !!state.grayscale && isDepthStepVisible();
+  }
+
   function setLipVisibilityForCurrentStep() {
     const showLipsNow = isUndertoneStepVisible();
 
@@ -3694,9 +3704,7 @@ return null;
       const drawWidth = photoRect.width;
       const drawHeight = photoRect.height;
 
-      ctx.filter = state.analysisMode === 'comparison'
-        ? 'none'
-        : (state.grayscale ? 'grayscale(1)' : 'none');
+      ctx.filter = shouldApplyGrayscale() ? 'grayscale(1)' : 'none';
       ctx.drawImage(uploadedImg, drawX, drawY, drawWidth, drawHeight);
       ctx.filter = 'none';
 
