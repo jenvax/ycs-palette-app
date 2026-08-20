@@ -1,7 +1,7 @@
-Name,Hex
-Cerulean,#2F7FBF
-Perfect Coral,#FF5B4D
-White,#FFFFFF
-Harbor Blue,#4E8195
-Smoky Rose,#A66F7D
-Cerise,#C71562
+Name,Hex,Category
+Cerulean,#2F7FBF,Blues
+Perfect Coral,#FF5B4D,Reds
+White,#FFFFFF,Neutrals
+Harbor Blue,#4E8195,Blues
+Smoky Rose,#A66F7D,Pinks
+Cerise,#C71562,Magentas

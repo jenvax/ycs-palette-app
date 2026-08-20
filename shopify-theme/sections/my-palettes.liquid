@@ -1724,7 +1724,7 @@
 
 .ycs-custom-form__row {
   display: grid;
-  grid-template-columns: 1fr 1fr auto;
+  grid-template-columns: 1fr 1fr 1fr auto;
   gap: 10px;
   align-items: end;
 }
@@ -2025,6 +2025,9 @@
     let hexIndex = firstRowHeaders.findIndex(function (header) {
       return ['hex', 'hexcode', 'colorhex', 'colourhex'].includes(header);
     });
+    const categoryIndex = firstRowHeaders.findIndex(function (header) {
+      return ['category', 'colorcategory', 'colourcategory', 'group', 'family'].includes(header);
+    });
     const hasHeader = nameIndex !== -1 && hexIndex !== -1;
     const dataRows = hasHeader ? rows.slice(1) : rows;
 
@@ -2037,6 +2040,7 @@
       return {
         name: row[nameIndex] || '',
         hexCode: normalizeHexInput(row[hexIndex] || ''),
+        category: (categoryIndex === -1 ? 'Custom' : row[categoryIndex]) || 'Custom',
         rowNumber: index + (hasHeader ? 2 : 1)
       };
     }).filter(function (color) {
@@ -2150,7 +2154,7 @@
         '<div class="ycs-custom-row__main">' +
           (selectable ? '<input type="checkbox" data-color-select value="' + escapeHtml(color.id) + '"' + (disabled ? ' disabled' : '') + ' aria-label="Select ' + escapeHtml(color.name) + '">' : '') +
           '<span class="ycs-custom-swatch" style="background:' + escapeHtml(color.hexCode) + '"></span>' +
-          '<div><p class="ycs-custom-row__name">' + escapeHtml(color.name) + '</p><p class="ycs-custom-row__meta">' + escapeHtml(color.hexCode) + '</p>' + (selectable ? '' : '<p class="ycs-custom-row__meta">' + escapeHtml(paletteMeta) + '</p>') + '</div>' +
+          '<div><p class="ycs-custom-row__name">' + escapeHtml(color.name) + '</p><p class="ycs-custom-row__meta">' + escapeHtml(color.category || 'Custom') + ' • ' + escapeHtml(color.hexCode) + '</p>' + (selectable ? '' : '<p class="ycs-custom-row__meta">' + escapeHtml(paletteMeta) + '</p>') + '</div>' +
         '</div>' +
         (selectable
           ? '<div class="ycs-custom-row__actions">' +
@@ -2190,7 +2194,7 @@
         '<div class="ycs-custom-row__main">' +
           '<input type="checkbox" data-manage-color-select value="' + escapeHtml(color.id) + '" aria-label="Select ' + escapeHtml(color.name) + '">' +
           '<span class="ycs-custom-swatch" style="background:' + escapeHtml(color.hexCode) + '"></span>' +
-          '<div><p class="ycs-custom-row__name">' + escapeHtml(color.name) + '</p><p class="ycs-custom-row__meta">' + escapeHtml(color.hexCode) + '</p><p class="ycs-custom-row__meta">' + escapeHtml(paletteMeta) + '</p></div>' +
+          '<div><p class="ycs-custom-row__name">' + escapeHtml(color.name) + '</p><p class="ycs-custom-row__meta">' + escapeHtml(color.category || 'Custom') + ' • ' + escapeHtml(color.hexCode) + '</p><p class="ycs-custom-row__meta">' + escapeHtml(paletteMeta) + '</p></div>' +
         '</div>' +
         '<div class="ycs-custom-row__actions"><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="assign-color-palettes" data-color-id="' + escapeHtml(color.id) + '">Palettes</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="edit-color" data-color-id="' + escapeHtml(color.id) + '">Edit</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="delete-color" data-color-id="' + escapeHtml(color.id) + '">Delete</button></div>' +
       '</div>';
@@ -2207,6 +2211,7 @@
         '<div class="ycs-custom-form__row">' +
           '<label>Color Name<input name="name" required></label>' +
           '<label>Hex Code<input name="hexCode" required placeholder="#D94C6A"></label>' +
+          '<label>Category<input name="category" placeholder="Reds"></label>' +
           '<div class="ycs-custom-preview"><span>Preview</span><span class="ycs-custom-swatch" data-ycs-hex-preview></span></div>' +
         '</div>' +
         (error ? '<p class="ycs-custom-error">' + escapeHtml(error) + '</p>' : '') +
@@ -2226,6 +2231,7 @@
         '<div class="ycs-custom-form__row">' +
           '<label>Color Name<input name="name" required value="' + escapeHtml(color.name) + '"></label>' +
           '<label>Hex Code<input name="hexCode" required value="' + escapeHtml(color.hexCode) + '"></label>' +
+          '<label>Category<input name="category" value="' + escapeHtml(color.category || 'Custom') + '"></label>' +
           '<div class="ycs-custom-preview"><span>Preview</span><span class="ycs-custom-swatch" data-ycs-hex-preview style="background:' + escapeHtml(color.hexCode) + '"></span></div>' +
         '</div>' +
         (error ? '<p class="ycs-custom-error">' + escapeHtml(error) + '</p>' : '') +
@@ -2254,7 +2260,7 @@
       '<form class="ycs-custom-form" data-ycs-color-palettes-form data-color-id="' + escapeHtml(color.id) + '">' +
         '<div class="ycs-custom-assignment-preview">' +
           '<span class="ycs-custom-swatch" style="background:' + escapeHtml(color.hexCode) + '"></span>' +
-          '<div><p class="ycs-custom-row__name">' + escapeHtml(color.name) + '</p><p class="ycs-custom-row__meta">' + escapeHtml(color.hexCode) + '</p></div>' +
+          '<div><p class="ycs-custom-row__name">' + escapeHtml(color.name) + '</p><p class="ycs-custom-row__meta">' + escapeHtml(color.category || 'Custom') + ' • ' + escapeHtml(color.hexCode) + '</p></div>' +
         '</div>' +
         paletteOptions +
         (error ? '<p class="ycs-custom-error">' + escapeHtml(error) + '</p>' : '') +
@@ -2293,6 +2299,30 @@
       '</form>');
   }
 
+  function orderedPaletteColorGroups(colors) {
+    const categoryOrder = [
+      'Reds', 'Oranges', 'Golden Yellows', 'Yellows', 'Yellow Greens',
+      'Greens', 'Aquas/Teals', 'Blues', 'Indigos', 'Purples', 'Plums',
+      'Magentas', 'Pinks', 'Neutrals', 'Custom'
+    ];
+    const groups = {};
+
+    colors.forEach(function (item) {
+      const color = item.color || {};
+      const category = String(color.category || 'Custom').trim() || 'Custom';
+      if (!groups[category]) groups[category] = [];
+      groups[category].push(item);
+    });
+
+    return categoryOrder.filter(function (category) {
+      return groups[category];
+    }).concat(Object.keys(groups).filter(function (category) {
+      return categoryOrder.indexOf(category) === -1;
+    }).sort()).map(function (category) {
+      return { category: category, colors: groups[category] };
+    });
+  }
+
   function importPreviewRows(colors) {
     if (!colors.length) {
       return '<p class="ycs-custom-empty-text">Choose a CSV with color names and hex codes.</p>';
@@ -2303,7 +2333,7 @@
       return '<div class="ycs-custom-row">' +
         '<div class="ycs-custom-row__main">' +
           '<span class="ycs-custom-swatch" style="background:' + escapeHtml(color.hexCode || '#FFFFFF') + '"></span>' +
-          '<div><p class="ycs-custom-row__name">' + escapeHtml(color.name || 'Missing color name') + '</p><p class="ycs-custom-row__meta">' + (isValid ? escapeHtml(color.hexCode) : 'Row ' + color.rowNumber + ' needs a name and valid hex code') + '</p></div>' +
+          '<div><p class="ycs-custom-row__name">' + escapeHtml(color.name || 'Missing color name') + '</p><p class="ycs-custom-row__meta">' + (isValid ? escapeHtml(color.category || 'Custom') + ' • ' + escapeHtml(color.hexCode) : 'Row ' + color.rowNumber + ' needs a name and valid hex code') + '</p></div>' +
         '</div>' +
       '</div>';
     }).join('') + (colors.length > 25 ? '<p class="ycs-custom-batch-summary">+' + (colors.length - 25) + ' more colors</p>' : '') + '</div>';
@@ -2316,7 +2346,7 @@
       '<form class="ycs-custom-form" data-ycs-csv-import-form>' +
         '<label>Palette Name<input name="name" required value="' + escapeHtml(paletteName || '') + '"></label>' +
         '<label>CSV File<input name="csvFile" type="file" accept=".csv,text/csv"' + (parsedColors.length ? '' : ' required') + '></label>' +
-        '<p class="ycs-custom-help-text">Use columns named Name and Hex, or Color Name and Hex Code. Two-column CSV files are read as name, hex.</p>' +
+        '<p class="ycs-custom-help-text">Use columns named Name, Hex, and optional Category. Two-column CSV files are read as name, hex and categorized as Custom.</p>' +
         '<div data-ycs-csv-preview>' + importPreviewRows(parsedColors) + '</div>' +
         (error ? '<p class="ycs-custom-error">' + escapeHtml(error) + '</p>' : '') +
         '<div class="ycs-custom-form__actions"><button type="submit" class="ycs-palette-card__button"' + (parsedColors.length && !hasInvalid ? '' : ' disabled') + '>Import Palette</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-close>Cancel</button></div>' +
@@ -2326,16 +2356,19 @@
   function renderPaletteDetail(palette) {
     state.activePalette = palette;
     const colors = palette.colors || [];
-    const rows = colors.length ? '<div class="ycs-custom-list">' + colors.map(function (item, index) {
-      const color = item.color;
-      return '<div class="ycs-custom-row">' +
-        '<div class="ycs-custom-row__main"><input type="checkbox" data-palette-color-select value="' + escapeHtml(color.id) + '" aria-label="Select ' + escapeHtml(color.name) + '"><span class="ycs-custom-swatch" style="background:' + escapeHtml(color.hexCode) + '"></span><div><p class="ycs-custom-row__name">' + escapeHtml(color.name) + '</p><p class="ycs-custom-row__meta">' + escapeHtml(color.hexCode) + '</p></div></div>' +
-        '<div class="ycs-custom-row__actions">' +
-          '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="move-color" data-direction="up" data-color-id="' + escapeHtml(color.id) + '"' + (index === 0 ? ' disabled' : '') + '>Move Up</button>' +
-          '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="move-color" data-direction="down" data-color-id="' + escapeHtml(color.id) + '"' + (index === colors.length - 1 ? ' disabled' : '') + '>Move Down</button>' +
-          '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="remove-from-palette" data-color-id="' + escapeHtml(color.id) + '">Remove</button>' +
-        '</div></div>';
-    }).join('') + '</div>' : '<p class="ycs-custom-empty-text">This palette does not have any colors yet. Add colors from My Colors.</p>';
+    const rows = colors.length ? orderedPaletteColorGroups(colors).map(function (group) {
+      return '<div class="ycs-custom-list"><p class="ycs-custom-batch-summary">' + escapeHtml(group.category) + '</p>' + group.colors.map(function (item) {
+        const color = item.color;
+        const index = colors.indexOf(item);
+        return '<div class="ycs-custom-row">' +
+          '<div class="ycs-custom-row__main"><input type="checkbox" data-palette-color-select value="' + escapeHtml(color.id) + '" aria-label="Select ' + escapeHtml(color.name) + '"><span class="ycs-custom-swatch" style="background:' + escapeHtml(color.hexCode) + '"></span><div><p class="ycs-custom-row__name">' + escapeHtml(color.name) + '</p><p class="ycs-custom-row__meta">' + escapeHtml(color.category || 'Custom') + ' • ' + escapeHtml(color.hexCode) + '</p></div></div>' +
+          '<div class="ycs-custom-row__actions">' +
+            '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="move-color" data-direction="up" data-color-id="' + escapeHtml(color.id) + '"' + (index === 0 ? ' disabled' : '') + '>Move Up</button>' +
+            '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="move-color" data-direction="down" data-color-id="' + escapeHtml(color.id) + '"' + (index === colors.length - 1 ? ' disabled' : '') + '>Move Down</button>' +
+            '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="remove-from-palette" data-color-id="' + escapeHtml(color.id) + '">Remove</button>' +
+          '</div></div>';
+      }).join('') + '</div>';
+    }).join('') : '<p class="ycs-custom-empty-text">This palette does not have any colors yet. Add colors from My Colors.</p>';
 
     openModal(palette.name,
       '<div class="ycs-custom-form__actions" style="margin-bottom:16px">' +
@@ -2534,7 +2567,8 @@
       const payload = {
         colorId: colorId,
         name: formData.get('name'),
-        hexCode: formData.get('hexCode')
+        hexCode: formData.get('hexCode'),
+        category: formData.get('category')
       };
       requestJson(colorId ? 'updateColor' : 'createColor', payload).then(function () {
         return refreshAfterMutation(colorId ? 'Custom color updated.' : 'Custom color added.');

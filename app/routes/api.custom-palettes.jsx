@@ -40,6 +40,10 @@ function normalizeHex(value) {
   return `#${raw.toUpperCase()}`;
 }
 
+function normalizeCategory(value) {
+  return cleanString(value) || "Custom";
+}
+
 function toBool(value) {
   return value === true || String(value || "").trim().toLowerCase() === "true";
 }
@@ -134,6 +138,39 @@ async function updateRecord(tableName, recordId, fields) {
   });
 
   return data.records?.[0] || null;
+}
+
+function isMissingCategoryFieldError(error) {
+  return /Category/i.test(String(error?.message || "")) &&
+    /(unknown|invalid|field)/i.test(String(error?.message || ""));
+}
+
+async function createColorRecord(fields) {
+  try {
+    return await createRecord(COLORS_TABLE, fields);
+  } catch (error) {
+    if (!Object.prototype.hasOwnProperty.call(fields, "Category") || !isMissingCategoryFieldError(error)) {
+      throw error;
+    }
+
+    const fallbackFields = { ...fields };
+    delete fallbackFields.Category;
+    return createRecord(COLORS_TABLE, fallbackFields);
+  }
+}
+
+async function updateColorRecord(recordId, fields) {
+  try {
+    return await updateRecord(COLORS_TABLE, recordId, fields);
+  } catch (error) {
+    if (!Object.prototype.hasOwnProperty.call(fields, "Category") || !isMissingCategoryFieldError(error)) {
+      throw error;
+    }
+
+    const fallbackFields = { ...fields };
+    delete fallbackFields.Category;
+    return updateRecord(COLORS_TABLE, recordId, fallbackFields);
+  }
 }
 
 async function deleteRecord(tableName, recordId) {
@@ -340,6 +377,7 @@ function colorFromRecord(record, paletteCount = 0) {
     id: fields.ColorId || record.id,
     name: fields.Name || "",
     hexCode: fields.HexCode || "",
+    category: fields.Category || "Custom",
     paletteCount,
     createdAt: fields.CreatedAt || record.createdTime || "",
     updatedAt: fields.UpdatedAt || fields.CreatedAt || record.createdTime || ""
@@ -594,6 +632,7 @@ export async function action({ request }) {
     if (actionName === "createColor") {
       const name = cleanString(body.name);
       const hexCode = normalizeHex(body.hexCode);
+      const category = normalizeCategory(body.category);
 
       if (!name) {
         return Response.json({ error: "Color name is required" }, { status: 400, headers: corsHeaders });
@@ -603,11 +642,12 @@ export async function action({ request }) {
         return Response.json({ error: "Enter a valid six-character hex code" }, { status: 400, headers: corsHeaders });
       }
 
-      const record = await createRecord(COLORS_TABLE, {
+      const record = await createColorRecord({
         ColorId: makeId("ccolor"),
         OwnerCustomerId: ownerCustomerId,
         Name: name,
         HexCode: hexCode,
+        Category: category,
         CreatedAt: nowIso,
         UpdatedAt: nowIso
       });
@@ -619,15 +659,17 @@ export async function action({ request }) {
       const colorId = cleanString(body.colorId);
       const name = cleanString(body.name);
       const hexCode = normalizeHex(body.hexCode);
+      const category = normalizeCategory(body.category);
 
       if (!colorId) return Response.json({ error: "Missing colorId" }, { status: 400, headers: corsHeaders });
       if (!name) return Response.json({ error: "Color name is required" }, { status: 400, headers: corsHeaders });
       if (!hexCode) return Response.json({ error: "Enter a valid six-character hex code" }, { status: 400, headers: corsHeaders });
 
       const existing = await requireOwnedColorRecord(ownerCustomerId, colorId);
-      const record = await updateRecord(COLORS_TABLE, existing.id, {
+      const record = await updateColorRecord(existing.id, {
         Name: name,
         HexCode: hexCode,
+        Category: category,
         UpdatedAt: nowIso
       });
       const joins = await fetchAllRecords(PALETTE_COLORS_TABLE, {
@@ -684,6 +726,7 @@ export async function action({ request }) {
       const colors = rawColors.map((color, index) => ({
         name: cleanString(color?.name),
         hexCode: normalizeHex(color?.hexCode || color?.hex),
+        category: normalizeCategory(color?.category),
         rowNumber: Number(color?.rowNumber || index + 1)
       }));
       const invalidColor = colors.find((color) => !color.name || !color.hexCode);
@@ -706,11 +749,12 @@ export async function action({ request }) {
       const paletteId = paletteRecord.fields?.PaletteId;
 
       for (const [index, color] of colors.entries()) {
-        const colorRecord = await createRecord(COLORS_TABLE, {
+        const colorRecord = await createColorRecord({
           ColorId: makeId("ccolor"),
           OwnerCustomerId: ownerCustomerId,
           Name: color.name,
           HexCode: color.hexCode,
+          Category: color.category,
           CreatedAt: nowIso,
           UpdatedAt: nowIso
         });

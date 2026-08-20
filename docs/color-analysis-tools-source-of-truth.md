@@ -126,6 +126,15 @@ The page can show:
 - YCS digital palette cards
 - Custom palette management, for actual YCS_ADMIN only
 
+Custom palette management:
+
+- custom colors belong to the admin's custom color collection
+- a custom color can be assigned to one or more custom palettes
+- each custom color has a category, stored in the `Category` field on the Airtable `CustomColors` table
+- custom palettes display and print grouped by color category, similar to standard YCS palettes
+- CSV import accepts `Name`, `Hex`, and optional `Category` columns
+- if `Category` is blank, the color falls under `Custom`
+
 ### Who Can Use The Color Analysis Tools Page
 
 The tools page is available to:
