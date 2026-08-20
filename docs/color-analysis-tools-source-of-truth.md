@@ -124,7 +124,7 @@ The page can show:
 - Color Analysis Tool card
 - Training Curriculum card
 - YCS digital palette cards
-- Custom palette management, for CATOOLGROWTH, YCSPRO, and actual YCS_ADMIN
+- Custom palette management, for actual YCS_ADMIN only
 
 ### Who Can Use The Color Analysis Tools Page
 

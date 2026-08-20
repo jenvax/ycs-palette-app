@@ -167,7 +167,7 @@
   {% endif %}
 
   {% assign can_manage_custom_palettes = false %}
-  {% if is_catool_growth or actual_is_admin %}
+  {% if actual_is_admin %}
     {% assign can_manage_custom_palettes = true %}
   {% endif %}
 
@@ -433,8 +433,10 @@
   Admin access • Unlimited uploads
 {% elsif is_trade %}
   Trade Professional • 15 uploads/month
+{% elsif is_ycspro %}
+  YCS Professional • 15 uploads/month • Full client management
 {% elsif is_catool_growth %}
-  Growth Plan • 15 uploads/month • Full client management
+  15 uploads/month • Full client management
 {% elsif is_catool %}
   Starter Plan • 5 uploads/month • Client management
 {% elsif is_diy_catool %}
@@ -501,7 +503,7 @@
                   Learn the Your Color Style method and how to use your professional color analysis tools.
                 </p>
                 <p class="ycs-palette-card__admin-label">
-                  YCSPro
+                  YCS Professional
                 </p>
               </div>
 
