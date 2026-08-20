@@ -72,6 +72,11 @@
     {% assign is_catool_growth = true %}
   {% endif %}
 
+  {% assign is_ycspro = false %}
+  {% if customer and palette_access_string contains ',YCSPRO,' %}
+    {% assign is_ycspro = true %}
+  {% endif %}
+
   {% assign is_catool_free = false %}
   {% if customer and palette_access_string contains ',CATOOLFREE,' %}
     {% assign is_catool_free = true %}
@@ -364,6 +369,35 @@
               <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
                 <a href="https://color-analysis-training.teachery.co/login" class="ycs-palette-card__button" target="_blank" rel="noopener">
                   Open Training
+                </a>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
+        {% if is_color_analysis_tools_page and is_ycspro %}
+          <div class="ycs-palette-card ycs-palette-card--admin">
+            <div class="ycs-palette-card__top">
+              <div
+                class="ycs-palette-card__gradient"
+                style="background: linear-gradient(to right, #2f2a25, #4f7f78, #d7c3a3);">
+              </div>
+            </div>
+
+            <div class="ycs-palette-card__content">
+              <div class="ycs-palette-card__text">
+                <h2>Professional Training</h2>
+                <p class="ycs-palette-card__subtitle">
+                  Learn the Your Color Style method and how to use your professional color analysis tools.
+                </p>
+                <p class="ycs-palette-card__admin-label">
+                  YCSPro
+                </p>
+              </div>
+
+              <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
+                <a href="https://ycs-professional.teachery.co/login" class="ycs-palette-card__button" target="_blank" rel="noopener">
+                  GO TO TRAINING
                 </a>
               </div>
             </div>
