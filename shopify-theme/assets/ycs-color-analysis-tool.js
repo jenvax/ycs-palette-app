@@ -3605,7 +3605,7 @@ return null;
   }
 
   function drawExportColorLabel(ctx, frameWidth, frameHeight, colorName, panel) {
-    if (!(IS_TRADE || IS_ADMIN)) return;
+    if (!(IS_TRADE || IS_ADMIN || IS_CATOOL || IS_CATOOL_GROWTH)) return;
     if (!shouldDrawExportColorLabel(panel)) return;
 
     const label = String(colorName || '').trim();
