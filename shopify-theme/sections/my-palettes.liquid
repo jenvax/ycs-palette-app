@@ -17,7 +17,7 @@
   | append: '&'
 %}
 
-{% if ycs_my_palettes_page_url contains 'view=tools&' or ycs_my_palettes_page_url contains 'view=catools&' or ycs_my_palettes_page_url contains '/pages/color-analysis-tools' or template.suffix == 'tools' or template.suffix == 'catools' %}
+{% if ycs_my_palettes_page_url contains '/pages/color-analysis-tools' or template.suffix == 'tools' or template.suffix == 'catools' %}
   {% assign should_render_ycs_my_palettes = false %}
 {% endif %}
 
