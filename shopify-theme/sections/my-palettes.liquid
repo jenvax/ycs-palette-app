@@ -421,35 +421,9 @@
               <div class="ycs-palette-card__text">
                 <h2>Color Analysis Tool</h2>
                 <p class="ycs-palette-card__subtitle">
-                  {% if is_diy_catool %}
-                    Upload your own photo and use the DIY Color Analysis Tool.
-                  {% elsif is_free_diy_catool %}
-                    Try the DIY Color Analysis Tool with three preloaded photos.
-                  {% elsif is_catool_free %}
-                    Try the Color Analysis Tool with three preloaded clients.
-                  {% else %}
                   Create client records, prep photos, save analyses, and return to client work anytime.
-                  {% endif %}
                 </p>
-                <p class="ycs-palette-card__admin-label">
-                  {% if is_admin %}
-  Admin access • Unlimited uploads
-{% elsif is_trade %}
-  Trade Professional • 15 uploads/month
-{% elsif is_ycspro %}
-  Structured Analysis
-{% elsif is_catool_growth %}
-  15 uploads/month • Full client management
-{% elsif is_catool %}
-  Starter Plan • 5 uploads/month • Client management
-{% elsif is_diy_catool %}
-  DIY Color Analysis Tool • Self analysis
-{% elsif is_free_diy_catool %}
-  Free DIY Demo • 3 preloaded photos
-{% elsif is_catool_free %}
-  Free Trial • 3 preloaded clients
-{% endif %}
-                </p>
+                <p class="ycs-palette-card__admin-label">Structured Analysis</p>
               </div>
 
               <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
