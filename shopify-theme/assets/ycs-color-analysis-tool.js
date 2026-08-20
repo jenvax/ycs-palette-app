@@ -3796,6 +3796,13 @@ return null;
       const fileName = buildDrapedExportFileName(colorName);
       const dataUrl = canvas.toDataURL('image/png');
 
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
       try {
         await saveDrapedImageForReport({
           imageBase64: dataUrl,
@@ -3811,17 +3818,7 @@ return null;
         });
       } catch (saveError) {
         console.warn('Could not save draped image for report selection:', saveError);
-        window.setTimeout(function () {
-          alert('The PNG downloaded, but it could not be saved for report selection yet.');
-        }, 0);
       }
-
-      const link = document.createElement('a');
-      link.href = dataUrl;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
     } catch (error) {
       console.error('Could not download panel view', error);
       alert('Could not save this view. Please try again.');
