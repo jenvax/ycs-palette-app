@@ -3,6 +3,23 @@
 {% if customer %}
   {% assign palette_access_string = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
 {% endif %}
+{% assign is_color_viewer_admin = false %}
+{% if palette_access_string contains ',YCS_ADMIN,' %}
+  {% assign is_color_viewer_admin = true %}
+{% endif %}
+{% assign is_trade_july_cohort = false %}
+{% assign trade_july_cohort_expires_at = '2026-08-25 00:00:00 -0400' | date: '%s' %}
+{% assign current_timestamp = 'now' | date: '%s' %}
+{% if palette_access_string contains ',TRADEJULYCOHORT,' and current_timestamp < trade_july_cohort_expires_at %}
+  {% assign is_trade_july_cohort = true %}
+{% endif %}
+{% assign has_color_analysis_tools_access = false %}
+{% if palette_access_string contains ',YCS_ADMIN,' or palette_access_string contains ',TRADE,' or palette_access_string contains ',CATOOL,' or palette_access_string contains ',CATOOLGROWTH,' or palette_access_string contains ',YCSPRO,' or palette_access_string contains ',CATOOLFREE,' or palette_access_string contains ',DIYCATOOL,' or palette_access_string contains ',FREEDIYCATOOL,' %}
+  {% assign has_color_analysis_tools_access = true %}
+{% endif %}
+{% if is_trade_july_cohort %}
+  {% assign has_color_analysis_tools_access = true %}
+{% endif %}
 <!-- LIVE COLOR VIEWER -->
 <div
   class="ycs-color-page"
@@ -15,8 +32,15 @@
   data-app-base-url="https://ycs-palette-app.vercel.app"
 >
   <nav class="ycs-color-page__nav" aria-label="Palette navigation">
-    <a href="/pages/my-palettes">My Color Palettes</a>
-    <a href="/pages/my-wardrobes">My Wardrobes</a>
+    {% if has_color_analysis_tools_access %}
+      <a href="{{ routes.account_url }}">My Account</a>
+      <a href="/pages/my-palettes?view=tools">Tools</a>
+    {% else %}
+      <a href="/pages/my-palettes">My Color Palettes</a>
+    {% endif %}
+    {% if is_color_viewer_admin %}
+      <a href="/pages/my-wardrobes">My Wardrobes</a>
+    {% endif %}
   </nav>
 
   <button type="button" class="ycs-color-close" id="ycs-color-close" aria-label="Close">✕</button>
@@ -56,12 +80,14 @@
           Add to Wardrobe
         </button>
         {% endif %}
-        <button type="button" class="ycs-color-combos-btn" id="ycs-open-combos" style="display:none;">
-          See Color Combos
-        </button>
-        <a href="#" class="ycs-color-combos-btn" id="ycs-open-photo-studio">
-  Try in Photo Draping Studio
-</a>
+        {% unless has_color_analysis_tools_access %}
+          <button type="button" class="ycs-color-combos-btn" id="ycs-open-combos" style="display:none;">
+            See Color Combos
+          </button>
+          <a href="#" class="ycs-color-combos-btn" id="ycs-open-photo-studio">
+            Try in Photo Draping Studio
+          </a>
+        {% endunless %}
       </div>
     </div>
   </section>

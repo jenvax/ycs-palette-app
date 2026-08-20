@@ -11,6 +11,19 @@
   {% assign is_trade_july_cohort = true %}
 {% endif %}
 
+{% assign has_color_analysis_tools_access = false %}
+{% if palette_access_string contains ',YCS_ADMIN,' or palette_access_string contains ',TRADE,' or palette_access_string contains ',CATOOL,' or palette_access_string contains ',CATOOLGROWTH,' or palette_access_string contains ',YCSPRO,' or palette_access_string contains ',CATOOLFREE,' or palette_access_string contains ',DIYCATOOL,' or palette_access_string contains ',FREEDIYCATOOL,' %}
+  {% assign has_color_analysis_tools_access = true %}
+{% endif %}
+{% if is_trade_july_cohort %}
+  {% assign has_color_analysis_tools_access = true %}
+{% endif %}
+
+{% assign is_admin = false %}
+{% if palette_access_string contains ',YCS_ADMIN,' %}
+  {% assign is_admin = true %}
+{% endif %}
+
 {% if customer == nil %}
   <div class="ycs-palette-login">
     <div class="ycs-palette-login__inner">
@@ -51,8 +64,15 @@
 
     <div id="palette-authorized-content">
       <div class="ycs-palette-topnav">
-        <a class="ycs-palette-nav-link" href="/pages/my-palettes">My Color Palettes</a>
-        <a class="ycs-palette-nav-link" href="/pages/my-wardrobes">My Wardrobes</a>
+        {% if has_color_analysis_tools_access %}
+          <a class="ycs-palette-nav-link" href="{{ routes.account_url }}">My Account</a>
+          <a class="ycs-palette-nav-link" href="/pages/my-palettes?view=tools">Tools</a>
+        {% else %}
+          <a class="ycs-palette-nav-link" href="/pages/my-palettes">My Color Palettes</a>
+        {% endif %}
+        {% if is_admin %}
+          <a class="ycs-palette-nav-link" href="/pages/my-wardrobes">My Wardrobes</a>
+        {% endif %}
       </div>
 
       <div class="ycs-palette-header">
@@ -110,25 +130,22 @@
   {% assign is_vip = true %}
 {% endif %}
 
-{% assign is_admin = false %}
-{% if palette_access_string contains ',YCS_ADMIN,' %}
-  {% assign is_admin = true %}
-{% endif %}
-
 {% assign has_paid_access = false %}
 {% if has_starter or has_full or is_vip or is_admin %}
   {% assign has_paid_access = true %}
 {% endif %}
-<a
-  id="ycs-open-photo-draping"
-  class="ycs-open-photo-draping-btn"
-  href="{% if has_paid_access %}
-/pages/photo-prep?mode=personal&workflow=photo-draping&palette={{ request.params.palette | default: section.settings.default_palette | escape }}
-{% else %}
-/pages/photo-prep?mode=personal&workflow=photo-draping&trial=sample&palette={{ request.params.palette | default: section.settings.default_palette | escape }}
-{% endif %}">
-  Draping Studio
-</a>
+{% unless has_color_analysis_tools_access %}
+  <a
+    id="ycs-open-photo-draping"
+    class="ycs-open-photo-draping-btn"
+    href="{% if has_paid_access %}
+  /pages/photo-prep?mode=personal&workflow=photo-draping&palette={{ request.params.palette | default: section.settings.default_palette | escape }}
+  {% else %}
+  /pages/photo-prep?mode=personal&workflow=photo-draping&trial=sample&palette={{ request.params.palette | default: section.settings.default_palette | escape }}
+  {% endif %}">
+    Draping Studio
+  </a>
+{% endunless %}
         <div class="ycs-category-nav-wrap">
           <nav id="category-nav" class="ycs-category-nav"></nav>
         </div>
