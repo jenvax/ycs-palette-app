@@ -121,6 +121,11 @@
   {% assign can_use_photo_prep = true %}
 {% endif %}
 
+{% assign can_replace_photo = false %}
+{% if can_use_client_management and is_personal_mode_request != true and is_member_mode_request != true and is_catool_free != true %}
+  {% assign can_replace_photo = true %}
+{% endif %}
+
 <div
   class="ycs-photo-prep-app"
   data-is-sample-trial-request="{% if is_sample_trial_request %}true{% else %}false{% endif %}"
@@ -359,12 +364,12 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
           </div>
 
           <div class="ycs-photo-prep-photo-actions">
-            {% unless is_simple_analyst or is_personal_mode_request or is_member_mode_request %}
+            {% if can_replace_photo %}
 <button type="button" id="ycs-prep-replace-btn" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary">
   Replace Photo
 </button>
 
-{% endunless %}
+{% endif %}
 
 {% if is_admin and is_member_mode_request %}
 <button type="button" id="ycs-prep-add-member-photo-btn" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary">
@@ -1710,7 +1715,7 @@ function buildMyClientsUrl() {
 state.canUploadPhoto = data.isAdmin || data.scope === 'unlimited' || remaining > 0;
 
 if (uploadBtn) uploadBtn.disabled = !state.canUploadPhoto;
-if (replaceBtn && !IS_SIMPLE_ANALYST && !IS_PERSONAL_MODE && !IS_MEMBER_PHOTO_MODE && !IS_DIY_MODE) {
+if (replaceBtn && !IS_CATOOL_FREE && !IS_PERSONAL_MODE && !IS_MEMBER_PHOTO_MODE && !IS_DIY_MODE) {
   replaceBtn.disabled = !state.canUploadPhoto;
 }
 
