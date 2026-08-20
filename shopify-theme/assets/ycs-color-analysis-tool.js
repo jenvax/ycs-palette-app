@@ -1641,11 +1641,23 @@ function applySharedLipState(shared) {
 
   function reapplyImageTransformAfterRender() {
     updateImageTransform();
+    syncLipOverlayToImage();
+    renderLips();
     requestAnimationFrame(function () {
       updateImageTransform();
-      requestAnimationFrame(updateImageTransform);
+      syncLipOverlayToImage();
+      renderLips();
+      requestAnimationFrame(function () {
+        updateImageTransform();
+        syncLipOverlayToImage();
+        renderLips();
+      });
     });
-    window.setTimeout(updateImageTransform, 80);
+    window.setTimeout(function () {
+      updateImageTransform();
+      syncLipOverlayToImage();
+      renderLips();
+    }, 80);
   }
 
   function getAnalysisStatePayload() {
