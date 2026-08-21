@@ -1381,6 +1381,7 @@ const IS_CATOOL_FREE_TRIAL_FLOW =
   IS_CATOOL_FREE &&
   IS_TRADE_MODE &&
   WORKFLOW === 'color-analysis';
+const SHOULD_TRACK_UPLOAD_USAGE = !(WORKFLOW === 'color-analysis' && !IS_PERSONAL_MODE);
 const FREE_TRIAL_CLIENTS = [
   {
     id: 'bwd',
@@ -1673,6 +1674,19 @@ function buildMyClientsUrl() {
     return;
   }
 
+  if (!SHOULD_TRACK_UPLOAD_USAGE) {
+    if (photoPrepUsageMessageEl) {
+      photoPrepUsageMessageEl.hidden = true;
+      photoPrepUsageMessageEl.textContent = '';
+    }
+    state.uploadsRemaining = null;
+    state.canUploadPhoto = true;
+    if (uploadBtn) uploadBtn.disabled = false;
+    if (replaceBtn) replaceBtn.disabled = false;
+    if (personalUploadBtn) personalUploadBtn.disabled = false;
+    return;
+  }
+
   if (!photoPrepUsageMessageEl || !VIEWER_CUSTOMER_ID || !APP_BASE_URL) return;
 
   photoPrepUsageMessageEl.hidden = true;
@@ -1685,6 +1699,8 @@ function buildMyClientsUrl() {
     new URLSearchParams({
       customerId: VIEWER_CUSTOMER_ID,
       tool: IS_PERSONAL_MODE ? 'photo-draping' : 'photo-prep',
+      workflow: WORKFLOW,
+      skipUploadUsageTracking: SHOULD_TRACK_UPLOAD_USAGE ? 'false' : 'true',
       mode: IS_PERSONAL_MODE ? 'personal' : (IS_DIY_MODE ? 'diy' : 'trade'),
       isAdmin: IS_ADMIN ? 'true' : 'false',
       isTrade: IS_TRADE ? 'true' : 'false',
@@ -3628,6 +3644,8 @@ hideLoadingView();
       imageBase64,
       customerId: VIEWER_CUSTOMER_ID,
       tool: IS_PERSONAL_MODE ? 'photo-draping' : 'photo-prep',
+      workflow: WORKFLOW,
+      skipUploadUsageTracking: !SHOULD_TRACK_UPLOAD_USAGE,
       mode: IS_PERSONAL_MODE ? 'personal' : (IS_DIY_MODE ? 'diy' : 'trade'),
       isAdmin: IS_ADMIN,
       isTrade: IS_TRADE,

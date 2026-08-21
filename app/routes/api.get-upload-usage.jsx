@@ -52,8 +52,25 @@ function getUsageConfig(params) {
     hasDrapingStudioStarter,
     hasDrapingStudioFull,
     isSampleUser,
+    workflow,
+    skipUploadUsageTracking,
     mode
   } = params;
+
+  if (
+    tool === "photo-prep" &&
+    (
+      String(workflow || "").trim().toLowerCase() === "color-analysis" ||
+      skipUploadUsageTracking === true ||
+      String(skipUploadUsageTracking || "").trim().toLowerCase() === "true"
+    )
+  ) {
+    return {
+      allowed: true,
+      scope: "unlimited",
+      limit: null
+    };
+  }
 
   if (isAdmin) {
     return {
@@ -215,6 +232,8 @@ export async function loader({ request }) {
     const hasDrapingStudioStarter = toBool(url.searchParams.get("hasDrapingStudioStarter"));
     const hasDrapingStudioFull = toBool(url.searchParams.get("hasDrapingStudioFull"));
     const isSampleUser = toBool(url.searchParams.get("isSampleUser"));
+    const workflow = cleanString(url.searchParams.get("workflow")) || "";
+    const skipUploadUsageTracking = toBool(url.searchParams.get("skipUploadUsageTracking"));
     const mode = cleanString(url.searchParams.get("mode")) || "";
 
     if (!customerId) {
@@ -237,6 +256,8 @@ export async function loader({ request }) {
       hasDrapingStudioStarter,
       hasDrapingStudioFull,
       isSampleUser,
+      workflow,
+      skipUploadUsageTracking,
       mode
     });
 

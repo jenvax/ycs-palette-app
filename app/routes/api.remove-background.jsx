@@ -52,6 +52,8 @@ export async function action({ request }) {
   customerId,
   clientRecordId,
   tool,
+  workflow,
+  skipUploadUsageTracking,
   mode,
   isAdmin,
   isTrade,
@@ -120,8 +122,21 @@ function getUsageConfig(params) {
     hasDrapingStudioStarter,
     hasDrapingStudioFull,
     isSampleUser,
+    workflow,
+    skipUploadUsageTracking,
     mode
   } = params;
+
+  if (
+    tool === "photo-prep" &&
+    (
+      String(workflow || "").trim().toLowerCase() === "color-analysis" ||
+      skipUploadUsageTracking === true ||
+      String(skipUploadUsageTracking || "").trim().toLowerCase() === "true"
+    )
+  ) {
+    return { allowed: true, scope: "unlimited", limit: null };
+  }
 
   if (isAdmin) {
     return {
@@ -223,7 +238,9 @@ const usageConfig = getUsageConfig({
   hasDrapingStudio,
   hasDrapingStudioStarter,
   hasDrapingStudioFull,
-  isSampleUser
+  isSampleUser,
+  workflow,
+  skipUploadUsageTracking
 });
 
 let usageRecord = null;
