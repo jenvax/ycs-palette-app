@@ -142,13 +142,17 @@ async function requireTradePaletteAccess(consultantId) {
   const customer = await getShopifyCustomerById(consultantId);
   const tags = (customer?.tags || []).map((tag) => cleanString(tag).toUpperCase());
   const julyCohortExpiresAt = new Date("2026-08-25T04:00:00.000Z");
+  const septCohortExpiresAt = new Date("2026-10-20T04:00:00.000Z");
   const hasTradeAccess =
     tags.includes("YCS_ADMIN") ||
     tags.includes("TRADE") ||
-    (tags.includes("TRADEJULYCOHORT") && Date.now() < julyCohortExpiresAt.getTime());
+    tags.includes("CATOOL") ||
+    tags.includes("YCSPRO") ||
+    (tags.includes("TRADEJULYCOHORT") && Date.now() < julyCohortExpiresAt.getTime()) ||
+    (tags.includes("TRADESEPTCOHORT") && Date.now() < septCohortExpiresAt.getTime());
 
   if (!customer || !hasTradeAccess) {
-    const error = new Error("TRADE access is required to give customer palette access.");
+    const error = new Error("Color analysis tool access is required to give customer palette access.");
     error.status = 403;
     throw error;
   }

@@ -26,9 +26,15 @@
 
 {% assign is_trade_july_cohort = false %}
 {% assign trade_july_cohort_expires_at = '2026-08-25 00:00:00 -0400' | date: '%s' %}
+{% assign trade_sept_cohort_expires_at = '2026-10-20 00:00:00 -0400' | date: '%s' %}
 {% assign current_timestamp = 'now' | date: '%s' %}
 {% if palette_access_string contains ',TRADEJULYCOHORT,' and current_timestamp < trade_july_cohort_expires_at %}
   {% assign is_trade_july_cohort = true %}
+{% endif %}
+
+{% assign is_trade_sept_cohort = false %}
+{% if palette_access_string contains ',TRADESEPTCOHORT,' and current_timestamp < trade_sept_cohort_expires_at %}
+  {% assign is_trade_sept_cohort = true %}
 {% endif %}
 
 {% assign is_trade = false %}
@@ -53,6 +59,8 @@
 {% if actual_is_admin %}
   {% if ycs_page_url contains 'viewAs=trade&' %}
     {% assign admin_view_as = 'trade' %}
+  {% elsif ycs_page_url contains 'viewAs=tradeseptcohort&' %}
+    {% assign admin_view_as = 'tradeseptcohort' %}
   {% elsif ycs_page_url contains 'viewAs=ycspro&' %}
     {% assign admin_view_as = 'ycspro' %}
   {% elsif ycs_page_url contains 'viewAs=catool&' %}
@@ -65,9 +73,12 @@
   {% assign is_trade = false %}
   {% assign is_catool = false %}
   {% assign is_ycspro = false %}
+  {% assign is_trade_sept_cohort = false %}
 
   {% if admin_view_as == 'trade' %}
     {% assign is_trade = true %}
+  {% elsif admin_view_as == 'tradeseptcohort' %}
+    {% assign is_trade_sept_cohort = true %}
   {% elsif admin_view_as == 'ycspro' %}
     {% assign is_ycspro = true %}
   {% elsif admin_view_as == 'catool' %}
@@ -76,7 +87,7 @@
 {% endif %}
 
 {% assign can_use_analysis_tool = false %}
-{% if is_admin or is_trade or is_catool or is_ycspro %}
+{% if is_admin or is_trade or is_catool or is_ycspro or is_trade_sept_cohort %}
   {% assign can_use_analysis_tool = true %}
 {% endif %}
 
@@ -87,7 +98,7 @@
   data-is-admin="{% if is_admin %}true{% else %}false{% endif %}"
   data-is-trade="{% if is_trade %}true{% else %}false{% endif %}"
   data-is-catool="{% if is_catool %}true{% else %}false{% endif %}"
-  data-is-catool-growth="{% if is_ycspro %}true{% else %}false{% endif %}"
+  data-is-catool-growth="{% if is_ycspro or is_trade_sept_cohort %}true{% else %}false{% endif %}"
   data-can-use-analysis-tool="{% if can_use_analysis_tool %}true{% else %}false{% endif %}"
   data-actual-is-admin="{% if actual_is_admin %}true{% else %}false{% endif %}"
   data-admin-preview-role="{{ admin_view_as }}"

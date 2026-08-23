@@ -19,6 +19,13 @@
   {% assign is_ycspro = true %}
 {% endif %}
 
+{% assign is_trade_sept_cohort = false %}
+{% assign trade_sept_cohort_expires_at = '2026-10-20 00:00:00 -0400' | date: '%s' %}
+{% assign current_timestamp = 'now' | date: '%s' %}
+{% if palette_access_string contains ',TRADESEPTCOHORT,' and current_timestamp < trade_sept_cohort_expires_at %}
+  {% assign is_trade_sept_cohort = true %}
+{% endif %}
+
 {% assign has_draping_studio_starter = false %}
 {% if palette_access_string contains ',DRAPINGSTUDIOSTARTER,' %}
   {% assign has_draping_studio_starter = true %}
@@ -79,7 +86,7 @@ data-has-draping-studio-full="{% if has_draping_studio %}true{% else %}false{% e
   data-customer-first-name="{{ customer.first_name | escape }}"
   data-palette-access="{{ palette_access_string }}"
   data-is-admin="{{ is_admin }}"
-  data-is-catool-growth="{% if is_ycspro %}true{% else %}false{% endif %}"
+  data-is-catool-growth="{% if is_ycspro or is_trade_sept_cohort %}true{% else %}false{% endif %}"
   data-app-base-url="https://ycs-palette-app.vercel.app"
 >
   {% if customer == nil %}
@@ -88,7 +95,7 @@ data-has-draping-studio-full="{% if has_draping_studio %}true{% else %}false{% e
       <a href="{{ routes.account_login_url }}">Sign In</a>
     </div>
 
-  {% elsif is_style_masters == false and has_draping_studio_access == false and is_sample_user == false and is_admin != true and is_ycspro != true %}
+  {% elsif is_style_masters == false and has_draping_studio_access == false and is_sample_user == false and is_admin != true and is_ycspro != true and is_trade_sept_cohort != true %}
     <div class="ycs-drape-upsell ycs-drape-upsell--hero">
       <div class="ycs-drape-upsell-grid">
         <div class="ycs-drape-upsell-media">

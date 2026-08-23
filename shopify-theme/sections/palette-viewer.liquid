@@ -6,9 +6,15 @@
 
 {% assign is_trade_july_cohort = false %}
 {% assign trade_july_cohort_expires_at = '2026-08-25 00:00:00 -0400' | date: '%s' %}
+{% assign trade_sept_cohort_expires_at = '2026-10-20 00:00:00 -0400' | date: '%s' %}
 {% assign current_timestamp = 'now' | date: '%s' %}
 {% if palette_access_string contains ',TRADEJULYCOHORT,' and current_timestamp < trade_july_cohort_expires_at %}
   {% assign is_trade_july_cohort = true %}
+{% endif %}
+
+{% assign is_trade_sept_cohort = false %}
+{% if palette_access_string contains ',TRADESEPTCOHORT,' and current_timestamp < trade_sept_cohort_expires_at %}
+  {% assign is_trade_sept_cohort = true %}
 {% endif %}
 
 {% assign has_color_analysis_tools_access = false %}
@@ -16,6 +22,9 @@
   {% assign has_color_analysis_tools_access = true %}
 {% endif %}
 {% if is_trade_july_cohort %}
+  {% assign has_color_analysis_tools_access = true %}
+{% endif %}
+{% if is_trade_sept_cohort %}
   {% assign has_color_analysis_tools_access = true %}
 {% endif %}
 
@@ -47,6 +56,7 @@
     data-app-base-url="https://ycs-palette-app.vercel.app"
     data-is-admin="{% if palette_access_string contains ',YCS_ADMIN,' %}true{% else %}false{% endif %}"
     data-is-trade-july-cohort="{% if is_trade_july_cohort %}true{% else %}false{% endif %}"
+    data-is-trade-sept-cohort="{% if is_trade_sept_cohort %}true{% else %}false{% endif %}"
     data-is-style-masters="{% if palette_access_string contains ',VIP,' %}true{% else %}false{% endif %}"
   >
     <div id="palette-unauthorized" class="ycs-palette-login" style="display:none;">
@@ -914,12 +924,14 @@
 const hasTradeAccess = PALETTE_ACCESS.includes(',TRADE,') || app.dataset.isTradeJulyCohort === 'true';
 const hasCatoolAccess = PALETTE_ACCESS.includes(',CATOOL,');
 const hasYcsProAccess = PALETTE_ACCESS.includes(',YCSPRO,');
+const hasTradeSeptCohortAccess = app.dataset.isTradeSeptCohort === 'true';
 
 const hasAllPaletteAccess =
   hasAdminAccess ||
   hasTradeAccess ||
   hasCatoolAccess ||
-  hasYcsProAccess;
+  hasYcsProAccess ||
+  hasTradeSeptCohortAccess;
 
 const isAdminPalette = paletteCode.startsWith('ADMIN_');
 const isStyleMastersCustomPalette = isCustomPaletteCode && (

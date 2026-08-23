@@ -45,6 +45,7 @@ Customer permissions are controlled primarily by Shopify customer tags. Tag chec
 - `YCS_ADMIN`
 - `TRADE`
 - `TRADEJULYCOHORT`, treated as TRADE only until August 25, 2026
+- `TRADESEPTCOHORT`, treated as YCSPRO-level access through October 19, 2026
 - `CATOOL`
 - `YCSPRO`
 - `DIYCATOOL`
@@ -84,6 +85,7 @@ The Color Analysis Tools button appears when the customer has any of:
 - `YCS_ADMIN`
 - `TRADE`
 - unexpired `TRADEJULYCOHORT`
+- unexpired `TRADESEPTCOHORT`
 - `CATOOL`
 - `YCSPRO`
 - `DIYCATOOL`
@@ -124,6 +126,7 @@ The page can show:
 - My Clients card
 - Color Analysis Tool card
 - Professional Training card
+- September Cohort card, for active `TRADESEPTCOHORT` users only
 - YCS digital palette cards
 - My Custom Palettes
 - Style Masters Color Palettes, for actual `YCS_ADMIN` only
@@ -131,7 +134,7 @@ The page can show:
 Custom palette management:
 
 - actual `YCS_ADMIN` creates shared Style Masters custom palettes
-- `TRADE`, `YCSPRO`, and `CATOOL` create private custom palettes
+- `TRADE`, unexpired `TRADESEPTCOHORT`, `YCSPRO`, and `CATOOL` create private custom palettes
 - a custom color can be assigned to one or more custom palettes
 - each custom color has a category, stored in the `Category` field on the Airtable `CustomColors` table
 - custom palettes display and print grouped by color category, similar to standard YCS palettes
@@ -145,6 +148,7 @@ The tools page is available to:
 - `YCS_ADMIN`
 - `TRADE`
 - unexpired `TRADEJULYCOHORT`
+- unexpired `TRADESEPTCOHORT`
 - `CATOOL`
 - `YCSPRO`
 - `DIYCATOOL`
@@ -159,6 +163,7 @@ On the Color Analysis Tools page only, the following roles see all standard YCS 
 - `YCS_ADMIN`
 - `TRADE`
 - unexpired `TRADEJULYCOHORT`
+- unexpired `TRADESEPTCOHORT`
 - `CATOOL`
 - `YCSPRO`
 
@@ -185,14 +190,22 @@ The following tool roles can use tools but do not receive all-palette access fro
 - My Clients
 - Professional Training
 
+Active `TRADESEPTCOHORT` users see:
+
+- Color Analysis Tool
+- My Clients
+- September Cohort
+
+The September Cohort card links to `https://live-color-analysis-training-september-cohort.teachery.co/login` and is available through October 19, 2026. It contains Zoom call details, schedule, replays, and tool training.
+
 `CATOOL` sees:
 
 - Color Analysis Tool
 - My Clients
 
-`CATOOL` does not see the Professional Training card.
+`CATOOL` does not see the Professional Training card. Active `TRADESEPTCOHORT` users see the September Cohort card instead of the Professional Training card.
 
-`TRADE`, `YCSPRO`, and `CATOOL` see:
+`TRADE`, unexpired `TRADESEPTCOHORT`, `YCSPRO`, and `CATOOL` see:
 
 - My Custom Palettes
 - Included YCS Color Palettes
@@ -214,7 +227,7 @@ On the dedicated Color Analysis Tools section, all-PDF access is granted to:
 
 Otherwise the customer needs the specific palette tag for that palette.
 
-`CATOOL` and `YCSPRO` users see all standard YCS palette cards in the tools view, but they do not get all PDF buttons by role alone. They see a PDF button only when they personally have that palette tag. Otherwise, they see Open Palette only. `VIP` does not grant a PDF button for any color palette.
+`CATOOL`, `YCSPRO`, and unexpired `TRADESEPTCOHORT` users see all standard YCS palette cards in the tools view, but they do not get all PDF buttons by role alone. They see a PDF button only when they personally have that palette tag. Otherwise, they see Open Palette only. `VIP` does not grant a PDF button for any color palette.
 
 ## My Clients
 
@@ -223,6 +236,7 @@ My Clients is available to users who can manage clients:
 - `YCS_ADMIN`
 - `TRADE`
 - unexpired `TRADEJULYCOHORT`
+- unexpired `TRADESEPTCOHORT`
 - `CATOOL`
 - `YCSPRO`
 
@@ -312,7 +326,7 @@ If no matching Shopify customer exists and first or last name is missing:
 
 ### Non-Admin Add Client Behavior
 
-For `TRADE`, unexpired `TRADEJULYCOHORT`, `CATOOL`, and `YCSPRO`:
+For `TRADE`, unexpired `TRADEJULYCOHORT`, unexpired `TRADESEPTCOHORT`, `CATOOL`, and `YCSPRO`:
 
 - Add Client creates an Airtable client record only
 - Shopify is not looked up during client creation
@@ -473,7 +487,7 @@ Client email is optional for the TRADE private-link flow.
 
 When the client does not already have a palette link, the system:
 
-1. Verifies the logged-in customer has `TRADE`, unexpired `TRADEJULYCOHORT`, or `YCS_ADMIN`.
+1. Verifies the logged-in customer has color analysis tool access: `YCS_ADMIN`, `TRADE`, unexpired `TRADEJULYCOHORT`, unexpired `TRADESEPTCOHORT`, `CATOOL`, or `YCSPRO`.
 2. Uses Shopify's signed app-proxy request to mint a short-lived palette-access action token for the logged-in consultant.
 3. Calls the direct app JSON endpoint with that signed token.
 4. Finds the Airtable client by the consultant ID embedded in the token and the requested `clientRecordId`.
@@ -891,6 +905,7 @@ Report Builder is available on View/Edit Client for:
 - `YCS_ADMIN`
 - `TRADE`
 - unexpired `TRADEJULYCOHORT`
+- unexpired `TRADESEPTCOHORT`
 - `CATOOL`
 - `YCSPRO`
 

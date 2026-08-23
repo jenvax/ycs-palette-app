@@ -67,9 +67,15 @@
 
   {% assign is_trade_july_cohort = false %}
   {% assign trade_july_cohort_expires_at = '2026-08-25 00:00:00 -0400' | date: '%s' %}
+  {% assign trade_sept_cohort_expires_at = '2026-10-20 00:00:00 -0400' | date: '%s' %}
   {% assign current_timestamp = 'now' | date: '%s' %}
   {% if customer and palette_access_string contains ',TRADEJULYCOHORT,' and current_timestamp < trade_july_cohort_expires_at %}
     {% assign is_trade_july_cohort = true %}
+  {% endif %}
+
+  {% assign is_trade_sept_cohort = false %}
+  {% if customer and palette_access_string contains ',TRADESEPTCOHORT,' and current_timestamp < trade_sept_cohort_expires_at %}
+    {% assign is_trade_sept_cohort = true %}
   {% endif %}
 
   {% assign is_trade = false %}
@@ -104,6 +110,8 @@
   {% if actual_is_admin %}
     {% if ycs_page_url contains 'viewAs=trade&' %}
       {% assign admin_view_as = 'trade' %}
+    {% elsif ycs_page_url contains 'viewAs=tradeseptcohort&' %}
+      {% assign admin_view_as = 'tradeseptcohort' %}
     {% elsif ycs_page_url contains 'viewAs=ycspro&' %}
       {% assign admin_view_as = 'ycspro' %}
     {% elsif ycs_page_url contains 'viewAs=freediycatool&' %}
@@ -120,11 +128,14 @@
     {% assign is_trade = false %}
     {% assign is_catool = false %}
     {% assign is_ycspro = false %}
+    {% assign is_trade_sept_cohort = false %}
     {% assign is_free_diy_catool = false %}
     {% assign is_diy_catool = false %}
 
     {% if admin_view_as == 'trade' %}
       {% assign is_trade = true %}
+    {% elsif admin_view_as == 'tradeseptcohort' %}
+      {% assign is_trade_sept_cohort = true %}
     {% elsif admin_view_as == 'freediycatool' %}
       {% assign is_free_diy_catool = true %}
     {% elsif admin_view_as == 'diycatool' %}
@@ -137,12 +148,12 @@
   {% endif %}
 
   {% assign can_use_analysis_tool = false %}
-  {% if is_admin or is_trade or is_catool or is_ycspro or is_diy_catool or is_free_diy_catool %}
+  {% if is_admin or is_trade or is_catool or is_ycspro or is_trade_sept_cohort or is_diy_catool or is_free_diy_catool %}
     {% assign can_use_analysis_tool = true %}
   {% endif %}
 
   {% assign has_all_palette_access = false %}
-  {% if is_admin or is_trade or is_catool or is_ycspro %}
+  {% if is_admin or is_trade or is_catool or is_ycspro or is_trade_sept_cohort %}
     {% assign has_all_palette_access = true %}
   {% endif %}
 
@@ -162,6 +173,13 @@
   {% assign can_access_all_printable_pdfs = false %}
   {% if is_admin or is_trade %}
     {% assign can_access_all_printable_pdfs = true %}
+  {% endif %}
+
+  {% assign show_professional_training_card = false %}
+  {% if is_color_analysis_tools_page and is_trade_sept_cohort == false %}
+    {% if is_trade or is_ycspro %}
+      {% assign show_professional_training_card = true %}
+    {% endif %}
   {% endif %}
 
   {% assign has_draping_studio_starter = false %}
@@ -419,7 +437,33 @@
           </div>
         {% endif %}
 
-        {% if is_color_analysis_tools_page and is_trade or is_color_analysis_tools_page and is_ycspro %}
+        {% if is_color_analysis_tools_page and is_trade_sept_cohort %}
+          <div class="ycs-palette-card ycs-palette-card--admin">
+            <div class="ycs-palette-card__top">
+              <div
+                class="ycs-palette-card__gradient"
+                style="background: linear-gradient(to right, #2f2a25, #4f7f78, #d7c3a3);">
+              </div>
+            </div>
+
+            <div class="ycs-palette-card__content">
+              <div class="ycs-palette-card__text">
+                <h2>September Cohort</h2>
+                <p class="ycs-palette-card__subtitle">
+                  Find your Zoom call details, schedule, replays, and tool training.
+                </p>
+              </div>
+
+              <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
+                <a href="https://live-color-analysis-training-september-cohort.teachery.co/login" class="ycs-palette-card__button" target="_blank" rel="noopener">
+                  GO TO TRAINING
+                </a>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
+        {% if show_professional_training_card %}
           <div class="ycs-palette-card ycs-palette-card--admin">
             <div class="ycs-palette-card__top">
               <div
@@ -614,7 +658,7 @@
 
     {% if is_color_analysis_tools_page and can_use_analysis_tool == false %}
       <div class="ycs-my-palettes__empty">
-        Color Analysis Tools are not available on this account. Please confirm this customer has a TRADE, CATOOL, DIYCATOOL, FREEDIYCATOOL, YCSPRO, or YCS_ADMIN tag.
+        Color Analysis Tools are not available on this account. Please confirm this customer has a TRADE, TRADESEPTCOHORT, CATOOL, DIYCATOOL, FREEDIYCATOOL, YCSPRO, or YCS_ADMIN tag.
       </div>
     {% endif %}
 

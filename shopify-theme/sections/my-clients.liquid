@@ -25,9 +25,15 @@
 
 {% assign is_trade_july_cohort = false %}
 {% assign trade_july_cohort_expires_at = '2026-08-25 00:00:00 -0400' | date: '%s' %}
+{% assign trade_sept_cohort_expires_at = '2026-10-20 00:00:00 -0400' | date: '%s' %}
 {% assign current_timestamp = 'now' | date: '%s' %}
 {% if customer and palette_access_string contains ',TRADEJULYCOHORT,' and current_timestamp < trade_july_cohort_expires_at %}
   {% assign is_trade_july_cohort = true %}
+{% endif %}
+
+{% assign is_trade_sept_cohort = false %}
+{% if customer and palette_access_string contains ',TRADESEPTCOHORT,' and current_timestamp < trade_sept_cohort_expires_at %}
+  {% assign is_trade_sept_cohort = true %}
 {% endif %}
 
 {% assign is_trade = false %}
@@ -52,6 +58,8 @@
 {% if actual_is_admin %}
   {% if ycs_page_url contains 'viewAs=trade&' %}
     {% assign admin_view_as = 'trade' %}
+  {% elsif ycs_page_url contains 'viewAs=tradeseptcohort&' %}
+    {% assign admin_view_as = 'tradeseptcohort' %}
   {% elsif ycs_page_url contains 'viewAs=ycspro&' %}
     {% assign admin_view_as = 'ycspro' %}
   {% elsif ycs_page_url contains 'viewAs=catool&' %}
@@ -64,9 +72,12 @@
   {% assign is_trade = false %}
   {% assign is_catool = false %}
   {% assign is_ycspro = false %}
+  {% assign is_trade_sept_cohort = false %}
 
   {% if admin_view_as == 'trade' %}
     {% assign is_trade = true %}
+  {% elsif admin_view_as == 'tradeseptcohort' %}
+    {% assign is_trade_sept_cohort = true %}
   {% elsif admin_view_as == 'ycspro' %}
     {% assign is_ycspro = true %}
   {% elsif admin_view_as == 'catool' %}
@@ -75,12 +86,12 @@
 {% endif %}
 
 {% assign can_manage_clients = false %}
-{% if is_admin or is_trade or is_catool or is_ycspro %}
+{% if is_admin or is_trade or is_catool or is_ycspro or is_trade_sept_cohort %}
   {% assign can_manage_clients = true %}
 {% endif %}
 
 {% assign can_create_reports = false %}
-{% if actual_is_admin or is_trade or is_catool or is_ycspro %}
+{% if actual_is_admin or is_trade or is_catool or is_ycspro or is_trade_sept_cohort %}
   {% assign can_create_reports = true %}
 {% endif %}
 
@@ -91,7 +102,7 @@
   data-can-create-reports="{{ can_create_reports }}"
   data-is-admin="{{ actual_is_admin }}"
   data-is-trade="{{ is_trade }}"
-  data-has-growth-access="{% if is_trade or is_catool or is_ycspro %}true{% else %}false{% endif %}"
+  data-has-growth-access="{% if is_trade or is_catool or is_ycspro or is_trade_sept_cohort %}true{% else %}false{% endif %}"
   data-app-base-url="https://ycs-palette-app.vercel.app"
 >
   {% if customer == nil %}
@@ -102,7 +113,7 @@
   {% elsif can_manage_clients == false %}
     <div class="ycs-clients__empty">
       <h1>Access denied</h1>
-      <p>This page is available with Trade, CATOOL, YCSPRO, and admin access.</p>
+      <p>This page is available with Trade, TRADESEPTCOHORT, CATOOL, YCSPRO, and admin access.</p>
     </div>
   {% else %}
     <div class="ycs-clients__topbar">

@@ -9,15 +9,23 @@
 {% endif %}
 {% assign is_trade_july_cohort = false %}
 {% assign trade_july_cohort_expires_at = '2026-08-25 00:00:00 -0400' | date: '%s' %}
+{% assign trade_sept_cohort_expires_at = '2026-10-20 00:00:00 -0400' | date: '%s' %}
 {% assign current_timestamp = 'now' | date: '%s' %}
 {% if palette_access_string contains ',TRADEJULYCOHORT,' and current_timestamp < trade_july_cohort_expires_at %}
   {% assign is_trade_july_cohort = true %}
+{% endif %}
+{% assign is_trade_sept_cohort = false %}
+{% if palette_access_string contains ',TRADESEPTCOHORT,' and current_timestamp < trade_sept_cohort_expires_at %}
+  {% assign is_trade_sept_cohort = true %}
 {% endif %}
 {% assign has_color_analysis_tools_access = false %}
 {% if palette_access_string contains ',YCS_ADMIN,' or palette_access_string contains ',TRADE,' or palette_access_string contains ',CATOOL,' or palette_access_string contains ',YCSPRO,' or palette_access_string contains ',DIYCATOOL,' or palette_access_string contains ',FREEDIYCATOOL,' %}
   {% assign has_color_analysis_tools_access = true %}
 {% endif %}
 {% if is_trade_july_cohort %}
+  {% assign has_color_analysis_tools_access = true %}
+{% endif %}
+{% if is_trade_sept_cohort %}
   {% assign has_color_analysis_tools_access = true %}
 {% endif %}
 <!-- LIVE COLOR VIEWER -->

@@ -51,6 +51,7 @@ Show Style Masters Hub button if:
 
   {% assign has_trade_access = false %}
   {% assign trade_july_cohort_expires_at = '2026-08-25 00:00:00 -0400' | date: '%s' %}
+  {% assign trade_sept_cohort_expires_at = '2026-10-20 00:00:00 -0400' | date: '%s' %}
   {% assign current_timestamp = 'now' | date: '%s' %}
   {% if palette_access_string contains ',TRADE,' %}
     {% assign has_trade_access = true %}
@@ -61,6 +62,9 @@ Show Style Masters Hub button if:
 
   {% assign has_color_analysis_tool = false %}
   {% if palette_access_string contains ',CATOOL,' or palette_access_string contains ',YCSPRO,' or palette_access_string contains ',DIYCATOOL,' or palette_access_string contains ',FREEDIYCATOOL,' or palette_access_string contains ',YCS_ADMIN,' %}
+    {% assign has_color_analysis_tool = true %}
+  {% endif %}
+  {% if palette_access_string contains ',TRADESEPTCOHORT,' and current_timestamp < trade_sept_cohort_expires_at %}
     {% assign has_color_analysis_tool = true %}
   {% endif %}
 
