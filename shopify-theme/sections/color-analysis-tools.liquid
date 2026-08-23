@@ -369,6 +369,32 @@
           </div>
         {% endif %}
 
+        {% if is_color_analysis_tools_page and is_catool %}
+          <div class="ycs-palette-card ycs-palette-card--admin">
+            <div class="ycs-palette-card__top">
+              <div
+                class="ycs-palette-card__gradient"
+                style="background: linear-gradient(to right, #2f2a25, #4f7f78, #d7c3a3);">
+              </div>
+            </div>
+
+            <div class="ycs-palette-card__content">
+              <div class="ycs-palette-card__text">
+                <h2>Training Videos</h2>
+                <p class="ycs-palette-card__subtitle">
+                  Learn how to use your professional color analysis tools.
+                </p>
+              </div>
+
+              <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
+                <a href="https://ycs-professional-tools.teachery.co/login" class="ycs-palette-card__button" target="_blank" rel="noopener">
+                  GO TO TRAINING
+                </a>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
         {% unless is_color_analysis_tools_page %}
         <div class="ycs-palette-card ycs-palette-card--studio">
           <div class="ycs-palette-card__top">

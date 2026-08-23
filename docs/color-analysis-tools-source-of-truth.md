@@ -127,6 +127,7 @@ The page can show:
 - Color Analysis Tool card
 - Professional Training card
 - September Cohort card, for active `TRADESEPTCOHORT` users only
+- Training Videos card, for `CATOOL` users only
 - YCS digital palette cards
 - My Custom Palettes
 - Style Masters Color Palettes, for actual `YCS_ADMIN` only
@@ -202,6 +203,9 @@ The September Cohort card links to `https://live-color-analysis-training-septemb
 
 - Color Analysis Tool
 - My Clients
+- Training Videos
+
+The Training Videos card links to `https://ycs-professional-tools.teachery.co/login` and shows CATOOL users how to use their professional tools.
 
 `CATOOL` does not see the Professional Training card. Active `TRADESEPTCOHORT` users see the September Cohort card instead of the Professional Training card.
 
