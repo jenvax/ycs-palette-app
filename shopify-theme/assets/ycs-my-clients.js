@@ -699,6 +699,52 @@
     return normalizeCustomSwatches(page?.swatches);
   }
 
+  function collectReportImageUrls(value, urls = new Set()) {
+    if (!value || typeof value !== "object") return urls;
+    Object.entries(value).forEach(([key, entry]) => {
+      if (typeof entry === "string" && key.endsWith("Url") && /^https?:\/\//i.test(entry)) {
+        urls.add(entry);
+        return;
+      }
+      if (entry && typeof entry === "object") {
+        collectReportImageUrls(entry, urls);
+      }
+    });
+    return urls;
+  }
+
+  function addReportUsedColor(colors, seen, color) {
+    const hex = normalizeHexColor(color?.color);
+    const name = String(color?.name || "").trim();
+    if (!hex) return;
+    const key = `${hex}|${name.toLowerCase()}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    colors.push({ color: hex, name });
+  }
+
+  function reportUsedColors(draft) {
+    const colors = [];
+    const seen = new Set();
+    const reportImageUrls = collectReportImageUrls(draft);
+
+    activeSavedDrapedImages.forEach((image) => {
+      if (!reportImageUrls.has(image.imageUrl)) return;
+      addReportUsedColor(colors, seen, {
+        color: image.drapeColorHex,
+        name: image.drapeColorName
+      });
+    });
+
+    reportCustomPages(draft).forEach((page) => {
+      customPageSwatches(page).forEach((swatch) => {
+        addReportUsedColor(colors, seen, swatch);
+      });
+    });
+
+    return colors;
+  }
+
   function mergeReportDraft(client, savedDraft) {
     const base = defaultReportDraft(client);
     const incoming = savedDraft && typeof savedDraft === "object" ? savedDraft : {};
@@ -1063,8 +1109,40 @@
     `;
   }
 
-  function renderCustomSwatchControls(page, id) {
+  function renderUsedColorPicker(draft) {
+    const colors = reportUsedColors(draft);
     return `
+      <div class="ycs-report-used-colors">
+        <div class="ycs-report-used-colors__head">
+          <span>Used colors</span>
+          <small>${colors.length ? "Click a color to add it to the next empty swatch." : "Colors appear here after saved draped photos or swatches are used in this report."}</small>
+        </div>
+        ${colors.length ? `
+          <div class="ycs-report-used-colors__grid">
+            ${colors.map((color) => {
+              const label = color.name || color.color;
+              return `
+                <button
+                  class="ycs-report-used-color"
+                  type="button"
+                  data-ycs-report-used-color
+                  data-color="${escapeHtml(color.color)}"
+                  data-name="${escapeHtml(color.name)}"
+                  title="${escapeHtml(label)}">
+                  <span class="ycs-report-used-color__swatch" style="background-color: ${escapeHtml(color.color)}"></span>
+                  <span>${escapeHtml(color.name || "Unnamed color")}</span>
+                </button>
+              `;
+            }).join("")}
+          </div>
+        ` : ""}
+      </div>
+    `;
+  }
+
+  function renderCustomSwatchControls(draft, page, id) {
+    return `
+      ${renderUsedColorPicker(draft)}
       <div class="ycs-report-custom-swatch-controls">
         ${customPageSwatches(page).map((swatch, index) => {
           const slot = index + 1;
@@ -1085,6 +1163,17 @@
         }).join("")}
       </div>
     `;
+  }
+
+  function refreshReportUsedColorPickers() {
+    if (!activeReportDraft) return;
+    const html = renderUsedColorPicker(activeReportDraft);
+    detailEl.querySelectorAll(".ycs-report-used-colors").forEach((picker) => {
+      const wrapper = document.createElement("div");
+      wrapper.innerHTML = html.trim();
+      const nextPicker = wrapper.firstElementChild;
+      if (nextPicker) picker.replaceWith(nextPicker);
+    });
   }
 
   function renderCustomPagesForm(draft) {
@@ -1139,7 +1228,7 @@
               ` : ""}
               ${isSwatchTemplate ? `
                 <label>Title<input name="customPages.${escapeHtml(id)}.title" value="${escapeHtml(page.title || "")}"></label>
-                ${renderCustomSwatchControls(page, id)}
+                ${renderCustomSwatchControls(draft, page, id)}
               ` : ""}
               ${template !== "photos4" && !isSwatchTemplate ? `<label>Copy<textarea name="customPages.${escapeHtml(id)}.copy">${escapeHtml(page.copy || "")}</textarea></label>` : ""}
               </fieldset>
@@ -2095,6 +2184,38 @@
     applyActiveReportPage(activeReportPage);
   }
 
+  function swatchControlTargetForUsedColor(pageEl) {
+    const activeElement = document.activeElement;
+    const focusedControl = activeElement?.closest?.(".ycs-report-custom-swatch-control");
+    if (focusedControl && pageEl.contains(focusedControl)) return focusedControl;
+
+    const controls = Array.from(pageEl.querySelectorAll(".ycs-report-custom-swatch-control"));
+    return controls.find((control) => {
+      const input = control.querySelector("input[name$='.color']");
+      return !normalizeHexColor(input?.value);
+    }) || controls[0] || null;
+  }
+
+  function fillCustomSwatchFromUsedColor(button) {
+    const pageEl = button.closest("[data-ycs-custom-report-page]");
+    const control = pageEl ? swatchControlTargetForUsedColor(pageEl) : null;
+    if (!control) return;
+
+    const colorInput = control.querySelector("input[name$='.color']");
+    const nameInput = control.querySelector("input[name$='.name']");
+    const color = normalizeHexColor(button.dataset.color);
+    const name = String(button.dataset.name || "").trim();
+    if (!colorInput || !color) return;
+
+    colorInput.value = color;
+    if (nameInput && !String(nameInput.value || "").trim()) {
+      nameInput.value = name;
+    }
+
+    colorInput.dispatchEvent(new Event("input", { bubbles: true }));
+    updateReportPreview();
+  }
+
   function clampReportNumber(value, min, max, fallback) {
     const number = Number(value);
     if (!Number.isFinite(number)) return fallback;
@@ -2316,6 +2437,7 @@
     }
 
     updateReportPreview();
+    refreshReportUsedColorPickers();
   }
 
   function selectReportSavedImage(button) {
@@ -4069,6 +4191,7 @@
     const reportPreviewImageButton = event.target.closest("[data-ycs-report-preview-image-field]");
     const reportModalImageButton = event.target.closest("[data-ycs-report-modal-image-select]");
     const reportModalCloseButton = event.target.closest("[data-ycs-report-image-modal-close]");
+    const reportUsedColorButton = event.target.closest("[data-ycs-report-used-color]");
     const clearReportLogoButton = event.target.closest("[data-ycs-clear-report-logo]");
     const addCustomReportPageButton = event.target.closest("[data-ycs-add-custom-report-page]");
     const deleteReportPageButton = event.target.closest("[data-ycs-delete-report-page]");
@@ -4083,6 +4206,12 @@
     const removeShopifyTagButton = event.target.closest("[data-ycs-remove-shopify-tag]");
     const cancelClientEditButton = event.target.closest("[data-ycs-cancel-client-edit]");
     const leaveClientViewLink = event.target.closest("[data-ycs-leave-client-view]");
+
+    if (reportUsedColorButton) {
+      event.preventDefault();
+      fillCustomSwatchFromUsedColor(reportUsedColorButton);
+      return;
+    }
 
     if (copyClientPaletteLinkButton || startReplaceClientPaletteButton || cancelReplaceClientPaletteButton || confirmReplaceClientPaletteButton) {
       event.preventDefault();
