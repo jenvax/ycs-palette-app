@@ -61,14 +61,9 @@
   {% assign is_catool = true %}
 {% endif %}
 
-{% assign is_catool_growth = false %}
-{% if palette_access_string contains ',CATOOLGROWTH,' or palette_access_string contains ',YCSPRO,' %}
-  {% assign is_catool_growth = true %}
-{% endif %}
-
-{% assign is_catool_free = false %}
-{% if palette_access_string contains ',CATOOLFREE,' %}
-  {% assign is_catool_free = true %}
+{% assign is_ycspro = false %}
+{% if palette_access_string contains ',YCSPRO,' %}
+  {% assign is_ycspro = true %}
 {% endif %}
 
 {% assign is_diy_catool = false %}
@@ -107,7 +102,7 @@
 {% endif %}
 
 {% assign is_simple_analyst = false %}
-{% if is_catool or is_catool_growth or is_catool_free %}
+{% if is_catool or is_ycspro %}
   {% assign is_simple_analyst = true %}
 {% endif %}
 
@@ -122,7 +117,7 @@
 {% endif %}
 
 {% assign can_replace_photo = false %}
-{% if can_use_client_management and is_personal_mode_request != true and is_member_mode_request != true and is_catool_free != true %}
+{% if can_use_client_management and is_personal_mode_request != true and is_member_mode_request != true %}
   {% assign can_replace_photo = true %}
 {% endif %}
 
@@ -132,8 +127,8 @@
   data-is-admin="{% if is_admin %}true{% else %}false{% endif %}"
   data-is-trade="{% if is_trade %}true{% else %}false{% endif %}"
   data-is-catool="{% if is_catool %}true{% else %}false{% endif %}"
-  data-is-catool-growth="{% if is_catool_growth %}true{% else %}false{% endif %}"
-  data-is-catool-free="{% if is_catool_free %}true{% else %}false{% endif %}"
+  data-is-catool-growth="{% if is_ycspro %}true{% else %}false{% endif %}"
+  data-is-catool-free="false"
   data-is-diy-catool="{% if is_diy_catool %}true{% else %}false{% endif %}"
   data-is-simple-analyst="{% if is_simple_analyst %}true{% else %}false{% endif %}"
   data-can-use-photo-prep="{% if can_use_photo_prep %}true{% else %}false{% endif %}"
@@ -230,11 +225,6 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
 
     <div class="ycs-photo-prep-customer" id="ycs-prep-create-client-panel" {% if is_personal_mode_request or is_member_mode_request %}hidden{% endif %}>
       {% if can_use_client_management and is_personal_mode_request != true %}
-        {% if is_catool_free %}
-        <label class="ycs-photo-prep-label">Free Trial Clients</label>
-        {% endif %}
-
-        {% unless is_catool_free %}
         <div class="ycs-photo-prep-customer-row">
           <button type="button" id="ycs-prep-show-new-client" class="ycs-photo-prep-btn">
             Create New Client
@@ -257,20 +247,13 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
             </button>
           </div>
         </div>
-        {% else %}
-        <p class="ycs-photo-prep-help">
-          Choose one of the preloaded trial clients to explore Photo Prep and the Color Analysis Tool.
-        </p>
-        {% endunless %}
 
         <div id="ycs-prep-recent-clients-panel" class="ycs-photo-prep-recent-clients">
           <div class="ycs-photo-prep-recent-head">
-            <label class="ycs-photo-prep-label" style="margin-bottom: 0;">{% if is_catool_free %}Trial Clients{% else %}Existing Clients{% endif %}</label>
-            {% unless is_catool_free %}
+            <label class="ycs-photo-prep-label" style="margin-bottom: 0;">Existing Clients</label>
             <button type="button" id="ycs-prep-refresh-clients" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary">
               Refresh
             </button>
-            {% endunless %}
           </div>
 
           <div id="ycs-prep-recent-clients-list" class="ycs-photo-prep-recent-list">

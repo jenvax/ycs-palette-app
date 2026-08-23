@@ -14,9 +14,9 @@
   {% assign is_admin = true %}
 {% endif %}
 
-{% assign is_catool_growth = false %}
-{% if palette_access_string contains ',CATOOLGROWTH,' or palette_access_string contains ',YCSPRO,' %}
-  {% assign is_catool_growth = true %}
+{% assign is_ycspro = false %}
+{% if palette_access_string contains ',YCSPRO,' %}
+  {% assign is_ycspro = true %}
 {% endif %}
 
 {% assign has_draping_studio_starter = false %}
@@ -79,7 +79,7 @@ data-has-draping-studio-full="{% if has_draping_studio %}true{% else %}false{% e
   data-customer-first-name="{{ customer.first_name | escape }}"
   data-palette-access="{{ palette_access_string }}"
   data-is-admin="{{ is_admin }}"
-  data-is-catool-growth="{% if is_catool_growth %}true{% else %}false{% endif %}"
+  data-is-catool-growth="{% if is_ycspro %}true{% else %}false{% endif %}"
   data-app-base-url="https://ycs-palette-app.vercel.app"
 >
   {% if customer == nil %}
@@ -88,7 +88,7 @@ data-has-draping-studio-full="{% if has_draping_studio %}true{% else %}false{% e
       <a href="{{ routes.account_login_url }}">Sign In</a>
     </div>
 
-  {% elsif is_style_masters == false and has_draping_studio_access == false and is_sample_user == false and is_admin != true and is_catool_growth != true %}
+  {% elsif is_style_masters == false and has_draping_studio_access == false and is_sample_user == false and is_admin != true and is_ycspro != true %}
     <div class="ycs-drape-upsell ycs-drape-upsell--hero">
       <div class="ycs-drape-upsell-grid">
         <div class="ycs-drape-upsell-media">

@@ -12,7 +12,7 @@
 {% endif %}
 
 {% assign has_color_analysis_tools_access = false %}
-{% if palette_access_string contains ',YCS_ADMIN,' or palette_access_string contains ',TRADE,' or palette_access_string contains ',CATOOL,' or palette_access_string contains ',CATOOLGROWTH,' or palette_access_string contains ',YCSPRO,' or palette_access_string contains ',CATOOLFREE,' or palette_access_string contains ',DIYCATOOL,' or palette_access_string contains ',FREEDIYCATOOL,' %}
+{% if palette_access_string contains ',YCS_ADMIN,' or palette_access_string contains ',TRADE,' or palette_access_string contains ',CATOOL,' or palette_access_string contains ',YCSPRO,' or palette_access_string contains ',DIYCATOOL,' or palette_access_string contains ',FREEDIYCATOOL,' %}
   {% assign has_color_analysis_tools_access = true %}
 {% endif %}
 {% if is_trade_july_cohort %}
@@ -913,13 +913,13 @@
     const hasAdminAccess = PALETTE_ACCESS.includes(',YCS_ADMIN,');
 const hasTradeAccess = PALETTE_ACCESS.includes(',TRADE,') || app.dataset.isTradeJulyCohort === 'true';
 const hasCatoolAccess = PALETTE_ACCESS.includes(',CATOOL,');
-const hasCatoolGrowthAccess = PALETTE_ACCESS.includes(',CATOOLGROWTH,') || PALETTE_ACCESS.includes(',YCSPRO,');
+const hasYcsProAccess = PALETTE_ACCESS.includes(',YCSPRO,');
 
 const hasAllPaletteAccess =
   hasAdminAccess ||
   hasTradeAccess ||
   hasCatoolAccess ||
-  hasCatoolGrowthAccess;
+  hasYcsProAccess;
 
 const isAdminPalette = paletteCode.startsWith('ADMIN_');
 const isStyleMastersCustomPalette = isCustomPaletteCode && (

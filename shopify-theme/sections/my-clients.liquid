@@ -43,17 +43,17 @@
   {% assign is_catool = true %}
 {% endif %}
 
-{% assign is_catool_growth = false %}
-{% if customer and palette_access_string contains ',CATOOLGROWTH,' or palette_access_string contains ',YCSPRO,' %}
-  {% assign is_catool_growth = true %}
+{% assign is_ycspro = false %}
+{% if customer and palette_access_string contains ',YCSPRO,' %}
+  {% assign is_ycspro = true %}
 {% endif %}
 
 {% assign admin_view_as = '' %}
 {% if actual_is_admin %}
   {% if ycs_page_url contains 'viewAs=trade&' %}
     {% assign admin_view_as = 'trade' %}
-  {% elsif ycs_page_url contains 'viewAs=catoolgrowth&' %}
-    {% assign admin_view_as = 'catoolgrowth' %}
+  {% elsif ycs_page_url contains 'viewAs=ycspro&' %}
+    {% assign admin_view_as = 'ycspro' %}
   {% elsif ycs_page_url contains 'viewAs=catool&' %}
     {% assign admin_view_as = 'catool' %}
   {% endif %}
@@ -63,24 +63,24 @@
   {% assign is_admin = false %}
   {% assign is_trade = false %}
   {% assign is_catool = false %}
-  {% assign is_catool_growth = false %}
+  {% assign is_ycspro = false %}
 
   {% if admin_view_as == 'trade' %}
     {% assign is_trade = true %}
-  {% elsif admin_view_as == 'catoolgrowth' %}
-    {% assign is_catool_growth = true %}
+  {% elsif admin_view_as == 'ycspro' %}
+    {% assign is_ycspro = true %}
   {% elsif admin_view_as == 'catool' %}
     {% assign is_catool = true %}
   {% endif %}
 {% endif %}
 
 {% assign can_manage_clients = false %}
-{% if is_admin or is_trade or is_catool or is_catool_growth %}
+{% if is_admin or is_trade or is_catool or is_ycspro %}
   {% assign can_manage_clients = true %}
 {% endif %}
 
 {% assign can_create_reports = false %}
-{% if actual_is_admin or is_trade or is_catool or is_catool_growth %}
+{% if actual_is_admin or is_trade or is_catool or is_ycspro %}
   {% assign can_create_reports = true %}
 {% endif %}
 
@@ -91,7 +91,7 @@
   data-can-create-reports="{{ can_create_reports }}"
   data-is-admin="{{ actual_is_admin }}"
   data-is-trade="{{ is_trade }}"
-  data-has-growth-access="{% if is_catool_growth %}true{% else %}false{% endif %}"
+  data-has-growth-access="{% if is_trade or is_catool or is_ycspro %}true{% else %}false{% endif %}"
   data-app-base-url="https://ycs-palette-app.vercel.app"
 >
   {% if customer == nil %}
@@ -102,7 +102,7 @@
   {% elsif can_manage_clients == false %}
     <div class="ycs-clients__empty">
       <h1>Access denied</h1>
-      <p>This page is available with Trade, CATOOL, CATOOLGROWTH, YCSPRO, and admin access.</p>
+      <p>This page is available with Trade, CATOOL, YCSPRO, and admin access.</p>
     </div>
   {% else %}
     <div class="ycs-clients__topbar">

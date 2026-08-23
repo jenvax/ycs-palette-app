@@ -44,14 +44,9 @@
   {% assign is_catool = true %}
 {% endif %}
 
-{% assign is_catool_growth = false %}
-{% if palette_access_string contains ',CATOOLGROWTH,' or palette_access_string contains ',YCSPRO,' %}
-  {% assign is_catool_growth = true %}
-{% endif %}
-
-{% assign is_catool_free = false %}
-{% if palette_access_string contains ',CATOOLFREE,' %}
-  {% assign is_catool_free = true %}
+{% assign is_ycspro = false %}
+{% if palette_access_string contains ',YCSPRO,' %}
+  {% assign is_ycspro = true %}
 {% endif %}
 
 {% assign is_free_diy_catool = false %}
@@ -68,10 +63,8 @@
 {% if actual_is_admin %}
   {% if ycs_page_url contains 'viewAs=trade&' %}
     {% assign admin_view_as = 'trade' %}
-  {% elsif ycs_page_url contains 'viewAs=catoolgrowth&' %}
-    {% assign admin_view_as = 'catoolgrowth' %}
-  {% elsif ycs_page_url contains 'viewAs=catoolfree&' %}
-    {% assign admin_view_as = 'catoolfree' %}
+  {% elsif ycs_page_url contains 'viewAs=ycspro&' %}
+    {% assign admin_view_as = 'ycspro' %}
   {% elsif ycs_page_url contains 'viewAs=freediycatool&' %}
     {% assign admin_view_as = 'freediycatool' %}
   {% elsif ycs_page_url contains 'viewAs=diycatool&' %}
@@ -85,17 +78,14 @@
   {% assign is_admin = false %}
   {% assign is_trade = false %}
   {% assign is_catool = false %}
-  {% assign is_catool_growth = false %}
-  {% assign is_catool_free = false %}
+  {% assign is_ycspro = false %}
   {% assign is_free_diy_catool = false %}
   {% assign is_diy_catool = false %}
 
   {% if admin_view_as == 'trade' %}
     {% assign is_trade = true %}
-  {% elsif admin_view_as == 'catoolgrowth' %}
-    {% assign is_catool_growth = true %}
-  {% elsif admin_view_as == 'catoolfree' %}
-    {% assign is_catool_free = true %}
+  {% elsif admin_view_as == 'ycspro' %}
+    {% assign is_ycspro = true %}
   {% elsif admin_view_as == 'freediycatool' %}
     {% assign is_free_diy_catool = true %}
   {% elsif admin_view_as == 'diycatool' %}
@@ -106,7 +96,7 @@
 {% endif %}
 
 {% assign can_use_analysis_tool = false %}
-{% if is_admin or is_trade or is_catool or is_catool_growth or is_catool_free or is_diy_catool or is_free_diy_catool %}
+{% if is_admin or is_trade or is_catool or is_ycspro or is_diy_catool or is_free_diy_catool %}
   {% assign can_use_analysis_tool = true %}
 {% endif %}
 
@@ -116,8 +106,8 @@
   data-is-admin="{% if is_admin %}true{% else %}false{% endif %}"
   data-is-trade="{% if is_trade %}true{% else %}false{% endif %}"
   data-is-catool="{% if is_catool %}true{% else %}false{% endif %}"
-  data-is-catool-growth="{% if is_catool_growth %}true{% else %}false{% endif %}"
-  data-is-catool-free="{% if is_catool_free %}true{% else %}false{% endif %}"
+  data-is-catool-growth="{% if is_ycspro %}true{% else %}false{% endif %}"
+  data-is-catool-free="false"
   data-is-free-diy-catool="{% if is_free_diy_catool %}true{% else %}false{% endif %}"
   data-is-diy-catool="{% if is_diy_catool %}true{% else %}false{% endif %}"
   data-can-use-analysis-tool="{% if can_use_analysis_tool %}true{% else %}false{% endif %}"
@@ -152,7 +142,7 @@
         <a id="ycs-analysis-photo-prep-link" href="/pages/photo-prep" class="ycs-analysis-back-link">
           Photo Prep
         </a>
-        {% if is_admin or is_trade or is_catool or is_catool_growth %}
+        {% if is_admin or is_trade or is_catool or is_ycspro %}
           <a
             id="ycs-analysis-signature-link"
             href="/pages/signature-color-analysis"
@@ -184,15 +174,6 @@
             </p>
             <a href="https://yourcolorstyle.com/products/virtual-color-draping#order">
               Unlock DIY tool
-            </a>
-          </div>
-        {% elsif is_catool_free %}
-          <div class="ycs-analysis-diy-palette-callout">
-            <p>
-              Ready to use this with your own client photos? Unlock the full Color Analysis Tool.
-            </p>
-            <a href="https://yourcolorstyle.com/products/color-analysis-tool#order">
-              Unlock Color Analysis Tool
             </a>
           </div>
         {% endif %}

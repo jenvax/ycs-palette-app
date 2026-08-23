@@ -151,16 +151,8 @@ function getUsageConfig(params) {
   }
 
   if (mode === "trade") {
-    if (isTrade) {
-      return { allowed: true, scope: "monthly", limit: 15 };
-    }
-
-    if (isCatoolGrowth) {
-      return { allowed: true, scope: "monthly", limit: 15 };
-    }
-
-    if (isCatool) {
-      return { allowed: true, scope: "monthly", limit: 5 };
+    if (isTrade || isCatoolGrowth || isCatool) {
+      return { allowed: true, scope: "unlimited", limit: null };
     }
 
     return { allowed: false, scope: "monthly", limit: 0 };
@@ -187,16 +179,8 @@ function getUsageConfig(params) {
   }
 
   if (tool === "photo-prep") {
-    if (isTrade) {
-      return { allowed: true, scope: "monthly", limit: 15 };
-    }
-
-    if (isCatoolGrowth) {
-      return { allowed: true, scope: "monthly", limit: 15 };
-    }
-
-    if (isCatool) {
-      return { allowed: true, scope: "monthly", limit: 5 };
+    if (isTrade || isCatoolGrowth || isCatool) {
+      return { allowed: true, scope: "unlimited", limit: null };
     }
 
     return { allowed: false, scope: "monthly", limit: 0 };

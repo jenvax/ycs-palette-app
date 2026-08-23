@@ -1,6 +1,6 @@
 # Color Analysis Tools Source of Truth
 
-Last verified against code: 2026-08-16
+Last verified against code: 2026-08-23
 
 This document describes the current behavior of the Your Color Style color analysis tools, customer palette access, My Clients, My Color Palettes, Photo Prep, Draping Studio, Style Masters, and Report Builder. It is intended to replace older working notes when they conflict with the code.
 
@@ -46,11 +46,14 @@ Customer permissions are controlled primarily by Shopify customer tags. Tag chec
 - `TRADE`
 - `TRADEJULYCOHORT`, treated as TRADE only until August 25, 2026
 - `CATOOL`
-- `CATOOLGROWTH`
 - `YCSPRO`
-- `CATOOLFREE`
 - `DIYCATOOL`
 - `FREEDIYCATOOL`
+
+Retired tags:
+
+- `CATOOLFREE`
+- `CATOOLGROWTH`
 
 ### Palette And Customer Access Tags
 
@@ -82,9 +85,7 @@ The Color Analysis Tools button appears when the customer has any of:
 - `TRADE`
 - unexpired `TRADEJULYCOHORT`
 - `CATOOL`
-- `CATOOLGROWTH`
 - `YCSPRO`
-- `CATOOLFREE`
 - `DIYCATOOL`
 - `FREEDIYCATOOL`
 
@@ -122,13 +123,15 @@ The page can show:
 
 - My Clients card
 - Color Analysis Tool card
-- Training Curriculum card
+- Professional Training card
 - YCS digital palette cards
-- Custom palette management, for actual YCS_ADMIN only
+- My Custom Palettes
+- Style Masters Color Palettes, for actual `YCS_ADMIN` only
 
 Custom palette management:
 
-- custom colors belong to the admin's custom color collection
+- actual `YCS_ADMIN` creates shared Style Masters custom palettes
+- `TRADE`, `YCSPRO`, and `CATOOL` create private custom palettes
 - a custom color can be assigned to one or more custom palettes
 - each custom color has a category, stored in the `Category` field on the Airtable `CustomColors` table
 - custom palettes display and print grouped by color category, similar to standard YCS palettes
@@ -143,11 +146,11 @@ The tools page is available to:
 - `TRADE`
 - unexpired `TRADEJULYCOHORT`
 - `CATOOL`
-- `CATOOLGROWTH`
 - `YCSPRO`
-- `CATOOLFREE`
 - `DIYCATOOL`
 - `FREEDIYCATOOL`
+
+`CATOOLFREE` and `CATOOLGROWTH` are no longer active access roles.
 
 ### Full Palette Access On Tools Page
 
@@ -157,7 +160,6 @@ On the Color Analysis Tools page only, the following roles see all standard YCS 
 - `TRADE`
 - unexpired `TRADEJULYCOHORT`
 - `CATOOL`
-- `CATOOLGROWTH`
 - `YCSPRO`
 
 The standard YCS palette set is:
@@ -172,9 +174,28 @@ The standard YCS palette set is:
 
 The following tool roles can use tools but do not receive all-palette access from the tools-page all-access gate:
 
-- `CATOOLFREE`
 - `DIYCATOOL`
 - `FREEDIYCATOOL`
+
+### Dashboard Cards On Color Analysis Tools Page
+
+`TRADE` and `YCSPRO` see:
+
+- Color Analysis Tool
+- My Clients
+- Professional Training
+
+`CATOOL` sees:
+
+- Color Analysis Tool
+- My Clients
+
+`CATOOL` does not see the Professional Training card.
+
+`TRADE`, `YCSPRO`, and `CATOOL` see:
+
+- My Custom Palettes
+- Included YCS Color Palettes
 
 ### Printable PDF Buttons
 
@@ -193,7 +214,7 @@ On the dedicated Color Analysis Tools section, all-PDF access is granted to:
 
 Otherwise the customer needs the specific palette tag for that palette.
 
-`CATOOL`, `CATOOLGROWTH`, and `YCSPRO` users see all standard YCS palette cards in the tools view, but they do not get all PDF buttons by role alone. They see a PDF button only when they personally have that palette tag. `VIP` does not grant a PDF button for any color palette.
+`CATOOL` and `YCSPRO` users see all standard YCS palette cards in the tools view, but they do not get all PDF buttons by role alone. They see a PDF button only when they personally have that palette tag. Otherwise, they see Open Palette only. `VIP` does not grant a PDF button for any color palette.
 
 ## My Clients
 
@@ -203,10 +224,9 @@ My Clients is available to users who can manage clients:
 - `TRADE`
 - unexpired `TRADEJULYCOHORT`
 - `CATOOL`
-- `CATOOLGROWTH`
 - `YCSPRO`
 
-`CATOOLFREE`, `DIYCATOOL`, and `FREEDIYCATOOL` can use tool flows in other places, but they are not currently included in the My Clients page gate.
+`DIYCATOOL` and `FREEDIYCATOOL` can use tool flows in other places, but they are not currently included in the My Clients page gate.
 
 The My Clients top page menu includes:
 
@@ -292,7 +312,7 @@ If no matching Shopify customer exists and first or last name is missing:
 
 ### Non-Admin Add Client Behavior
 
-For `TRADE`, unexpired `TRADEJULYCOHORT`, `CATOOL`, `CATOOLGROWTH`, and `YCSPRO`:
+For `TRADE`, unexpired `TRADEJULYCOHORT`, `CATOOL`, and `YCSPRO`:
 
 - Add Client creates an Airtable client record only
 - Shopify is not looked up during client creation
@@ -528,26 +548,11 @@ In View/Edit Client, the Digital Palette Access card displays the available colo
 
 ## Photo Upload Credits
 
-Photo upload credits are checked by the app backend when uploading or replacing photos.
+Photo upload credits are no longer tracked for Color Analysis Tool users.
 
-Monthly photo upload limits by current behavior:
+Uploading or replacing photos should not show Color Analysis Tool users a monthly photo-credit balance or block them because of a monthly photo-credit limit.
 
-- `YCS_ADMIN`: unlimited
-- `CATOOL`: 5
-- `CATOOLGROWTH`: 15
-- `YCSPRO`: 15
-- `TRADE`: 15
-- unexpired `TRADEJULYCOHORT`: 15
-- `VIP`: 5 personal photo uploads
-
-Fixed, non-monthly personal/sample upload allotments by current behavior:
-
-- `DRAPINGSTUDIO`: 5 personal photo uploads
-- `DRAPINGSTUDIOSTARTER`: 2 personal photo uploads
-- `SAMPLE`: 1 sample/trial upload
-- customers with a palette tag but no VIP/draping tag: 1 sample/trial upload through the sample path
-
-Loading an original photo does not use a photo credit. Uploading a new photo or replacing a photo uses a photo credit.
+Personal/sample draping access may still determine which personal photo workflows a customer can open, but this is separate from Color Analysis Tool photo-credit tracking.
 
 ## My Color Palettes
 
@@ -780,7 +785,7 @@ The studio:
 - supports Save Position and Restore Saved Position
 - provides a palette selector for each side
 - lists all standard YCS palettes
-- shows CATOOLGROWTH/YCSPRO custom palettes at the top of the selector when available
+- shows applicable private custom palettes at the top of the selector when available
 - supports lip shape editing and hiding/showing lips
 - loads lip colors for the selected palette when a lip shape exists
 
@@ -887,7 +892,6 @@ Report Builder is available on View/Edit Client for:
 - `TRADE`
 - unexpired `TRADEJULYCOHORT`
 - `CATOOL`
-- `CATOOLGROWTH`
 - `YCSPRO`
 
 Report Builder:

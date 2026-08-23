@@ -17,7 +17,7 @@
   | append: '&'
 %}
 
-{% if ycs_my_palettes_page_url contains '/pages/color-analysis-tools' or template.suffix == 'tools' or template.suffix == 'catools' %}
+{% if ycs_my_palettes_page_url contains '/pages/color-analysis-tools' or ycs_my_palettes_page_url contains 'view=tools&' or ycs_my_palettes_page_url contains 'view=catools&' or template.suffix == 'tools' or template.suffix == 'catools' %}
   {% assign should_render_ycs_my_palettes = false %}
 {% endif %}
 
@@ -85,19 +85,9 @@
     {% assign is_catool = true %}
   {% endif %}
 
-  {% assign is_catool_growth = false %}
-  {% if customer and palette_access_string contains ',CATOOLGROWTH,' or palette_access_string contains ',YCSPRO,' %}
-    {% assign is_catool_growth = true %}
-  {% endif %}
-
   {% assign is_ycspro = false %}
   {% if customer and palette_access_string contains ',YCSPRO,' %}
     {% assign is_ycspro = true %}
-  {% endif %}
-
-  {% assign is_catool_free = false %}
-  {% if customer and palette_access_string contains ',CATOOLFREE,' %}
-    {% assign is_catool_free = true %}
   {% endif %}
 
   {% assign is_free_diy_catool = false %}
@@ -114,10 +104,8 @@
   {% if actual_is_admin %}
     {% if ycs_page_url contains 'viewAs=trade&' %}
       {% assign admin_view_as = 'trade' %}
-    {% elsif ycs_page_url contains 'viewAs=catoolgrowth&' %}
-      {% assign admin_view_as = 'catoolgrowth' %}
-    {% elsif ycs_page_url contains 'viewAs=catoolfree&' %}
-      {% assign admin_view_as = 'catoolfree' %}
+    {% elsif ycs_page_url contains 'viewAs=ycspro&' %}
+      {% assign admin_view_as = 'ycspro' %}
     {% elsif ycs_page_url contains 'viewAs=freediycatool&' %}
       {% assign admin_view_as = 'freediycatool' %}
     {% elsif ycs_page_url contains 'viewAs=diycatool&' %}
@@ -131,33 +119,30 @@
     {% assign is_admin = false %}
     {% assign is_trade = false %}
     {% assign is_catool = false %}
-    {% assign is_catool_growth = false %}
-    {% assign is_catool_free = false %}
+    {% assign is_ycspro = false %}
     {% assign is_free_diy_catool = false %}
     {% assign is_diy_catool = false %}
 
     {% if admin_view_as == 'trade' %}
       {% assign is_trade = true %}
-    {% elsif admin_view_as == 'catoolgrowth' %}
-      {% assign is_catool_growth = true %}
-    {% elsif admin_view_as == 'catoolfree' %}
-      {% assign is_catool_free = true %}
     {% elsif admin_view_as == 'freediycatool' %}
       {% assign is_free_diy_catool = true %}
     {% elsif admin_view_as == 'diycatool' %}
       {% assign is_diy_catool = true %}
     {% elsif admin_view_as == 'catool' %}
       {% assign is_catool = true %}
+    {% elsif admin_view_as == 'ycspro' %}
+      {% assign is_ycspro = true %}
     {% endif %}
   {% endif %}
 
   {% assign can_use_analysis_tool = false %}
-  {% if is_admin or is_trade or is_catool or is_catool_growth or is_catool_free or is_diy_catool or is_free_diy_catool %}
+  {% if is_admin or is_trade or is_catool or is_ycspro or is_diy_catool or is_free_diy_catool %}
     {% assign can_use_analysis_tool = true %}
   {% endif %}
 
   {% assign has_all_palette_access = false %}
-  {% if is_admin or is_trade or is_catool or is_catool_growth %}
+  {% if is_admin or is_trade or is_catool or is_ycspro %}
     {% assign has_all_palette_access = true %}
   {% endif %}
 
@@ -170,7 +155,7 @@
   {% if actual_is_admin %}
     {% assign can_manage_custom_palettes = true %}
   {% endif %}
-  {% if is_color_analysis_tools_page and is_catool_growth %}
+  {% if is_color_analysis_tools_page and has_all_palette_access %}
     {% assign can_manage_custom_palettes = true %}
   {% endif %}
 
@@ -282,8 +267,7 @@
             <option value="" {% if admin_view_as == '' %}selected{% endif %}>Admin</option>
             <option value="trade" {% if admin_view_as == 'trade' %}selected{% endif %}>Trade</option>
             <option value="catool" {% if admin_view_as == 'catool' %}selected{% endif %}>CATOOL</option>
-            <option value="catoolgrowth" {% if admin_view_as == 'catoolgrowth' %}selected{% endif %}>CATOOL Growth</option>
-            <option value="catoolfree" {% if admin_view_as == 'catoolfree' %}selected{% endif %}>CATOOL Free Trial</option>
+            <option value="ycspro" {% if admin_view_as == 'ycspro' %}selected{% endif %}>YCS Professional</option>
             <option value="diycatool" {% if admin_view_as == 'diycatool' %}selected{% endif %}>DIY CATOOL</option>
             <option value="freediycatool" {% if admin_view_as == 'freediycatool' %}selected{% endif %}>Free DIY CATOOL</option>
           </select>
@@ -427,7 +411,7 @@
               </div>
 
               <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
-                <a href="{% if is_diy_catool or is_free_diy_catool %}/pages/photo-prep?mode=diy&workflow=color-analysis&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dtools{% elsif is_catool_free %}/pages/photo-prep?mode=trade&workflow=color-analysis&trial=catoolfree&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dtools{% else %}/pages/photo-prep?mode=trade&workflow=color-analysis&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dtools{% endif %}" class="ycs-palette-card__button" data-ycs-open-color-analysis-tool="{% if is_diy_catool or is_free_diy_catool or is_catool_free %}false{% else %}true{% endif %}">
+                <a href="{% if is_diy_catool or is_free_diy_catool %}/pages/photo-prep?mode=diy&workflow=color-analysis&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dtools{% else %}/pages/photo-prep?mode=trade&workflow=color-analysis&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dtools{% endif %}" class="ycs-palette-card__button" data-ycs-open-color-analysis-tool="{% if is_diy_catool or is_free_diy_catool %}false{% else %}true{% endif %}">
                   Open Tool
                 </a>
               </div>
@@ -435,36 +419,7 @@
           </div>
         {% endif %}
 
-        {% if is_color_analysis_tools_page and is_trade %}
-          <div class="ycs-palette-card ycs-palette-card--admin">
-            <div class="ycs-palette-card__top">
-              <div
-                class="ycs-palette-card__gradient"
-                style="background: linear-gradient(to right, #2f2a25, #b7835f, #f2d6b3);">
-              </div>
-            </div>
-
-            <div class="ycs-palette-card__content">
-              <div class="ycs-palette-card__text">
-                <h2>Training Curriculum</h2>
-                <p class="ycs-palette-card__subtitle">
-                  Open your color analysis training curriculum.
-                </p>
-                <p class="ycs-palette-card__admin-label">
-                  Trade Professional
-                </p>
-              </div>
-
-              <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
-                <a href="https://color-analysis-training.teachery.co/login" class="ycs-palette-card__button" target="_blank" rel="noopener">
-                  Open Training
-                </a>
-              </div>
-            </div>
-          </div>
-        {% endif %}
-
-        {% if is_color_analysis_tools_page and is_ycspro %}
+        {% if is_color_analysis_tools_page and is_trade or is_color_analysis_tools_page and is_ycspro %}
           <div class="ycs-palette-card ycs-palette-card--admin">
             <div class="ycs-palette-card__top">
               <div
@@ -478,9 +433,6 @@
                 <h2>Professional Training</h2>
                 <p class="ycs-palette-card__subtitle">
                   Learn the Your Color Style method and how to use your professional color analysis tools.
-                </p>
-                <p class="ycs-palette-card__admin-label">
-                  YCS Professional
                 </p>
               </div>
 
@@ -662,7 +614,7 @@
 
     {% if is_color_analysis_tools_page and can_use_analysis_tool == false %}
       <div class="ycs-my-palettes__empty">
-        Color Analysis Tools are not available on this account. Please confirm this customer has a TRADE, CATOOL, DIYCATOOL, FREEDIYCATOOL, CATOOLFREE, CATOOLGROWTH, YCSPRO, or YCS_ADMIN tag.
+        Color Analysis Tools are not available on this account. Please confirm this customer has a TRADE, CATOOL, DIYCATOOL, FREEDIYCATOOL, YCSPRO, or YCS_ADMIN tag.
       </div>
     {% endif %}
 
@@ -673,7 +625,7 @@
         data-customer-id="{{ customer.id }}"
         data-preview-customer-id="{{ customer.id }}"
         data-view-as="{{ admin_view_as }}"
-        data-has-growth-access="{% if is_catool_growth %}true{% else %}false{% endif %}"
+        data-has-growth-access="{% if has_all_palette_access %}true{% else %}false{% endif %}"
         data-scope="{% if actual_is_admin %}stylemasters{% else %}private{% endif %}"
         data-app-base-url="https://ycs-palette-app.vercel.app"
       >
@@ -761,16 +713,16 @@
 
             <div class="ycs-palette-card__content">
               <div class="ycs-palette-card__text">
-                <h2>View Color Analysis Tool as Growth User</h2>
+                <h2>View Color Analysis Tool as YCS Professional</h2>
                 <p class="ycs-palette-card__subtitle">
-                  Preview the normal customer experience with Growth access enabled for this session.
+                  Preview the normal customer experience with YCS Professional access enabled for this session.
                 </p>
                 <p class="ycs-palette-card__admin-label">Admin preview</p>
               </div>
 
               <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
-                <a href="/pages/my-palettes?view=tools&viewAs=catoolgrowth" class="ycs-palette-card__button">
-                  Open Growth View
+                <a href="/pages/my-palettes?view=tools&viewAs=ycspro" class="ycs-palette-card__button">
+                  Open YCS Professional View
                 </a>
               </div>
             </div>
@@ -828,7 +780,7 @@
 
     {% if is_color_analysis_tools_page and owned_count > 0 %}
       <div class="ycs-my-palettes__section">
-        {% if is_color_analysis_tools_page or is_catool_growth %}
+        {% if is_color_analysis_tools_page or has_all_palette_access %}
           <h2 class="ycs-my-palettes__section-title">Included YCS Color Palettes</h2>
         {% endif %}
         <div class="ycs-my-palettes__grid ycs-my-palettes__grid--{{ owned_count }}">

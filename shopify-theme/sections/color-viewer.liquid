@@ -14,7 +14,7 @@
   {% assign is_trade_july_cohort = true %}
 {% endif %}
 {% assign has_color_analysis_tools_access = false %}
-{% if palette_access_string contains ',YCS_ADMIN,' or palette_access_string contains ',TRADE,' or palette_access_string contains ',CATOOL,' or palette_access_string contains ',CATOOLGROWTH,' or palette_access_string contains ',YCSPRO,' or palette_access_string contains ',CATOOLFREE,' or palette_access_string contains ',DIYCATOOL,' or palette_access_string contains ',FREEDIYCATOOL,' %}
+{% if palette_access_string contains ',YCS_ADMIN,' or palette_access_string contains ',TRADE,' or palette_access_string contains ',CATOOL,' or palette_access_string contains ',YCSPRO,' or palette_access_string contains ',DIYCATOOL,' or palette_access_string contains ',FREEDIYCATOOL,' %}
   {% assign has_color_analysis_tools_access = true %}
 {% endif %}
 {% if is_trade_july_cohort %}

@@ -44,17 +44,17 @@
   {% assign is_catool = true %}
 {% endif %}
 
-{% assign is_catool_growth = false %}
-{% if palette_access_string contains ',CATOOLGROWTH,' or palette_access_string contains ',YCSPRO,' %}
-  {% assign is_catool_growth = true %}
+{% assign is_ycspro = false %}
+{% if palette_access_string contains ',YCSPRO,' %}
+  {% assign is_ycspro = true %}
 {% endif %}
 
 {% assign admin_view_as = '' %}
 {% if actual_is_admin %}
   {% if ycs_page_url contains 'viewAs=trade&' %}
     {% assign admin_view_as = 'trade' %}
-  {% elsif ycs_page_url contains 'viewAs=catoolgrowth&' %}
-    {% assign admin_view_as = 'catoolgrowth' %}
+  {% elsif ycs_page_url contains 'viewAs=ycspro&' %}
+    {% assign admin_view_as = 'ycspro' %}
   {% elsif ycs_page_url contains 'viewAs=catool&' %}
     {% assign admin_view_as = 'catool' %}
   {% endif %}
@@ -64,19 +64,19 @@
   {% assign is_admin = false %}
   {% assign is_trade = false %}
   {% assign is_catool = false %}
-  {% assign is_catool_growth = false %}
+  {% assign is_ycspro = false %}
 
   {% if admin_view_as == 'trade' %}
     {% assign is_trade = true %}
-  {% elsif admin_view_as == 'catoolgrowth' %}
-    {% assign is_catool_growth = true %}
+  {% elsif admin_view_as == 'ycspro' %}
+    {% assign is_ycspro = true %}
   {% elsif admin_view_as == 'catool' %}
     {% assign is_catool = true %}
   {% endif %}
 {% endif %}
 
 {% assign can_use_analysis_tool = false %}
-{% if is_admin or is_trade or is_catool or is_catool_growth %}
+{% if is_admin or is_trade or is_catool or is_ycspro %}
   {% assign can_use_analysis_tool = true %}
 {% endif %}
 
@@ -87,7 +87,7 @@
   data-is-admin="{% if is_admin %}true{% else %}false{% endif %}"
   data-is-trade="{% if is_trade %}true{% else %}false{% endif %}"
   data-is-catool="{% if is_catool %}true{% else %}false{% endif %}"
-  data-is-catool-growth="{% if is_catool_growth %}true{% else %}false{% endif %}"
+  data-is-catool-growth="{% if is_ycspro %}true{% else %}false{% endif %}"
   data-can-use-analysis-tool="{% if can_use_analysis_tool %}true{% else %}false{% endif %}"
   data-actual-is-admin="{% if actual_is_admin %}true{% else %}false{% endif %}"
   data-admin-preview-role="{{ admin_view_as }}"
