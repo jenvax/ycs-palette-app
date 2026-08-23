@@ -6,7 +6,7 @@
   const consultantId = root.dataset.customerId || "";
   const canCreateReports = root.dataset.canCreateReports === "true";
   const isAdmin = root.dataset.isAdmin === "true";
-  const isTrade = root.dataset.isTrade === "true";
+  const usesPrivatePaletteLinks = !isAdmin;
   const gridEl = root.querySelector("[data-ycs-client-grid]");
   const detailEl = root.querySelector("[data-ycs-client-detail]");
   const statusEl = root.querySelector("[data-ycs-client-status]");
@@ -2654,7 +2654,7 @@
   }
 
   function renderTradePaletteCreditStatus() {
-    if (!isTrade || isAdmin) return "";
+    if (!usesPrivatePaletteLinks) return "";
     const balance = Number(tradePaletteCreditBalance || 0);
     const isLoaded = tradePaletteCreditBalanceLoaded;
     const text = isLoaded
@@ -2692,24 +2692,24 @@
   }
 
   function hasTradePaletteCredits() {
-    if (!isTrade || isAdmin) return true;
+    if (!usesPrivatePaletteLinks) return true;
     if (!tradePaletteCreditBalanceLoaded) return true;
     return Number(tradePaletteCreditBalance || 0) > 0;
   }
 
   function renderClientPaletteAccessSection(client) {
     const paletteCode = String(client.paletteCode || "").trim().toUpperCase();
-    const canGrantPaletteAccess = isAdmin || isTrade;
+    const canGrantPaletteAccess = isAdmin || usesPrivatePaletteLinks;
     const isDisabled = canGrantPaletteAccess && !hasTradePaletteCredits();
     if (!canGrantPaletteAccess) return "";
     const sectionTitle = "Digital Palette Access";
     const sectionIntro = "Give this client private access to their digital color palette.";
     const buttonText = isAdmin ? "Give Client Palette Access" : "Create Palette Link";
-    const access = !isAdmin && isTrade ? paletteAccessFromClient(client) : null;
+    const access = usesPrivatePaletteLinks ? paletteAccessFromClient(client) : null;
     const accessPaletteCode = normalizePaletteCode(access?.paletteCode);
     const accessPaletteName = access?.paletteName || paletteNameForCode(accessPaletteCode) || accessPaletteCode;
 
-    if (!isAdmin && isTrade && !client.paletteAccessLoaded) {
+    if (usesPrivatePaletteLinks && !client.paletteAccessLoaded) {
       return `
         <section class="ycs-clients__section ycs-clients__palette-access-section" data-ycs-client-palette-card>
           <div class="ycs-clients__section-header">
@@ -2720,7 +2720,7 @@
       `;
     }
 
-    if (!isAdmin && isTrade && access) {
+    if (usesPrivatePaletteLinks && access) {
       if (client.paletteReplaceOpen) {
         return `
           <section class="ycs-clients__section ycs-clients__palette-access-section" data-ycs-client-palette-card>
@@ -2792,7 +2792,7 @@
   function updateTradePaletteAccessControls() {
     const button = detailEl.querySelector("[data-ycs-grant-client-palette-access]");
     const section = detailEl.querySelector(".ycs-clients__palette-access-section");
-    if (!button || !section || !isTrade || isAdmin) return;
+    if (!button || !section || !usesPrivatePaletteLinks) return;
     const shouldDisable = !hasTradePaletteCredits();
     button.disabled = shouldDisable;
     const existingMessage = section.querySelector("[data-ycs-palette-credit-required]");
@@ -2804,7 +2804,7 @@
   }
 
   async function loadTradePaletteCreditBalance() {
-    if (!isTrade || isAdmin || !consultantId || tradePaletteCreditBalanceLoading) return;
+    if (!usesPrivatePaletteLinks || !consultantId || tradePaletteCreditBalanceLoading) return;
     tradePaletteCreditBalanceLoading = true;
     try {
       const response = await fetch(`${apiBase}/api/trade-palette-credits?tradeCustomerId=${encodeURIComponent(consultantId)}`);
@@ -2875,7 +2875,7 @@
   }
 
   async function hydrateTradeClientPaletteAccess(client) {
-    if (!isTrade || isAdmin || !client?.clientRecordId || client.paletteAccessLoaded) return;
+    if (!usesPrivatePaletteLinks || !client?.clientRecordId || client.paletteAccessLoaded) return;
     try {
       const result = await getTradeClientPaletteAccess(client);
       updateTradeClientPaletteAccessInState(client.clientRecordId, result);
@@ -3105,7 +3105,7 @@
       });
     }
 
-    if (editMode && isTrade && !isAdmin) {
+    if (editMode && usesPrivatePaletteLinks) {
       hydrateTradeClientPaletteAccess(client).catch(() => {
         updateTradeClientPaletteAccessInState(client.clientRecordId, { access: null });
         rerenderTradePaletteAccessCard(client.clientRecordId);
@@ -3663,7 +3663,7 @@
 
   async function grantClientPaletteAccess(client, selectionOverride) {
     if (!client) return;
-    if (!isAdmin && isTrade) {
+    if (usesPrivatePaletteLinks) {
       return giveTradeClientPaletteAccessForTrade(client, selectionOverride);
     }
     if (!isAdmin) return;
@@ -4019,7 +4019,7 @@
     setStatus("Loading clients...", true);
     const clientsUrl = new URL(`${apiBase}/api/get-consultant-clients`);
     clientsUrl.searchParams.set("consultantId", consultantId);
-    if (isTrade && !isAdmin) clientsUrl.searchParams.set("includePaletteAccess", "1");
+    if (usesPrivatePaletteLinks) clientsUrl.searchParams.set("includePaletteAccess", "1");
     const response = await fetch(clientsUrl.toString());
     const data = await response.json();
 
@@ -4178,7 +4178,7 @@
         ? { paletteCode: selectedPaletteCode, paletteName: selectedPaletteName }
         : null;
       try {
-        if (activeForm && (isAdmin || !isTrade)) {
+        if (activeForm && isAdmin) {
           await saveClient(activeForm);
         }
         const client = clients.find((item) => item.clientRecordId === clientRecordId);
