@@ -2275,41 +2275,32 @@ photoPrepLink.href =
 
   photoPrepLink.textContent = 'Photo Prep';
 
-  if (CLIENT_RECORD_ID) {
-    const prepQuery = new URLSearchParams({
-      mode: 'trade',
-      workflow: 'color-analysis',
-      clientRecordId: CLIENT_RECORD_ID,
-      returnUrl: currentSignatureUrl
-    });
-    addAdminPreviewParam(prepQuery);
-    photoPrepLink.href =
-      '/pages/photo-prep?' +
-      prepQuery.toString();
-
-    return;
-  }
-
-  if (ADMIN_CUSTOMER_ID) {
-    const prepQuery = new URLSearchParams({
-      mode: 'trade',
-      workflow: 'color-analysis',
-      adminCustomerId: ADMIN_CUSTOMER_ID,
-      returnUrl: currentSignatureUrl
-    });
-    addAdminPreviewParam(prepQuery);
-    photoPrepLink.href =
-      '/pages/photo-prep?' +
-      prepQuery.toString();
-
-    return;
-  }
-
+  const prepMode = urlParams.get('mode') === 'diy' ? 'diy' : 'trade';
   const prepQuery = new URLSearchParams({
-    mode: 'trade',
+    mode: prepMode,
     workflow: 'color-analysis',
+    returnStep: 'lip-draping',
     returnUrl: currentSignatureUrl
   });
+
+  if (CLIENT_RECORD_ID) {
+    prepQuery.set('clientRecordId', CLIENT_RECORD_ID);
+  } else if (ADMIN_CUSTOMER_ID) {
+    prepQuery.set('adminCustomerId', ADMIN_CUSTOMER_ID);
+  } else if (SIMPLE_CUSTOMER_ID) {
+    prepQuery.set('customerId', SIMPLE_CUSTOMER_ID);
+  } else if (VIEWER_CUSTOMER_ID && prepMode !== 'trade') {
+    prepQuery.set('customerId', VIEWER_CUSTOMER_ID);
+  }
+
+  if (PHOTO_ID) {
+    prepQuery.set('photoId', PHOTO_ID);
+  }
+
+  if (PHOTO_SOURCE) {
+    prepQuery.set('photoSource', PHOTO_SOURCE);
+  }
+
   addAdminPreviewParam(prepQuery);
   photoPrepLink.href =
     '/pages/photo-prep?' +
