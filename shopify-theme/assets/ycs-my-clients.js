@@ -3241,10 +3241,7 @@
     if (controlsEl) controlsEl.hidden = true;
     setStatus("", false);
 
-    const palette = paletteLabel(client);
-    const updated = formatDate(client.updatedAt);
     const hasPhoto = clientHasPhoto(client);
-    const headerPalette = palette || "No color palette assigned";
 
     detailEl.innerHTML = `
       <div class="ycs-clients__detail-header${editMode ? " ycs-clients__detail-header--edit" : ""}">
@@ -3255,11 +3252,11 @@
             </a>`}
         <div class="ycs-clients__detail-main${editMode ? " ycs-clients__detail-main--edit" : ""}">
           <h2>${escapeHtml(displayName(client))}</h2>
-          <div class="ycs-clients__detail-meta${editMode ? " ycs-clients__detail-meta--edit" : ""}">
-            <div>${escapeHtml(client.email || "No email")}</div>
-            <div>${escapeHtml(headerPalette)}${updated ? ` · Updated ${escapeHtml(updated)}` : ""}</div>
-            ${client.notes && !editMode ? `<div>Notes: ${escapeHtml(client.notes)}</div>` : ""}
-          </div>
+          ${client.notes && !editMode ? `
+            <div class="ycs-clients__detail-meta">
+              <div>Notes: ${escapeHtml(client.notes)}</div>
+            </div>
+          ` : ""}
           <div class="ycs-clients__detail-actions">
             ${editMode ? "" : `<button class="ycs-clients__button" type="button" data-ycs-edit-client="${escapeHtml(client.clientRecordId)}">View/Edit</button>`}
             <button class="ycs-clients__button ycs-clients__button--secondary" type="button" data-ycs-manage-client-photos="${escapeHtml(client.clientRecordId)}">Manage Photos</button>
