@@ -91,6 +91,7 @@
   data-can-create-reports="{{ can_create_reports }}"
   data-is-admin="{{ actual_is_admin }}"
   data-is-trade="{{ is_trade }}"
+  data-has-growth-access="{% if is_catool_growth %}true{% else %}false{% endif %}"
   data-app-base-url="https://ycs-palette-app.vercel.app"
 >
   {% if customer == nil %}

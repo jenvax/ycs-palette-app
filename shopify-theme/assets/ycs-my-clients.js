@@ -7,6 +7,7 @@
   const canCreateReports = root.dataset.canCreateReports === "true";
   const isAdmin = root.dataset.isAdmin === "true";
   const usesPrivatePaletteLinks = !isAdmin;
+  const hasGrowthAccess = root.dataset.hasGrowthAccess === "true";
   const gridEl = root.querySelector("[data-ycs-client-grid]");
   const detailEl = root.querySelector("[data-ycs-client-detail]");
   const statusEl = root.querySelector("[data-ycs-client-status]");
@@ -50,6 +51,7 @@
     ["DO", "Deep Olive"]
   ];
   const YCS_PALETTE_CODES = new Set(YCS_PALETTE_OPTIONS.map(([code]) => code));
+  let customPaletteOptions = [];
 
   let clients = [];
   let activeReportDraft = null;
@@ -199,22 +201,93 @@
   function paletteNameForCode(code) {
     const normalizedCode = String(code || "").trim().toUpperCase();
     const option = YCS_PALETTE_OPTIONS.find(([optionCode]) => optionCode === normalizedCode);
-    return option ? option[1] : "";
+    if (option) return option[1];
+    const customOption = customPaletteOptions.find(([optionCode]) => optionCode.toUpperCase() === normalizedCode);
+    if (customOption) return customOption[1];
+    if (normalizedCode.startsWith("CUSTOM_")) return String(code || "").trim();
+    return "";
+  }
+
+  function isCustomPaletteCode(code) {
+    return String(code || "").trim().toUpperCase().startsWith("CUSTOM_");
+  }
+
+  function normalizeCustomPaletteCode(code) {
+    const value = String(code || "").trim();
+    if (!isCustomPaletteCode(value)) return "";
+    return `CUSTOM_${value.replace(/^CUSTOM_/i, "").trim()}`;
+  }
+
+  function allPaletteOptions() {
+    const seen = new Set();
+    const options = [];
+    YCS_PALETTE_OPTIONS.concat(customPaletteOptions).forEach(([code, label]) => {
+      const normalizedCode = isCustomPaletteCode(code) ? normalizeCustomPaletteCode(code) : String(code || "").trim().toUpperCase();
+      if (!normalizedCode || seen.has(normalizedCode.toUpperCase())) return;
+      seen.add(normalizedCode.toUpperCase());
+      options.push([normalizedCode, label]);
+    });
+    return options;
+  }
+
+  function normalizeCustomPaletteOption(palette) {
+    const id = String(palette?.id || "").trim();
+    const name = String(palette?.name || "").trim();
+    if (!id || !name) return null;
+    return [`CUSTOM_${id}`, name];
+  }
+
+  async function loadCustomPaletteOptions() {
+    if (!apiBase || !consultantId) return [];
+
+    const shouldLoadPrivatePalettes = usesPrivatePaletteLinks && hasGrowthAccess;
+    if (!shouldLoadPrivatePalettes) return [];
+
+    try {
+      const query = new URLSearchParams({
+        customerId: consultantId,
+        action: "list"
+      });
+      query.set("hasGrowthAccess", "true");
+
+      const response = await fetch(`${apiBase}/api/custom-palettes?${query.toString()}`);
+      const data = await readJsonResponse(response, "Unable to load custom palettes");
+      if (!response.ok) throw new Error(data.error || "Unable to load custom palettes");
+
+      customPaletteOptions = (Array.isArray(data.palettes) ? data.palettes : [])
+        .map(normalizeCustomPaletteOption)
+        .filter(Boolean)
+        .sort((a, b) => a[1].localeCompare(b[1]));
+
+      return customPaletteOptions;
+    } catch (error) {
+      console.error("Failed to load custom palettes for My Clients", error);
+      customPaletteOptions = [];
+      return [];
+    }
   }
 
   function normalizePaletteCode(code) {
     const normalizedCode = String(code || "").trim().toUpperCase();
-    return YCS_PALETTE_CODES.has(normalizedCode) ? normalizedCode : "";
+    if (YCS_PALETTE_CODES.has(normalizedCode)) return normalizedCode;
+    if (isCustomPaletteCode(code)) return normalizeCustomPaletteCode(code);
+    return "";
   }
 
   function paletteTagsFromCustomer(customer) {
     return (Array.isArray(customer?.tags) ? customer.tags : [])
-      .map(normalizePaletteCode)
+      .map((tag) => {
+        const normalizedTag = String(tag || "").trim().toUpperCase();
+        return YCS_PALETTE_CODES.has(normalizedTag) ? normalizedTag : "";
+      })
       .filter(Boolean);
   }
 
   function getPaletteName(code) {
-    return paletteNames[String(code || "").trim().toUpperCase()] || String(code || "").trim();
+    const normalizedCode = String(code || "").trim().toUpperCase();
+    const customOption = customPaletteOptions.find(([optionCode]) => optionCode.toUpperCase() === normalizedCode);
+    if (customOption) return customOption[1];
+    return paletteNames[normalizedCode] || String(code || "").trim();
   }
 
   async function readJsonResponse(response, fallbackMessage) {
@@ -2795,9 +2868,9 @@
   }
 
   function renderPaletteSelectOptions(selectedPaletteCode) {
-    const selectedCode = String(selectedPaletteCode || "").trim().toUpperCase();
-    return YCS_PALETTE_OPTIONS.map(([code, label]) => `
-      <option value="${escapeHtml(code)}"${code === selectedCode ? " selected" : ""}>${escapeHtml(label)}</option>
+    const selectedCode = normalizePaletteCode(selectedPaletteCode);
+    return allPaletteOptions().map(([code, label]) => `
+      <option value="${escapeHtml(code)}"${code.toUpperCase() === selectedCode.toUpperCase() ? " selected" : ""}>${escapeHtml(label)}</option>
     `).join("");
   }
 
@@ -4150,6 +4223,7 @@
     }
 
     clients = Array.isArray(data.clients) ? data.clients : [];
+    await loadCustomPaletteOptions();
     buildPaletteFilter();
 
     const currentParams = new URL(window.location.href).searchParams;

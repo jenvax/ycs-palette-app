@@ -33,6 +33,12 @@ export const PALETTE_NAMES = {
 };
 
 export function normalizePaletteCode(value) {
-  const code = String(value || "").trim().toUpperCase();
-  return PALETTE_CODES.has(code) ? code : "";
+  const rawCode = String(value || "").trim();
+  const code = rawCode.toUpperCase();
+  if (PALETTE_CODES.has(code)) return code;
+  if (code.startsWith("CUSTOM_")) {
+    const customId = rawCode.replace(/^CUSTOM_/i, "").trim();
+    return customId ? `CUSTOM_${customId}` : "";
+  }
+  return "";
 }
