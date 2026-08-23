@@ -72,7 +72,7 @@ function isCustomPaletteCode(value) {
 }
 
 function customPaletteIdFromCode(value) {
-  return String(value || "").trim().replace(/^CUSTOM_/i, "").toLowerCase();
+  return String(value || "").trim().replace(/^CUSTOM_/i, "");
 }
 
 async function removeBackgroundImage({ imageBase64, apiKey }) {
@@ -164,8 +164,26 @@ async function fetchAllAirtableRecords({ baseId, tableName, token, sortField, fo
 }
 
 async function fetchStyleMastersCustomPalette({ baseId, token, paletteId, includeHidden = false }) {
+  return fetchCustomPalette({
+    baseId,
+    token,
+    paletteId,
+    ownerCustomerId: STYLE_MASTERS_OWNER_ID,
+    includeHidden,
+    fallbackName: "Style Masters Color Palette"
+  });
+}
+
+async function fetchCustomPalette({
+  baseId,
+  token,
+  paletteId,
+  ownerCustomerId,
+  includeHidden = false,
+  fallbackName = "Custom Color Palette"
+}) {
   const escapedPaletteId = escapeFormulaValue(paletteId);
-  const ownerFilter = `{OwnerCustomerId}="${STYLE_MASTERS_OWNER_ID}"`;
+  const ownerFilter = `{OwnerCustomerId}="${escapeFormulaValue(ownerCustomerId)}"`;
   const paletteRecords = await fetchAllAirtableRecords({
     baseId,
     tableName: "CustomPalettes",
@@ -231,7 +249,7 @@ async function fetchStyleMastersCustomPalette({ baseId, token, paletteId, includ
     .sort((a, b) => a.sortOrder - b.sortOrder);
 
   return {
-    paletteName: normalizeField(paletteFields.Name) || "Style Masters Color Palette",
+    paletteName: normalizeField(paletteFields.Name) || fallbackName,
     colors
   };
 }
@@ -820,7 +838,7 @@ async function syncCustomerDirectoryFromShopify({ shop, accessToken, baseId, tok
   };
 }
 
-function clientPaletteAccessHtml(access) {
+function clientPaletteAccessHtml(access, token) {
   const paletteCode = access.paletteCode;
   const paletteName = access.paletteName || access.paletteCode;
   const clientName = access.clientName || "Your client";
@@ -1056,6 +1074,7 @@ function clientPaletteAccessHtml(access) {
     const viewerCloseEl = document.querySelector('[data-color-viewer-close]');
     let lastSwatchButton = null;
     const paletteCode = root.dataset.paletteCode;
+    const accessToken = ${JSON.stringify(String(token || ""))};
     const categoryOrder = [
       'Best', 'Reds', 'Oranges', 'Golden Yellows', 'Yellows', 'Yellow Greens',
       'Greens', 'Aquas/Teals', 'Blues', 'Indigos', 'Purples', 'Plums',
@@ -1137,7 +1156,11 @@ function clientPaletteAccessHtml(access) {
       if (event.key === 'Escape' && viewerEl?.classList.contains('is-open')) closeColorViewer();
     });
 
-    fetch('/apps/palette-data?palette=' + encodeURIComponent(paletteCode), { credentials: 'same-origin' })
+    const colorsUrl = /^CUSTOM_/i.test(paletteCode)
+      ? '/apps/palette-data?action=clientPaletteColors&token=' + encodeURIComponent(accessToken)
+      : '/apps/palette-data?palette=' + encodeURIComponent(paletteCode);
+
+    fetch(colorsUrl, { credentials: 'same-origin' })
       .then(function (response) { return response.json().then(function (data) {
         if (!response.ok || !Array.isArray(data.colors)) throw new Error(data.error || 'Unable to load palette colors.');
         if (!data.colors.length) throw new Error('No colors were found for this palette.');
@@ -1256,11 +1279,12 @@ export async function loader({ request }) {
 
   if (action === "clientPaletteView") {
     try {
+      const token = url.searchParams.get("token");
       const access = await validateClientPaletteAccessToken({
-        token: url.searchParams.get("token")
+        token
       });
 
-      return new Response(clientPaletteAccessHtml(access), {
+      return new Response(clientPaletteAccessHtml(access, token), {
         status: 200,
         headers: {
           "Content-Type": "text/html; charset=utf-8",
@@ -1294,6 +1318,51 @@ export async function loader({ request }) {
           "Cache-Control": "no-store"
         }
       });
+    }
+  }
+
+  if (action === "clientPaletteColors") {
+    try {
+      const access = await validateClientPaletteAccessToken({
+        token: url.searchParams.get("token")
+      });
+      const safePaletteCode = isCustomPaletteCode(access.paletteCode)
+        ? access.paletteCode
+        : String(access.paletteCode || "").trim().toUpperCase();
+
+      if (!isCustomPaletteCode(safePaletteCode)) {
+        return Response.json(
+          { error: "Private custom palette token required" },
+          { status: 400 }
+        );
+      }
+
+      const paletteId = customPaletteIdFromCode(safePaletteCode);
+      if (!paletteId) {
+        return Response.json({ error: "Missing custom palette id" }, { status: 400 });
+      }
+
+      const customPalette = await fetchCustomPalette({
+        baseId: AIRTABLE_BASE_ID,
+        token: AIRTABLE_TOKEN,
+        paletteId,
+        ownerCustomerId: access.consultantId,
+        includeHidden: true,
+        fallbackName: access.paletteName || "Custom Color Palette"
+      });
+
+      return Response.json({
+        palette: safePaletteCode,
+        paletteName: customPalette.paletteName,
+        colors: customPalette.colors,
+        marker: "CLIENT_CUSTOM_PALETTE_LIVE"
+      });
+    } catch (error) {
+      console.error("clientPaletteColors failed:", error);
+      return Response.json(
+        { error: error.message || "Failed to load custom palette colors" },
+        { status: error.status || 500 }
+      );
     }
   }
 
