@@ -3240,6 +3240,13 @@
     if (editMode) loadTradePaletteCreditBalance();
   }
 
+  function scrollClientPhotoManagerIntoView(manager) {
+    if (!manager) return;
+    window.requestAnimationFrame(() => {
+      manager.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
   async function showClientPhotoManager(clientRecordId) {
     const client = clients.find((item) => item.clientRecordId === clientRecordId);
     const manager = detailEl.querySelector("[data-ycs-client-photo-manager]");
@@ -3249,15 +3256,18 @@
 
     manager.hidden = false;
     manager.innerHTML = renderClientPhotoManager(client, [], { loading: true });
+    scrollClientPhotoManagerIntoView(manager);
 
     try {
       activeSavedDrapedImages = await fetchSavedDrapedImages(client);
       activeSavedDrapedImagesClientId = client.clientRecordId;
       manager.innerHTML = renderClientPhotoManager(client, activeSavedDrapedImages);
+      scrollClientPhotoManagerIntoView(manager);
     } catch (error) {
       manager.innerHTML = renderClientPhotoManager(client, [], {
         error: error.message || "Unable to load saved draped photos."
       });
+      scrollClientPhotoManagerIntoView(manager);
     }
   }
 
