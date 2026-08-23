@@ -842,6 +842,7 @@ function clientPaletteAccessHtml(access, token) {
   const paletteCode = access.paletteCode;
   const paletteName = access.paletteName || access.paletteCode;
   const clientName = access.clientName || "Your client";
+  const isCustomPalette = isCustomPaletteCode(paletteCode);
   const logoUrl = "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/YourColorStyle_Logo-120.png?v=1643287573";
 
   return `<!doctype html>
@@ -1048,7 +1049,7 @@ function clientPaletteAccessHtml(access, token) {
 <body>
   <main class="ycs-client-palette" data-palette-code="${escapeHtml(paletteCode)}">
     <header class="ycs-client-palette__header">
-      <img class="ycs-client-palette__logo" src="${escapeHtml(logoUrl)}" alt="Your Color Style">
+      ${isCustomPalette ? "" : `<img class="ycs-client-palette__logo" src="${escapeHtml(logoUrl)}" alt="Your Color Style">`}
       <p class="ycs-client-palette__kicker">Your Personal Color Palette</p>
       <h1>${escapeHtml(paletteName)}</h1>
       <p class="ycs-client-palette__prepared">Prepared for ${escapeHtml(clientName)}</p>
