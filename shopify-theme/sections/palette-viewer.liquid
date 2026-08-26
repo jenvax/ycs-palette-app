@@ -152,10 +152,19 @@
   /pages/photo-prep?mode=personal&workflow=photo-draping&palette={{ request.params.palette | default: section.settings.default_palette | escape }}
   {% else %}
   /pages/photo-prep?mode=personal&workflow=photo-draping&trial=sample&palette={{ request.params.palette | default: section.settings.default_palette | escape }}
-  {% endif %}">
+{% endif %}">
     Draping Studio
   </a>
 {% endunless %}
+        {% if is_admin %}
+        <button
+          type="button"
+          id="ycs-download-palette-pngs"
+          class="ycs-download-palette-pngs-btn"
+          disabled>
+          PNG
+        </button>
+        {% endif %}
         <div class="ycs-category-nav-wrap">
           <nav id="category-nav" class="ycs-category-nav"></nav>
         </div>
@@ -357,6 +366,36 @@
 .ycs-open-photo-draping-btn:hover {
   background: #222;
   color: #fff !important;
+}
+
+.ycs-download-palette-pngs-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 8px 13px;
+  border-radius: 999px;
+  border: 1px solid #222;
+  background: #fff;
+  color: #111;
+  font-size: 13px;
+  line-height: 1;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease, opacity .15s ease;
+}
+
+.ycs-download-palette-pngs-btn:hover:not(:disabled) {
+  background: #111;
+  color: #fff;
+}
+
+.ycs-download-palette-pngs-btn:disabled {
+  cursor: not-allowed;
+  opacity: .45;
 }
 
   .ycs-view-toggle {
@@ -874,6 +913,7 @@
     const messageEl = document.getElementById('palette-message');
     const scanToggleEl = document.getElementById('palette-scan-toggle');
     const openPhotoDrapingEl = document.getElementById('ycs-open-photo-draping');
+    const downloadPalettePngsEl = document.getElementById('ycs-download-palette-pngs');
 
     const params = new URLSearchParams(window.location.search);
     const returnUrl = params.get('returnUrl') || '/pages/my-palettes';
@@ -1005,6 +1045,7 @@ const hasAccess =
     ];
 
     const viewModeStorageKey = `ycsViewMode_${paletteCode}`;
+    const PALETTE_EXPORT_LOGO_URL = {% if settings.logo != blank %}{{ settings.logo | img_url: '300x' | json }}{% elsif settings.logo_cl != blank %}{{ settings.logo_cl | img_url: '300x' | json }}{% else %}''{% endif %};
 
     let currentViewMode = sessionStorage.getItem(viewModeStorageKey) || 'labeled';
 
@@ -1013,6 +1054,8 @@ const hasAccess =
     let renderedOrderedCategories = [];
     let renderedFlatColors = [];
     let favoriteHexes = new Set();
+    let paletteExportLogoImagePromise = null;
+    let currentPaletteExportName = paletteNameMap[paletteCode] || paletteCode;
 
     function slugify(text) {
       return String(text)
@@ -1153,6 +1196,349 @@ const hasAccess =
 
     function colorUrl(hex, name) {
       return `/pages/color?hex=${encodeURIComponent(String(hex).replace('#', ''))}&name=${encodeURIComponent(name)}&palette=${encodeURIComponent(paletteCode)}`;
+    }
+
+    function getPaletteExportName() {
+      return currentPaletteExportName || paletteNameMap[paletteCode] || paletteCode;
+    }
+
+    function getPaletteExportFileBase() {
+      return slugify(`${paletteCode}-${getPaletteExportName()}`) || slugify(paletteCode) || 'palette';
+    }
+
+    function getExportTextColor(hex) {
+      const normalized = String(hex || '').replace('#', '').trim();
+      if (!/^[0-9a-f]{6}$/i.test(normalized)) return '#ffffff';
+
+      const r = parseInt(normalized.slice(0, 2), 16) / 255;
+      const g = parseInt(normalized.slice(2, 4), 16) / 255;
+      const b = parseInt(normalized.slice(4, 6), 16) / 255;
+      const linearRgb = [r, g, b].map(value => {
+        return value <= 0.03928
+          ? value / 12.92
+          : Math.pow((value + 0.055) / 1.055, 2.4);
+      });
+      const luminance = 0.2126 * linearRgb[0] + 0.7152 * linearRgb[1] + 0.0722 * linearRgb[2];
+
+      return luminance > 0.5 ? '#111111' : '#ffffff';
+    }
+
+    function wrapCanvasText(ctx, text, maxWidth) {
+      const words = String(text || '').split(/\s+/).filter(Boolean);
+      const lines = [];
+      let line = '';
+
+      words.forEach(word => {
+        const testLine = line ? `${line} ${word}` : word;
+        if (ctx.measureText(testLine).width <= maxWidth || !line) {
+          line = testLine;
+        } else {
+          lines.push(line);
+          line = word;
+        }
+      });
+
+      if (line) lines.push(line);
+      return lines;
+    }
+
+    async function downloadCanvasPng(canvas, fileName) {
+      return new Promise((resolve, reject) => {
+        canvas.toBlob(blob => {
+          if (!blob) {
+            reject(new Error('Could not create PNG'));
+            return;
+          }
+
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = fileName;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+
+          setTimeout(() => {
+            URL.revokeObjectURL(url);
+            resolve();
+          }, 150);
+        }, 'image/png');
+      });
+    }
+
+    function loadPaletteExportLogoImage() {
+      if (!PALETTE_EXPORT_LOGO_URL) return Promise.resolve(null);
+      if (paletteExportLogoImagePromise) return paletteExportLogoImagePromise;
+
+      paletteExportLogoImagePromise = new Promise(resolve => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = function () {
+          resolve(img);
+        };
+        img.onerror = function () {
+          resolve(null);
+        };
+        img.src = PALETTE_EXPORT_LOGO_URL;
+      });
+
+      return paletteExportLogoImagePromise;
+    }
+
+    function drawPaletteExportLogo(ctx, logoImg, x, y, cellWidth, cellHeight) {
+      if (logoImg) {
+        const maxWidth = cellWidth * 0.68;
+        const maxHeight = cellHeight * 0.5;
+        const logoRatio = logoImg.naturalWidth / logoImg.naturalHeight;
+        let drawWidth = maxWidth;
+        let drawHeight = drawWidth / logoRatio;
+
+        if (drawHeight > maxHeight) {
+          drawHeight = maxHeight;
+          drawWidth = drawHeight * logoRatio;
+        }
+
+        ctx.drawImage(
+          logoImg,
+          x + (cellWidth - drawWidth) / 2,
+          y + (cellHeight - drawHeight) / 2,
+          drawWidth,
+          drawHeight
+        );
+        return;
+      }
+
+      ctx.fillStyle = '#111111';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = '400 22px Arial, sans-serif';
+      ctx.fillText('YOUR COLOR STYLE', x + cellWidth / 2, y + cellHeight / 2);
+    }
+
+    async function drawPalettePngPage(colors) {
+      const width = 1800;
+      const height = 1200;
+      const columns = 6;
+      const rows = 4;
+      const cellWidth = width / columns;
+      const cellHeight = height / rows;
+      const colorsPerPage = columns * rows;
+      const shouldDrawLogo = colors.length < colorsPerPage;
+      const lowerLeftIndex = (rows - 1) * columns;
+      const logoImg = shouldDrawLogo ? await loadPaletteExportLogoImage() : null;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, width, height);
+
+      colors.forEach((color, index) => {
+        const column = index % columns;
+        const row = Math.floor(index / columns);
+        const x = column * cellWidth;
+        const y = row * cellHeight;
+        const hex = color.hex || '#eeeeee';
+        const isLowerLeftSwatch = column === 0 && row === rows - 1;
+
+        ctx.fillStyle = hex;
+        ctx.fillRect(x, y, cellWidth, cellHeight);
+
+        ctx.fillStyle = getExportTextColor(hex);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = '400 24px Arial, sans-serif';
+
+        const nameLines = wrapCanvasText(ctx, color.name || '', cellWidth - 24).slice(0, 3);
+        const lineHeight = 28;
+        const firstLineY = y + 52;
+
+        nameLines.forEach((line, lineIndex) => {
+          ctx.fillText(line, x + cellWidth / 2, firstLineY + lineIndex * lineHeight);
+        });
+
+        if (isLowerLeftSwatch) {
+          ctx.fillStyle = '#111111';
+          ctx.font = '400 24px Arial, sans-serif';
+          ctx.fillText(
+            paletteCode.toUpperCase(),
+            x + cellWidth / 2,
+            Math.max(y + cellHeight / 2, firstLineY + nameLines.length * lineHeight + 10)
+          );
+        }
+      });
+
+      if (colors.length <= lowerLeftIndex) {
+        ctx.fillStyle = '#111111';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = '400 24px Arial, sans-serif';
+        ctx.fillText(
+          paletteCode.toUpperCase(),
+          cellWidth / 2,
+          (rows - 1) * cellHeight + cellHeight / 2
+        );
+      }
+
+      if (shouldDrawLogo) {
+        drawPaletteExportLogo(
+          ctx,
+          logoImg,
+          (columns - 1) * cellWidth,
+          (rows - 1) * cellHeight,
+          cellWidth,
+          cellHeight
+        );
+      }
+
+      return canvas;
+    }
+
+    function getNeutralFamilyExportRank(color) {
+      const family = getNeutralFamily(color) || 'Other Neutrals';
+      const neutralFamilyOrder = [
+        'Creams',
+        'Olive Greens',
+        'Mustard & Golden Olives',
+        'Warm Browns',
+        'Red Browns',
+        'Browns',
+        'Navy Blues',
+        'Grays',
+        'Taupes',
+        'Black Alternatives',
+        'Other Neutrals'
+      ];
+      const index = neutralFamilyOrder.findIndex(name => name.toLowerCase() === family.toLowerCase());
+
+      return index === -1 ? neutralFamilyOrder.length : index;
+    }
+
+    function sortNeutralExportColors(colors) {
+      return colors.slice().sort((a, b) => {
+        const aIsLight = getDepthLabel(a) === 'Light';
+        const bIsLight = getDepthLabel(b) === 'Light';
+
+        if (aIsLight && !bIsLight) return -1;
+        if (!aIsLight && bIsLight) return 1;
+
+        if (aIsLight && bIsLight) {
+          return (a.sortOrder || 0) - (b.sortOrder || 0);
+        }
+
+        const familyRankCompare = getNeutralFamilyExportRank(a) - getNeutralFamilyExportRank(b);
+        if (familyRankCompare !== 0) return familyRankCompare;
+
+        const familyCompare = (getNeutralFamily(a) || 'Other Neutrals')
+          .localeCompare(getNeutralFamily(b) || 'Other Neutrals');
+        if (familyCompare !== 0) return familyCompare;
+
+        const depthCompare = getDepthRank(a) - getDepthRank(b);
+        if (depthCompare !== 0) return depthCompare;
+
+        return (a.sortOrder || 0) - (b.sortOrder || 0);
+      });
+    }
+
+    function getPalettePngExportColors() {
+      const exportColors = renderedOrderedCategories
+        .filter(category => category !== 'Favorites' && category !== 'Best')
+        .flatMap(category => {
+          const colors = (renderedGrouped[category] || []).filter(color => color && color.hex && color.name);
+          return category === 'Neutrals' ? sortNeutralExportColors(colors) : colors;
+        })
+        .filter(color => color && color.hex && color.name);
+
+      return exportColors.length
+        ? exportColors
+        : renderedFlatColors.filter(color => color && color.hex && color.name);
+    }
+
+    function getColorExportCategory(color) {
+      return String(color && color.category ? color.category : '').trim();
+    }
+
+    function paginatePalettePngColors(colors, colorsPerPage) {
+      const lastRowStartIndex = 18;
+      const pages = [];
+      let page = [];
+
+      colors.forEach(color => {
+        const currentCategory = getColorExportCategory(color);
+        const previousColor = page[page.length - 1] || null;
+        const previousCategory = getColorExportCategory(previousColor);
+        const startsNewCategory =
+          page.length > 0 &&
+          currentCategory &&
+          previousCategory &&
+          currentCategory !== previousCategory;
+        const shouldStartNeutralsPage =
+          page.length > 0 &&
+          currentCategory === 'Neutrals' &&
+          previousCategory !== 'Neutrals';
+
+        if (shouldStartNeutralsPage) {
+          pages.push(page);
+          page = [];
+        }
+
+        if (page.length >= lastRowStartIndex && startsNewCategory) {
+          pages.push(page);
+          page = [];
+        }
+
+        if (page.length >= colorsPerPage) {
+          pages.push(page);
+          page = [];
+        }
+
+        page.push(color);
+      });
+
+      if (page.length) pages.push(page);
+      return pages;
+    }
+
+    async function downloadPalettePngs() {
+      const colors = getPalettePngExportColors();
+      const colorsPerPage = 24;
+
+      if (!colors.length) {
+        messageEl.textContent = 'No colors are ready to export yet.';
+        return;
+      }
+
+      if (downloadPalettePngsEl) downloadPalettePngsEl.disabled = true;
+
+      try {
+        const pages = paginatePalettePngColors(colors, colorsPerPage);
+        const pageCount = pages.length;
+        const fileBase = getPaletteExportFileBase();
+
+        messageEl.textContent = `Creating ${pageCount} PNG${pageCount === 1 ? '' : 's'}...`;
+
+        for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
+          const pageColors = pages[pageIndex];
+          const canvas = await drawPalettePngPage(pageColors);
+          const fileName = `${fileBase}-${String(pageIndex + 1).padStart(2, '0')}-of-${String(pageCount).padStart(2, '0')}.png`;
+
+          await downloadCanvasPng(canvas, fileName);
+
+          if (pageIndex < pageCount - 1) {
+            await new Promise(resolve => setTimeout(resolve, 250));
+          }
+        }
+
+        messageEl.textContent = `Downloaded ${pageCount} PNG${pageCount === 1 ? '' : 's'} at 1800 x 1200 px.`;
+      } catch (error) {
+        console.error(error);
+        messageEl.textContent = 'Could not create the PNG files. Please try again.';
+      } finally {
+        if (downloadPalettePngsEl) downloadPalettePngsEl.disabled = !renderedFlatColors.length;
+      }
     }
 
     function gradientForColors(colors) {
@@ -1798,6 +2184,10 @@ const result = text ? JSON.parse(text) : {};
       });
     }
 
+    if (downloadPalettePngsEl) {
+      downloadPalettePngsEl.addEventListener('click', downloadPalettePngs);
+    }
+
     if (navEl) {
       navEl.addEventListener('scroll', updateCategoryNavFade);
       window.addEventListener('resize', updateCategoryNavFade);
@@ -1864,6 +2254,10 @@ const result = text ? JSON.parse(text) : {};
           throw new Error(data.error || 'No colors returned');
         }
 
+        if (data.paletteName) {
+          currentPaletteExportName = data.paletteName;
+        }
+
         if (data.paletteName && isCustomPaletteCode) {
           titleEl.textContent = data.paletteName;
         }
@@ -1886,6 +2280,7 @@ const result = text ? JSON.parse(text) : {};
 
         syncFavoritesIntoColors();
         rerenderCurrentView();
+        if (downloadPalettePngsEl) downloadPalettePngsEl.disabled = false;
 
         const savedScroll = sessionStorage.getItem('paletteScroll');
         const lastHex = sessionStorage.getItem('ycsLastColorHex') || '';
