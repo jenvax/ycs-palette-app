@@ -934,6 +934,11 @@ const hasAllPaletteAccess =
   hasTradeSeptCohortAccess;
 
 const isAdminPalette = paletteCode.startsWith('ADMIN_');
+const adminAggregatePaletteCodes = {
+  ADMIN_CLEAR: ['CWL', 'CWM', 'CWD', 'CCL', 'CCM', 'CCD', 'CWLG', 'CWMG', 'CWDG'],
+  ADMIN_SOFT: ['SWL', 'SWM', 'SWD', 'SCL', 'SCM', 'SCD', 'SWLG', 'SWMG', 'SWDG']
+};
+const isAdminAggregatePalette = Object.prototype.hasOwnProperty.call(adminAggregatePaletteCodes, paletteCode);
 const isStyleMastersCustomPalette = isCustomPaletteCode && (
   PALETTE_ACCESS.includes(',VIP,') ||
   hasAdminAccess
@@ -1080,6 +1085,58 @@ const hasAccess =
       return {
         paletteName: palette.name || 'Style Masters Palette',
         colors: mapCustomPaletteColors(palette)
+      };
+    }
+
+    function mapYcsPaletteColor(color, index, paletteIndex) {
+      return {
+        name: color.name || color.ColorName || '',
+        hex: normalizeHex(color.hex || color.Hex || color.hexCode || color.HexCode),
+        hexCode: normalizeHex(color.hex || color.Hex || color.hexCode || color.HexCode),
+        category: color.category || color.Category || '',
+        sortOrder: (paletteIndex * 10000) + (Number(color.sortOrder || color.SortOrder) || index),
+        paletteCodes: color.paletteCodes || color.palettes || color.PaletteCodes_Final_Manual || '',
+        depth: color.depth || color.Depth || '',
+        temperature: color.temperature || color.Temperature || '',
+        chroma: color.chroma || color.Chroma || '',
+        isNeutral: color.isNeutral ?? color.IsNeutral ?? false,
+        neutralDepth: color.neutralDepth || color.NeutralDepth || '',
+        isBest: color.isBest ?? color.IsBest ?? false
+      };
+    }
+
+    async function fetchYcsPaletteColors(paletteCodeToFetch, paletteIndex) {
+      const colorsResponse = await fetch(`/apps/palette-data?palette=${encodeURIComponent(paletteCodeToFetch)}`, {
+        credentials: 'same-origin'
+      });
+      const data = await colorsResponse.json();
+
+      if (!colorsResponse.ok || !data.colors) {
+        throw new Error(data.error || `No colors returned for ${paletteCodeToFetch}`);
+      }
+
+      return data.colors.map((color, index) => mapYcsPaletteColor(color, index, paletteIndex));
+    }
+
+    async function fetchAdminAggregatePaletteForViewer() {
+      const aggregateCodes = adminAggregatePaletteCodes[paletteCode] || [];
+      const palettes = await Promise.all(
+        aggregateCodes.map((code, index) => fetchYcsPaletteColors(code, index))
+      );
+      const seen = new Set();
+      const colors = [];
+
+      palettes.flat().forEach(color => {
+        const hex = normalizeHex(color.hex || color.hexCode);
+        const key = `${hex}|${normalizeText(color.name)}`;
+        if (!hex || seen.has(key)) return;
+        seen.add(key);
+        colors.push(color);
+      });
+
+      return {
+        paletteName: paletteNameMap[paletteCode] || paletteCode,
+        colors
       };
     }
 
@@ -1793,11 +1850,13 @@ const result = text ? JSON.parse(text) : {};
         let data;
         if (isCustomPaletteCode) {
           data = await fetchCustomPaletteForViewer();
+        } else if (isAdminAggregatePalette) {
+          data = await fetchAdminAggregatePaletteForViewer();
         } else {
-          const colorsResponse = await fetch(`/apps/palette-data?palette=${encodeURIComponent(paletteCode)}`, {
-            credentials: 'same-origin'
-          });
-          data = await colorsResponse.json();
+          data = {
+            paletteName: paletteNameMap[paletteCode] || paletteCode,
+            colors: await fetchYcsPaletteColors(paletteCode, 0)
+          };
         }
 
         if (!data.colors) {

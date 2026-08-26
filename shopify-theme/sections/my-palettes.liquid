@@ -723,10 +723,61 @@
             </div>
           </div>
 
+          <div class="ycs-palette-card ycs-palette-card--admin">
+            <div class="ycs-palette-card__top">
+              <div
+                class="ycs-palette-card__gradient"
+                style="background: linear-gradient(to right, #e84855, #f59f4c, #f4d35e, #64b96a, #45a8e5);">
+              </div>
+            </div>
+
+            <div class="ycs-palette-card__content">
+              <div class="ycs-palette-card__text">
+                <h2>All Clear Colors</h2>
+                <p class="ycs-palette-card__subtitle">
+                  View all colors included in the clear color palettes.
+                </p>
+                <p class="ycs-palette-card__admin-label">Admin only</p>
+              </div>
+
+              <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
+                <a href="/pages/palette?palette=ADMIN_CLEAR" class="ycs-palette-card__button">
+                  Open View
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div class="ycs-palette-card ycs-palette-card--admin">
+            <div class="ycs-palette-card__top">
+              <div
+                class="ycs-palette-card__gradient"
+                style="background: linear-gradient(to right, #d77ca8, #aa8acf, #7aa5d5, #75bbb6, #b8b4d8);">
+              </div>
+            </div>
+
+            <div class="ycs-palette-card__content">
+              <div class="ycs-palette-card__text">
+                <h2>All Soft Colors</h2>
+                <p class="ycs-palette-card__subtitle">
+                  View all colors included in the soft color palettes.
+                </p>
+                <p class="ycs-palette-card__admin-label">Admin only</p>
+              </div>
+
+              <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
+                <a href="/pages/palette?palette=ADMIN_SOFT" class="ycs-palette-card__button">
+                  Open View
+                </a>
+              </div>
+            </div>
+          </div>
+
           {% for block in section.blocks %}
+            {% assign palette_code = block.settings.palette_code | upcase | strip %}
             {% assign visibility = block.settings.visibility | default: 'customer' %}
 
-            {% if visibility == 'admin' %}
+            {% if visibility == 'admin' and palette_code != 'ADMIN_CLEAR' and palette_code != 'ADMIN_SOFT' %}
               {% assign palette_url = '/pages/palette?palette=' | append: block.settings.palette_code %}
 
               <div class="ycs-palette-card ycs-palette-card--admin" {{ block.shopify_attributes }}>
