@@ -1088,13 +1088,14 @@ const hasAccess =
       };
     }
 
-    function mapYcsPaletteColor(color, index, paletteIndex) {
+    function mapYcsPaletteColor(color, index, paletteIndex, options = {}) {
+      const baseSortOrder = Number(color.sortOrder || color.SortOrder) || index;
       return {
         name: color.name || color.ColorName || '',
         hex: normalizeHex(color.hex || color.Hex || color.hexCode || color.HexCode),
         hexCode: normalizeHex(color.hex || color.Hex || color.hexCode || color.HexCode),
         category: color.category || color.Category || '',
-        sortOrder: (paletteIndex * 10000) + (Number(color.sortOrder || color.SortOrder) || index),
+        sortOrder: options.preservePaletteOrder ? (paletteIndex * 10000) + baseSortOrder : baseSortOrder,
         paletteCodes: color.paletteCodes || color.palettes || color.PaletteCodes_Final_Manual || '',
         depth: color.depth || color.Depth || '',
         temperature: color.temperature || color.Temperature || '',
@@ -1105,7 +1106,7 @@ const hasAccess =
       };
     }
 
-    async function fetchYcsPaletteColors(paletteCodeToFetch, paletteIndex) {
+    async function fetchYcsPaletteColors(paletteCodeToFetch, paletteIndex, options = {}) {
       const colorsResponse = await fetch(`/apps/palette-data?palette=${encodeURIComponent(paletteCodeToFetch)}`, {
         credentials: 'same-origin'
       });
@@ -1115,13 +1116,13 @@ const hasAccess =
         throw new Error(data.error || `No colors returned for ${paletteCodeToFetch}`);
       }
 
-      return data.colors.map((color, index) => mapYcsPaletteColor(color, index, paletteIndex));
+      return data.colors.map((color, index) => mapYcsPaletteColor(color, index, paletteIndex, options));
     }
 
     async function fetchAdminAggregatePaletteForViewer() {
       const aggregateCodes = adminAggregatePaletteCodes[paletteCode] || [];
       const palettes = await Promise.all(
-        aggregateCodes.map((code, index) => fetchYcsPaletteColors(code, index))
+        aggregateCodes.map((code, index) => fetchYcsPaletteColors(code, index, { preservePaletteOrder: false }))
       );
       const seen = new Set();
       const colors = [];
