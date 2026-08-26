@@ -307,6 +307,32 @@
             "mobile_pdf_url": "",
             "gradient": "linear-gradient(to right, #743e47, #765743, #6f6654, #5f6259, #3d5968)"
           }
+        },
+        "palette_admin_clear": {
+          "type": "palette",
+          "settings": {
+            "title": "All Clear Colors",
+            "subtitle": "",
+            "palette_code": "ADMIN_CLEAR",
+            "visibility": "admin",
+            "product_link": "",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #e84855, #f59f4c, #f4d35e, #64b96a, #45a8e5)"
+          }
+        },
+        "palette_admin_soft": {
+          "type": "palette",
+          "settings": {
+            "title": "All Soft Colors",
+            "subtitle": "",
+            "palette_code": "ADMIN_SOFT",
+            "visibility": "admin",
+            "product_link": "",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #d77ca8, #aa8acf, #7aa5d5, #75bbb6, #b8b4d8)"
+          }
         }
       },
       "block_order": [
@@ -331,7 +357,9 @@
         "palette_lo",
         "palette_mo",
         "palette_do",
-        "palette_sample"
+        "palette_sample",
+        "palette_admin_clear",
+        "palette_admin_soft"
       ],
       "settings": {
         "heading": "Color Analysis Tools",

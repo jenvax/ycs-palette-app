@@ -237,27 +237,6 @@
       <p class="ycs-my-palettes__intro">{{ ycs_page_intro }}</p>
     </div>
 
-    {% if actual_is_admin and is_color_analysis_tools_page %}
-      <div class="ycs-admin-preview">
-        <div>
-          <p class="ycs-admin-preview__kicker">Admin testing</p>
-          <p class="ycs-admin-preview__copy">
-            View the Color Analysis flow as another user type. Your real account stays admin.
-          </p>
-        </div>
-        <label class="ycs-admin-preview__control">
-          <span>View as</span>
-          <select id="ycs-admin-view-as">
-            <option value="" {% if admin_view_as == '' %}selected{% endif %}>Admin</option>
-            <option value="trade" {% if admin_view_as == 'trade' %}selected{% endif %}>Trade</option>
-            <option value="catool" {% if admin_view_as == 'catool' %}selected{% endif %}>CATOOL</option>
-            <option value="ycspro" {% if admin_view_as == 'ycspro' %}selected{% endif %}>YCS Professional</option>
-            <option value="diycatool" {% if admin_view_as == 'diycatool' %}selected{% endif %}>DIY CATOOL</option>
-            <option value="freediycatool" {% if admin_view_as == 'freediycatool' %}selected{% endif %}>Free DIY CATOOL</option>
-          </select>
-        </label>
-      </div>
-    {% endif %}
 
     <div class="ycs-my-palettes__section ycs-my-palettes__section--studio">
       <h2 class="ycs-my-palettes__section-title">{% if is_color_analysis_tools_page %}Tools{% else %}Draping Studio{% endif %}</h2>
@@ -448,7 +427,7 @@
               </a>
             </div>
           </div>
-          
+
         </div>
         {% endunless %}
 
@@ -487,6 +466,87 @@
     {% if is_color_analysis_tools_page and can_use_analysis_tool == false %}
       <div class="ycs-my-palettes__empty">
         Color Analysis Tools are not available on this account. Please confirm this customer has a TRADE, TRADESEPTCOHORT, CATOOL, DIYCATOOL, FREEDIYCATOOL, YCSPRO, or YCS_ADMIN tag.
+      </div>
+    {% endif %}
+
+    {% if is_color_analysis_tools_page and is_admin %}
+      <div class="ycs-my-palettes__section ycs-my-palettes__section--admin">
+        <h2 class="ycs-my-palettes__section-title">Admin Views</h2>
+
+        <div class="ycs-my-palettes__grid ycs-my-palettes__grid--locked">
+          <div class="ycs-palette-card ycs-palette-card--admin">
+            <div class="ycs-palette-card__top">
+              <div
+                class="ycs-palette-card__gradient"
+                style="background: linear-gradient(to right, #111111, #8b7d6b, #d94c6a);">
+              </div>
+            </div>
+
+            <div class="ycs-palette-card__content">
+              <div class="ycs-palette-card__text">
+                <h2>Member Photos</h2>
+                <p class="ycs-palette-card__subtitle">
+                  View member photos, upload missing photos, and open saved photos in Draping Studio.
+                </p>
+                <p class="ycs-palette-card__admin-label">Admin only</p>
+              </div>
+
+              <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
+                <a href="/pages/member-photos" class="ycs-palette-card__button">
+                  Open Member Photos
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {% for block in section.blocks %}
+            {% assign visibility = block.settings.visibility | default: 'customer' %}
+
+            {% if visibility == 'admin' %}
+              {% assign palette_url = '/pages/palette?palette=' | append: block.settings.palette_code | append: '&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dcatools' %}
+
+              <div class="ycs-palette-card ycs-palette-card--admin" {{ block.shopify_attributes }}>
+                <div class="ycs-palette-card__top">
+                  {% if block.settings.palette_image != blank %}
+                    <div class="ycs-palette-card__image-wrap">
+                      {{
+                        block.settings.palette_image
+                        | image_url: width: 1200
+                        | image_tag:
+                          loading: 'lazy',
+                          class: 'ycs-palette-card__image',
+                          alt: block.settings.title
+                      }}
+                    </div>
+                  {% else %}
+                    <div
+                      class="ycs-palette-card__gradient"
+                      style="background: {{ block.settings.gradient }};">
+                    </div>
+                  {% endif %}
+                </div>
+
+                <div class="ycs-palette-card__content">
+                  <div class="ycs-palette-card__text">
+                    <h2>{{ block.settings.title }}</h2>
+
+                    {% if block.settings.subtitle != blank %}
+                      <p class="ycs-palette-card__subtitle">{{ block.settings.subtitle }}</p>
+                    {% endif %}
+
+                    <p class="ycs-palette-card__admin-label">Admin only</p>
+                  </div>
+
+                  <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
+                    <a href="{{ palette_url }}" class="ycs-palette-card__button">
+                      Open View
+                    </a>
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
       </div>
     {% endif %}
 
@@ -584,109 +644,6 @@
       </div>
     {% endif %}
 
-    {% if is_color_analysis_tools_page and is_admin %}
-      <div class="ycs-my-palettes__section ycs-my-palettes__section--admin">
-        <h2 class="ycs-my-palettes__section-title">Admin Views</h2>
-
-        <div class="ycs-my-palettes__grid ycs-my-palettes__grid--locked">
-          <div class="ycs-palette-card ycs-palette-card--admin">
-  <div class="ycs-palette-card__top">
-    <div
-      class="ycs-palette-card__gradient"
-      style="background: linear-gradient(to right, #111111, #8b7d6b, #d94c6a);">
-    </div>
-  </div>
-
-  <div class="ycs-palette-card__content">
-    <div class="ycs-palette-card__text">
-      <h2>Member Photos</h2>
-      <p class="ycs-palette-card__subtitle">
-        View member photos, upload missing photos, and open saved photos in Draping Studio.
-      </p>
-      <p class="ycs-palette-card__admin-label">Admin only</p>
-    </div>
-
-    <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
-      <a href="/pages/member-photos" class="ycs-palette-card__button">
-        Open Member Photos
-      </a>
-    </div>
-  </div>
-</div>
-          <div class="ycs-palette-card ycs-palette-card--admin">
-            <div class="ycs-palette-card__top">
-              <div
-                class="ycs-palette-card__gradient"
-                style="background: linear-gradient(to right, #7a5cff, #5fb6ff, #9be7c4);">
-              </div>
-            </div>
-
-            <div class="ycs-palette-card__content">
-              <div class="ycs-palette-card__text">
-                <h2>View Color Analysis Tool as YCS Professional</h2>
-                <p class="ycs-palette-card__subtitle">
-                  Preview the normal customer experience with YCS Professional access enabled for this session.
-                </p>
-                <p class="ycs-palette-card__admin-label">Admin preview</p>
-              </div>
-
-              <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
-                <a href="/pages/my-palettes?view=catools&viewAs=ycspro" class="ycs-palette-card__button">
-                  Open YCS Professional View
-                </a>
-              </div>
-            </div>
-          </div>
-          {% for block in section.blocks %}
-            {% assign visibility = block.settings.visibility | default: 'customer' %}
-
-            {% if visibility == 'admin' %}
-              {% assign palette_url = '/pages/palette?palette=' | append: block.settings.palette_code | append: '&returnUrl=%2Fpages%2Fmy-palettes%3Fview%3Dcatools' %}
-
-              <div class="ycs-palette-card ycs-palette-card--admin" {{ block.shopify_attributes }}>
-                <div class="ycs-palette-card__top">
-                  {% if block.settings.palette_image != blank %}
-                    <div class="ycs-palette-card__image-wrap">
-                      {{
-                        block.settings.palette_image
-                        | image_url: width: 1200
-                        | image_tag:
-                          loading: 'lazy',
-                          class: 'ycs-palette-card__image',
-                          alt: block.settings.title
-                      }}
-                    </div>
-                  {% else %}
-                    <div
-                      class="ycs-palette-card__gradient"
-                      style="background: {{ block.settings.gradient }};">
-                    </div>
-                  {% endif %}
-                </div>
-
-                <div class="ycs-palette-card__content">
-                  <div class="ycs-palette-card__text">
-                    <h2>{{ block.settings.title }}</h2>
-
-                    {% if block.settings.subtitle != blank %}
-                      <p class="ycs-palette-card__subtitle">{{ block.settings.subtitle }}</p>
-                    {% endif %}
-
-                    <p class="ycs-palette-card__admin-label">Admin only</p>
-                  </div>
-
-                  <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
-                    <a href="{{ palette_url }}" class="ycs-palette-card__button">
-                      Open View
-                    </a>
-                  </div>
-                </div>
-              </div>
-            {% endif %}
-          {% endfor %}
-        </div>
-      </div>
-    {% endif %}
 
     {% if owned_count > 0 %}
       <div class="ycs-my-palettes__section">
