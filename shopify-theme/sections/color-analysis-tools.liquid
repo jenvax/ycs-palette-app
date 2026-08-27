@@ -2295,6 +2295,27 @@
   }
 
   let pdfLogoPromise = null;
+  const pdfImageDataPromises = {};
+  const ycsPdfColorWheelUrls = {
+    CCL: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CCL.png',
+    CCM: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CCM.png',
+    CCD: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CCD.png',
+    CWL: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CWL.png',
+    CWM: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CWM.png',
+    CWD: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CWD.png',
+    SCL: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SCL.png',
+    SCM: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SCM.png',
+    SCD: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SCD.png',
+    SWL: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SWL.png',
+    SWM: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SWM.png',
+    SWD: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SWD.png',
+    CWLG: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CWLG.png?v=1785779014',
+    CWMG: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CWMG.png?v=1785779014',
+    CWDG: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CWDG.png?v=1785779014',
+    SWLG: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SWLG.png?v=1785779014',
+    SWMG: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SWMG.png?v=1785779014',
+    SWDG: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SWDG.png?v=1785779014'
+  };
 
   function loadPdfLogoData() {
     if (pdfLogoPromise) return pdfLogoPromise;
@@ -2339,6 +2360,55 @@
       });
 
     return pdfLogoPromise;
+  }
+
+  function loadPdfImageData(url, targetWidth) {
+    if (!url) return Promise.resolve(null);
+    const cacheKey = url + '|' + (targetWidth || '');
+    if (pdfImageDataPromises[cacheKey]) return pdfImageDataPromises[cacheKey];
+
+    pdfImageDataPromises[cacheKey] = fetch(url)
+      .then(function (response) {
+        if (!response.ok) throw new Error('Unable to load image.');
+        return response.blob();
+      })
+      .then(function (blob) {
+        return new Promise(function (resolve) {
+          const image = new Image();
+          image.onload = function () {
+            URL.revokeObjectURL(image.src);
+            const imageWidth = image.naturalWidth || 1;
+            const imageHeight = image.naturalHeight || 1;
+            const outputWidth = targetWidth ? Math.min(targetWidth, imageWidth) : imageWidth;
+            const outputHeight = Math.max(1, Math.round(outputWidth * (imageHeight / imageWidth)));
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+
+            canvas.width = outputWidth;
+            canvas.height = outputHeight;
+            context.fillStyle = '#FFFFFF';
+            context.fillRect(0, 0, outputWidth, outputHeight);
+            context.drawImage(image, 0, 0, outputWidth, outputHeight);
+
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+            resolve({
+              data: atob(dataUrl.split(',')[1] || ''),
+              width: outputWidth,
+              height: outputHeight
+            });
+          };
+          image.onerror = function () {
+            URL.revokeObjectURL(image.src);
+            resolve(null);
+          };
+          image.src = URL.createObjectURL(blob);
+        });
+      })
+      .catch(function () {
+        return null;
+      });
+
+    return pdfImageDataPromises[cacheKey];
   }
 
   function normalizePdfText(value) {
@@ -2415,11 +2485,13 @@
     return bytes;
   }
 
-  function createPdfBlob(pageStreams, logoData) {
+  function createPdfBlob(pageStreams, logoData, wheelData) {
     const encoder = new TextEncoder();
     const pageCount = pageStreams.length;
-    const logoObjectId = logoData ? 6 : null;
-    const firstPageObjectId = logoData ? 7 : 6;
+    let nextObjectId = 6;
+    const logoObjectId = logoData ? nextObjectId++ : null;
+    const wheelObjectId = wheelData ? nextObjectId++ : null;
+    const firstPageObjectId = nextObjectId;
     const objects = [];
 
     function addObject(id, content) {
@@ -2445,11 +2517,25 @@
       addObject(logoObjectId, imageObject);
     }
 
+    if (wheelData) {
+      const imageBytes = pdfBinaryBytes(wheelData.data);
+      const header = encoder.encode('<< /Type /XObject /Subtype /Image /Width ' + wheelData.width + ' /Height ' + wheelData.height + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + imageBytes.length + ' >>\nstream\n');
+      const footer = encoder.encode('\nendstream');
+      const imageObject = new Uint8Array(header.length + imageBytes.length + footer.length);
+      imageObject.set(header, 0);
+      imageObject.set(imageBytes, header.length);
+      imageObject.set(footer, header.length + imageBytes.length);
+      addObject(wheelObjectId, imageObject);
+    }
+
     pageStreams.forEach(function (stream, index) {
       const pageId = firstPageObjectId + (index * 2);
       const contentId = pageId + 1;
       const resourceParts = ['/Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >>'];
-      if (logoObjectId) resourceParts.push('/XObject << /Logo ' + logoObjectId + ' 0 R >>');
+      const xObjects = [];
+      if (logoObjectId) xObjects.push('/Logo ' + logoObjectId + ' 0 R');
+      if (wheelObjectId) xObjects.push('/Wheel ' + wheelObjectId + ' 0 R');
+      if (xObjects.length) resourceParts.push('/XObject << ' + xObjects.join(' ') + ' >>');
 
       addObject(pageId, '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << ' + resourceParts.join(' ') + ' >> /Contents ' + contentId + ' 0 R >>');
 
@@ -2490,6 +2576,15 @@
     return new Blob(parts, { type: 'application/pdf' });
   }
 
+  function getPdfPaletteCode(value) {
+    return String(value || '').trim().toUpperCase();
+  }
+
+  function getPaletteColorWheelUrl(palette) {
+    const code = getPdfPaletteCode(palette && (palette.code || palette.paletteCode));
+    return code ? ycsPdfColorWheelUrls[code] || '' : '';
+  }
+
   function downloadBlob(blob, fileName) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -2517,6 +2612,7 @@
       setStatus('Creating PDF...', false);
 
       const logoData = await loadPdfLogoData();
+      const wheelData = await loadPdfImageData(palette.colorWheelUrl || getPaletteColorWheelUrl(palette), 1200);
       const pageStreams = [];
       const pageWidth = 612;
       const pageHeight = 792;
@@ -2616,6 +2712,36 @@
         });
       }
 
+      function appendColorWheelPage() {
+        if (!wheelData) return;
+        if (pageStarted) pageStreams.push(commands);
+        commands = '';
+        pageStarted = true;
+        y = margin;
+
+        if (logoData) {
+          const logoX = (pageWidth - logoWidth) / 2;
+          append('q ' + logoWidth.toFixed(2) + ' 0 0 ' + logoHeight.toFixed(2) + ' ' + logoX.toFixed(2) + ' ' + (pageHeight - y - logoHeight).toFixed(2) + ' cm /Logo Do Q');
+          y += logoHeight + 48;
+        } else {
+          y += 48;
+        }
+
+        drawText('Your Color Wheel', pageWidth / 2, y + 24, 28, 'F2', 'center', [34, 43, 50]);
+        y += 72;
+
+        const maxWheelWidth = contentWidth - 28;
+        const maxWheelHeight = pageHeight - y - margin;
+        const wheelScale = Math.min(maxWheelWidth / wheelData.width, maxWheelHeight / wheelData.height);
+        const wheelWidth = wheelData.width * wheelScale;
+        const wheelHeight = wheelData.height * wheelScale;
+        const wheelX = (pageWidth - wheelWidth) / 2;
+        const wheelTop = y;
+
+        append('q ' + wheelWidth.toFixed(2) + ' 0 0 ' + wheelHeight.toFixed(2) + ' ' + wheelX.toFixed(2) + ' ' + (pageHeight - wheelTop - wheelHeight).toFixed(2) + ' cm /Wheel Do Q');
+        pageStreams.push(commands);
+      }
+
       startPage(true);
 
       groups.forEach(function (group) {
@@ -2643,8 +2769,12 @@
         }
       });
 
-      pageStreams.push(commands);
-      downloadBlob(createPdfBlob(pageStreams, logoData), pdfFileName(palette.name));
+      if (wheelData) {
+        appendColorWheelPage();
+      } else {
+        pageStreams.push(commands);
+      }
+      downloadBlob(createPdfBlob(pageStreams, logoData, wheelData), pdfFileName(palette.name));
       setStatus('', false);
     } catch (error) {
       setStatus(error.message || 'Unable to create PDF.', true);
@@ -2666,8 +2796,9 @@
         throw new Error(json.error || 'Unable to load palette colors.');
       }
 
-      createPalettePdf({
+      await createPalettePdf({
         name: paletteTitle || json.paletteName || paletteCode,
+        code: paletteCode,
         colors: json.colors.map(function (color) {
           return { color: normalizePdfColor(color) };
         })
@@ -2950,6 +3081,27 @@
 
 (function () {
   let pdfLogoPromise = null;
+  const pdfImageDataPromises = {};
+  const ycsPdfColorWheelUrls = {
+    CCL: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CCL.png',
+    CCM: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CCM.png',
+    CCD: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CCD.png',
+    CWL: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CWL.png',
+    CWM: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CWM.png',
+    CWD: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CWD.png',
+    SCL: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SCL.png',
+    SCM: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SCM.png',
+    SCD: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SCD.png',
+    SWL: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SWL.png',
+    SWM: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SWM.png',
+    SWD: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SWD.png',
+    CWLG: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CWLG.png?v=1785779014',
+    CWMG: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CWMG.png?v=1785779014',
+    CWDG: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CWDG.png?v=1785779014',
+    SWLG: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SWLG.png?v=1785779014',
+    SWMG: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SWMG.png?v=1785779014',
+    SWDG: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SWDG.png?v=1785779014'
+  };
 
   function normalizeHexInput(value) {
     const raw = String(value || '').trim().replace(/^#/, '');
@@ -3003,6 +3155,55 @@
       });
 
     return pdfLogoPromise;
+  }
+
+  function loadPdfImageData(url, targetWidth) {
+    if (!url) return Promise.resolve(null);
+    const cacheKey = url + '|' + (targetWidth || '');
+    if (pdfImageDataPromises[cacheKey]) return pdfImageDataPromises[cacheKey];
+
+    pdfImageDataPromises[cacheKey] = fetch(url)
+      .then(function (response) {
+        if (!response.ok) throw new Error('Unable to load image.');
+        return response.blob();
+      })
+      .then(function (blob) {
+        return new Promise(function (resolve) {
+          const image = new Image();
+          image.onload = function () {
+            URL.revokeObjectURL(image.src);
+            const imageWidth = image.naturalWidth || 1;
+            const imageHeight = image.naturalHeight || 1;
+            const outputWidth = targetWidth ? Math.min(targetWidth, imageWidth) : imageWidth;
+            const outputHeight = Math.max(1, Math.round(outputWidth * (imageHeight / imageWidth)));
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+
+            canvas.width = outputWidth;
+            canvas.height = outputHeight;
+            context.fillStyle = '#FFFFFF';
+            context.fillRect(0, 0, outputWidth, outputHeight);
+            context.drawImage(image, 0, 0, outputWidth, outputHeight);
+
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+            resolve({
+              data: atob(dataUrl.split(',')[1] || ''),
+              width: outputWidth,
+              height: outputHeight
+            });
+          };
+          image.onerror = function () {
+            URL.revokeObjectURL(image.src);
+            resolve(null);
+          };
+          image.src = URL.createObjectURL(blob);
+        });
+      })
+      .catch(function () {
+        return null;
+      });
+
+    return pdfImageDataPromises[cacheKey];
   }
 
   function normalizePdfText(value) {
@@ -3118,11 +3319,13 @@
     return bytes;
   }
 
-  function createPdfBlob(pageStreams, logoData) {
+  function createPdfBlob(pageStreams, logoData, wheelData) {
     const encoder = new TextEncoder();
     const pageCount = pageStreams.length;
-    const logoObjectId = logoData ? 6 : null;
-    const firstPageObjectId = logoData ? 7 : 6;
+    let nextObjectId = 6;
+    const logoObjectId = logoData ? nextObjectId++ : null;
+    const wheelObjectId = wheelData ? nextObjectId++ : null;
+    const firstPageObjectId = nextObjectId;
     const objects = [];
 
     function addObject(id, content) {
@@ -3148,11 +3351,25 @@
       addObject(logoObjectId, imageObject);
     }
 
+    if (wheelData) {
+      const imageBytes = pdfBinaryBytes(wheelData.data);
+      const header = encoder.encode('<< /Type /XObject /Subtype /Image /Width ' + wheelData.width + ' /Height ' + wheelData.height + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + imageBytes.length + ' >>\nstream\n');
+      const footer = encoder.encode('\nendstream');
+      const imageObject = new Uint8Array(header.length + imageBytes.length + footer.length);
+      imageObject.set(header, 0);
+      imageObject.set(imageBytes, header.length);
+      imageObject.set(footer, header.length + imageBytes.length);
+      addObject(wheelObjectId, imageObject);
+    }
+
     pageStreams.forEach(function (stream, index) {
       const pageId = firstPageObjectId + (index * 2);
       const contentId = pageId + 1;
       const resourceParts = ['/Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >>'];
-      if (logoObjectId) resourceParts.push('/XObject << /Logo ' + logoObjectId + ' 0 R >>');
+      const xObjects = [];
+      if (logoObjectId) xObjects.push('/Logo ' + logoObjectId + ' 0 R');
+      if (wheelObjectId) xObjects.push('/Wheel ' + wheelObjectId + ' 0 R');
+      if (xObjects.length) resourceParts.push('/XObject << ' + xObjects.join(' ') + ' >>');
 
       addObject(pageId, '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << ' + resourceParts.join(' ') + ' >> /Contents ' + contentId + ' 0 R >>');
 
@@ -3193,6 +3410,15 @@
     return new Blob(parts, { type: 'application/pdf' });
   }
 
+  function getPdfPaletteCode(value) {
+    return String(value || '').trim().toUpperCase();
+  }
+
+  function getPaletteColorWheelUrl(palette) {
+    const code = getPdfPaletteCode(palette && (palette.code || palette.paletteCode));
+    return code ? ycsPdfColorWheelUrls[code] || '' : '';
+  }
+
   function downloadBlob(blob, fileName) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -3215,6 +3441,7 @@
     }
 
     const logoData = await loadPdfLogoData();
+    const wheelData = await loadPdfImageData(palette.colorWheelUrl || getPaletteColorWheelUrl(palette), 1200);
     const pageStreams = [];
     const pageWidth = 612;
     const pageHeight = 792;
@@ -3314,6 +3541,36 @@
       });
     }
 
+    function appendColorWheelPage() {
+      if (!wheelData) return;
+      if (pageStarted) pageStreams.push(commands);
+      commands = '';
+      pageStarted = true;
+      y = margin;
+
+      if (logoData) {
+        const logoX = (pageWidth - logoWidth) / 2;
+        append('q ' + logoWidth.toFixed(2) + ' 0 0 ' + logoHeight.toFixed(2) + ' ' + logoX.toFixed(2) + ' ' + (pageHeight - y - logoHeight).toFixed(2) + ' cm /Logo Do Q');
+        y += logoHeight + 48;
+      } else {
+        y += 48;
+      }
+
+      drawText('Your Color Wheel', pageWidth / 2, y + 24, 28, 'F2', 'center', [34, 43, 50]);
+      y += 72;
+
+      const maxWheelWidth = contentWidth - 28;
+      const maxWheelHeight = pageHeight - y - margin;
+      const wheelScale = Math.min(maxWheelWidth / wheelData.width, maxWheelHeight / wheelData.height);
+      const wheelWidth = wheelData.width * wheelScale;
+      const wheelHeight = wheelData.height * wheelScale;
+      const wheelX = (pageWidth - wheelWidth) / 2;
+      const wheelTop = y;
+
+      append('q ' + wheelWidth.toFixed(2) + ' 0 0 ' + wheelHeight.toFixed(2) + ' ' + wheelX.toFixed(2) + ' ' + (pageHeight - wheelTop - wheelHeight).toFixed(2) + ' cm /Wheel Do Q');
+      pageStreams.push(commands);
+    }
+
     startPage(true);
 
     groups.forEach(function (group) {
@@ -3341,8 +3598,12 @@
       }
     });
 
-    pageStreams.push(commands);
-    downloadBlob(createPdfBlob(pageStreams, logoData), pdfFileName(palette.name));
+    if (wheelData) {
+      appendColorWheelPage();
+    } else {
+      pageStreams.push(commands);
+    }
+    downloadBlob(createPdfBlob(pageStreams, logoData, wheelData), pdfFileName(palette.name));
   }
 
   async function createYcsPalettePdf(paletteCode, paletteTitle) {
@@ -3357,6 +3618,7 @@
 
     await createPalettePdf({
       name: paletteTitle || json.paletteName || paletteCode,
+      code: paletteCode,
       colors: json.colors.map(function (color) {
         return { color: normalizePdfColor(color) };
       })
