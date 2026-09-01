@@ -47,44 +47,21 @@ export async function action({ request }) {
   }
 
   try {
-    const {
-  imageBase64,
-  customerId,
-  clientRecordId,
-  tool,
-  workflow,
-  skipUploadUsageTracking,
-  mode,
-  isAdmin,
-  isTrade,
-  isCatool,
-  isCatoolGrowth,
-  isCatoolFree,
-  isDiyCatool,
-  isVip,
-  hasDrapingStudio,
-  hasDrapingStudioStarter,
-  hasDrapingStudioFull,
-  isSampleUser
-} = await request.json();
+    const { imageBase64, customerId } = await request.json();
 
-const usageCustomerId = String(customerId || "").trim();
+    const normalizedCustomerId = String(customerId || "").trim();
 
-    if (!imageBase64 || !usageCustomerId) {
-  return Response.json(
-    { error: "Missing imageBase64 or customerId" },
-    {
-      status: 400,
-      headers: corsHeaders
+    if (!imageBase64 || !normalizedCustomerId) {
+      return Response.json(
+        { error: "Missing imageBase64 or customerId" },
+        {
+          status: 400,
+          headers: corsHeaders
+        }
+      );
     }
-  );
-}
 
-    const airtableBase = process.env.AIRTABLE_BASE_ID;
-    const airtableToken = process.env.AIRTABLE_TOKEN;
-    const usageTable = "UploadUsage";
-
-    if (!airtableBase || !airtableToken || !process.env.REMOVE_BG_API_KEY) {
+    if (!process.env.REMOVE_BG_API_KEY) {
       return Response.json(
         { error: "Missing server configuration" },
         {
@@ -93,194 +70,6 @@ const usageCustomerId = String(customerId || "").trim();
         }
       );
     }
-
-    // ===== HELPERS =====
-function getMonthKey() {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-}
-
-function buildUsageKey({ customerId, tool, scope, monthKey }) {
-  if (scope === "total") {
-    return `${customerId}__${tool}__TOTAL`;
-  }
-
-  return `${customerId}__${tool}__${monthKey}`;
-}
-
-function getUsageConfig(params) {
-  const {
-    tool,
-    isAdmin,
-    isTrade,
-    isCatool,
-    isCatoolGrowth,
-    isCatoolFree,
-    isDiyCatool,
-    isVip,
-    hasDrapingStudio,
-    hasDrapingStudioStarter,
-    hasDrapingStudioFull,
-    isSampleUser,
-    workflow,
-    skipUploadUsageTracking,
-    mode
-  } = params;
-
-  if (
-    tool === "photo-prep" &&
-    (
-      String(workflow || "").trim().toLowerCase() === "color-analysis" ||
-      skipUploadUsageTracking === true ||
-      String(skipUploadUsageTracking || "").trim().toLowerCase() === "true"
-    )
-  ) {
-    return { allowed: true, scope: "unlimited", limit: null };
-  }
-
-  if (isAdmin) {
-    return {
-      allowed: true,
-      scope: "unlimited",
-      limit: null
-    };
-  }
-
-  if (mode === "diy" && isDiyCatool) {
-    return { allowed: true, scope: "unlimited", limit: null };
-  }
-
-  if (mode === "trade") {
-    if (isTrade || isCatoolGrowth || isCatool) {
-      return { allowed: true, scope: "unlimited", limit: null };
-    }
-
-    return { allowed: false, scope: "monthly", limit: 0 };
-  }
-
-  if (mode === "personal") {
-    if (isVip) {
-      return { allowed: true, scope: "monthly", limit: 5 };
-    }
-
-    if (hasDrapingStudioFull) {
-      return { allowed: true, scope: "total", limit: 5 };
-    }
-
-    if (hasDrapingStudioStarter || hasDrapingStudio) {
-      return { allowed: true, scope: "total", limit: 2 };
-    }
-
-    if (isSampleUser) {
-      return { allowed: true, scope: "total", limit: 1 };
-    }
-
-    return { allowed: false, scope: "monthly", limit: 0 };
-  }
-
-  if (tool === "photo-prep") {
-    if (isTrade || isCatoolGrowth || isCatool) {
-      return { allowed: true, scope: "unlimited", limit: null };
-    }
-
-    return { allowed: false, scope: "monthly", limit: 0 };
-  }
-
-  if (tool === "photo-draping") {
-    if (isVip) {
-      return { allowed: true, scope: "monthly", limit: 5 };
-    }
-
-    if (hasDrapingStudioFull) {
-      return { allowed: true, scope: "total", limit: 5 };
-    }
-
-    if (hasDrapingStudioStarter || hasDrapingStudio) {
-      return { allowed: true, scope: "total", limit: 2 };
-    }
-
-    if (isSampleUser) {
-      return { allowed: true, scope: "total", limit: 1 };
-    }
-
-    return { allowed: false, scope: "monthly", limit: 0 };
-  }
-
-  return { allowed: false, scope: "monthly", limit: 0 };
-}
-
-const usageConfig = getUsageConfig({
-  tool,
-  mode,
-  isAdmin,
-  isTrade,
-  isCatool,
-  isCatoolGrowth,
-  isCatoolFree,
-  isDiyCatool,
-  isVip,
-  hasDrapingStudio,
-  hasDrapingStudioStarter,
-  hasDrapingStudioFull,
-  isSampleUser,
-  workflow,
-  skipUploadUsageTracking
-});
-
-let usageRecord = null;
-let currentCount = 0;
-
-if (usageConfig.scope !== "unlimited") {
-  if (!usageConfig.allowed) {
-    return Response.json(
-      { error: "This tool is not available for your account." },
-      {
-        status: 403,
-        headers: corsHeaders
-      }
-    );
-  }
-
-  const monthKey = usageConfig.scope === "monthly" ? getMonthKey() : "TOTAL";
-  const usageKey = buildUsageKey({
-  customerId: usageCustomerId,
-  tool: tool || "photo-draping",
-  scope: usageConfig.scope,
-  monthKey
-});
-
-  const usageFormula = `{Key}="${usageKey}"`;
-
-  const usageRes = await fetch(
-    `https://api.airtable.com/v0/${airtableBase}/${encodeURIComponent(usageTable)}?filterByFormula=${encodeURIComponent(usageFormula)}`,
-    {
-      headers: {
-        Authorization: `Bearer ${airtableToken}`
-      }
-    }
-  );
-
-  const usageData = await usageRes.json();
-  usageRecord = usageData.records?.[0] || null;
-  currentCount = Number(usageRecord?.fields?.UploadCount || 0);
-
-  if (currentCount >= usageConfig.limit) {
-    const message =
-      usageConfig.scope === "total"
-        ? `You’ve used all ${usageConfig.limit} available uploads.`
-        : `You’ve used all ${usageConfig.limit} uploads for this month.`;
-
-    return Response.json(
-      { error: message },
-      {
-        status: 403,
-        headers: corsHeaders
-      }
-    );
-  }
-}
-
-
 
     const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
     const imageBuffer = Buffer.from(base64Data, "base64");
@@ -317,58 +106,6 @@ if (usageConfig.scope !== "unlimited") {
     const arrayBuffer = await response.arrayBuffer();
     const resultBase64 = Buffer.from(arrayBuffer).toString("base64");
     const dataUrl = `data:image/png;base64,${resultBase64}`;
-
-    // Increment usage ONLY after success
-if (usageConfig.scope !== "unlimited") {
-  const monthKey = usageConfig.scope === "monthly" ? getMonthKey() : "TOTAL";
-  const usageKey = buildUsageKey({
-  customerId: usageCustomerId,
-  tool: tool || "photo-draping",
-  scope: usageConfig.scope,
-  monthKey
-});
-
-  if (usageRecord) {
-    await fetch(
-      `https://api.airtable.com/v0/${airtableBase}/${encodeURIComponent(usageTable)}/${usageRecord.id}`,
-      {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${airtableToken}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          fields: {
-            UploadCount: currentCount + 1
-          }
-        })
-      }
-    );
-  } else {
-    await fetch(
-      `https://api.airtable.com/v0/${airtableBase}/${encodeURIComponent(usageTable)}`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${airtableToken}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          records: [
-            {
-              fields: {
-  CustomerId: usageCustomerId,
-  MonthKey: monthKey,
-  UploadCount: 1,
-  Key: usageKey
-}
-            }
-          ]
-        })
-      }
-    );
-  }
-}
 
     return Response.json(
       { image: dataUrl },

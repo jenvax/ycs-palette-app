@@ -32,7 +32,6 @@
   const swatchLoadingEl = document.getElementById('ycs-swatch-loading');
   const backBtn = document.getElementById('ycs-drape-back');
   const favBtn = document.getElementById('ycs-drape-fav-btn');
-  const uploadUsageMessageEl = document.getElementById('ycs-upload-usage-message');
   const realisticDrapeToggle = document.getElementById('realisticDrapeToggle');
   const drapeTextureStyleEl = document.getElementById('drapeTextureStyle');
   const realisticDrapeToggleComparison = document.getElementById('realisticDrapeToggleComparison');
@@ -66,8 +65,6 @@
   const replaceCancelBtn = document.getElementById('ycs-replace-cancel');
   const replaceConfirmBtn = document.getElementById('ycs-replace-confirm-btn');
 
-  const usageModal = document.getElementById('ycs-usage-modal');
-  const usageModalCloseBtn = document.getElementById('ycs-usage-modal-close');
 
   const swapBtn = document.getElementById('ycs-analysis-swap');
 
@@ -237,7 +234,6 @@ const HAS_DRAPING_STUDIO_FULL = appEl
   let privateCustomPaletteOptions = [];
   let selectedHex = '';
   let cachedProcessedImage = null;
-  let uploadsRemaining = null;
   const comparisonState = {
     viewMode: 'single',
     leftPaletteCode: '',
@@ -521,103 +517,6 @@ const HAS_DRAPING_STUDIO_FULL = appEl
     replaceConfirmModal.hidden = true;
   }
 
-  function openUsageModal() {
-  if (!usageModal) return;
-
-  const titleEl = usageModal.querySelector('.ycs-usage-modal-title');
-  const bodyEl = usageModal.querySelector('.ycs-usage-modal-body');
-  const ctaEl = document.getElementById('ycs-usage-modal-cta');
-  const secondaryCtaEl = document.getElementById('ycs-usage-modal-secondary-cta');
-  const analysisLinkEl = document.getElementById('ycs-usage-modal-analysis-link');
-
-  if (!titleEl || !bodyEl || !ctaEl || !secondaryCtaEl || !analysisLinkEl) return;
-
-  if (IS_SAMPLE_USER) {
-    titleEl.textContent = 'Your Free Try Is Complete';
-
-    bodyEl.innerHTML = `
-      <p>You’ve used your free photo upload.</p>
-      <p><strong>Want to keep trying colors on your own photo?</strong></p>
-      <p>Get more uploads to keep exploring, or skip the guesswork and get your personalized colors.</p>
-    `;
-
-    ctaEl.href = '/products/photo-draping-studio#order';
-    ctaEl.textContent = 'Get More Uploads';
-    ctaEl.style.display = 'inline-flex';
-
-    secondaryCtaEl.href = '/products/digital-color-palettes';
-    secondaryCtaEl.textContent = 'Get My Digital Color Palette';
-    secondaryCtaEl.style.display = 'inline-block';
-
-    analysisLinkEl.href = '/products/online-color-analysis';
-    analysisLinkEl.textContent = 'Or get a personal color analysis';
-    analysisLinkEl.style.display = 'inline-block';
-  } else if (HAS_DRAPING_STUDIO_STARTER) {
-  titleEl.textContent = 'You’ve Used Your Starter Uploads';
-
-  bodyEl.innerHTML = `
-    <p>You’ve used the 2 uploads included with Starter.</p>
-    <p><strong>Want more time to explore?</strong></p>
-    <p>Upgrade for more uploads and keep testing colors on your photo.</p>
-  `;
-
-  ctaEl.href = '/products/photo-draping-studio#order';
-  ctaEl.textContent = 'Get More Uploads';
-  ctaEl.style.display = 'inline-flex';
-
-  secondaryCtaEl.style.display = 'none';
-  analysisLinkEl.style.display = 'none';
-} else if (HAS_DRAPING_STUDIO_FULL) {
-  titleEl.textContent = 'You’ve Used Your Studio Uploads';
-
-  bodyEl.innerHTML = `
-    <p>You’ve used the 5 uploads included with your Studio access.</p>
-    <p><strong>Keep going while it’s fresh.</strong></p>
-    <p>Get more uploads and keep testing colors on your photo.</p>
-  `;
-
-  ctaEl.href = '/products/photo-draping-studio#order';
-  ctaEl.textContent = 'Get More Uploads';
-  ctaEl.style.display = 'inline-flex';
-
-  secondaryCtaEl.style.display = 'none';
-  analysisLinkEl.style.display = 'none';
-
-    ctaEl.href = '/products/photo-draping-studio#order';
-    ctaEl.textContent = 'Buy 2 More Uploads';
-    ctaEl.style.display = 'inline-flex';
-
-    secondaryCtaEl.style.display = 'none';
-    analysisLinkEl.style.display = 'none';
-  } else {
-    titleEl.textContent = 'Keep Trying Colors on You';
-
-    bodyEl.innerHTML = `
-      <p>Unlock Photo Draping Studio and keep testing colors on your own photo.</p>
-      <p><strong>See what works before you buy it or wear it.</strong></p>
-    `;
-
-    ctaEl.href = '/products/photo-draping-studio#order';
-    ctaEl.textContent = 'Unlock Photo Draping Studio';
-    ctaEl.style.display = 'inline-flex';
-
-    secondaryCtaEl.href = '/products/digital-color-palettes';
-    secondaryCtaEl.textContent = 'Get My Digital Color Palette';
-    secondaryCtaEl.style.display = 'inline-block';
-
-    analysisLinkEl.href = '/products/online-color-analysis';
-    analysisLinkEl.textContent = 'Or get a personal color analysis';
-    analysisLinkEl.style.display = 'inline-block';
-  }
-
-  usageModal.hidden = false;
-}
-
-  function closeUsageModal() {
-    if (!usageModal) return;
-    usageModal.hidden = true;
-  }
-
   function triggerPhotoPickerForReplace() {
     closeReplaceConfirm();
     fileInput.value = '';
@@ -814,112 +713,13 @@ savePositionButtons.forEach(function (btn) {
 });
 
   async function loadUploadUsage() {
-  if (!uploadUsageMessageEl || !CUSTOMER_ID) return;
-
-  uploadUsageMessageEl.hidden = true;
-  uploadUsageMessageEl.textContent = '';
-
-  try {
-    const res = await fetch(
-  APP_BASE_URL +
-    '/api/get-upload-usage?' +
-    new URLSearchParams({
-      customerId: CUSTOMER_ID,
-      tool: 'photo-draping',
-      isAdmin: IS_ADMIN ? 'true' : 'false',
-      isVip: IS_STYLE_MASTERS ? 'true' : 'false',
-      hasDrapingStudio: HAS_DRAPING_STUDIO ? 'true' : 'false',
-      hasDrapingStudioStarter: HAS_DRAPING_STUDIO_STARTER ? 'true' : 'false',
-      hasDrapingStudioFull: HAS_DRAPING_STUDIO_FULL ? 'true' : 'false',
-      isSampleUser: IS_SAMPLE_USER ? 'true' : 'false'
-    }).toString()
-);
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data.error || 'Could not load upload usage');
-    }
-
-    if (data.isAdmin) {
-      uploadsRemaining = null;
-      uploadUsageMessageEl.textContent = 'Unlimited uploads';
-      uploadUsageMessageEl.hidden = false;
-
-      replaceButtons.forEach(function (btn) {
-        btn.textContent = 'Replace Photo';
-        btn.disabled = false;
-      });
-
-      return;
-    }
-
-    uploadsRemaining = Number(data.remaining);
-
-    if (IS_SAMPLE_USER) {
-  if (uploadsRemaining === 0) {
-    uploadUsageMessageEl.textContent = 'Free Trial used';
-  } else {
-    uploadUsageMessageEl.textContent = 'Free Trial: 1 photo upload';
+    replaceButtons.forEach(function (btn) {
+      btn.disabled = false;
+      btn.textContent = MODE === 'personal' && (IS_STYLE_MASTERS || HAS_DRAPING_STUDIO || IS_ADMIN)
+        ? 'Adjust Photo'
+        : (hasExistingPhoto() ? 'Replace Photo' : 'Upload Photo');
+    });
   }
-} else if (HAS_DRAPING_STUDIO_STARTER) {
-  uploadUsageMessageEl.textContent =
-    uploadsRemaining === 1
-      ? 'Starter • 1 upload remaining'
-      : `Starter • ${uploadsRemaining} uploads remaining`;
-} else if (HAS_DRAPING_STUDIO_FULL) {
-  uploadUsageMessageEl.textContent =
-    uploadsRemaining === 1
-      ? 'Studio • 1 upload remaining'
-      : `Studio • ${uploadsRemaining} uploads remaining`;
-} else {
-  uploadUsageMessageEl.textContent =
-    uploadsRemaining === 1
-      ? '1 upload remaining'
-      : `${uploadsRemaining} uploads remaining`;
-}
-
-    uploadUsageMessageEl.hidden = false;
-
-const hasPhoto = hasExistingPhoto();
-
-replaceButtons.forEach(function (btn) {
-  // SAMPLE USERS
-  if (IS_SAMPLE_USER) {
-    if (!hasPhoto) {
-      btn.textContent = 'Upload Photo';
-    } else if (uploadsRemaining === 0) {
-      btn.textContent = 'Unlock Your Colors';
-    } else {
-      btn.textContent = 'Replace Photo';
-    }
-
-  // PERSONAL MODE USERS WITH ACCESS
-  } else if (MODE === 'personal' && (IS_STYLE_MASTERS || HAS_DRAPING_STUDIO || IS_ADMIN)) {
-  btn.textContent = 'Adjust Photo';
-
-  // TRADE / OTHER PAID USERS
-  } else if (IS_STYLE_MASTERS || HAS_DRAPING_STUDIO || IS_ADMIN) {
-    if (!hasPhoto) {
-      btn.textContent = 'Upload Photo';
-    } else if (uploadsRemaining === 0) {
-      btn.textContent = 'Buy 2 More Uploads';
-    } else {
-      btn.textContent = 'Replace Photo';
-    }
-
-  // LOCKED USERS
-  } else {
-    btn.textContent = 'Unlock Studio';
-  }
-
-  btn.disabled = false;
-});
-  } catch (err) {
-    console.error('Failed to load upload usage', err);
-    uploadUsageMessageEl.hidden = true;
-  }
-}
 
   const ACCEPTED_UPLOAD_FORMATS_MESSAGE = 'HEIC/HEIF files are not accepted. Please upload a JPG, PNG, or WebP image.';
   const ACCEPTED_UPLOAD_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -2091,11 +1891,6 @@ function updateFilterArrows() {
       return;
     }
 
-    if (!IS_ADMIN && uploadsRemaining !== null && uploadsRemaining === 0) {
-      openUsageModal();
-      return;
-    }
-
     if (!hasExistingPhoto()) {
       fileInput.value = '';
       fileInput.click();
@@ -2114,22 +1909,10 @@ function updateFilterArrows() {
     replaceConfirmBtn.addEventListener('click', triggerPhotoPickerForReplace);
   }
 
-  if (usageModalCloseBtn) {
-    usageModalCloseBtn.addEventListener('click', closeUsageModal);
-  }
-
   if (replaceConfirmModal) {
     replaceConfirmModal.addEventListener('click', function (e) {
       if (e.target.classList.contains('ycs-confirm-modal__backdrop')) {
         closeReplaceConfirm();
-      }
-    });
-  }
-
-  if (usageModal) {
-    usageModal.addEventListener('click', function (e) {
-      if (e.target.classList.contains('ycs-confirm-modal__backdrop')) {
-        closeUsageModal();
       }
     });
   }
@@ -2139,18 +1922,10 @@ function updateFilterArrows() {
       if (replaceConfirmModal && !replaceConfirmModal.hidden) {
         closeReplaceConfirm();
       }
-      if (usageModal && !usageModal.hidden) {
-        closeUsageModal();
-      }
     }
   });
 
   uploadBtn.addEventListener('click', function () {
-    if (!IS_ADMIN && uploadsRemaining !== null && uploadsRemaining === 0) {
-      openUsageModal();
-      return;
-    }
-
     if (hasExistingPhoto()) {
       openReplaceConfirm();
       return;
@@ -2252,14 +2027,7 @@ function updateFilterArrows() {
 
       const message = error.message || 'We couldn’t process your photo. Try another image.';
 
-      if (
-        message.indexOf('used all 3 uploads') !== -1 ||
-        message.indexOf('used your free upload') !== -1
-      ) {
-        openUsageModal();
-      } else {
-        alert(message);
-      }
+      alert(message);
 
       fileInput.value = '';
     }

@@ -538,7 +538,7 @@
               </p>
               {% unless palette_access_string contains ',VIP,' or is_admin or has_draping_studio_access or is_sample_user %}
                 <p class="ycs-palette-card__studio-note">
-                  Free trial • 1 photo upload • Sample colors
+                  Free trial • Sample colors
                 </p>
               {% endunless %}
             </div>
@@ -573,19 +573,19 @@
                 </p>
               {% elsif has_draping_studio_starter %}
   <p class="ycs-palette-card__studio-note ycs-palette-card__studio-note--open">
-    Starter unlocked • 2 photo uploads
+    Starter unlocked
   </p>
 {% elsif has_draping_studio %}
   <p class="ycs-palette-card__studio-note ycs-palette-card__studio-note--open">
-    Studio unlocked • 5 photo uploads
+    Studio unlocked
   </p>
               {% elsif is_sample_user %}
                 <p class="ycs-palette-card__studio-note ycs-palette-card__studio-note--open">
-                  Your Free Trial • 1 photo upload • Sample colors
+                  Your Free Trial • Sample colors
                 </p>
               {% else %}
                 <p class="ycs-palette-card__studio-note">
-                  Try it free • 1 photo upload • Sample colors
+                  Try it free • Sample colors
                 </p>
               {% endif %}
             </div>

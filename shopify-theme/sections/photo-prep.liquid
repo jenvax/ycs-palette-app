@@ -190,7 +190,6 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
     Load or upload a customer photo, make color adjustments, then continue to the Color Analysis Tool.
   {% endif %}
 </p>
-  <p id="ycs-photo-prep-usage-message" class="ycs-photo-prep-usage-message" hidden></p>
 </div>
 
     <div id="ycs-prep-customer-meta" class="ycs-photo-prep-meta" hidden>
@@ -612,23 +611,6 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
   .ycs-photo-prep-workspace[hidden] {
     display: none !important;
   }
-.ycs-photo-prep-usage-message[hidden] {
-  display: none !important;
-}
-
-.ycs-photo-prep-usage-message {
-  display: inline-flex;
-  align-items: center;
-  margin: 10px 0 0;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: #fff4d6;
-  color: #8a5a00;
-  font-size: 12px;
-  line-height: 1;
-  font-weight: 700;
-  width: fit-content;
-}
   .ycs-photo-prep-meta-head {
     display: flex;
     justify-content: space-between;
@@ -1370,7 +1352,6 @@ const IS_CATOOL_FREE_TRIAL_FLOW =
   IS_CATOOL_FREE &&
   IS_TRADE_MODE &&
   WORKFLOW === 'color-analysis';
-const SHOULD_TRACK_UPLOAD_USAGE = !(WORKFLOW === 'color-analysis' && !IS_PERSONAL_MODE);
 const FREE_TRIAL_CLIENTS = [
   {
     id: 'bwd',
@@ -1444,8 +1425,6 @@ const photoPrepLoadingViewText = document.getElementById('ycs-photo-prep-loading
 
   const pageTitleEl = document.getElementById('ycs-photo-prep-title');
   const pageSubtitleEl = document.getElementById('ycs-photo-prep-subtitle');
-  const photoPrepUsageMessageEl = document.getElementById('ycs-photo-prep-usage-message');
-
   const editClientBtn = document.getElementById('ycs-prep-edit-client-btn');
   const editClientPanel = document.getElementById('ycs-prep-edit-client-panel');
   const editFirstNameInput = document.getElementById('ycs-prep-edit-first-name');
@@ -1531,9 +1510,6 @@ const state = {
   previewZoom: 100,
   previewOffsetX: 0,
   previewOffsetY: 0,
-
-  uploadsRemaining: null,
-  canUploadPhoto: true,
 
   controls: {
     brightness: 100,
@@ -1653,93 +1629,10 @@ function buildMyClientsUrl() {
     }
   }
 
-  async function loadPhotoPrepUsage() {
-  if (IS_CATOOL_FREE_TRIAL_FLOW) {
-    if (photoPrepUsageMessageEl) photoPrepUsageMessageEl.hidden = true;
-    state.canUploadPhoto = false;
-    if (uploadBtn) uploadBtn.hidden = true;
-    if (replaceBtn) replaceBtn.hidden = true;
-    if (personalUploadBtn) personalUploadBtn.hidden = true;
-    return;
-  }
-
-  if (!SHOULD_TRACK_UPLOAD_USAGE) {
-    if (photoPrepUsageMessageEl) {
-      photoPrepUsageMessageEl.hidden = true;
-      photoPrepUsageMessageEl.textContent = '';
-    }
-    state.uploadsRemaining = null;
-    state.canUploadPhoto = true;
-    if (uploadBtn) uploadBtn.disabled = false;
-    if (replaceBtn) replaceBtn.disabled = false;
-    if (personalUploadBtn) personalUploadBtn.disabled = false;
-    return;
-  }
-
-  if (!photoPrepUsageMessageEl || !VIEWER_CUSTOMER_ID || !APP_BASE_URL) return;
-
-  photoPrepUsageMessageEl.hidden = true;
-  photoPrepUsageMessageEl.textContent = '';
-
-  try {
-    const response = await fetch(
-  APP_BASE_URL +
-    '/api/get-upload-usage?' +
-    new URLSearchParams({
-      customerId: VIEWER_CUSTOMER_ID,
-      tool: IS_PERSONAL_MODE ? 'photo-draping' : 'photo-prep',
-      workflow: WORKFLOW,
-      skipUploadUsageTracking: SHOULD_TRACK_UPLOAD_USAGE ? 'false' : 'true',
-      mode: IS_PERSONAL_MODE ? 'personal' : (IS_DIY_MODE ? 'diy' : 'trade'),
-      isAdmin: IS_ADMIN ? 'true' : 'false',
-      isTrade: IS_TRADE ? 'true' : 'false',
-      isCatool: IS_CATOOL ? 'true' : 'false',
-      isCatoolGrowth: IS_CATOOL_GROWTH ? 'true' : 'false',
-      isCatoolFree: IS_CATOOL_FREE ? 'true' : 'false',
-      isDiyCatool: IS_DIY_CATOOL ? 'true' : 'false',
-      isVip: IS_VIP ? 'true' : 'false',
-      hasDrapingStudio: HAS_DRAPING_STUDIO_ACCESS ? 'true' : 'false',
-      hasDrapingStudioStarter: HAS_DRAPING_STUDIO_STARTER ? 'true' : 'false',
-      hasDrapingStudioFull: HAS_DRAPING_STUDIO_FULL ? 'true' : 'false',
-      isSampleUser: (IS_SAMPLE_USER || IS_SAMPLE_TRIAL_REQUEST) ? 'true' : 'false'
-    }).toString()
-);
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || 'Could not load upload usage');
-    }
-
-
-    const used = Number(data.used || 0);
-    const limit = Number(data.limit || 0);
-    const remaining = Number(data.remaining || 0);
-
-    state.uploadsRemaining = remaining;
-state.canUploadPhoto = data.isAdmin || data.scope === 'unlimited' || remaining > 0;
-
-if (uploadBtn) uploadBtn.disabled = !state.canUploadPhoto;
-if (replaceBtn && !IS_CATOOL_FREE && !IS_PERSONAL_MODE && !IS_MEMBER_PHOTO_MODE && !IS_DIY_MODE) {
-  replaceBtn.disabled = !state.canUploadPhoto;
-}
-
-    if (data.isAdmin || data.scope === 'unlimited' || data.limit === null) {
-  photoPrepUsageMessageEl.textContent = 'Unlimited uploads';
-} else if (data.scope === 'monthly') {
-  photoPrepUsageMessageEl.textContent =
-    `${used} of ${limit} uploads used this month • ${remaining} remaining this month`;
-} else {
-  photoPrepUsageMessageEl.textContent =
-    `${used} of ${limit} uploads used • ${remaining} remaining`;
-}
-
-
-    photoPrepUsageMessageEl.hidden = false;
-  } catch (error) {
-    console.error('Failed to load Photo Prep usage', error);
-    photoPrepUsageMessageEl.hidden = true;
-  }
+async function loadPhotoPrepUsage() {
+  if (uploadBtn) uploadBtn.disabled = false;
+  if (replaceBtn) replaceBtn.disabled = false;
+  if (personalUploadBtn) personalUploadBtn.disabled = false;
 }
 
   function updateBackLink() {
@@ -3631,22 +3524,7 @@ hideLoadingView();
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       imageBase64,
-      customerId: VIEWER_CUSTOMER_ID,
-      tool: IS_PERSONAL_MODE ? 'photo-draping' : 'photo-prep',
-      workflow: WORKFLOW,
-      skipUploadUsageTracking: !SHOULD_TRACK_UPLOAD_USAGE,
-      mode: IS_PERSONAL_MODE ? 'personal' : (IS_DIY_MODE ? 'diy' : 'trade'),
-      isAdmin: IS_ADMIN,
-      isTrade: IS_TRADE,
-      isCatool: IS_CATOOL,
-      isCatoolGrowth: IS_CATOOL_GROWTH,
-      isCatoolFree: IS_CATOOL_FREE,
-      isDiyCatool: IS_DIY_CATOOL,
-      isVip: IS_VIP,
-      hasDrapingStudio: HAS_DRAPING_STUDIO_ACCESS,
-      hasDrapingStudioStarter: HAS_DRAPING_STUDIO_STARTER,
-      hasDrapingStudioFull: HAS_DRAPING_STUDIO_FULL,
-      isSampleUser: (IS_SAMPLE_USER || IS_SAMPLE_TRIAL_REQUEST)
+      customerId: VIEWER_CUSTOMER_ID
     })
   });
 
@@ -4289,13 +4167,6 @@ async function useOriginalPhoto() {
 // upload handler
 if (uploadBtn) {
   uploadBtn.addEventListener('click', function () {
-    if (state.canUploadPhoto === false) {
-      alert('You have used all uploads for this month.');
-      return;
-    }
-
-
-
     if (IS_ADMIN && IS_MEMBER_PHOTO_MODE) {
   state.customerId = initialCustomerId;
   state.clientRecordId = null;
@@ -4327,11 +4198,6 @@ if (uploadBtn) {
 
 if (personalUploadBtn) {
   personalUploadBtn.addEventListener('click', function () {
-    if (state.canUploadPhoto === false) {
-      alert('You have used all uploads for this month.');
-      return;
-    }
-
     state.customerId = VIEWER_CUSTOMER_ID;
     state.clientRecordId = null;
     state.selectedPersonalPhotoId = null;
@@ -4379,11 +4245,6 @@ if (addMemberPhotoBtn) {
     }
 
     if (IS_DIY_MODE) {
-      if (state.canUploadPhoto === false) {
-        alert('You have used all uploads for this month.');
-        return;
-      }
-
       resetPreviewOnly();
       resetControls();
       state.customerId = VIEWER_CUSTOMER_ID;
