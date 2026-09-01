@@ -305,86 +305,6 @@
       {% endif %}
     {% endfor %}
 
-    {% if is_color_analysis_tools_page == false and owned_count > 0 %}
-      <div class="ycs-my-palettes__section">
-        <h2 class="ycs-my-palettes__section-title">My Color Palettes</h2>
-        <div class="ycs-my-palettes__grid ycs-my-palettes__grid--{{ owned_count }}">
-          {% for block in section.blocks %}
-            {% assign palette_code = block.settings.palette_code | upcase | strip %}
-            {% assign palette_token = ',' | append: palette_code | append: ',' %}
-            {% assign visibility = block.settings.visibility | default: 'customer' %}
-
-            {% if visibility == 'admin' or palette_code == 'SAMPLE' %}
-              {% continue %}
-            {% endif %}
-
-            {% assign user_owns_palette = false %}
-            {% if page_has_all_palette_access or palette_access_string contains palette_token %}
-              {% assign user_owns_palette = true %}
-            {% endif %}
-
-            {% if user_owns_palette %}
-              {% assign palette_url = '/pages/palette?palette=' | append: block.settings.palette_code %}
-
-              <div class="ycs-palette-card" {{ block.shopify_attributes }}>
-                <div class="ycs-palette-card__top">
-                  {% if block.settings.palette_image != blank %}
-                    <div class="ycs-palette-card__image-wrap">
-                      {{
-                        block.settings.palette_image
-                        | image_url: width: 1200
-                        | image_tag:
-                          loading: 'lazy',
-                          class: 'ycs-palette-card__image',
-                          alt: block.settings.title
-                      }}
-                    </div>
-                  {% else %}
-                    <div
-                      class="ycs-palette-card__gradient"
-                      style="background: {{ block.settings.gradient }};">
-                    </div>
-                  {% endif %}
-                </div>
-
-                <div class="ycs-palette-card__content">
-                  <div class="ycs-palette-card__text">
-                    <h2>{{ block.settings.title }}</h2>
-
-                    {% if block.settings.subtitle != blank %}
-                      <p class="ycs-palette-card__subtitle">{{ block.settings.subtitle }}</p>
-                    {% endif %}
-                  </div>
-
-                  <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
-                    <a href="{{ palette_url }}" class="ycs-palette-card__button">
-                      Open Palette
-                    </a>
-
-                    {% if can_use_analysis_tool %}
-                      <a href="/pages/color-palette-prints" class="ycs-palette-card__button ycs-palette-card__button--secondary">
-                        Order Postcards
-                      </a>
-                    {% endif %}
-
-                    {% if can_access_all_printable_pdfs or palette_access_string contains palette_token %}
-                      <button
-                        type="button"
-                        class="ycs-palette-card__button ycs-palette-card__button--secondary"
-                        data-ycs-pdf-palette-code="{{ palette_code | escape }}"
-                        data-ycs-pdf-palette-title="{{ block.settings.title | escape }}">
-                        PDF
-                      </button>
-                    {% endif %}
-                  </div>
-                </div>
-              </div>
-            {% endif %}
-          {% endfor %}
-        </div>
-      </div>
-    {% endif %}
-
     <div class="ycs-my-palettes__section ycs-my-palettes__section--studio">
       <h2 class="ycs-my-palettes__section-title">{% if is_color_analysis_tools_page %}Tools{% else %}Draping Studio{% endif %}</h2>
       <div class="ycs-my-palettes__grid ycs-my-palettes__grid--2">
@@ -686,6 +606,86 @@
 
       </div>
     </div>
+
+    {% if is_color_analysis_tools_page == false and owned_count > 0 %}
+      <div class="ycs-my-palettes__section">
+        <h2 class="ycs-my-palettes__section-title">My Color Palettes</h2>
+        <div class="ycs-my-palettes__grid ycs-my-palettes__grid--{{ owned_count }}">
+          {% for block in section.blocks %}
+            {% assign palette_code = block.settings.palette_code | upcase | strip %}
+            {% assign palette_token = ',' | append: palette_code | append: ',' %}
+            {% assign visibility = block.settings.visibility | default: 'customer' %}
+
+            {% if visibility == 'admin' or palette_code == 'SAMPLE' %}
+              {% continue %}
+            {% endif %}
+
+            {% assign user_owns_palette = false %}
+            {% if page_has_all_palette_access or palette_access_string contains palette_token %}
+              {% assign user_owns_palette = true %}
+            {% endif %}
+
+            {% if user_owns_palette %}
+              {% assign palette_url = '/pages/palette?palette=' | append: block.settings.palette_code %}
+
+              <div class="ycs-palette-card" {{ block.shopify_attributes }}>
+                <div class="ycs-palette-card__top">
+                  {% if block.settings.palette_image != blank %}
+                    <div class="ycs-palette-card__image-wrap">
+                      {{
+                        block.settings.palette_image
+                        | image_url: width: 1200
+                        | image_tag:
+                          loading: 'lazy',
+                          class: 'ycs-palette-card__image',
+                          alt: block.settings.title
+                      }}
+                    </div>
+                  {% else %}
+                    <div
+                      class="ycs-palette-card__gradient"
+                      style="background: {{ block.settings.gradient }};">
+                    </div>
+                  {% endif %}
+                </div>
+
+                <div class="ycs-palette-card__content">
+                  <div class="ycs-palette-card__text">
+                    <h2>{{ block.settings.title }}</h2>
+
+                    {% if block.settings.subtitle != blank %}
+                      <p class="ycs-palette-card__subtitle">{{ block.settings.subtitle }}</p>
+                    {% endif %}
+                  </div>
+
+                  <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
+                    <a href="{{ palette_url }}" class="ycs-palette-card__button">
+                      Open Palette
+                    </a>
+
+                    {% if can_use_analysis_tool %}
+                      <a href="/pages/color-palette-prints" class="ycs-palette-card__button ycs-palette-card__button--secondary">
+                        Order Postcards
+                      </a>
+                    {% endif %}
+
+                    {% if can_access_all_printable_pdfs or palette_access_string contains palette_token %}
+                      <button
+                        type="button"
+                        class="ycs-palette-card__button ycs-palette-card__button--secondary"
+                        data-ycs-pdf-palette-code="{{ palette_code | escape }}"
+                        data-ycs-pdf-palette-title="{{ block.settings.title | escape }}">
+                        PDF
+                      </button>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
 
     {% if is_color_analysis_tools_page and can_use_analysis_tool == false %}
       <div class="ycs-my-palettes__empty">
