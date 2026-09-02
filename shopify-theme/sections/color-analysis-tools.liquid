@@ -179,8 +179,8 @@
   {% endif %}
 
   {% assign show_professional_training_card = false %}
-  {% if is_color_analysis_tools_page and is_trade_sept_cohort == false and is_guided_training == false %}
-    {% if is_trade or is_ycspro %}
+  {% if is_color_analysis_tools_page and is_trade_sept_cohort == false %}
+    {% if is_trade or is_ycspro or is_guided_training %}
       {% assign show_professional_training_card = true %}
     {% endif %}
   {% endif %}
