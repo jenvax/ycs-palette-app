@@ -78,6 +78,27 @@
     {% assign is_trade_sept_cohort = true %}
   {% endif %}
 
+  {% assign current_ymd = 'now' | date: '%Y%m%d' | plus: 0 %}
+  {% assign is_guided_tool = false %}
+  {% assign is_guided_training = false %}
+  {% if customer and palette_access_string contains ',GUIDED,' %}
+    {% for ycs_customer_tag in customer.tags %}
+      {% assign ycs_guided_tag = ycs_customer_tag | upcase | strip %}
+      {% if ycs_guided_tag contains 'GUIDED_TOOL_EXPIRES_' %}
+        {% assign ycs_guided_tool_expires = ycs_guided_tag | remove: 'GUIDED_TOOL_EXPIRES_' | plus: 0 %}
+        {% if ycs_guided_tool_expires >= current_ymd %}
+          {% assign is_guided_tool = true %}
+        {% endif %}
+      {% endif %}
+      {% if ycs_guided_tag contains 'GUIDED_TRAINING_EXPIRES_' %}
+        {% assign ycs_guided_training_expires = ycs_guided_tag | remove: 'GUIDED_TRAINING_EXPIRES_' | plus: 0 %}
+        {% if ycs_guided_training_expires >= current_ymd %}
+          {% assign is_guided_training = true %}
+        {% endif %}
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+
   {% assign is_trade = false %}
   {% if customer and palette_access_string contains ',TRADE,' %}
     {% assign is_trade = true %}
@@ -148,12 +169,12 @@
   {% endif %}
 
   {% assign can_use_analysis_tool = false %}
-  {% if is_admin or is_trade or is_catool or is_ycspro or is_trade_sept_cohort or is_diy_catool or is_free_diy_catool %}
+  {% if is_admin or is_trade or is_catool or is_ycspro or is_trade_sept_cohort or is_guided_tool or is_diy_catool or is_free_diy_catool %}
     {% assign can_use_analysis_tool = true %}
   {% endif %}
 
   {% assign has_all_palette_access = false %}
-  {% if is_admin or is_trade or is_catool or is_ycspro or is_trade_sept_cohort %}
+  {% if is_admin or is_trade or is_catool or is_ycspro or is_trade_sept_cohort or is_guided_tool %}
     {% assign has_all_palette_access = true %}
   {% endif %}
 
@@ -176,7 +197,7 @@
   {% endif %}
 
   {% assign show_professional_training_card = false %}
-  {% if is_color_analysis_tools_page and is_trade_sept_cohort == false %}
+  {% if is_color_analysis_tools_page and is_trade_sept_cohort == false and is_guided_training == false %}
     {% if is_trade or is_ycspro %}
       {% assign show_professional_training_card = true %}
     {% endif %}
@@ -362,6 +383,34 @@
           </div>
         {% endif %}
 
+
+
+        {% if is_color_analysis_tools_page and is_guided_training %}
+          <div class="ycs-palette-card ycs-palette-card--admin">
+            <div class="ycs-palette-card__top">
+              <div
+                class="ycs-palette-card__gradient"
+                style="background: linear-gradient(to right, #2f2a25, #4f7f78, #d7c3a3);">
+              </div>
+            </div>
+
+            <div class="ycs-palette-card__content">
+              <div class="ycs-palette-card__text">
+                <h2>Guided Assignments</h2>
+                <p class="ycs-palette-card__subtitle">
+                  Find your guided assignments, training details, and course resources.
+                </p>
+              </div>
+
+              <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
+                <a href="https://guided-color-analysis-training.teachery.co/login" class="ycs-palette-card__button" target="_blank" rel="noopener">
+                  GO TO ASSIGNMENTS
+                </a>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
         {% if show_professional_training_card %}
           <div class="ycs-palette-card ycs-palette-card--admin">
             <div class="ycs-palette-card__top">
@@ -388,7 +437,7 @@
           </div>
         {% endif %}
 
-        {% if is_color_analysis_tools_page and is_trade and is_trade_sept_cohort == false %}
+        {% if is_color_analysis_tools_page and is_trade and is_trade_sept_cohort == false and is_guided_training == false %}
           <div class="ycs-palette-card ycs-palette-card--admin">
             <div class="ycs-palette-card__top">
               <div
@@ -687,9 +736,9 @@
       </div>
     {% endif %}
 
-    {% if is_color_analysis_tools_page and can_use_analysis_tool == false %}
+    {% if is_color_analysis_tools_page and can_use_analysis_tool == false and is_guided_training == false %}
       <div class="ycs-my-palettes__empty">
-        Color Analysis Tools are not available on this account. Please confirm this customer has a TRADE, TRADESEPTCOHORT, CATOOL, DIYCATOOL, FREEDIYCATOOL, YCSPRO, or YCS_ADMIN tag.
+        Color Analysis Tools are not available on this account. Please confirm this customer has a TRADE, TRADESEPTCOHORT, GUIDED, CATOOL, DIYCATOOL, FREEDIYCATOOL, YCSPRO, or YCS_ADMIN tag.
       </div>
     {% endif %}
 

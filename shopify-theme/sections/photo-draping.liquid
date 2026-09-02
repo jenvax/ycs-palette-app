@@ -22,8 +22,29 @@
 {% assign is_trade_sept_cohort = false %}
 {% assign trade_sept_cohort_expires_at = '2026-10-20 00:00:00 -0400' | date: '%s' %}
 {% assign current_timestamp = 'now' | date: '%s' %}
+{% assign current_ymd = 'now' | date: '%Y%m%d' | plus: 0 %}
 {% if palette_access_string contains ',TRADESEPTCOHORT,' and current_timestamp < trade_sept_cohort_expires_at %}
   {% assign is_trade_sept_cohort = true %}
+{% endif %}
+
+{% assign is_guided_tool = false %}
+{% assign is_guided_training = false %}
+{% if customer and palette_access_string contains ',GUIDED,' %}
+  {% for ycs_customer_tag in customer.tags %}
+    {% assign ycs_guided_tag = ycs_customer_tag | upcase | strip %}
+    {% if ycs_guided_tag contains 'GUIDED_TOOL_EXPIRES_' %}
+      {% assign ycs_guided_tool_expires = ycs_guided_tag | remove: 'GUIDED_TOOL_EXPIRES_' | plus: 0 %}
+      {% if ycs_guided_tool_expires >= current_ymd %}
+        {% assign is_guided_tool = true %}
+      {% endif %}
+    {% endif %}
+    {% if ycs_guided_tag contains 'GUIDED_TRAINING_EXPIRES_' %}
+      {% assign ycs_guided_training_expires = ycs_guided_tag | remove: 'GUIDED_TRAINING_EXPIRES_' | plus: 0 %}
+      {% if ycs_guided_training_expires >= current_ymd %}
+        {% assign is_guided_training = true %}
+      {% endif %}
+    {% endif %}
+  {% endfor %}
 {% endif %}
 
 {% assign has_draping_studio_starter = false %}
@@ -86,7 +107,7 @@ data-has-draping-studio-full="{% if has_draping_studio %}true{% else %}false{% e
   data-customer-first-name="{{ customer.first_name | escape }}"
   data-palette-access="{{ palette_access_string }}"
   data-is-admin="{{ is_admin }}"
-  data-is-catool-growth="{% if is_ycspro or is_trade_sept_cohort %}true{% else %}false{% endif %}"
+  data-is-catool-growth="{% if is_ycspro or is_trade_sept_cohort or is_guided_tool %}true{% else %}false{% endif %}"
   data-app-base-url="https://ycs-palette-app.vercel.app"
 >
   {% if customer == nil %}
@@ -95,7 +116,7 @@ data-has-draping-studio-full="{% if has_draping_studio %}true{% else %}false{% e
       <a href="{{ routes.account_login_url }}">Sign In</a>
     </div>
 
-  {% elsif is_style_masters == false and has_draping_studio_access == false and is_sample_user == false and is_admin != true and is_ycspro != true and is_trade_sept_cohort != true %}
+  {% elsif is_style_masters == false and has_draping_studio_access == false and is_sample_user == false and is_admin != true and is_ycspro != true and is_trade_sept_cohort != true and is_guided_tool != true %}
     <div class="ycs-drape-upsell ycs-drape-upsell--hero">
       <div class="ycs-drape-upsell-grid">
         <div class="ycs-drape-upsell-media">

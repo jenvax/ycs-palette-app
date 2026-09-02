@@ -1,9 +1,8 @@
-import { recordCreditsForPaidOrder } from "../services/palette-credit-orders.server.js";
-import { applyGuidedAccessForPaidOrder } from "../services/guided-training-access.server.js";
+import { removeGuidedAccessForOrder } from "../services/guided-training-access.server.js";
 import { verifyShopifyWebhookHmac } from "../services/shopify-webhook-auth.server.js";
 import { recordPaletteCreditWebhookAudit } from "../services/trade-palette-credit-webhook-audit.server.js";
 
-async function authenticatePaidOrderWebhook(request) {
+async function authenticateWebhook(request) {
   const rawBody = await request.text();
   const topic = request.headers.get("X-Shopify-Topic") || "";
   const shop = request.headers.get("X-Shopify-Shop-Domain") || "";
@@ -42,7 +41,7 @@ export const action = async ({ request }) => {
   const webhookId = request.headers.get("X-Shopify-Webhook-Id") || "";
 
   try {
-    const authenticated = await authenticatePaidOrderWebhook(request);
+    const authenticated = await authenticateWebhook(request);
     payload = authenticated.payload;
     topic = authenticated.topic || topic;
     shop = authenticated.shop || shop;
@@ -60,30 +59,26 @@ export const action = async ({ request }) => {
   }
 
   try {
-    const creditResult = await recordCreditsForPaidOrder(payload);
-    const guidedResult = await applyGuidedAccessForPaidOrder(payload);
-    const result = { creditResult, guidedResult };
-    const processed = !creditResult?.skipped || !guidedResult?.skipped;
-    console.log(`Received ${topic} webhook for ${shop}`, result);
+    const result = await removeGuidedAccessForOrder(payload, "refund_created");
     await recordWebhookAuditSafely({
       topic,
       shop,
       webhookId,
       payload,
-      status: processed ? "processed" : "skipped",
+      status: result?.skipped ? "skipped" : "processed",
       result
     });
   } catch (error) {
-    console.error(`Failed to record palette credits from ${topic} webhook for ${shop}:`, error);
+    console.error(`Failed to remove GUIDED access from ${topic} webhook for ${shop}:`, error);
     await recordWebhookAuditSafely({
       topic,
       shop,
       webhookId,
       payload,
       status: "failed",
-      error: error.message || "Palette credit webhook failed"
+      error: error.message || "GUIDED access removal webhook failed"
     });
-    return new Response("Palette credit webhook failed", { status: 500 });
+    return new Response("GUIDED access removal webhook failed", { status: 500 });
   }
 
   return new Response();

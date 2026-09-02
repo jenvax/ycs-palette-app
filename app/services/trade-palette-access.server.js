@@ -9,6 +9,7 @@ import {
   findActiveClientPaletteAccessForClient,
   replaceClientPaletteAccess
 } from "./trade-client-palette-links.server.js";
+import { hasActiveGuidedAccess } from "./guided-training-access.server.js";
 
 function cleanString(value) {
   return String(value || "").trim();
@@ -148,6 +149,7 @@ async function requireTradePaletteAccess(consultantId) {
     tags.includes("TRADE") ||
     tags.includes("CATOOL") ||
     tags.includes("YCSPRO") ||
+    hasActiveGuidedAccess(tags, "tool") ||
     (tags.includes("TRADEJULYCOHORT") && Date.now() < julyCohortExpiresAt.getTime()) ||
     (tags.includes("TRADESEPTCOHORT") && Date.now() < septCohortExpiresAt.getTime());
 

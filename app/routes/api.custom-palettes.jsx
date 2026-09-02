@@ -361,7 +361,7 @@ async function authorizeAccess({ customerId, hasGrowthAccess, scope }) {
     };
   }
 
-  return { ok: false, status: 403, error: "TRADE, CATOOL, or YCSPRO access required" };
+  return { ok: false, status: 403, error: "TRADE, GUIDED, CATOOL, or YCSPRO access required" };
 }
 
 function requireEditAccess(auth) {
