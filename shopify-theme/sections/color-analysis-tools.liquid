@@ -63,19 +63,33 @@
   {% assign current_ymd = 'now' | date: '%Y%m%d' | plus: 0 %}
   {% assign is_guided_tool = false %}
   {% assign is_guided_training = false %}
+  {% assign ycs_guided_tool_expires_display = '' %}
+  {% assign ycs_guided_training_expires_display = '' %}
   {% if customer and palette_access_string contains ',GUIDED,' %}
     {% for ycs_customer_tag in customer.tags %}
       {% assign ycs_guided_tag = ycs_customer_tag | upcase | strip %}
       {% if ycs_guided_tag contains 'GUIDED_TOOL_EXPIRES_' %}
-        {% assign ycs_guided_tool_expires = ycs_guided_tag | remove: 'GUIDED_TOOL_EXPIRES_' | plus: 0 %}
+        {% assign ycs_guided_tool_raw = ycs_guided_tag | remove: 'GUIDED_TOOL_EXPIRES_' %}
+        {% assign ycs_guided_tool_expires = ycs_guided_tool_raw | plus: 0 %}
         {% if ycs_guided_tool_expires >= current_ymd %}
           {% assign is_guided_tool = true %}
+          {% assign ycs_guided_tool_year = ycs_guided_tool_raw | slice: 0, 4 %}
+          {% assign ycs_guided_tool_month = ycs_guided_tool_raw | slice: 4, 2 %}
+          {% assign ycs_guided_tool_day = ycs_guided_tool_raw | slice: 6, 2 %}
+          {% assign ycs_guided_tool_expires_date = ycs_guided_tool_year | append: '-' | append: ycs_guided_tool_month | append: '-' | append: ycs_guided_tool_day | append: ' 12:00:00 -0400' %}
+          {% assign ycs_guided_tool_expires_display = ycs_guided_tool_expires_date | date: '%B %-d, %Y' %}
         {% endif %}
       {% endif %}
       {% if ycs_guided_tag contains 'GUIDED_TRAINING_EXPIRES_' %}
-        {% assign ycs_guided_training_expires = ycs_guided_tag | remove: 'GUIDED_TRAINING_EXPIRES_' | plus: 0 %}
+        {% assign ycs_guided_training_raw = ycs_guided_tag | remove: 'GUIDED_TRAINING_EXPIRES_' %}
+        {% assign ycs_guided_training_expires = ycs_guided_training_raw | plus: 0 %}
         {% if ycs_guided_training_expires >= current_ymd %}
           {% assign is_guided_training = true %}
+          {% assign ycs_guided_training_year = ycs_guided_training_raw | slice: 0, 4 %}
+          {% assign ycs_guided_training_month = ycs_guided_training_raw | slice: 4, 2 %}
+          {% assign ycs_guided_training_day = ycs_guided_training_raw | slice: 6, 2 %}
+          {% assign ycs_guided_training_expires_date = ycs_guided_training_year | append: '-' | append: ycs_guided_training_month | append: '-' | append: ycs_guided_training_day | append: ' 12:00:00 -0400' %}
+          {% assign ycs_guided_training_expires_display = ycs_guided_training_expires_date | date: '%B %-d, %Y' %}
         {% endif %}
       {% endif %}
     {% endfor %}
@@ -279,6 +293,9 @@
                   Create client records, prep photos, save analyses, and return to client work anytime.
                 </p>
                 <p class="ycs-palette-card__admin-label">Structured Analysis</p>
+                {% if is_guided_tool and ycs_guided_tool_expires_display != '' %}
+                  <p class="ycs-palette-card__admin-label">Access expires {{ ycs_guided_tool_expires_display }}</p>
+                {% endif %}
               </div>
 
               <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
@@ -306,6 +323,9 @@
                   View, add, and manage your color analysis clients.
                 </p>
                 <p class="ycs-palette-card__admin-label">Client Management</p>
+                {% if is_guided_tool and ycs_guided_tool_expires_display != '' %}
+                  <p class="ycs-palette-card__admin-label">Access expires {{ ycs_guided_tool_expires_display }}</p>
+                {% endif %}
               </div>
 
               <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
@@ -360,6 +380,9 @@
                 <p class="ycs-palette-card__subtitle">
                   Find your guided assignments, training details, and course resources.
                 </p>
+                {% if ycs_guided_training_expires_display != '' %}
+                  <p class="ycs-palette-card__admin-label">Access expires {{ ycs_guided_training_expires_display }}</p>
+                {% endif %}
               </div>
 
               <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
@@ -386,6 +409,9 @@
                 <p class="ycs-palette-card__subtitle">
                   Learn the Your Color Style method and how to use your professional color analysis tools.
                 </p>
+                {% if is_guided_training and ycs_guided_training_expires_display != '' %}
+                  <p class="ycs-palette-card__admin-label">Access expires {{ ycs_guided_training_expires_display }}</p>
+                {% endif %}
               </div>
 
               <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
