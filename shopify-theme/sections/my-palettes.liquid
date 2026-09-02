@@ -374,6 +374,36 @@
           </div>
         {% endif %}
 
+        {% if is_color_analysis_tools_page and has_all_palette_access %}
+          <div class="ycs-palette-card ycs-palette-card--admin">
+            <div class="ycs-palette-card__top">
+              <div
+                class="ycs-palette-card__gradient"
+                style="background: linear-gradient(to right, #314f6f, #7fb4aa, #f1d8b7);">
+              </div>
+            </div>
+
+            <div class="ycs-palette-card__content">
+              <div class="ycs-palette-card__text">
+                <h2>My Clients</h2>
+                <p class="ycs-palette-card__subtitle">
+                  View, add, and manage your color analysis clients.
+                </p>
+                <p class="ycs-palette-card__admin-label">Client Management</p>
+                {% if is_guided_tool and ycs_guided_tool_expires_display != '' %}
+                  <p class="ycs-palette-card__admin-label">Access expires {{ ycs_guided_tool_expires_display }}</p>
+                {% endif %}
+              </div>
+
+              <div class="ycs-palette-card__actions ycs-palette-card__actions--stacked">
+                <a href="/pages/my-clients{% if admin_view_as != '' %}?viewAs={{ admin_view_as }}{% endif %}" class="ycs-palette-card__button">
+                  Open Clients
+                </a>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
         {% if is_color_analysis_tools_page and is_trade_sept_cohort %}
           <div class="ycs-palette-card ycs-palette-card--admin">
             <div class="ycs-palette-card__top">
@@ -497,7 +527,7 @@
 
             <div class="ycs-palette-card__content">
               <div class="ycs-palette-card__text">
-                <h2>Training Videos</h2>
+                <h2>Professional Tools Training</h2>
                 <p class="ycs-palette-card__subtitle">
                   Learn how to use your professional color analysis tools.
                 </p>
