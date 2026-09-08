@@ -711,7 +711,6 @@ async function syncCustomerDirectoryFromShopify({ shop, accessToken, baseId, tok
       FirstName: customer.firstName,
       LastName: customer.lastName,
       Email: customer.email,
-      IsVIP: currentIsVIP,
       MembershipStatus: membershipStatus,
       LastSyncedAt: nowIso
     };
@@ -745,7 +744,6 @@ async function syncCustomerDirectoryFromShopify({ shop, accessToken, baseId, tok
       [String(existingFields.FirstName || ""), fieldsToWrite.FirstName],
       [String(existingFields.LastName || ""), fieldsToWrite.LastName],
       [String(existingFields.Email || ""), fieldsToWrite.Email],
-      [parseTruthy(existingFields.IsVIP), fieldsToWrite.IsVIP],
       [String(existingFields.MembershipStatus || ""), fieldsToWrite.MembershipStatus],
       [String(existingFields.JoinedDate || ""), String(fieldsToWrite.JoinedDate || "")]
     ];
@@ -804,7 +802,6 @@ async function syncCustomerDirectoryFromShopify({ shop, accessToken, baseId, tok
         token,
         recordId: record.id,
         fields: {
-          IsVIP: false,
           MembershipStatus: "Inactive",
           LostVIPAt: nowIso,
           LastSyncedAt: nowIso
