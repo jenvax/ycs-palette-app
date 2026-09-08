@@ -82,10 +82,27 @@ async function shopifyAdminGraphQL({ shop, accessToken, query, variables = {} })
     body: JSON.stringify({ query, variables })
   });
 
-  const json = await response.json().catch(() => ({}));
+  const responseText = await response.text();
+  let json = {};
+
+  try {
+    json = responseText ? JSON.parse(responseText) : {};
+  } catch (_error) {
+    json = {};
+  }
 
   if (!response.ok || json.errors) {
-    throw new Error(json.errors?.[0]?.message || "Shopify Admin GraphQL request failed");
+    const shopifyError = Array.isArray(json.errors)
+      ? json.errors.map((error) => error.message || JSON.stringify(error)).join("; ")
+      : "";
+    const bodyPreview = responseText && !shopifyError ? responseText.slice(0, 240) : "";
+    throw new Error(
+      [
+        "Shopify Admin GraphQL request failed",
+        `status ${response.status}`,
+        shopifyError || bodyPreview
+      ].filter(Boolean).join(": ")
+    );
   }
 
   return json.data;
