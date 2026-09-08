@@ -33,7 +33,7 @@ const colorTypeFilterSelect = document.getElementById("ycs-member-color-type-fil
   let members = [];
   let memberStats = null;
   let searchTerm = "";
-  let statusFilter = "all";
+  let statusFilter = "active";
 let photoFilter = "all";
 let activeView = "grid";
 let drapingFilter = "all";
@@ -41,7 +41,12 @@ let colorTypeFilter = "all";
 let permissionFilter = "all";
 let memberQuickFilter = "all";
 
-statusFilter = localStorage.getItem("ycs_status_filter") || "all";
+const memberPhotosDefaultVersion = "vip-active-20260908";
+if (localStorage.getItem("ycs_member_photos_default_version") !== memberPhotosDefaultVersion) {
+  localStorage.setItem("ycs_status_filter", "active");
+  localStorage.setItem("ycs_member_photos_default_version", memberPhotosDefaultVersion);
+}
+statusFilter = localStorage.getItem("ycs_status_filter") || "active";
 photoFilter = localStorage.getItem("ycs_photo_filter") || "all";
 activeView = localStorage.getItem("ycs_view") || "grid";
 drapingFilter = localStorage.getItem("ycs_draping_filter") || "all";
@@ -55,7 +60,7 @@ if (permissionFilterSelect) permissionFilterSelect.value = permissionFilter;
 
 function resetMemberFilters() {
   searchTerm = "";
-  statusFilter = "all";
+  statusFilter = "active";
   photoFilter = "all";
   colorTypeFilter = "all";
   permissionFilter = "all";
@@ -63,12 +68,12 @@ function resetMemberFilters() {
   memberQuickFilter = "all";
 
   if (searchInput) searchInput.value = "";
-  if (statusFilterSelect) statusFilterSelect.value = "all";
+  if (statusFilterSelect) statusFilterSelect.value = "active";
   if (photoFilterSelect) photoFilterSelect.value = "all";
   if (colorTypeFilterSelect) colorTypeFilterSelect.value = "all";
   if (permissionFilterSelect) permissionFilterSelect.value = "all";
 
-  localStorage.setItem("ycs_status_filter", "all");
+  localStorage.setItem("ycs_status_filter", "active");
   localStorage.setItem("ycs_photo_filter", "all");
   localStorage.setItem("ycs_color_type_filter", "all");
   localStorage.setItem("ycs_permission_filter", "all");

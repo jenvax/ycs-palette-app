@@ -315,6 +315,8 @@ const fieldsToWrite = {
   FirstName: customer.firstName,
   LastName: customer.lastName,
   Tags: customer.tags.join(", "),
+  ShopifyTags: customer.tags.join(", "),
+  IsVIP: currentIsVIP,
   PaletteTags: customer.paletteTags.join(", "),
   MembershipStatus: membershipStatus,
   LastSyncedAt: nowIso
@@ -363,8 +365,9 @@ const fieldsToWrite = {
       [String(existingFields.FirstName || ""), fieldsToWrite.FirstName],
       [String(existingFields.LastName || ""), fieldsToWrite.LastName],
       [String(existingFields.Tags || ""), fieldsToWrite.Tags],
+      [String(existingFields.ShopifyTags || ""), fieldsToWrite.ShopifyTags],
+      [parseTruthy(existingFields.IsVIP), fieldsToWrite.IsVIP],
       [String(existingFields.PaletteTags || ""), fieldsToWrite.PaletteTags],
-      [parseTruthy(existingFields.HasPaletteAccess), fieldsToWrite.HasPaletteAccess],
       [String(existingFields.MembershipStatus || ""), fieldsToWrite.MembershipStatus],
       [String(existingFields.JoinedDate || ""), String(fieldsToWrite.JoinedDate || "")]
     ];
@@ -405,7 +408,7 @@ const fieldsToWrite = {
     const wasVIP = parseTruthy(fields.IsVIP);
 
     if (wasVIP) {
-  const existingTags = String(fields.Tags || "")
+  const existingTags = String(fields.ShopifyTags || fields.Tags || "")
     .split(",")
     .map((tag) => tag.trim())
     .filter(Boolean);
@@ -421,6 +424,8 @@ const fieldsToWrite = {
     recordId: record.id,
     fields: {
       Tags: updatedTags,
+      ShopifyTags: updatedTags,
+      IsVIP: false,
       MembershipStatus: "Inactive",
       LostVIPAt: nowIso,
       LastSyncedAt: nowIso
@@ -436,6 +441,7 @@ const fieldsToWrite = {
     token,
     recordId: record.id,
     fields: {
+      IsVIP: false,
       MembershipStatus: "Inactive",
       LastSyncedAt: nowIso
     }
