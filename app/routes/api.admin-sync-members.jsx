@@ -332,7 +332,6 @@ const fieldsToWrite = {
   FirstName: customer.firstName,
   LastName: customer.lastName,
   Tags: customer.tags.join(", "),
-  ShopifyTags: customer.tags.join(", "),
   IsVIP: currentIsVIP,
   PaletteTags: customer.paletteTags.join(", "),
   MembershipStatus: membershipStatus,
@@ -382,7 +381,6 @@ const fieldsToWrite = {
       [String(existingFields.FirstName || ""), fieldsToWrite.FirstName],
       [String(existingFields.LastName || ""), fieldsToWrite.LastName],
       [String(existingFields.Tags || ""), fieldsToWrite.Tags],
-      [String(existingFields.ShopifyTags || ""), fieldsToWrite.ShopifyTags],
       [parseTruthy(existingFields.IsVIP), fieldsToWrite.IsVIP],
       [String(existingFields.PaletteTags || ""), fieldsToWrite.PaletteTags],
       [String(existingFields.MembershipStatus || ""), fieldsToWrite.MembershipStatus],
@@ -441,7 +439,6 @@ const fieldsToWrite = {
     recordId: record.id,
     fields: {
       Tags: updatedTags,
-      ShopifyTags: updatedTags,
       IsVIP: false,
       MembershipStatus: "Inactive",
       LostVIPAt: nowIso,

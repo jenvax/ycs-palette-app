@@ -711,7 +711,6 @@ async function syncCustomerDirectoryFromShopify({ shop, accessToken, baseId, tok
       FirstName: customer.firstName,
       LastName: customer.lastName,
       Email: customer.email,
-      ShopifyTags: customer.tags.join(", "),
       IsVIP: currentIsVIP,
       MembershipStatus: membershipStatus,
       LastSyncedAt: nowIso
@@ -746,7 +745,6 @@ async function syncCustomerDirectoryFromShopify({ shop, accessToken, baseId, tok
       [String(existingFields.FirstName || ""), fieldsToWrite.FirstName],
       [String(existingFields.LastName || ""), fieldsToWrite.LastName],
       [String(existingFields.Email || ""), fieldsToWrite.Email],
-      [String(existingFields.ShopifyTags || ""), fieldsToWrite.ShopifyTags],
       [parseTruthy(existingFields.IsVIP), fieldsToWrite.IsVIP],
       [String(existingFields.MembershipStatus || ""), fieldsToWrite.MembershipStatus],
       [String(existingFields.JoinedDate || ""), String(fieldsToWrite.JoinedDate || "")]
@@ -1633,7 +1631,7 @@ for (const customerPhotoRecord of customerPhotoRecords) {
           const lastName = String(fields.LastName || "").trim();
           const membershipStatus = String(fields.MembershipStatus || "Inactive").trim();
 
-          const tags = String(fields.ShopifyTags || "")
+          const tags = String(fields.Tags || "")
             .split(",")
             .map((tag) => String(tag).trim())
             .filter(Boolean);

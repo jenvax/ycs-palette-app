@@ -112,7 +112,6 @@ async function upsertCustomerDirectoryFromWebhook(payload) {
     FirstName: String(payload.first_name || existingFields.FirstName || "").trim(),
     LastName: String(payload.last_name || existingFields.LastName || "").trim(),
     Tags: tags.join(", "),
-    ShopifyTags: tags.join(", "),
     IsVIP: isVIP,
     PaletteTags: paletteTags.join(", "),
     MembershipStatus: isVIP || isAdmin ? "Active" : "Inactive",
