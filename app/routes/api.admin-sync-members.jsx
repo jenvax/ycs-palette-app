@@ -542,24 +542,23 @@ export async function action({ request }) {
     }
 
     let accessToken = SHOPIFY_ADMIN_ACCESS_TOKEN;
+    const apiSecret = process.env.SHOPIFY_API_SECRET || process.env.SHOPIFY_API_TOKEN;
+
+    if (!accessToken && (!process.env.SHOPIFY_API_KEY || !apiSecret)) {
+      return Response.json(
+        {
+          error: "Missing Shopify admin configuration",
+          missing: {
+            SHOPIFY_ADMIN_ACCESS_TOKEN: true,
+            SHOPIFY_API_KEY: !process.env.SHOPIFY_API_KEY,
+            SHOPIFY_API_SECRET_OR_TOKEN: !apiSecret
+          }
+        },
+        { status: 500, headers: corsHeaders }
+      );
+    }
 
     if (!accessToken) {
-      const apiSecret = process.env.SHOPIFY_API_SECRET || process.env.SHOPIFY_API_TOKEN;
-
-      if (!process.env.SHOPIFY_API_KEY || !apiSecret) {
-        return Response.json(
-          {
-            error: "Missing Shopify admin configuration",
-            missing: {
-              SHOPIFY_ADMIN_ACCESS_TOKEN: true,
-              SHOPIFY_API_KEY: !process.env.SHOPIFY_API_KEY,
-              SHOPIFY_API_SECRET_OR_TOKEN: !apiSecret
-            }
-          },
-          { status: 500, headers: corsHeaders }
-        );
-      }
-
       accessToken = await getAccessToken({
         shop: SHOPIFY_SHOP,
         apiKey: process.env.SHOPIFY_API_KEY,
@@ -567,12 +566,38 @@ export async function action({ request }) {
       });
     }
 
-    const summary = await syncCustomerDirectory({
-      shop: SHOPIFY_SHOP,
-      accessToken,
-      baseId: AIRTABLE_BASE_ID,
-      token: AIRTABLE_TOKEN
-    });
+    let summary;
+
+    try {
+      summary = await syncCustomerDirectory({
+        shop: SHOPIFY_SHOP,
+        accessToken,
+        baseId: AIRTABLE_BASE_ID,
+        token: AIRTABLE_TOKEN
+      });
+    } catch (error) {
+      const canGenerateFallback = Boolean(SHOPIFY_ADMIN_ACCESS_TOKEN && process.env.SHOPIFY_API_KEY && apiSecret);
+      if (!process.env.SHOPIFY_API_KEY || !apiSecret) {
+        throw error;
+      }
+
+      if (!canGenerateFallback) {
+        throw error;
+      }
+
+      const generatedAccessToken = await getAccessToken({
+        shop: SHOPIFY_SHOP,
+        apiKey: process.env.SHOPIFY_API_KEY,
+        apiSecret
+      });
+
+      summary = await syncCustomerDirectory({
+        shop: SHOPIFY_SHOP,
+        accessToken: generatedAccessToken,
+        baseId: AIRTABLE_BASE_ID,
+        token: AIRTABLE_TOKEN
+      });
+    }
 
     return Response.json(
       {
