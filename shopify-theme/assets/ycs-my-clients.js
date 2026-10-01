@@ -58,6 +58,7 @@
   let activeReportClientId = "";
   let activeReportPage = 1;
   let activeReportTemplateRequest = 0;
+  const activeReportDecisionCopyRequests = { depth: 0, undertone: 0, chroma: 0 };
   let reportPageRailDrag = null;
   let activeSavedDrapedImages = [];
   let activeSavedDrapedImagesClientId = "";
@@ -2140,6 +2141,50 @@
       colorFanImageUrl: fanTemplate?.colorFanImageUrl || fallbackTemplate.colorFanImageUrl,
       colorWheelImageUrl: reportColorWheelImageUrlMap[code] || fallbackTemplate.colorWheelImageUrl
     };
+  }
+
+  function reportPaletteCodeFromDecisions(form, copyKey = "") {
+    const depth = choiceKey(form?.elements.depthChoice?.value);
+    const undertone = choiceKey(form?.elements.undertoneChoice?.value);
+    const chroma = choiceKey(form?.elements.chromaChoice?.value);
+    const depthCode = { light: "L", medium: "M", deep: "D" }[depth];
+
+    const chromaCode = { soft: "S", clear: "C" }[chroma];
+    if (!depthCode || !undertone || !chromaCode) return "";
+    if (undertone === "olive") {
+      return copyKey === "chroma" ? `${chromaCode}C${depthCode}` : `${depthCode}O`;
+    }
+
+    const undertoneCode = { warm: "W", cool: "C" }[undertone];
+    if (!undertoneCode) return "";
+
+    const standardCode = `${chromaCode}${undertoneCode}${depthCode}`;
+    const currentCode = normalizeReportPaletteCode(form.elements.paletteCode?.value);
+    const grayHairCode = currentCode.endsWith("G") ? `${standardCode}G` : "";
+    return grayHairCode && YCS_PALETTE_CODES.has(grayHairCode) ? grayHairCode : standardCode;
+  }
+
+  async function updateReportDecisionCopy(form, select) {
+    const copyKeyByField = {
+      depthChoice: "depth",
+      undertoneChoice: "undertone",
+      chromaChoice: "chroma"
+    };
+    const copyKey = copyKeyByField[select?.name];
+    const textField = copyKey ? form?.elements[`text.${copyKey}`] : null;
+    const paletteCode = copyKey ? reportPaletteCodeFromDecisions(form, copyKey) : "";
+    if (!copyKey || !textField || !paletteCode) return;
+
+    const requestId = activeReportDecisionCopyRequests[copyKey] + 1;
+    activeReportDecisionCopyRequests[copyKey] = requestId;
+    const template = await fetchReportPaletteTemplate(paletteCode);
+    if (requestId !== activeReportDecisionCopyRequests[copyKey] || !form.isConnected) return;
+
+    const copy = String(template?.copy?.[copyKey] || "").trim();
+    if (!copy) return;
+
+    textField.value = copy;
+    updateReportPreview();
   }
 
   async function fetchSavedDrapedImages(client) {
@@ -4835,6 +4880,13 @@
       const client = clients.find((item) => item.clientRecordId === activeReportClientId);
       autofillReportTemplate(client)
         .catch((error) => setReportStatus(error.message || "Unable to load report template.", true));
+      return;
+    }
+
+    if (["depthChoice", "undertoneChoice", "chromaChoice"].includes(event.target.name)) {
+      updateReportDecisionCopy(reportForm, event.target)
+        .catch((error) => setReportStatus(error.message || "Unable to load decision copy.", true));
+      updateReportPreview();
       return;
     }
 
