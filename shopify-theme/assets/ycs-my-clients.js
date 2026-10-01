@@ -2158,10 +2158,7 @@
     const undertoneCode = { warm: "W", cool: "C" }[undertone];
     if (!undertoneCode) return "";
 
-    const standardCode = `${chromaCode}${undertoneCode}${depthCode}`;
-    const currentCode = normalizeReportPaletteCode(form.elements.paletteCode?.value);
-    const grayHairCode = currentCode.endsWith("G") ? `${standardCode}G` : "";
-    return grayHairCode && YCS_PALETTE_CODES.has(grayHairCode) ? grayHairCode : standardCode;
+    return `${chromaCode}${undertoneCode}${depthCode}`;
   }
 
   async function updateReportDecisionCopy(form, select) {
@@ -3367,19 +3364,9 @@
     };
 
     detailEl.innerHTML = `
-      <div class="ycs-clients__detail-header ycs-clients__detail-header--edit">
-        <div>
-          <button class="ycs-clients__detail-photo ycs-clients__detail-photo--upload" type="submit" form="ycs-create-client-form" name="createAction" value="photoPrep" data-ycs-create-client-photo-prep>
-            <span class="ycs-client-card__placeholder">Upload a Photo</span>
-          </button>
-          <button class="ycs-clients__button ycs-clients__button--secondary ycs-clients__upload-photo-button" type="submit" form="ycs-create-client-form" name="createAction" value="photoPrep" data-ycs-create-client-photo-prep>
-            Upload a Photo
-          </button>
-        </div>
-        <div>
-          <h2>Add Client</h2>
-          ${renderEditForm(client, saveMessage, true)}
-        </div>
+      <div>
+        <h2>Add Client</h2>
+        ${renderEditForm(client, saveMessage, true)}
       </div>
     `;
   }
@@ -4884,9 +4871,18 @@
     }
 
     if (["depthChoice", "undertoneChoice", "chromaChoice"].includes(event.target.name)) {
-      updateReportDecisionCopy(reportForm, event.target)
-        .catch((error) => setReportStatus(error.message || "Unable to load decision copy.", true));
+      const changedDecisions = [event.target];
+      if (event.target.name === "undertoneChoice" && choiceKey(event.target.value) === "olive") {
+        const chromaChoice = reportForm.elements.chromaChoice;
+        if (chromaChoice) {
+          chromaChoice.value = "clear";
+          changedDecisions.push(chromaChoice);
+        }
+      }
+
       updateReportPreview();
+      Promise.all(changedDecisions.map((select) => updateReportDecisionCopy(reportForm, select)))
+        .catch((error) => setReportStatus(error.message || "Unable to load decision copy.", true));
       return;
     }
 
