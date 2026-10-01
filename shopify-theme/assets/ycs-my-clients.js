@@ -58,7 +58,7 @@
   let activeReportClientId = "";
   let activeReportPage = 1;
   let activeReportTemplateRequest = 0;
-  const activeReportDecisionCopyRequests = { depth: 0, undertone: 0, chroma: 0 };
+  const activeReportDecisionCopyRequests = new Map();
   let reportPageRailDrag = null;
   let activeSavedDrapedImages = [];
   let activeSavedDrapedImagesClientId = "";
@@ -486,6 +486,32 @@
     return entry?.duplicateOf ? `pageCopies.${entry.id}.choice` : fieldName;
   }
 
+  function builtInReportCopyKey(key) {
+    return {
+      depth: "depth",
+      temperature: "undertone",
+      chroma: "chroma"
+    }[key] || "";
+  }
+
+  function builtInReportCopyValue(draft, entry) {
+    const copyKey = builtInReportCopyKey(entry?.key);
+    if (!copyKey) return "";
+    if (entry?.duplicateOf) {
+      const pageCopy = reportPageCopies(draft)[entry.id] || {};
+      if (Object.prototype.hasOwnProperty.call(pageCopy, "copy")) {
+        return String(pageCopy.copy || "");
+      }
+    }
+    return String(draft?.text?.[copyKey] || "");
+  }
+
+  function builtInReportCopyFieldName(entry) {
+    const copyKey = builtInReportCopyKey(entry?.key);
+    if (!copyKey) return "";
+    return entry?.duplicateOf ? `pageCopies.${entry.id}.copy` : `text.${copyKey}`;
+  }
+
   function builtInReportShowOliveImage(draft, entry) {
     if (entry?.key !== "temperature") return true;
     if (entry?.duplicateOf) {
@@ -510,6 +536,7 @@
     }, {
       title: `${title} Copy`,
       choice: builtInReportChoiceValue(draft, entry),
+      copy: builtInReportCopyValue(draft, entry),
       showOliveImage: builtInReportShowOliveImage(draft, entry) ? "true" : "false"
     });
   }
@@ -1619,7 +1646,7 @@
             { label: "Medium Tones", value: "medium", url: builtInReportImageValue(draft, entry, "depthMediumImageUrl"), fieldName: builtInReportImageFieldName(entry, "depthMediumImageUrl") },
             { label: "Deep Tones", value: "deep", url: builtInReportImageValue(draft, entry, "depthDeepImageUrl"), fieldName: builtInReportImageFieldName(entry, "depthDeepImageUrl") }
           ], "ycs-report-comparison-grid ycs-report-comparison-grid--three", builtInReportChoiceValue(draft, entry), options)}
-          ${renderCopyWithSubheading(`Your depth is ${choiceLabel(builtInReportChoiceValue(draft, entry), draft.depth).toUpperCase()}`, draft.text.depth, [/^your depth is\b/i])}
+          ${renderCopyWithSubheading(`Your depth is ${choiceLabel(builtInReportChoiceValue(draft, entry), draft.depth).toUpperCase()}`, builtInReportCopyValue(draft, entry), [/^your depth is\b/i])}
           ${renderReportFooter(draft, pageNumber)}
         </section>
       `,
@@ -1632,7 +1659,7 @@
             { label: "Cool Tones", value: "cool", url: builtInReportImageValue(draft, entry, "undertoneCoolImageUrl"), fieldName: builtInReportImageFieldName(entry, "undertoneCoolImageUrl") },
             { label: "Olive Tones", value: "olive", url: builtInReportImageValue(draft, entry, "undertoneOliveImageUrl"), fieldName: builtInReportImageFieldName(entry, "undertoneOliveImageUrl"), hidden: !builtInReportShowOliveImage(draft, entry) }
           ], "ycs-report-comparison-grid ycs-report-comparison-grid--three", builtInReportChoiceValue(draft, entry), options)}
-          ${renderCopyWithSubheading(`Your undertone is ${choiceLabel(builtInReportChoiceValue(draft, entry), draft.undertone).toUpperCase()}`, draft.text.undertone, [/^you have\b/i, /^your undertone is\b/i])}
+          ${renderCopyWithSubheading(`Your undertone is ${choiceLabel(builtInReportChoiceValue(draft, entry), draft.undertone).toUpperCase()}`, builtInReportCopyValue(draft, entry), [/^you have\b/i, /^your undertone is\b/i])}
           ${renderReportFooter(draft, pageNumber)}
         </section>
       `,
@@ -1644,7 +1671,7 @@
             { label: "Soft Tones", value: "soft", url: builtInReportImageValue(draft, entry, "chromaSoftImageUrl", "chromaImageUrl"), fieldName: builtInReportImageFieldName(entry, "chromaSoftImageUrl") },
             { label: "Clear Tones", value: "clear", url: builtInReportImageValue(draft, entry, "chromaClearImageUrl"), fieldName: builtInReportImageFieldName(entry, "chromaClearImageUrl") }
           ], "ycs-report-comparison-grid ycs-report-comparison-grid--two", builtInReportChoiceValue(draft, entry), options)}
-          ${renderCopyWithSubheading(`Your chroma is ${choiceLabel(builtInReportChoiceValue(draft, entry), draft.chroma).toUpperCase()}`, draft.text.chroma, [/^you are\b/i, /^your chroma is\b/i])}
+          ${renderCopyWithSubheading(`Your chroma is ${choiceLabel(builtInReportChoiceValue(draft, entry), draft.chroma).toUpperCase()}`, builtInReportCopyValue(draft, entry), [/^you are\b/i, /^your chroma is\b/i])}
           ${renderReportFooter(draft, pageNumber)}
         </section>
       `,
@@ -1839,7 +1866,7 @@
                 selectedUrl: builtInReportImageValue(draft, depthControlsEntry, "depthDeepImageUrl"),
                 preferredChoice: "deep"
               })}
-              <label>Depth copy<textarea name="text.depth">${escapeHtml(draft.text.depth)}</textarea></label>
+              <label>Depth copy<textarea name="${escapeHtml(builtInReportCopyFieldName(depthControlsEntry))}">${escapeHtml(builtInReportCopyValue(draft, depthControlsEntry))}</textarea></label>
             `)}
             ${renderReportControlsPage(reportPageNumberForBuiltIn(draft, "temperature"), reportPageEntryLabel(draft, temperatureControlsEntry), `
               ${temperatureControlsEntry.duplicateOf ? `<label>Page title<input name="pageCopies.${escapeHtml(temperatureControlsEntry.id)}.title" value="${escapeHtml(reportPageEntryLabel(draft, temperatureControlsEntry))}"></label>` : ""}
@@ -1873,7 +1900,7 @@
                 selectedUrl: builtInReportImageValue(draft, temperatureControlsEntry, "undertoneOliveImageUrl"),
                 preferredChoice: "olive"
               })}
-              <label>Temperature copy<textarea name="text.undertone">${escapeHtml(draft.text.undertone)}</textarea></label>
+              <label>Temperature copy<textarea name="${escapeHtml(builtInReportCopyFieldName(temperatureControlsEntry))}">${escapeHtml(builtInReportCopyValue(draft, temperatureControlsEntry))}</textarea></label>
             `)}
             ${renderReportControlsPage(reportPageNumberForBuiltIn(draft, "chroma"), reportPageEntryLabel(draft, chromaControlsEntry), `
               ${chromaControlsEntry.duplicateOf ? `<label>Page title<input name="pageCopies.${escapeHtml(chromaControlsEntry.id)}.title" value="${escapeHtml(reportPageEntryLabel(draft, chromaControlsEntry))}"></label>` : ""}
@@ -1895,7 +1922,7 @@
                 selectedUrl: builtInReportImageValue(draft, chromaControlsEntry, "chromaClearImageUrl"),
                 preferredChoice: "clear"
               })}
-              <label>Chroma copy<textarea name="text.chroma">${escapeHtml(draft.text.chroma)}</textarea></label>
+              <label>Chroma copy<textarea name="${escapeHtml(builtInReportCopyFieldName(chromaControlsEntry))}">${escapeHtml(builtInReportCopyValue(draft, chromaControlsEntry))}</textarea></label>
             `)}
             ${renderReportControlsPage(reportPageNumberForBuiltIn(draft, "palette"), "Palette Type", `
               <label>Palette type copy<textarea name="text.paletteType">${escapeHtml(draft.text.paletteType)}</textarea></label>
@@ -2022,7 +2049,10 @@
         return copy;
       }, {
         title: formString(`pageCopies.${entry.id}.title`, previousCopy.title || `${builtInReportPageLabel(entry.key)} Copy`),
-        choice: choiceKey(formString(choiceFieldName, previousCopy.choice || builtInReportChoiceValue(draft, { ...entry, duplicateOf: "" })))
+        choice: choiceKey(formString(choiceFieldName, previousCopy.choice || builtInReportChoiceValue(draft, { ...entry, duplicateOf: "" }))),
+        copy: formData.has(builtInReportCopyFieldName(entry))
+          ? String(formData.get(builtInReportCopyFieldName(entry)) || "")
+          : String(previousCopy.copy || builtInReportCopyValue(draft, { ...entry, duplicateOf: "" }))
       });
       if (entry.key === "temperature") {
         copyFields.showOliveImage = form.elements[showOliveFieldName]
@@ -2143,39 +2173,46 @@
     };
   }
 
-  function reportPaletteCodeFromDecisions(form, copyKey = "") {
-    const depth = choiceKey(form?.elements.depthChoice?.value);
-    const undertone = choiceKey(form?.elements.undertoneChoice?.value);
-    const chroma = choiceKey(form?.elements.chromaChoice?.value);
-    const depthCode = { light: "L", medium: "M", deep: "D" }[depth];
-
-    const chromaCode = { soft: "S", clear: "C" }[chroma];
-    if (!depthCode || !undertone || !chromaCode) return "";
-    if (undertone === "olive") {
-      return copyKey === "chroma" ? `${chromaCode}C${depthCode}` : `${depthCode}O`;
-    }
-
-    const undertoneCode = { warm: "W", cool: "C" }[undertone];
-    if (!undertoneCode) return "";
-
-    return `${chromaCode}${undertoneCode}${depthCode}`;
-  }
-
-  async function updateReportDecisionCopy(form, select) {
-    const copyKeyByField = {
+  function reportDecisionCopyTarget(select) {
+    const mainCopyKeyByField = {
       depthChoice: "depth",
       undertoneChoice: "undertone",
       chromaChoice: "chroma"
     };
-    const copyKey = copyKeyByField[select?.name];
-    const textField = copyKey ? form?.elements[`text.${copyKey}`] : null;
-    const paletteCode = copyKey ? reportPaletteCodeFromDecisions(form, copyKey) : "";
+    const mainCopyKey = mainCopyKeyByField[select?.name];
+    if (mainCopyKey) {
+      return { copyKey: mainCopyKey, textFieldName: `text.${mainCopyKey}` };
+    }
+
+    const pageCopyMatch = String(select?.name || "").match(/^pageCopies\.([^.]+)\.choice$/);
+    const entry = pageCopyMatch
+      ? normalizeReportPageOrder(activeReportDraft).find((item) => item.id === pageCopyMatch[1])
+      : null;
+    const copyKey = builtInReportCopyKey(entry?.key);
+    return copyKey ? { copyKey, textFieldName: `pageCopies.${entry.id}.copy` } : null;
+  }
+
+  function reportPaletteCodeForDecision(copyKey, value) {
+    const choice = choiceKey(value);
+    return {
+      depth: { light: "SCL", medium: "SCM", deep: "SCD" },
+      undertone: { warm: "SWM", cool: "SCM", olive: "MO" },
+      chroma: { soft: "SCM", clear: "CCM" }
+    }[copyKey]?.[choice] || "";
+  }
+
+  async function updateReportDecisionCopy(form, select) {
+    const target = reportDecisionCopyTarget(select);
+    const copyKey = target?.copyKey || "";
+    const textField = target ? form?.elements[target.textFieldName] : null;
+    const paletteCode = copyKey ? reportPaletteCodeForDecision(copyKey, select.value) : "";
     if (!copyKey || !textField || !paletteCode) return;
 
-    const requestId = activeReportDecisionCopyRequests[copyKey] + 1;
-    activeReportDecisionCopyRequests[copyKey] = requestId;
+    const requestKey = target.textFieldName;
+    const requestId = (activeReportDecisionCopyRequests.get(requestKey) || 0) + 1;
+    activeReportDecisionCopyRequests.set(requestKey, requestId);
     const template = await fetchReportPaletteTemplate(paletteCode);
-    if (requestId !== activeReportDecisionCopyRequests[copyKey] || !form.isConnected) return;
+    if (requestId !== activeReportDecisionCopyRequests.get(requestKey) || !form.isConnected) return;
 
     const copy = String(template?.copy?.[copyKey] || "").trim();
     if (!copy) return;
@@ -4870,7 +4907,7 @@
       return;
     }
 
-    if (["depthChoice", "undertoneChoice", "chromaChoice"].includes(event.target.name)) {
+    if (["depthChoice", "undertoneChoice", "chromaChoice"].includes(event.target.name) || /^pageCopies\..+\.choice$/.test(event.target.name || "")) {
       const changedDecisions = [event.target];
       if (event.target.name === "undertoneChoice" && choiceKey(event.target.value) === "olive") {
         const chromaChoice = reportForm.elements.chromaChoice;
