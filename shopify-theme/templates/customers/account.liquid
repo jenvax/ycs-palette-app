@@ -49,6 +49,12 @@ Show Style Masters Hub button if:
 
   {% assign palette_access_string = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
 
+  {% if palette_access_string contains ',YCSMEMBER,' %}
+    <a href="/pages/my-ycs" class="account-tool">
+      My YCS
+    </a>
+  {% endif %}
+
   {% assign has_trade_access = false %}
   {% assign trade_july_cohort_expires_at = '2026-08-25 00:00:00 -0400' | date: '%s' %}
   {% assign trade_sept_cohort_expires_at = '2026-10-20 00:00:00 -0400' | date: '%s' %}

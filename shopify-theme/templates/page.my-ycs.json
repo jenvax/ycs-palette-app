@@ -1,0 +1,11 @@
+{
+  "sections": {
+    "my_ycs": {
+      "type": "my-ycs",
+      "settings": {}
+    }
+  },
+  "order": [
+    "my_ycs"
+  ]
+}

@@ -1,0 +1,247 @@
+{% assign ycs_member_access = false %}
+{% if customer %}
+  {% assign ycs_member_tags = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
+  {% if ycs_member_tags contains ',YCSMEMBER,' %}
+    {% assign ycs_member_access = true %}
+  {% endif %}
+{% endif %}
+
+<section class="ycs-member-hub">
+  <div class="ycs-member-hub__topnav">
+    <a href="{{ routes.account_url }}" class="ycs-member-hub__back">Back to My Account</a>
+  </div>
+
+  {% if customer == nil %}
+    <header class="ycs-member-hub__header">
+      <p class="ycs-member-hub__kicker">Your Color Style</p>
+      <h1>My YCS</h1>
+      <p>Please sign in to access your membership.</p>
+      <a href="{{ routes.account_login_url }}" class="ycs-member-hub__button">Sign In</a>
+    </header>
+  {% elsif ycs_member_access == false %}
+    <header class="ycs-member-hub__header">
+      <p class="ycs-member-hub__kicker">Your Color Style</p>
+      <h1>My YCS</h1>
+      <p>This membership is not available on your account.</p>
+    </header>
+  {% else %}
+    {% assign ycs_member_first_name = customer.first_name | default: customer.name | split: ' ' | first %}
+    <header class="ycs-member-hub__header">
+      <p class="ycs-member-hub__kicker">Your Color Style</p>
+      <h1>Welcome back, {{ ycs_member_first_name | escape }}</h1>
+      <p><em>Everything you need to learn, analyze, create, and grow with Your Color Style.</em></p>
+    </header>
+
+    <div class="ycs-member-hub__grid">
+      <article class="ycs-member-card">
+        <div class="ycs-member-card__accent ycs-member-card__accent--learn"></div>
+        <div class="ycs-member-card__body">
+          <h2>Learn</h2>
+          <p class="ycs-member-card__subtitle">Explore the Color Analysis Library</p>
+          <a href="/pages/my-ycs-learn" class="ycs-member-hub__button">Explore Learn</a>
+        </div>
+      </article>
+
+      <article class="ycs-member-card">
+        <div class="ycs-member-card__accent ycs-member-card__accent--analyze"></div>
+        <div class="ycs-member-card__body">
+          <h2>Analyze</h2>
+          <p class="ycs-member-card__subtitle">Color Analysis Tool + My Clients</p>
+          <a href="/pages/my-ycs-analyze" class="ycs-member-hub__button">Explore Analyze</a>
+        </div>
+      </article>
+
+      <article class="ycs-member-card">
+        <div class="ycs-member-card__accent ycs-member-card__accent--create"></div>
+        <div class="ycs-member-card__body">
+          <h2>Create</h2>
+          <p class="ycs-member-card__subtitle">YCS Palettes + Custom Palettes + Lip &amp; Draping</p>
+          <a href="/pages/my-ycs-create" class="ycs-member-hub__button">Explore Create</a>
+        </div>
+      </article>
+
+      <article class="ycs-member-card">
+        <div class="ycs-member-card__accent ycs-member-card__accent--grow"></div>
+        <div class="ycs-member-card__body">
+          <h2>Grow</h2>
+          <p class="ycs-member-card__subtitle">Directory Listing</p>
+          <a href="/pages/my-ycs-grow" class="ycs-member-hub__button">Explore Grow</a>
+        </div>
+      </article>
+    </div>
+  {% endif %}
+</section>
+
+{% style %}
+  .ycs-member-hub {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 28px 24px 72px;
+    color: #313238;
+  }
+
+  .ycs-member-hub__topnav {
+    margin-bottom: 42px;
+  }
+
+  .ycs-member-hub__back {
+    color: #4b4d55;
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .ycs-member-hub__back:hover {
+    text-decoration: underline;
+  }
+
+  .ycs-member-hub__header {
+    max-width: 780px;
+    margin-bottom: 42px;
+  }
+
+  .ycs-member-hub__kicker {
+    margin: 0 0 8px;
+    color: #bd315b;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: uppercase;
+  }
+
+  .ycs-member-hub__header h1 {
+    margin: 0 0 12px;
+    color: #292a30;
+    font-size: 42px;
+    line-height: 1.14;
+    letter-spacing: 0;
+  }
+
+  .ycs-member-hub__header > p:not(.ycs-member-hub__kicker) {
+    margin: 0;
+    color: #686a72;
+    font-size: 19px;
+    line-height: 1.6;
+  }
+
+  .ycs-member-hub__header .ycs-member-hub__button {
+    margin-top: 22px;
+  }
+
+  .ycs-member-hub__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px;
+  }
+
+  .ycs-member-card {
+    overflow: hidden;
+    border: 1px solid #e7e3df;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 8px 24px rgba(37, 39, 46, .06);
+  }
+
+  .ycs-member-card__accent {
+    height: 10px;
+  }
+
+  .ycs-member-card__accent--learn {
+    background: linear-gradient(90deg, #cc3c68, #e88b66, #eccf68);
+  }
+
+  .ycs-member-card__accent--analyze {
+    background: linear-gradient(90deg, #385c7d, #56a3ae, #83c998);
+  }
+
+  .ycs-member-card__accent--create {
+    background: linear-gradient(90deg, #76559b, #c05287, #dd7b67);
+  }
+
+  .ycs-member-card__accent--grow {
+    background: linear-gradient(90deg, #356c58, #86a052, #d1b94d);
+  }
+
+  .ycs-member-card__body {
+    display: flex;
+    min-height: 230px;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 28px;
+  }
+
+  .ycs-member-card h2 {
+    margin: 0 0 10px;
+    color: #303139;
+    font-size: 24px;
+    line-height: 1.32;
+    letter-spacing: 0;
+  }
+
+  .ycs-member-card__subtitle {
+    margin: 0 0 28px;
+    color: #686a72;
+    font-size: 17px;
+    line-height: 1.55;
+  }
+
+  .ycs-member-hub__button {
+    display: inline-flex;
+    min-height: 46px;
+    margin-top: auto;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    background: #cf3f65;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.2;
+    padding: 12px 20px;
+    text-decoration: none;
+  }
+
+  .ycs-member-hub__button:hover {
+    background: #b72f55;
+    color: #fff;
+  }
+
+  @media (max-width: 720px) {
+    .ycs-member-hub {
+      padding: 22px 16px 52px;
+    }
+
+    .ycs-member-hub__topnav {
+      margin-bottom: 30px;
+    }
+
+    .ycs-member-hub__header h1 {
+      font-size: 32px;
+    }
+
+    .ycs-member-hub__header > p:not(.ycs-member-hub__kicker) {
+      font-size: 17px;
+    }
+
+    .ycs-member-hub__grid {
+      grid-template-columns: 1fr;
+    }
+
+    .ycs-member-card__body {
+      min-height: 205px;
+      padding: 24px;
+    }
+  }
+{% endstyle %}
+
+{% schema %}
+{
+  "name": "My YCS",
+  "settings": [],
+  "presets": [
+    {
+      "name": "My YCS"
+    }
+  ]
+}
+{% endschema %}
