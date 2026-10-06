@@ -3,7 +3,12 @@
 {% if should_render_ycs_color_analysis_tools %}
 <div class="ycs-my-palettes ycs-member-palettes ycs-member-palettes--{{ section.settings.member_view | default: 'ycs' }}">
   <div class="ycs-palette-topnav">
-    <a href="/pages/palettes" class="palette-back-link">Back to Palettes</a>
+    <a href="/pages/my-ycs" class="palette-back-link">Back to My YCS</a>
+    {% if section.settings.member_view == 'custom' %}
+      <a href="/pages/ycs-color-palettes" class="palette-back-link">YCS Color Palettes</a>
+    {% else %}
+      <a href="/pages/my-custom-palettes" class="palette-back-link">My Custom Palettes</a>
+    {% endif %}
     <a href="mailto:support@yourcolorstyle.com" class="palette-back-link ycs-member-palettes__contact">Contact</a>
   </div>
 
@@ -972,6 +977,14 @@
   .site-footer,
   footer.footer,
   footer[role="contentinfo"] {
+    display: none !important;
+  }
+
+  .bredcrumbWrap,
+  .breadcrumbWrap,
+  nav.breadcrumbs,
+  .breadcrumbs,
+  [class*="breadcrumb"] {
     display: none !important;
   }
 
