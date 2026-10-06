@@ -9,6 +9,7 @@
 <section class="ycs-analyze-hub">
   <nav class="ycs-analyze-hub__topnav" aria-label="Membership navigation">
     <a href="/pages/my-ycs" class="ycs-analyze-hub__back">Back to My YCS</a>
+    <a href="mailto:support@yourcolorstyle.com" class="ycs-analyze-hub__back">Contact</a>
   </nav>
 
   {% if customer == nil %}
@@ -54,10 +55,10 @@
 </section>
 
 {% style %}
-  .shopify-section-header, #shopify-section-header, .site-header, .header-wrapper, .header, nav[role="navigation"] { display: none !important; }
+  .shopify-section-header, #shopify-section-header, .site-header, .header-wrapper, .header, nav[role="navigation"], #shopify-section-footer, .shopify-section--footer, .site-footer, footer.footer, footer[role="contentinfo"] { display: none !important; }
   body { margin-top: 0 !important; padding-top: 0 !important; }
   .ycs-analyze-hub { max-width: 1180px; margin: 0 auto; padding: 28px 24px 72px; color: #313238; }
-  .ycs-analyze-hub__topnav { margin-bottom: 42px; }
+  .ycs-analyze-hub__topnav { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 42px; }
   .ycs-analyze-hub__back { color: #4b4d55; font-size: 15px; font-weight: 600; text-decoration: none; }
   .ycs-analyze-hub__back:hover { text-decoration: underline; }
   .ycs-analyze-hub__header { max-width: 780px; margin-bottom: 42px; }

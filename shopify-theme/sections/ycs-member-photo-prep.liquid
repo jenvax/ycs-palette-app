@@ -215,6 +215,7 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
           <a id="ycs-photo-prep-back-link" href="/pages/tools" class="ycs-photo-prep-back">Tools</a>
         </nav>
       {% endunless %}
+      <a href="mailto:support@yourcolorstyle.com" class="ycs-photo-prep-back ycs-photo-prep-contact">Contact</a>
     </div>
 
     <div class="ycs-photo-prep-header">
@@ -495,6 +496,14 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
     display: none !important;
   }
 
+  #shopify-section-footer,
+  .shopify-section--footer,
+  .site-footer,
+  footer.footer,
+  footer[role="contentinfo"] {
+    display: none !important;
+  }
+
   body {
     margin-top: 0 !important;
     padding-top: 0 !important;
@@ -516,6 +525,10 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
     gap: 10px 16px;
     align-items: center;
     margin-bottom: 10px;
+  }
+
+  .ycs-photo-prep-contact {
+    margin-left: auto;
   }
 
   .ycs-photo-prep-tool-nav {
