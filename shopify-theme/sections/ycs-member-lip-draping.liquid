@@ -92,16 +92,6 @@
   {% assign is_ycspro = true %}
 {% endif %}
 
-{% assign is_free_diy_catool = false %}
-{% if palette_access_string contains ',FREEDIYCATOOL,' %}
-  {% assign is_free_diy_catool = true %}
-{% endif %}
-
-{% assign is_diy_catool = false %}
-{% if palette_access_string contains ',DIYCATOOL,' %}
-  {% assign is_diy_catool = true %}
-{% endif %}
-
 {% assign admin_view_as = '' %}
 {% if actual_is_admin %}
   {% if ycs_page_url contains 'viewAs=trade&' %}
@@ -110,10 +100,6 @@
     {% assign admin_view_as = 'tradeseptcohort' %}
   {% elsif ycs_page_url contains 'viewAs=ycspro&' %}
     {% assign admin_view_as = 'ycspro' %}
-  {% elsif ycs_page_url contains 'viewAs=freediycatool&' %}
-    {% assign admin_view_as = 'freediycatool' %}
-  {% elsif ycs_page_url contains 'viewAs=diycatool&' %}
-    {% assign admin_view_as = 'diycatool' %}
   {% elsif ycs_page_url contains 'viewAs=catool&' %}
     {% assign admin_view_as = 'catool' %}
   {% endif %}
@@ -125,8 +111,6 @@
   {% assign is_catool = false %}
   {% assign is_ycspro = false %}
   {% assign is_trade_sept_cohort = false %}
-  {% assign is_free_diy_catool = false %}
-  {% assign is_diy_catool = false %}
 
   {% if admin_view_as == 'trade' %}
     {% assign is_trade = true %}
@@ -134,10 +118,6 @@
     {% assign is_trade_sept_cohort = true %}
   {% elsif admin_view_as == 'ycspro' %}
     {% assign is_ycspro = true %}
-  {% elsif admin_view_as == 'freediycatool' %}
-    {% assign is_free_diy_catool = true %}
-  {% elsif admin_view_as == 'diycatool' %}
-    {% assign is_diy_catool = true %}
   {% elsif admin_view_as == 'catool' %}
     {% assign is_catool = true %}
   {% endif %}
@@ -149,15 +129,13 @@
 {% endif %}
 
 <div
-  class="ycs-analysis-app"
+  class="ycs-analysis-app ycs-signature-analysis-app"
+  data-signature-mode="true"
   data-customer-id="{{ customer.id }}"
   data-is-admin="{% if is_admin %}true{% else %}false{% endif %}"
   data-is-trade="{% if is_trade %}true{% else %}false{% endif %}"
   data-is-catool="{% if is_catool %}true{% else %}false{% endif %}"
   data-is-catool-growth="{% if is_ycs_member %}true{% else %}false{% endif %}"
-  data-is-catool-free="false"
-  data-is-free-diy-catool="{% if is_free_diy_catool %}true{% else %}false{% endif %}"
-  data-is-diy-catool="{% if is_diy_catool %}true{% else %}false{% endif %}"
   data-can-use-analysis-tool="{% if can_use_analysis_tool %}true{% else %}false{% endif %}"
   data-actual-is-admin="{% if actual_is_admin %}true{% else %}false{% endif %}"
   data-admin-preview-role="{{ admin_view_as }}"
@@ -166,13 +144,13 @@
 >
   {% if customer == nil %}
     <div class="ycs-analysis-login">
-      <h1>Sign in to access the Color Analysis Tool</h1>
+      <h1>Sign in to access Lip &amp; Draping Studio</h1>
       <a href="{{ routes.account_login_url }}">Sign In</a>
     </div>
 
   {% elsif can_use_analysis_tool != true %}
   <div class="ycs-analysis-locked">
-    <h1>Color Analysis Tool</h1>
+    <h1>Lip &amp; Draping Studio</h1>
     <p>This tool is not available for your account.</p>
   </div>
 
@@ -180,45 +158,37 @@
 
 
     <div class="ycs-analysis-shell">
-      <div class="ycs-analysis-topnav" role="navigation" aria-label="Color analysis navigation">
-        <a href="/pages/my-ycs" class="ycs-analysis-back-link">My YCS</a>
-        <a href="/pages/tools" class="ycs-analysis-back-link">Tools</a>
-        <a href="/pages/tools-clients{{ ycs_tools_view_as_query | replace: '&', '?' }}" id="ycs-analysis-back" class="ycs-analysis-back-link">My Clients</a>
-        <a id="ycs-analysis-manage-client-link" href="/pages/tools-clients" class="ycs-analysis-back-link" hidden>
+      <div class="ycs-analysis-topnav ycs-signature-topbar" role="navigation" aria-label="Lip and draping navigation">
+        <a href="/pages/my-ycs" class="ycs-signature-back-link">My YCS</a>
+        <a href="/pages/tools" class="ycs-signature-back-link">Tools</a>
+        <a
+          href="/pages/tools-clients{% if admin_view_as != '' %}?viewAs={{ admin_view_as }}{% endif %}"
+          class="ycs-signature-back-link"
+        >My Clients</a>
+        <a id="ycs-analysis-manage-client-link" href="/pages/tools-clients" class="ycs-analysis-toolbar-link" hidden>
           Manage Client
         </a>
-        <a id="ycs-analysis-photo-prep-link" href="/pages/tools-photo-prep" class="ycs-analysis-back-link">
+        <a
+          id="ycs-analysis-photo-prep-link"
+          href="/pages/tools-photo-prep"
+          class="ycs-analysis-toolbar-link"
+        >
           Photo Prep
         </a>
-        <a id="ycs-analysis-signature-link" href="/pages/tools-lip-draping" class="ycs-analysis-back-link">
-          Lip &amp; Draping Studio
+        <a
+          id="ycs-signature-standard-analysis-link"
+          href="/pages/tools-structured"
+          class="ycs-analysis-toolbar-link"
+        >
+          Structured Analysis
         </a>
       </div>
       <div class="ycs-analysis-header">
         <p class="ycs-analysis-kicker">Your Color Style</p>
-        <h1 class="ycs-analysis-title">Color Analysis Tool</h1>
+        <h1 class="ycs-analysis-title">Lip & Draping Studio</h1>
         <p class="ycs-analysis-subtitle">
-          Compare draping colors side by side on the same saved photo.
+            Draping and lip color testing for a selected Your Color Style palette.
         </p>
-        {% if is_diy_catool %}
-          <div class="ycs-analysis-diy-palette-callout">
-            <p>
-              Found colors you love? Keep your best palette handy for getting dressed, shopping, and feeling pulled together every day.
-            </p>
-            <a href="https://yourcolorstyle.com/products/digital-color-palettes">
-              Shop digital color palettes
-            </a>
-          </div>
-        {% elsif is_free_diy_catool %}
-          <div class="ycs-analysis-diy-palette-callout">
-            <p>
-              Ready to see this on your own photo? Unlock the DIY tool and upload your picture.
-            </p>
-            <a href="https://yourcolorstyle.com/products/virtual-color-draping#order">
-              Unlock DIY tool
-            </a>
-          </div>
-        {% endif %}
       </div>
 
       <div class="ycs-analysis-toolbar">
@@ -248,15 +218,18 @@
   </div>
 
   <div class="ycs-analysis-toolbar-right">
-    <select id="ycs-analysis-palette-select" class="ycs-analysis-palette-select" hidden aria-hidden="true"></select>
+    <div class="ycs-analysis-toolbar-block ycs-analysis-toolbar-block--palette">
+      <label for="ycs-analysis-palette-select" class="ycs-analysis-toolbar-label">Palette</label>
+      <div class="ycs-analysis-palette-select-wrap">
+        <select id="ycs-analysis-palette-select" class="ycs-analysis-palette-select"></select>
+      </div>
+    </div>
     <label class="ycs-analysis-realistic-toggle">
       <input type="checkbox" id="ycs-analysis-realistic-drape-toggle">
       <span>Realistic fabric drape</span>
     </label>
   </div>
 </div>
-
-<div id="ycs-analysis-decision-summary" class="ycs-analysis-decision-summary" hidden></div>
 
       <div id="ycs-analysis-loading" class="ycs-analysis-loading-panel" hidden>
         <div class="ycs-analysis-loading__dots">
@@ -266,18 +239,40 @@
       </div>
 
       <div class="ycs-analysis-main-grid">
-        <aside class="ycs-analysis-comparison-rail ycs-analysis-comparison-rail--left" hidden>
-          <div class="ycs-analysis-comparison-side">
-            <label for="ycs-analysis-left-palette-select" class="ycs-analysis-toolbar-label">Left Palette</label>
-            <select id="ycs-analysis-left-palette-select" class="ycs-analysis-palette-select"></select>
-            <div id="ycs-analysis-left-comparison-filters" class="ycs-analysis-comparison-filters"></div>
-            <div id="ycs-analysis-left-comparison-swatches" class="ycs-analysis-comparison-swatches"></div>
+        <aside class="ycs-signature-side-rail ycs-signature-side-rail--left" data-signature-side="left">
+          <div class="ycs-signature-side-card">
+            <label for="ycs-signature-left-palette-select" class="ycs-analysis-toolbar-label">Left Palette</label>
+            <select id="ycs-signature-left-palette-select" class="ycs-analysis-palette-select"></select>
+
+            <div class="ycs-signature-side-section ycs-signature-side-section--lip">
+              <div class="ycs-signature-side-heading">Lip Colors</div>
+              <div class="ycs-signature-lip-controls" data-lip-controls-panel="left">
+                <div class="ycs-signature-lip-actions">
+                  <button type="button" id="ycs-signature-left-lip-edit">Edit</button>
+                  <button type="button" id="ycs-signature-left-lip-visibility">Hide Lips</button>
+                </div>
+                <label class="ycs-signature-lip-opacity">
+                  <span>Left opacity <strong id="ycs-signature-left-lip-opacity-value">45%</strong></span>
+                  <input id="ycs-signature-left-lip-opacity" type="range" min="0.1" max="0.8" step="0.05" value="0.45" />
+                </label>
+              </div>
+              <div id="ycs-signature-left-lip-swatches" class="ycs-signature-side-swatches ycs-signature-side-swatches--lip"></div>
+            </div>
+
+            <div class="ycs-signature-side-section">
+              <div class="ycs-signature-side-heading">Drape Colors</div>
+              <div id="ycs-signature-left-drape-filters" class="ycs-signature-side-filters"></div>
+              <div id="ycs-signature-left-drape-swatches" class="ycs-signature-side-swatches"></div>
+            </div>
           </div>
         </aside>
 
         <div class="ycs-analysis-stage-panel" data-panel="left">
           <div class="ycs-analysis-photo-stage">
             <div class="ycs-analysis-photo-frame" id="ycs-analysis-frame-left">
+              <div class="ycs-signature-photo-label ycs-signature-photo-label--name" data-signature-first-name></div>
+<div class="ycs-signature-photo-label ycs-signature-photo-label--palette" data-signature-palette-code></div>
+<div class="ycs-signature-photo-label ycs-signature-photo-label--color" data-signature-color-name-left></div>
   <img
     id="ycs-analysis-depth-drape-left"
     class="ycs-analysis-depth-stage-drape"
@@ -368,6 +363,14 @@
                 <input type="checkbox" id="ycs-analysis-export-label-left" checked>
                 Save with color name
               </label>
+              <label class="ycs-analysis-export-label-toggle">
+                <input type="checkbox" id="ycs-analysis-export-name-left" checked>
+                Save with name + color type
+              </label>
+              <label class="ycs-analysis-export-label-toggle">
+                <input type="checkbox" id="ycs-analysis-export-lip-swatch-left">
+                Save with lip color swatch
+              </label>
               <button type="button" id="ycs-analysis-save-left" class="ycs-analysis-save-btn">
                 Save Left View
               </button>
@@ -378,6 +381,9 @@
         <div class="ycs-analysis-stage-panel" data-panel="right">
           <div class="ycs-analysis-photo-stage">
             <div class="ycs-analysis-photo-frame" id="ycs-analysis-frame-right">
+              <div class="ycs-signature-photo-label ycs-signature-photo-label--name" data-signature-first-name></div>
+<div class="ycs-signature-photo-label ycs-signature-photo-label--palette" data-signature-palette-code></div>
+<div class="ycs-signature-photo-label ycs-signature-photo-label--color" data-signature-color-name-right></div>
 
                 <img
   id="ycs-analysis-depth-drape-right"
@@ -466,238 +472,171 @@
                 <input type="checkbox" id="ycs-analysis-export-label-right" checked>
                 Save with color name
               </label>
+              <label class="ycs-analysis-export-label-toggle">
+                <input type="checkbox" id="ycs-analysis-export-name-right" checked>
+                Save with name + color type
+              </label>
+              <label class="ycs-analysis-export-label-toggle">
+                <input type="checkbox" id="ycs-analysis-export-lip-swatch-right">
+                Save with lip color swatch
+              </label>
               <button type="button" id="ycs-analysis-save-right" class="ycs-analysis-save-btn">
                 Save Right View
               </button>
             </div>
           </div>
         </div>
+        <aside class="ycs-signature-side-rail ycs-signature-side-rail--right" data-signature-side="right">
+          <div class="ycs-signature-side-card">
+            <label for="ycs-signature-right-palette-select" class="ycs-analysis-toolbar-label">Right Palette</label>
+            <select id="ycs-signature-right-palette-select" class="ycs-analysis-palette-select"></select>
 
-        <aside class="ycs-analysis-comparison-rail ycs-analysis-comparison-rail--right" hidden>
-          <div class="ycs-analysis-comparison-side">
-            <label for="ycs-analysis-right-palette-select" class="ycs-analysis-toolbar-label">Right Palette</label>
-            <select id="ycs-analysis-right-palette-select" class="ycs-analysis-palette-select"></select>
-            <div id="ycs-analysis-right-comparison-filters" class="ycs-analysis-comparison-filters"></div>
-            <div id="ycs-analysis-right-comparison-swatches" class="ycs-analysis-comparison-swatches"></div>
+            <div class="ycs-signature-side-section ycs-signature-side-section--lip">
+              <div class="ycs-signature-side-heading">Lip Colors</div>
+              <div class="ycs-signature-lip-controls" data-lip-controls-panel="right">
+                <div class="ycs-signature-lip-actions">
+                  <button type="button" id="ycs-signature-right-lip-edit">Edit</button>
+                  <button type="button" id="ycs-signature-right-lip-visibility">Hide Lips</button>
+                </div>
+                <label class="ycs-signature-lip-opacity">
+                  <span>Right opacity <strong id="ycs-signature-right-lip-opacity-value">45%</strong></span>
+                  <input id="ycs-signature-right-lip-opacity" type="range" min="0.1" max="0.8" step="0.05" value="0.45" />
+                </label>
+              </div>
+              <div id="ycs-signature-right-lip-swatches" class="ycs-signature-side-swatches ycs-signature-side-swatches--lip"></div>
+            </div>
+
+            <div class="ycs-signature-side-section">
+              <div class="ycs-signature-side-heading">Drape Colors</div>
+              <div id="ycs-signature-right-drape-filters" class="ycs-signature-side-filters"></div>
+              <div id="ycs-signature-right-drape-swatches" class="ycs-signature-side-swatches"></div>
+            </div>
           </div>
         </aside>
+
+        <section class="ycs-signature-reference-wheel" aria-label="Reference color wheel">
+          <div class="ycs-signature-reference-wheel__controls">
+            <label for="ycs-signature-reference-wheel-select" class="ycs-analysis-toolbar-label">Color Type</label>
+            <select id="ycs-signature-reference-wheel-select" class="ycs-analysis-palette-select">
+              <option value="clear">Clear Color Wheel</option>
+              <option value="soft">Soft Color Wheel</option>
+              <option value="CWL">Clear Warm Light</option>
+              <option value="CWM">Clear Warm Medium</option>
+              <option value="CWD">Clear Warm Deep</option>
+              <option value="CCL">Clear Cool Light</option>
+              <option value="CCM">Clear Cool Medium</option>
+              <option value="CCD">Clear Cool Deep</option>
+              <option value="SWL">Soft Warm Light</option>
+              <option value="SWM">Soft Warm Medium</option>
+              <option value="SWD">Soft Warm Deep</option>
+              <option value="SCL">Soft Cool Light</option>
+              <option value="SCM">Soft Cool Medium</option>
+              <option value="SCD">Soft Cool Deep</option>
+              <option value="LO">Light Olive</option>
+              <option value="MO">Medium Olive</option>
+              <option value="DO">Deep Olive</option>
+              <option value="CWLG">Clear Warm Light for Gray Hair</option>
+              <option value="CWMG">Clear Warm Medium for Gray Hair</option>
+              <option value="CWDG">Clear Warm Deep for Gray Hair</option>
+              <option value="SWLG">Soft Warm Light for Gray Hair</option>
+              <option value="SWMG">Soft Warm Medium for Gray Hair</option>
+              <option value="SWDG">Soft Warm Deep for Gray Hair</option>
+            </select>
+          </div>
+          <img
+            id="ycs-signature-reference-wheel-image"
+            class="ycs-signature-reference-wheel__image"
+            src="https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_Clear_Color_Wheel.png?v=1785778070"
+            alt="Clear Color Wheel"
+            loading="lazy"
+          >
+        </section>
+<!-- RIGHT PANEL -->
 <!-- RIGHT PANEL -->
 <div id="ycs-analysis-guided-panel" class="ycs-analysis-guided-panel" hidden>
-  <div id="ycs-analysis-depth-step" class="ycs-analysis-guided-step">
-    <div class="ycs-analysis-guided-header">
-      <h2 class="ycs-analysis-guided-title">Depth</h2>
-      <p class="ycs-analysis-guided-copy">
-        Compare light, medium, and deep grayscale drapes first. Choose the depth that brings the face into focus best.
-      </p>
-    </div>
-
-    <div class="ycs-analysis-depth-toolbar">
-      <label class="ycs-analysis-checkbox">
-        <input type="checkbox" id="ycs-analysis-grayscale-toggle" />
-        View photo in grayscale
-      </label>
-    </div>
-
-    <div class="ycs-analysis-step-apply-row">
-      <span class="ycs-analysis-apply-label">Apply to</span>
-      <div class="ycs-analysis-panel-toggle">
-        <button
-          type="button"
-          class="ycs-analysis-toggle-btn is-active"
-          data-panel="left"
-          id="ycs-analysis-toggle-left"
-          aria-pressed="true"
-        >
-          Left
-        </button>
-        <button
-          type="button"
-          class="ycs-analysis-toggle-btn"
-          data-panel="right"
-          id="ycs-analysis-toggle-right"
-          aria-pressed="false"
-        >
-          Right
-        </button>
-      </div>
-    </div>
-
-    <div id="ycs-analysis-depth-sections" class="ycs-analysis-depth-sections"></div>
-  </div>
-
-  <div id="ycs-analysis-undertone-step" class="ycs-analysis-guided-step" hidden>
-    <div class="ycs-analysis-guided-header">
-      <h2 class="ycs-analysis-guided-title">Undertones</h2>
-      <p class="ycs-analysis-guided-copy">
-        Now compare warm vs cool within the selected depth.
-      </p>
-    </div>
-
-    <button
-      type="button"
-      id="ycs-analysis-reset-depth"
-      class="ycs-analysis-reset-link"
-    >
-      ← Back to Depth
-    </button>
-
-    <div class="ycs-analysis-step-apply-row">
-      <span class="ycs-analysis-apply-label">Apply to</span>
-      <div class="ycs-analysis-panel-toggle">
-        <button
-          type="button"
-          class="ycs-analysis-toggle-btn is-active"
-          data-panel="left"
-          aria-pressed="true"
-        >
-          Left
-        </button>
-        <button
-          type="button"
-          class="ycs-analysis-toggle-btn"
-          data-panel="right"
-          aria-pressed="false"
-        >
-          Right
-        </button>
-      </div>
-    </div>
-
-    <div class="ycs-lip-panel">
-      <div class="ycs-lip-header">
-        <strong>Lip Color</strong>
-      </div>
-
-      <div id="ycs-lip-empty-mode" class="ycs-lip-mode is-active">
-        <div class="ycs-lip-actions">
-          <button id="ycs-lip-edit" type="button">Create Lips</button>
-        </div>
-        <div id="ycs-lip-status" class="ycs-lip-status">
-          Create a lip shape to test lip colors.
-        </div>
-      </div>
-
-      <div id="ycs-lip-use-mode" class="ycs-lip-mode" hidden>
-  <div class="ycs-lip-actions-inline">
-    <button id="ycs-lip-edit-again" type="button">Edit</button>
-    <button id="ycs-lip-visibility-toggle" type="button">Hide Lips</button>
-  </div>
-
-  <div class="ycs-lip-opacity-row">
-    <label>Opacity <span id="ycs-lip-opacity-value">60%</span></label>
-    <input id="ycs-lip-opacity" type="range" min="0.1" max="0.8" step="0.05" value="0.6" />
-  </div>
-
-  <div id="ycs-lip-swatches" class="ycs-lip-swatches"></div>
+  <div id="ycs-analysis-depth-step" hidden></div>
+  <div id="ycs-analysis-undertone-step" hidden></div>
+  <div id="ycs-analysis-chroma-step" hidden></div>
+  <div id="ycs-analysis-undertone-sections" hidden></div>
+  <div id="ycs-analysis-depth-sections" hidden></div>
+  <div id="ycs-analysis-chroma-sections" hidden></div>
 </div>
 
-     <div id="ycs-lip-edit-mode" class="ycs-lip-mode" hidden>
-  <div class="ycs-lip-status ycs-lip-edit-help">
-    Zoom in if needed. Click around the lips to place points. Use Move Photo if you need to reposition the face.
+<div id="ycs-analysis-standard-panel" class="ycs-analysis-colors-panel ycs-analysis-standard-panel">
+  <div class="ycs-lip-panel">
+  <div class="ycs-lip-header">
+    <strong>Lip Color</strong>
   </div>
 
+  <div id="ycs-lip-empty-mode" class="ycs-lip-mode is-active">
+    <div class="ycs-lip-actions">
+      <button id="ycs-lip-edit" type="button">Create Lips</button>
+    </div>
+
+    <div id="ycs-lip-status" class="ycs-lip-status">
+      Create a lip shape to test lip colors.
+    </div>
+  </div>
+<!-- EDIT MODE -->
+  <div id="ycs-lip-edit-mode" class="ycs-lip-mode" hidden>
+    <div class="ycs-lip-status ycs-lip-edit-help">
+      Zoom in if needed. Click around the lips to place points.
+    </div>
+
+    <div class="ycs-lip-actions">
+  <button id="ycs-lip-finish" type="button" disabled>Finish Shape</button>
+  <button id="ycs-lip-undo" type="button" disabled>Undo</button>
+  <button id="ycs-lip-clear" type="button">Start Over</button>
+  <button type="button" id="ycs-lip-cancel" class="ycs-lip-secondary-btn">Cancel</button>
+</div>
+  </div>
+<!-- ADJUST MODE -->
+ <div id="ycs-lip-adjust-mode" class="ycs-lip-mode" hidden>
   <div class="ycs-lip-actions">
-    <button id="ycs-lip-move-photo" type="button">Move Photo</button>
-    <button id="ycs-lip-finish" type="button" disabled>Finish Shape</button>
-    <button id="ycs-lip-undo" type="button" disabled>Undo</button>
-    <button id="ycs-lip-clear" type="button">Start Over</button>
+  <button id="ycs-lip-move-photo" type="button">Move Photo</button>
+  <button id="ycs-lip-edit-shape-1" type="button">Edit Shape 1</button>
+  <button id="ycs-lip-edit-shape-2" type="button">Edit Shape 2</button>
+  <button id="ycs-lip-done" type="button">Done Editing</button>
+  <button id="ycs-lip-add-shape" type="button" disabled>Add Second Shape</button>
+  <button id="ycs-lip-start-over" type="button">Start Over</button>
+  <button type="button" class="ycs-lip-cancel-secondary">Cancel</button>
+</div>
+</div>
+  <div id="ycs-lip-use-mode" class="ycs-lip-mode" hidden>
+    <div class="ycs-lip-actions-inline">
+      <button id="ycs-lip-edit-again" type="button">Edit</button>
+      <button id="ycs-lip-visibility-toggle" type="button">Hide Lips</button>
+    </div>
+
+    <div class="ycs-lip-opacity-row">
+      <label>Opacity <span id="ycs-lip-opacity-value">60%</span></label>
+      <input id="ycs-lip-opacity" type="range" min="0.1" max="0.8" step="0.05" value="0.6" />
+    </div>
+
+    <div id="ycs-lip-swatches" class="ycs-lip-swatches"></div>
   </div>
 </div>
 
-      <div id="ycs-lip-adjust-mode" class="ycs-lip-mode" hidden>
-  <div class="ycs-lip-actions">
-    <button id="ycs-lip-edit-shape-1" type="button">Edit Shape 1</button>
-    <button id="ycs-lip-edit-shape-2" type="button">Edit Shape 2</button>
-    <button id="ycs-lip-done" type="button">Done Editing</button>
-    <button id="ycs-lip-add-shape" type="button" disabled>Add Second Shape</button>
-    <button id="ycs-lip-start-over" type="button">Start Over</button>
+  <div class="ycs-analysis-filter-row">
+    <div id="ycs-analysis-filters" class="ycs-analysis-filters"></div>
+
+    <div class="ycs-analysis-filter-nav">
+      <button type="button" id="ycs-analysis-filter-left" class="ycs-analysis-filter-arrow" aria-label="Scroll filters left">‹</button>
+      <button type="button" id="ycs-analysis-filter-right" class="ycs-analysis-filter-arrow" aria-label="Scroll filters right">›</button>
+    </div>
+  </div>
+
+  <div class="ycs-analysis-swatches-wrap">
+    <div id="ycs-analysis-swatch-loading" class="ycs-analysis-swatch-loading" hidden>
+      <div class="ycs-analysis-loading__dots">
+        <span></span><span></span><span></span>
+      </div>
+      <p class="ycs-analysis-loading__text">Loading colors…</p>
+    </div>
+
+    <div id="ycs-analysis-swatches" class="ycs-analysis-swatches"></div>
   </div>
 </div>
-    </div>
-
-    <div id="ycs-analysis-undertone-sections" class="ycs-analysis-undertone-sections"></div>
-    <div id="ycs-analysis-free-lock" class="ycs-analysis-free-lock" hidden>
-      <h2>{% if is_free_diy_catool %}Unlock the DIY Color Analysis Tool{% else %}Unlock the full Color Analysis Tool{% endif %}</h2>
-      <p>{% if is_free_diy_catool %}Unlock the DIY tool to upload your own photo and use the full color analysis experience on yourself.{% else %}Unlock the full Color Analysis Tool to upload your client photos and use the complete color analysis workflow.{% endif %}</p>
-      <a href="{% if is_free_diy_catool %}https://yourcolorstyle.com/products/virtual-color-draping#order{% else %}https://yourcolorstyle.com/products/color-analysis-tool#order{% endif %}" class="ycs-analysis-toolbar-link">
-        {% if is_free_diy_catool %}Unlock DIY Tool{% else %}Unlock Color Analysis Tool{% endif %}
-      </a>
-    </div>
-  </div>
-
-
-  <div id="ycs-analysis-chroma-step" class="ycs-analysis-guided-step" hidden>
-    <div class="ycs-analysis-guided-header">
-      <h2 class="ycs-analysis-guided-title">Chroma</h2>
-      <p id="ycs-analysis-chroma-copy" class="ycs-analysis-guided-copy">
-        Now compare clear vs soft.
-      </p>
-      <p id="ycs-analysis-chroma-result" class="ycs-analysis-chroma-result" hidden>
-        Selected result: <strong id="ycs-analysis-chroma-result-text">—</strong>
-      </p>
-    </div>
-
-    <button
-      type="button"
-      id="ycs-analysis-reset-undertone"
-      class="ycs-analysis-reset-link"
-    >
-      ← Back to Undertones
-    </button>
-
-
-    <div id="ycs-analysis-chroma-sections" class="ycs-analysis-chroma-sections"></div>
-  </div>
-</div>
-
-          <div id="ycs-analysis-standard-panel" class="ycs-analysis-standard-panel">
-            <div id="ycs-analysis-comparison-panel" class="ycs-analysis-comparison-panel" hidden>
-              <div class="ycs-analysis-comparison-head">
-                <h2>Palette Comparison</h2>
-                <p>Compare two palettes side by side on the same photo.</p>
-                {% if is_diy_catool %}
-                  <p class="ycs-analysis-upgrade-copy">Love one of these palettes? Purchase the full digital palette to save and use your colors anytime.</p>
-                {% endif %}
-              </div>
-              <button type="button" id="ycs-analysis-back-structured" class="ycs-analysis-toolbar-link">
-                Back to Structured Analysis
-              </button>
-            </div>
-
-            <div class="ycs-analysis-filter-row">
-              <div id="ycs-analysis-filters" class="ycs-analysis-filters"></div>
-
-              <div class="ycs-analysis-filter-nav">
-                <button
-                  type="button"
-                  id="ycs-analysis-filter-left"
-                  class="ycs-analysis-filter-arrow"
-                  aria-label="Scroll filters left"
-                >
-                  ‹
-                </button>
-                <button
-                  type="button"
-                  id="ycs-analysis-filter-right"
-                  class="ycs-analysis-filter-arrow"
-                  aria-label="Scroll filters right"
-                >
-                  ›
-                </button>
-              </div>
-            </div>
-
-            <div class="ycs-analysis-swatches-wrap">
-              <div id="ycs-analysis-swatch-loading" class="ycs-analysis-swatch-loading" hidden>
-                <div class="ycs-analysis-loading__dots">
-                  <span></span><span></span><span></span>
-                </div>
-                <p class="ycs-analysis-loading__text">Loading colors…</p>
-              </div>
-
-              <div id="ycs-analysis-swatches" class="ycs-analysis-swatches"></div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -705,19 +644,6 @@
 </div>
 
 <style>
-  .shopify-section-header,
-  #shopify-section-header,
-  .site-header,
-  .header-wrapper,
-  .header {
-    display: none !important;
-  }
-
-  body {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-  }
-
   .ycs-analysis-app {
     max-width: 1320px;
     margin: 0 auto;
@@ -760,7 +686,8 @@
     flex-wrap: wrap;
   }
 
-  .ycs-analysis-back-link {
+  .ycs-analysis-back-link,
+  .ycs-signature-back-link {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -777,7 +704,8 @@
     transition: all 0.15s ease;
   }
 
-  .ycs-analysis-back-link:hover {
+  .ycs-analysis-back-link:hover,
+  .ycs-signature-back-link:hover {
     border-color: #111;
     background: #111;
     color: #fff;
@@ -1118,17 +1046,7 @@
   }
 /* HEADER */
  .ycs-analysis-header {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 430px);
-  align-items: end;
-  column-gap: 24px;
   margin-bottom: 4px;
-}
-
-.ycs-analysis-kicker,
-.ycs-analysis-title,
-.ycs-analysis-subtitle {
-  grid-column: 1;
 }
 
 .ycs-analysis-title {
@@ -1151,32 +1069,6 @@
     color: #8b7d6b;
   }
 
-.ycs-analysis-diy-palette-callout {
-  grid-column: 2;
-  grid-row: 1 / span 3;
-  align-self: center;
-  justify-self: end;
-  max-width: 430px;
-  padding: 12px 14px;
-  border: 1px solid #eadfd2;
-  border-radius: 14px;
-  background: #fffaf2;
-  color: #4f4942;
-}
-
-.ycs-analysis-diy-palette-callout p {
-  margin: 0 0 8px;
-  font-size: 12px;
-  line-height: 1.35;
-}
-
-.ycs-analysis-diy-palette-callout a {
-  color: #2f2a25;
-  font-size: 12px;
-  font-weight: 800;
-  text-decoration: underline;
-}
-
 
 
   .ycs-analysis-chroma-column .ycs-analysis-commit-row {
@@ -1196,47 +1088,6 @@
   gap: 8px;
   font-size: 13px;
   color: #4f4942;
-}
-
-.ycs-analysis-free-lock[hidden] {
-  display: none;
-}
-
-.ycs-analysis-free-lock {
-  margin-top: 18px;
-  padding: 18px;
-  border: 1px solid #eadfd2;
-  border-radius: 14px;
-  background: #fff9ef;
-  display: grid;
-  gap: 10px;
-  align-content: center;
-  justify-items: center;
-  text-align: center;
-}
-
-.ycs-analysis-free-lock h2 {
-  margin: 0;
-  font-size: 18px;
-  line-height: 1.2;
-  color: #2f2a25;
-}
-
-.ycs-analysis-free-lock p {
-  margin: 0;
-  color: #5d554c;
-  line-height: 1.45;
-  max-width: 480px;
-}
-
-.ycs-analysis-free-locked .ycs-lip-panel {
-  pointer-events: none;
-  user-select: none;
-}
-
-.ycs-analysis-free-locked .ycs-analysis-commit-row,
-.ycs-analysis-free-locked .ycs-lip-panel {
-  display: none;
 }
 
 
@@ -1306,150 +1157,6 @@
     border-color: #111;
   }
 
-  .ycs-analysis-mode-switch {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin: 0 0 12px;
-  }
-
-  .ycs-analysis-mode-actions {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: nowrap;
-  }
-
-  .ycs-analysis-mode-btn {
-    min-height: 38px;
-    padding: 0 18px;
-    border-radius: 999px;
-    border: 1px solid #e6ded5;
-    background: #fff;
-    color: #2f2a25;
-    font-size: 14px;
-    font-weight: 800;
-    line-height: 1;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .ycs-analysis-mode-btn.is-active {
-    background: #111;
-    border-color: #111;
-    color: #fff;
-  }
-
-  .ycs-analysis-decision-summary,
-  .ycs-analysis-comparison-panel {
-    border: 1px solid #ece5dc;
-    border-radius: 12px;
-    background: #fffdf9;
-    padding: 12px;
-    margin-bottom: 12px;
-  }
-
-  .ycs-analysis-decision-summary p,
-  .ycs-analysis-comparison-head p {
-    margin: 4px 0 0;
-    color: #6f665d;
-    font-size: 13px;
-  }
-
-  .ycs-analysis-comparison-head h2 {
-    margin: 0;
-    font-size: 16px;
-  }
-
-  .ycs-analysis-comparison-side {
-    display: grid;
-    gap: 8px;
-  }
-
-  .ycs-analysis-comparison-rail {
-    display: none;
-    min-height: 0;
-    border: 1px solid #ece5dc;
-    border-radius: 14px;
-    background: #fffdf9;
-    padding: 10px;
-    overflow: auto;
-  }
-
-  .ycs-analysis-app.is-comparison-mode .ycs-analysis-comparison-rail {
-    display: block;
-  }
-
-  .ycs-analysis-comparison-swatches {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px;
-  }
-
-  .ycs-analysis-comparison-filters {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  .ycs-analysis-comparison-filter {
-    appearance: none;
-    border: 1px solid #d9cec0;
-    border-radius: 999px;
-    background: #fff;
-    color: #4b443d;
-    cursor: pointer;
-    font-size: 11px;
-    font-weight: 700;
-    line-height: 1.1;
-    padding: 5px 8px;
-    text-transform: capitalize;
-  }
-
-  .ycs-analysis-comparison-filter.is-active {
-    background: #111;
-    border-color: #111;
-    color: #fff;
-  }
-
-  .ycs-analysis-comparison-swatch {
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: transform 0.14s ease, box-shadow 0.14s ease;
-  }
-
-  .ycs-analysis-comparison-swatch:hover {
-    transform: translateY(-1px);
-  }
-
-  .ycs-analysis-comparison-swatch.is-active {
-    box-shadow: 0 0 0 2px #111 inset;
-  }
-
-  .ycs-analysis-app.is-structured-mode .ycs-analysis-toolbar-block--palette,
-  .ycs-analysis-app.is-comparison-mode .ycs-analysis-toolbar-block--palette,
-  .ycs-analysis-app.is-comparison-mode .ycs-analysis-filter-row,
-  .ycs-analysis-app.is-comparison-mode .ycs-analysis-swatches-wrap {
-    display: none;
-  }
-
-  .ycs-analysis-app.is-comparison-mode #ycs-analysis-guided-panel {
-    display: none;
-  }
-
-  .ycs-analysis-app.is-comparison-mode .ycs-analysis-main-grid {
-    grid-template-columns: 220px minmax(0, 1fr) minmax(0, 1fr) 220px;
-  }
-
-  .ycs-analysis-upgrade-copy {
-    font-weight: 700;
-  }
-
   .ycs-analysis-range {
   width: 100%;
   height: 4px;
@@ -1507,6 +1214,7 @@
   }
 
   .ycs-analysis-guided-panel.is-lip-editing-mode .ycs-analysis-guided-header,
+.ycs-analysis-guided-panel.is-lip-editing-mode .ycs-analysis-reset-link,
 .ycs-analysis-guided-panel.is-lip-editing-mode .ycs-analysis-step-apply-row,
 .ycs-analysis-guided-panel.is-lip-editing-mode #ycs-analysis-undertone-sections {
   display: none !important;
@@ -1562,26 +1270,18 @@
 }
 
 .ycs-analysis-reset-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   align-self: flex-start;
   appearance: none;
-  border: 1px solid #d8cfc3;
-  border-radius: 999px;
-  background: #fff;
-  padding: 8px 14px;
-  margin-bottom: 14px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin-bottom: 10px;
   font: inherit;
-  font-size: 13px;
-  font-weight: 700;
-  color: #2f2a25;
-  text-decoration: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: #8b7d6b;
+  text-decoration: underline;
   cursor: pointer;
-}
-
-.ycs-analysis-reset-link:hover {
-  background: #f6f1ea;
 }
 
 .ycs-analysis-chroma-sections {
@@ -1769,9 +1469,6 @@
   }
 
   .ycs-analysis-drape-wrap {
-    --analysis-drape-color: #e8dfd4;
-    --analysis-drape-overlay-url: url("https://cdn.shopify.com/s/files/1/0623/6284/5408/files/fabric-drape-overlay-550.png?v=1778252521");
-    --analysis-drape-overlay-opacity: 0;
     position: absolute;
     inset: 0;
     pointer-events: none;
@@ -1779,6 +1476,9 @@
   }
 
   .ycs-analysis-drape-svg {
+    --analysis-drape-color: #e8dfd4;
+    --analysis-drape-overlay-url: url("https://cdn.shopify.com/s/files/1/0623/6284/5408/files/fabric-drape-overlay-550.png?v=1778252521");
+    --analysis-drape-overlay-opacity: 0;
     position: absolute;
     bottom: -1%;
     left: 0;
@@ -1813,24 +1513,8 @@
     pointer-events: none;
   }
 
-  .ycs-analysis-drape-wrap.drape-realistic .ycs-analysis-drape-overlay-object {
+  .ycs-analysis-drape-svg.drape-realistic .ycs-analysis-drape-overlay-object {
     opacity: var(--analysis-drape-overlay-opacity);
-  }
-
-  .ycs-analysis-realistic-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 10px;
-    font-size: 13px;
-    font-weight: 700;
-    color: #3f362f;
-  }
-
-  .ycs-analysis-realistic-toggle input {
-    width: 16px;
-    height: 16px;
-    accent-color: #d94c6a;
   }
 
   .ycs-analysis-drag-layer {
@@ -1873,20 +1557,51 @@
     font-size: 14px;
     font-weight: 700;
     color: #2f2a25;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 180px;
+    line-height: 1.25;
+    max-width: 260px;
+  }
+
+  .ycs-hex-row,
+  .ycs-lip-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #746b62;
+  }
+
+  .ycs-hex-copy {
+    appearance: none;
+    border: 1px solid #d8cfc3;
+    border-radius: 999px;
+    background: #fff;
+    color: #2f2a25;
+    cursor: pointer;
+    font: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    line-height: 1;
+    margin-left: 4px;
+    padding: 3px 7px;
+    text-transform: uppercase;
+    user-select: text;
+    -webkit-user-select: text;
+  }
+
+  .ycs-hex-copy:hover,
+  .ycs-hex-copy.is-copied {
+    border-color: #2f2a25;
+    background: #2f2a25;
+    color: #fff;
   }
 
   .ycs-analysis-save-btn {
-    min-height: 34px;
-    padding: 7px 12px;
+    min-height: 38px;
+    padding: 8px 14px;
     border-radius: 999px;
     border: none;
     background: #111;
     color: #fff;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     white-space: nowrap;
@@ -1926,6 +1641,22 @@
     cursor: pointer;
   }
 
+  .ycs-analysis-realistic-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #3f362f;
+  }
+
+  .ycs-analysis-realistic-toggle input {
+    width: 16px;
+    height: 16px;
+    accent-color: #d94c6a;
+  }
+
   .ycs-analysis-stage-panel.is-active-panel .ycs-analysis-photo-stage {
     box-shadow: 0 0 0 2px #111 inset, 0 8px 18px rgba(0,0,0,0.08);
     border-radius: 18px;
@@ -1934,9 +1665,9 @@
   /*  TOOLBAR BLOCK */
   .ycs-analysis-toolbar {
   display: grid;
-  grid-template-columns: minmax(520px, 1fr) 280px;
+  grid-template-columns: minmax(260px, 1fr) 280px;
   gap: 12px;
-  align-items: center;
+  align-items: end;
   padding: 10px 14px;
   border: 1px solid #ece7df;
   border-radius: 18px;
@@ -1945,11 +1676,10 @@
 
 .ycs-analysis-toolbar-left {
   display: flex;
-  flex-direction: row;
-  align-items: end;
-  gap: 12px;
+  flex-direction: column;
+  gap: 6px;
   min-width: 0;
-  max-width: 760px;
+  max-width: 420px;
 }
 
 .ycs-analysis-toolbar-right {
@@ -1962,7 +1692,7 @@
 .ycs-analysis-toolbar-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
   align-items: center;
 }
 
@@ -1975,7 +1705,6 @@
 }
 
 .ycs-analysis-toolbar-block--zoom {
-  width: 260px;
   max-width: 260px;
 }
 
@@ -1984,17 +1713,13 @@
   max-width: 280px;
 }
 
-.ycs-analysis-toolbar-block--palette[hidden] {
-  display: none !important;
-}
-
 .ycs-analysis-toolbar-label {
   font-size: 11px;
   line-height: 1;
   margin-bottom: 2px;
 }
 
-  .ycs-analysis-toolbar-link {
+.ycs-analysis-toolbar-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2014,6 +1739,26 @@
 .ycs-analysis-toolbar-link:hover {
   border-color: #111;
   background: #111;
+  color: #fff;
+}
+
+.ycs-analysis-mode-btn {
+  min-height: 38px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 1px solid #e6ded5;
+  background: #fff;
+  color: #2f2a25;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ycs-analysis-mode-btn.is-active {
+  background: #111;
+  border-color: #111;
   color: #fff;
 }
 
@@ -2372,10 +2117,6 @@
     .ycs-analysis-main-grid {
       grid-template-columns: 1fr 1fr 280px;
     }
-
-    .ycs-analysis-app.is-comparison-mode .ycs-analysis-main-grid {
-      grid-template-columns: 180px minmax(0, 1fr) minmax(0, 1fr) 180px;
-    }
   }
 
   @media screen and (max-width: 980px) {
@@ -2391,18 +2132,6 @@
       font-size: 22px;
     }
 
-    .ycs-analysis-header {
-      grid-template-columns: 1fr;
-      row-gap: 10px;
-    }
-
-    .ycs-analysis-diy-palette-callout {
-      grid-column: 1;
-      grid-row: auto;
-      justify-self: stretch;
-      max-width: none;
-    }
-
     .ycs-analysis-toolbar {
     grid-template-columns: 1fr;
     gap: 12px;
@@ -2412,13 +2141,6 @@
   .ycs-analysis-toolbar-block,
   .ycs-analysis-toolbar-block--zoom,
   .ycs-analysis-toolbar-block--palette {
-    width: 100%;
-    max-width: 100%;
-  }
-
-  .ycs-analysis-toolbar-left {
-    flex-direction: column;
-    align-items: stretch;
     max-width: 100%;
   }
 
@@ -2437,31 +2159,6 @@
   gap: 10px;
   height: calc(100vh - 170px);
 }
-
-  .ycs-analysis-app.is-comparison-mode .ycs-analysis-main-grid {
-    grid-template-columns: 1fr;
-    height: auto;
-  }
-
-  .ycs-analysis-app.is-comparison-mode .ycs-analysis-comparison-rail--left {
-    order: 0;
-  }
-
-  .ycs-analysis-app.is-comparison-mode .ycs-analysis-stage-panel[data-panel="left"] {
-    order: 1;
-  }
-
-  .ycs-analysis-app.is-comparison-mode .ycs-analysis-stage-panel[data-panel="right"] {
-    order: 2;
-  }
-
-  .ycs-analysis-app.is-comparison-mode .ycs-analysis-comparison-rail--right {
-    order: 3;
-  }
-
-  .ycs-analysis-comparison-swatches {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-  }
 
     .ycs-analysis-stage-panel {
       height: auto;
@@ -2496,14 +2193,401 @@
 
 
   }
+.ycs-signature-analysis-app .ycs-analysis-main-grid {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr) minmax(0, 1fr) 240px;
+  gap: 12px;
+  align-items: start;
+  height: auto;
+}
+
+.ycs-signature-analysis-app #ycs-analysis-guided-panel[hidden] {
+  display: none !important;
+}
+
+.ycs-signature-analysis-app #ycs-analysis-standard-panel {
+  grid-column: 1 / -1;
+  height: auto;
+  max-height: none;
+  overflow: visible;
+}
+
+.ycs-signature-analysis-app .ycs-analysis-toolbar-block--palette,
+.ycs-signature-analysis-app .ycs-analysis-filter-row,
+.ycs-signature-analysis-app .ycs-analysis-swatches-wrap {
+  display: none !important;
+}
+
+.ycs-signature-analysis-app .ycs-analysis-toolbar-right {
+  align-self: center;
+}
+
+.ycs-signature-reference-wheel {
+  grid-column: 2 / 4;
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid #ece7df;
+  border-radius: 14px;
+  background: #fffdfb;
+}
+
+.ycs-signature-reference-wheel__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.ycs-signature-reference-wheel__controls .ycs-analysis-palette-select {
+  max-width: 280px;
+}
+
+.ycs-signature-reference-wheel__image {
+  display: block;
+  width: min(100%, 560px);
+  max-height: 520px;
+  object-fit: contain;
+}
+
+.ycs-signature-side-rail {
+  min-width: 0;
+  height: calc(100vh - 200px);
+  max-height: calc(100vh - 200px);
+}
+
+.ycs-signature-side-card {
+  height: 100%;
+  overflow-y: auto;
+  border: 1px solid #ece7df;
+  border-radius: 14px;
+  background: #fffdfb;
+  padding: 12px;
+}
+
+.ycs-signature-side-section {
+  margin-top: 14px;
+}
+
+.ycs-signature-side-section--lip {
+  padding-bottom: 14px;
+  border-bottom: 1px solid #ece7df;
+}
+
+.ycs-signature-side-heading {
+  margin-bottom: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  color: #8b7d6b;
+}
+
+.ycs-signature-side-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.ycs-signature-side-filter {
+  min-height: 28px;
+  padding: 5px 9px;
+  border: 1px solid #dfd5c9;
+  border-radius: 999px;
+  background: #fff;
+  color: #50473f;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ycs-signature-side-filter.is-active {
+  border-color: #24201c;
+  background: #24201c;
+  color: #fff;
+}
+
+.ycs-signature-side-swatches {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.ycs-signature-lip-controls {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0 10px;
+}
+
+.ycs-signature-lip-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ycs-signature-lip-actions button {
+  appearance: none;
+  border: 1px solid #dfd5c9;
+  border-radius: 999px;
+  background: #fff;
+  color: #302a25;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 8px 11px;
+}
+
+.ycs-signature-lip-actions button:hover,
+.ycs-signature-lip-actions button:focus-visible {
+  border-color: #24201c;
+  outline: none;
+}
+
+.ycs-signature-lip-opacity {
+  display: grid;
+  gap: 5px;
+  color: #302a25;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ycs-signature-lip-opacity strong {
+  font-weight: 800;
+}
+
+.ycs-signature-lip-opacity input[type="range"] {
+  width: 100%;
+}
+
+.ycs-signature-analysis-app .ycs-signature-side-section--lip.is-lip-collapsed .ycs-signature-lip-opacity,
+.ycs-signature-analysis-app .ycs-signature-side-section--lip.is-lip-collapsed .ycs-signature-side-swatches--lip {
+  display: none !important;
+}
+
+.ycs-signature-analysis-app .ycs-signature-side-section--lip.is-lip-collapsed {
+  padding-bottom: 10px;
+}
+
+.ycs-signature-side-swatch {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 1px solid rgba(38, 32, 28, 0.16);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.ycs-signature-side-swatches--lip .ycs-signature-side-swatch {
+  border-radius: 999px;
+}
+
+.ycs-signature-side-swatches:not(.ycs-signature-side-swatches--lip) {
+  max-height: 42vh;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.ycs-signature-side-swatch.is-active {
+  outline: 2px solid #24201c;
+  outline-offset: 2px;
+}
+
+.ycs-signature-analysis-app .ycs-lip-panel {
+  display: none !important;
+}
+
+.ycs-signature-analysis-app .ycs-lip-header {
+  display: none !important;
+}
+
+.ycs-signature-analysis-app .ycs-lip-panel[data-lip-mode="edit"],
+.ycs-signature-analysis-app .ycs-lip-panel[data-lip-mode="adjust"] {
+  display: block !important;
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  z-index: 9999;
+  width: min(720px, calc(100vw - 32px));
+  margin: 0;
+  padding: 14px 16px;
+  transform: translateX(-50%);
+  border: 1px solid #e4d8cb;
+  border-radius: 18px;
+  background: #fffdfb;
+  box-shadow: 0 18px 48px rgba(28, 22, 18, 0.18);
+}
+
+.ycs-signature-analysis-app #ycs-lip-use-mode {
+  gap: 8px;
+}
+
+.ycs-signature-analysis-app #ycs-lip-use-mode .ycs-lip-actions-inline,
+.ycs-signature-analysis-app #ycs-lip-use-mode .ycs-lip-opacity-row {
+  display: none !important;
+}
+
+.ycs-signature-analysis-app .ycs-lip-opacity-row {
+  margin-bottom: 0;
+}
+
+.ycs-signature-analysis-app #ycs-lip-swatches {
+  display: none !important;
+}
+
+.ycs-signature-analysis-app .ycs-signature-side-section--lip:not(.has-lip-shape) .ycs-signature-lip-opacity,
+.ycs-signature-analysis-app .ycs-signature-side-section--lip:not(.has-lip-shape) .ycs-signature-side-swatches--lip,
+.ycs-signature-analysis-app .ycs-signature-side-section--lip:not(.has-lip-shape) .ycs-signature-lip-actions button[id$="-visibility"] {
+  display: none !important;
+}
+
+#shopify-section-footer,
+.shopify-section--footer,
+.site-footer,
+footer.footer,
+footer[role="contentinfo"] {
+  display: none !important;
+}
+
+.ycs-signature-side-empty {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #6a635b;
+}
+
+@media screen and (max-width: 1180px) {
+  .ycs-signature-analysis-app .ycs-analysis-main-grid {
+    grid-template-columns: 210px minmax(0, 1fr) minmax(0, 1fr) 210px;
+  }
+
+  .ycs-signature-side-swatches {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media screen and (max-width: 980px) {
+  .ycs-signature-analysis-app .ycs-analysis-main-grid {
+    grid-template-columns: 1fr 1fr;
+    height: auto;
+  }
+
+  .ycs-signature-side-rail {
+    height: auto;
+    max-height: none;
+  }
+
+  .ycs-signature-side-rail--left {
+    order: 1;
+  }
+
+  .ycs-analysis-stage-panel[data-panel="left"] {
+    order: 2;
+  }
+
+  .ycs-analysis-stage-panel[data-panel="right"] {
+    order: 3;
+  }
+
+  .ycs-signature-side-rail--right {
+    order: 4;
+  }
+
+  .ycs-signature-reference-wheel {
+    grid-column: 1 / -1;
+    order: 5;
+  }
+
+  .ycs-signature-analysis-app #ycs-analysis-standard-panel {
+    order: 6;
+  }
+}
+.ycs-signature-analysis-app .ycs-analysis-swatches,
+.ycs-signature-analysis-app .ycs-analysis-guided-swatches {
+  grid-template-columns: repeat(6, 1fr);
+}
+
+.ycs-signature-analysis-app .ycs-analysis-swatch,
+.ycs-signature-analysis-app .ycs-analysis-guided-swatch {
+  border-radius: 6px;
+}
+/* Remove Shopify header/nav */
+.shopify-section-header,
+#shopify-section-header,
+.site-header,
+.header-wrapper,
+.header,
+nav[role="navigation"] {
+  display: none !important;
+}
+
+/* Remove extra top spacing caused by header */
+body {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+/* Base */
+.ycs-signature-analysis-app .ycs-signature-photo-label {
+  position: absolute;
+  z-index: 6;
+  pointer-events: none;
+  font-family: Poppins, Arial, sans-serif;
+  line-height: 1;
+}
+
+/* NAME — smaller + quieter */
+.ycs-signature-analysis-app .ycs-signature-photo-label--name {
+  top: 20px;
+  left: 20px;
+  color: #7a7a7a;
+  font-size: clamp(12px, 1.8vw, 14px); /* smaller */
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+/* PALETTE — black pill with white text */
+.ycs-signature-analysis-app .ycs-signature-photo-label--palette {
+  top: 20px;
+  right: 20px;
+  font-size: clamp(11px, 1.6vw, 13px);
+  font-weight: 600;
+  color: #ffffff;
+
+  background: #111; /* black */
+  padding: 6px 10px;
+  border-radius: 999px;
+
+  border: none;
+}
+
+/* COLOR NAME — smaller + lower */
+.ycs-signature-analysis-app .ycs-signature-photo-label--color {
+  left: 0;
+  right: 0;
+  bottom: 12px; /* LOWER than before */
+  text-align: center;
+
+  color: #ffffff;
+  font-size: clamp(16px, 3vw, 22px);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+
+  text-shadow: 0 2px 6px rgba(0,0,0,0.25);
+}
 </style>
 
-{{ 'ycs-member-analysis.js' | asset_url | script_tag }}
+{{ 'ycs-member-lip-draping.js' | asset_url | script_tag }}
 
 {% schema %}
 {
-  "name": "YCS Member Analysis",
+  "name": "YCS Member Lip Draping",
   "settings": [],
-  "presets": [{ "name": "YCS Member Analysis" }]
+  "presets": [{ "name": "YCS Member Lip Draping" }]
 }
 {% endschema %}

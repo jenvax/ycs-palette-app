@@ -206,12 +206,13 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
           <a href="/pages/tools-clients" class="ycs-photo-prep-back">My Clients</a>
           <a id="ycs-photo-prep-manage-client-nav" href="/pages/tools-clients" class="ycs-photo-prep-back" hidden>Manage Client</a>
           <a id="ycs-photo-prep-structured-nav" href="/pages/tools-structured" class="ycs-photo-prep-back" hidden>Structured Analysis</a>
+          <a id="ycs-photo-prep-lip-nav" href="/pages/tools-lip-draping" class="ycs-photo-prep-back" hidden>Lip &amp; Draping Studio</a>
         </nav>
       {% endif %}
       {% unless can_use_client_management and is_personal_mode_request != true %}
         <nav class="ycs-photo-prep-tool-nav" aria-label="Photo draping tools">
           <a href="{{ routes.account_url }}" class="ycs-photo-prep-back">My Account</a>
-          <a id="ycs-photo-prep-back-link" href="/pages/my-palettes" class="ycs-photo-prep-back">My Color Palettes</a>
+          <a id="ycs-photo-prep-back-link" href="/pages/tools" class="ycs-photo-prep-back">Tools</a>
         </nav>
       {% endunless %}
     </div>
@@ -464,6 +465,14 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
             <div class="ycs-photo-prep-analysis-actions">
               <a id="ycs-prep-start-analysis-btn" href="/pages/tools-structured" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary">
                 Continue
+              </a>
+              <a
+                id="ycs-prep-start-signature-analysis-btn"
+                href="/pages/tools-lip-draping"
+                class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary"
+                hidden
+              >
+                Lip &amp; Draping Studio
               </a>
             </div>
           </div>
@@ -1337,8 +1346,8 @@ const IS_SAMPLE_TRIAL_REQUEST = appEl.dataset.isSampleTrialRequest === 'true';
 
 
 const params = new URLSearchParams(window.location.search);
-const returnUrl = params.get('returnUrl') || '/pages/my-palettes';
-const safeReturnUrl = returnUrl.startsWith('/') ? returnUrl : '/pages/my-palettes';
+const returnUrl = params.get('returnUrl') || '/pages/tools';
+const safeReturnUrl = returnUrl.startsWith('/') ? returnUrl : '/pages/tools';
 const adminViewAs = (params.get('viewAs') || '').trim();
 const pageBuilderFlag = (params.get('pb') || '').trim();
 const isToolsReturnUrl =
@@ -1682,7 +1691,7 @@ async function loadPhotoPrepUsage() {
 
   if (IS_PERSONAL_MODE) {
     backLink.textContent = 'My Color Palettes';
-    backLink.setAttribute('href', '/pages/my-palettes');
+    backLink.setAttribute('href', '/pages/tools');
     return;
   }
 
@@ -1733,7 +1742,7 @@ function syncColorAnalysisToolNav(structuredHref, signatureHref) {
   }
 
   setToolNavLink(structuredNavLink, structuredHref || '/pages/tools-structured', hasClient && hasPhoto);
-  setToolNavLink(lipNavLink, signatureHref || '/pages/signature-color-analysis', hasClient && hasPhoto);
+  setToolNavLink(lipNavLink, signatureHref || '/pages/tools-lip-draping', hasClient && hasPhoto);
 }
 
 function syncPhotoDependentActions() {
@@ -1784,9 +1793,9 @@ function updateStartAnalysisLink() {
     const memberCustomerId = state.customerId || initialCustomerId;
     const originalSignatureUrl = returnUrl || '';
 
-    let href = originalSignatureUrl && originalSignatureUrl.includes('/pages/signature-color-analysis')
+    let href = originalSignatureUrl && originalSignatureUrl.includes('/pages/tools-lip-draping')
       ? originalSignatureUrl
-      : '/pages/signature-color-analysis?' +
+      : '/pages/tools-lip-draping?' +
         new URLSearchParams({
           adminCustomerId: memberCustomerId,
           mode: 'member',
@@ -1890,7 +1899,7 @@ function updateStartAnalysisLink() {
   let signatureHrefForNav = '';
 
   if (startSignatureAnalysisBtn && CAN_USE_CLIENT_MANAGEMENT) {
-    let signatureHref = '/pages/signature-color-analysis';
+    let signatureHref = '/pages/tools-lip-draping';
     const signatureQuery = new URLSearchParams();
 
     signatureQuery.set('returnUrl', window.location.pathname + window.location.search);

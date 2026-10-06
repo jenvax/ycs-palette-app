@@ -2836,7 +2836,7 @@
   }
 
   function drapingStudioUrl(client) {
-    const url = new URL("/pages/signature-color-analysis", window.location.origin);
+    const url = new URL("/pages/tools-lip-draping", window.location.origin);
     url.searchParams.set("clientRecordId", client.clientRecordId);
     url.searchParams.set("mode", "trade");
     return url.pathname + url.search;

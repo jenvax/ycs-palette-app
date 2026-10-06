@@ -7,13 +7,12 @@
   const APP_BASE_URL = appEl.dataset.appBaseUrl || '';
   const VIEWER_CUSTOMER_ID = (appEl.dataset.customerId || '').trim();
   const IS_ADMIN = appEl.dataset.isAdmin === 'true';
+  const IS_SIGNATURE_MODE = appEl.dataset.signatureMode === 'true';
   const IS_TRADE = appEl.dataset.isTrade === 'true';
   const IS_CATOOL = appEl.dataset.isCatool === 'true';
   const IS_CATOOL_GROWTH = appEl.dataset.isCatoolGrowth === 'true';
-  const IS_CATOOL_FREE = appEl.dataset.isCatoolFree === 'true';
-  const IS_FREE_DIY_CATOOL = appEl.dataset.isFreeDiyCatool === 'true';
-  const IS_DIY_CATOOL = appEl.dataset.isDiyCatool === 'true';
   const CAN_USE_ANALYSIS_TOOL = appEl.dataset.canUseAnalysisTool === 'true';
+
 
   if (!CAN_USE_ANALYSIS_TOOL) {
     console.warn('Analysis tool blocked for unauthorized account');
@@ -22,17 +21,25 @@
 
   const urlParams = new URLSearchParams(window.location.search);
   const ADMIN_VIEW_AS = (urlParams.get('viewAs') || '').trim().toLowerCase();
+  const RETURN_URL = (urlParams.get('returnUrl') || '').trim();
 
   const CLIENT_RECORD_ID = (urlParams.get('clientRecordId') || '').trim();
   const ADMIN_CUSTOMER_ID = (urlParams.get('adminCustomerId') || '').trim();
   const SIMPLE_CUSTOMER_ID = (urlParams.get('customerId') || '').trim();
-  const DEMO_CLIENT_ID = (urlParams.get('demoClient') || '').trim().toLowerCase();
+
   const PHOTO_ID = (urlParams.get('photoId') || '').trim();
-  const PHOTO_SOURCE = (urlParams.get('photoSource') || urlParams.get('source') || '').trim();
-  const TOOL_MODE = (urlParams.get('mode') || '').trim().toLowerCase();
-  const IS_SIGNATURE_STUDIO = window.location.pathname.indexOf('/pages/tools-lip-draping') !== -1;
-  const IS_DIY_MODE = TOOL_MODE === 'diy';
-  const IS_FREE_ANALYSIS_DEMO = (IS_CATOOL_FREE || IS_FREE_DIY_CATOOL) && !!DEMO_CLIENT_ID;
+  const PHOTO_SOURCE =
+  (urlParams.get('source') || urlParams.get('photoSource') || '').trim();
+
+function getClientFirstName() {
+  return (new URLSearchParams(window.location.search).get('firstName') || '').trim();
+}
+function getClientLastName() {
+  return (new URLSearchParams(window.location.search).get('lastName') || '').trim();
+}
+function getCustomerPaletteCode() {
+  return (new URLSearchParams(window.location.search).get('customerPaletteCode') || '').trim().toUpperCase();
+}
 
   const CUSTOMER_ID = CLIENT_RECORD_ID
     ? ''
@@ -41,33 +48,105 @@
   const ACTIVE_RECORD_ID = CLIENT_RECORD_ID || CUSTOMER_ID || '';
   const RETURN_STEP = (urlParams.get('returnStep') || '').trim().toLowerCase();
   const forceDepthReturn = RETURN_STEP === 'depth';
-  const LAST_ANALYSIS_CLIENT_STORAGE_KEY = 'ycs:last-color-analysis-client:' + (VIEWER_CUSTOMER_ID || 'default');
 
   const HAS_NEW_PHOTO_FLAG = urlParams.get('newPhoto') === '1';
-  const FREE_TRIAL_CLIENTS = {
-    bwd: {
-      photoUrl: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/BWD.png?v=1779737095'
-    },
-    scd: {
-      photoUrl: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/SCD.png?v=1779737094'
-    },
-    cwl: {
-      photoUrl: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/CWL.png?v=1779737094'
-    }
-  };
-  const FREE_TRIAL_STORAGE_PREFIX = 'ycs-catool-free-demo:';
-
-  function rememberLastAnalysisClient() {
-    if (!CLIENT_RECORD_ID || IS_FREE_ANALYSIS_DEMO) return;
-
-    try {
-      window.localStorage.setItem(LAST_ANALYSIS_CLIENT_STORAGE_KEY, CLIENT_RECORD_ID);
-    } catch (error) {
-      console.warn('Could not remember last color analysis client', error);
-    }
-  }
 
   const paletteAccessString = appEl.dataset.paletteAccess || '';
+  const REFERENCE_COLOR_WHEELS = {
+    clear: {
+      name: 'Clear Color Wheel',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_Clear_Color_Wheel.png?v=1785778070'
+    },
+    soft: {
+      name: 'Soft Color Wheel',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_Soft_Color_Wheel.png?v=1785778080'
+    },
+    CWL: {
+      name: 'Clear Warm Light',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CWL.png?v=1785334385'
+    },
+    CWM: {
+      name: 'Clear Warm Medium',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CWM.png?v=1785334385'
+    },
+    CWD: {
+      name: 'Clear Warm Deep',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CWD.png?v=1785334385'
+    },
+    CCL: {
+      name: 'Clear Cool Light',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CCL.png?v=1785334385'
+    },
+    CCM: {
+      name: 'Clear Cool Medium',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CCM.png?v=1785334384'
+    },
+    CCD: {
+      name: 'Clear Cool Deep',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CCD.png?v=1785334385'
+    },
+    SWL: {
+      name: 'Soft Warm Light',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SWL.png?v=1785334379'
+    },
+    SWM: {
+      name: 'Soft Warm Medium',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SWM.png?v=1785334379'
+    },
+    SWD: {
+      name: 'Soft Warm Deep',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SWD.png?v=1785334379'
+    },
+    SCL: {
+      name: 'Soft Cool Light',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SCL.png?v=1785334379'
+    },
+    SCM: {
+      name: 'Soft Cool Medium',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SCM.png?v=1785334379'
+    },
+    SCD: {
+      name: 'Soft Cool Deep',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SCD.png?v=1785333787'
+    },
+    LO: {
+      name: 'Light Olive',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_LO.png?v=1785334379'
+    },
+    MO: {
+      name: 'Medium Olive',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_MO.png?v=1785334379'
+    },
+    DO: {
+      name: 'Deep Olive',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_DO.png?v=1785334379'
+    },
+    CWLG: {
+      name: 'Clear Warm Light for Gray Hair',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CWLG.png?v=1785779014'
+    },
+    CWMG: {
+      name: 'Clear Warm Medium for Gray Hair',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CWMG.png?v=1785779014'
+    },
+    CWDG: {
+      name: 'Clear Warm Deep for Gray Hair',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_CWDG.png?v=1785779014'
+    },
+    SWLG: {
+      name: 'Soft Warm Light for Gray Hair',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SWLG.png?v=1785779014'
+    },
+    SWMG: {
+      name: 'Soft Warm Medium for Gray Hair',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SWMG.png?v=1785779014'
+    },
+    SWDG: {
+      name: 'Soft Warm Deep for Gray Hair',
+      url: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/cropped_SWDG.png?v=1785779014'
+    }
+  };
+  const REFERENCE_COLOR_WHEEL_ALIASES = {};
 
   function addAdminPreviewParam(query) {
     if (ADMIN_VIEW_AS && query && typeof query.set === 'function') {
@@ -83,26 +162,32 @@
     return nextUrl.pathname + nextUrl.search;
   }
 
+  function syncSignatureReferenceWheel() {
+    if (!signatureReferenceWheelSelect || !signatureReferenceWheelImage) return;
+
+    const selectedValue = signatureReferenceWheelSelect.value;
+    const wheelKey = REFERENCE_COLOR_WHEEL_ALIASES[selectedValue] || selectedValue;
+    const wheel = REFERENCE_COLOR_WHEELS[wheelKey] || REFERENCE_COLOR_WHEELS.clear;
+    signatureReferenceWheelImage.src = wheel.url;
+    signatureReferenceWheelImage.alt = wheel.name;
+  }
+
   const backBtn = document.getElementById('ycs-analysis-back');
+  const signatureBackLink = document.getElementById('ycs-signature-back-link');
+  const standardAnalysisLink = document.getElementById('ycs-signature-standard-analysis-link');
   const paletteSelect = document.getElementById('ycs-analysis-palette-select');
-  const paletteToolbarBlock = document.querySelector('.ycs-analysis-toolbar-block--palette');
   const currentPaletteNameEl = document.getElementById('ycs-analysis-current-palette-name');
-  const signatureAnalysisLink = document.getElementById('ycs-analysis-signature-link');
   const realisticDrapeToggle = document.getElementById('ycs-analysis-realistic-drape-toggle');
-  const structuredModeBtn = document.getElementById('ycs-analysis-mode-structured');
-  const comparisonModeBtn = document.getElementById('ycs-analysis-mode-comparison');
-  const decisionSummaryEl = document.getElementById('ycs-analysis-decision-summary');
-  const comparisonPanelEl = document.getElementById('ycs-analysis-comparison-panel');
-  const comparisonBackBtn = document.getElementById('ycs-analysis-back-structured');
-  const leftPaletteSelect = document.getElementById('ycs-analysis-left-palette-select');
-  const rightPaletteSelect = document.getElementById('ycs-analysis-right-palette-select');
-  const leftColorSelect = document.getElementById('ycs-analysis-left-color-select');
-  const rightColorSelect = document.getElementById('ycs-analysis-right-color-select');
-  const leftComparisonFilters = document.getElementById('ycs-analysis-left-comparison-filters');
-  const rightComparisonFilters = document.getElementById('ycs-analysis-right-comparison-filters');
-  const leftComparisonSwatches = document.getElementById('ycs-analysis-left-comparison-swatches');
-  const rightComparisonSwatches = document.getElementById('ycs-analysis-right-comparison-swatches');
-  const comparisonRails = Array.from(document.querySelectorAll('.ycs-analysis-comparison-rail'));
+  const signatureLeftPaletteSelect = document.getElementById('ycs-signature-left-palette-select');
+  const signatureRightPaletteSelect = document.getElementById('ycs-signature-right-palette-select');
+  const signatureLeftDrapeFilters = document.getElementById('ycs-signature-left-drape-filters');
+  const signatureRightDrapeFilters = document.getElementById('ycs-signature-right-drape-filters');
+  const signatureLeftDrapeSwatches = document.getElementById('ycs-signature-left-drape-swatches');
+  const signatureRightDrapeSwatches = document.getElementById('ycs-signature-right-drape-swatches');
+  const signatureLeftLipSwatches = document.getElementById('ycs-signature-left-lip-swatches');
+  const signatureRightLipSwatches = document.getElementById('ycs-signature-right-lip-swatches');
+  const signatureReferenceWheelSelect = document.getElementById('ycs-signature-reference-wheel-select');
+  const signatureReferenceWheelImage = document.getElementById('ycs-signature-reference-wheel-image');
 
   const standardPanelEl = document.getElementById('ycs-analysis-standard-panel');
   const guidedPanelEl = document.getElementById('ycs-analysis-guided-panel');
@@ -141,6 +226,14 @@
   const lipSwatchContainer = document.getElementById('ycs-lip-swatches');
   const lipOpacityInput = document.getElementById('ycs-lip-opacity');
   const lipOpacityValue = document.getElementById('ycs-lip-opacity-value');
+  const signatureLeftLipOpacityInput = document.getElementById('ycs-signature-left-lip-opacity');
+  const signatureRightLipOpacityInput = document.getElementById('ycs-signature-right-lip-opacity');
+  const signatureLeftLipOpacityValue = document.getElementById('ycs-signature-left-lip-opacity-value');
+  const signatureRightLipOpacityValue = document.getElementById('ycs-signature-right-lip-opacity-value');
+  const signatureLeftLipEditBtn = document.getElementById('ycs-signature-left-lip-edit');
+  const signatureRightLipEditBtn = document.getElementById('ycs-signature-right-lip-edit');
+  const signatureLeftLipVisibilityBtn = document.getElementById('ycs-signature-left-lip-visibility');
+  const signatureRightLipVisibilityBtn = document.getElementById('ycs-signature-right-lip-visibility');
 
   const lipEmptyMode = document.getElementById('ycs-lip-empty-mode');
   const lipUseMode = document.getElementById('ycs-lip-use-mode');
@@ -158,9 +251,6 @@
   const lipStatus = document.getElementById('ycs-lip-status');
   const lipMovePhotoBtn = document.getElementById('ycs-lip-move-photo');
   const lipStartOverBtn = document.getElementById('ycs-lip-start-over');
-  const lipAddShapeBtn = document.getElementById('ycs-lip-add-shape');
-  const lipEditShape1Btn = document.getElementById('ycs-lip-edit-shape-1');
-  const lipEditShape2Btn = document.getElementById('ycs-lip-edit-shape-2');
 
   const leftLipBlurPath = document.getElementById('ycs-lip-path-left-blur');
   const rightLipBlurPath = document.getElementById('ycs-lip-path-right-blur');
@@ -172,13 +262,17 @@
 
   const leftDrapePath = document.getElementById('ycs-analysis-drape-left');
   const rightDrapePath = document.getElementById('ycs-analysis-drape-right');
-  const leftDrapeWrap = leftDrapePath ? leftDrapePath.closest('.ycs-analysis-drape-wrap') : null;
-  const rightDrapeWrap = rightDrapePath ? rightDrapePath.closest('.ycs-analysis-drape-wrap') : null;
+  const leftDrapeSvg = leftDrapePath ? leftDrapePath.closest('.ycs-analysis-drape-svg') : null;
+  const rightDrapeSvg = rightDrapePath ? rightDrapePath.closest('.ycs-analysis-drape-svg') : null;
 
   const saveLeftBtn = document.getElementById('ycs-analysis-save-left');
   const saveRightBtn = document.getElementById('ycs-analysis-save-right');
   const exportLabelLeftToggle = document.getElementById('ycs-analysis-export-label-left');
   const exportLabelRightToggle = document.getElementById('ycs-analysis-export-label-right');
+  const exportNameLeftToggle = document.getElementById('ycs-analysis-export-name-left');
+  const exportNameRightToggle = document.getElementById('ycs-analysis-export-name-right');
+  const exportLipSwatchLeftToggle = document.getElementById('ycs-analysis-export-lip-swatch-left');
+  const exportLipSwatchRightToggle = document.getElementById('ycs-analysis-export-lip-swatch-right');
 
   const leftColorLabel = document.getElementById('ycs-analysis-selected-left');
   const rightColorLabel = document.getElementById('ycs-analysis-selected-right');
@@ -199,7 +293,6 @@
 
   const depthStepEl = document.getElementById('ycs-analysis-depth-step');
   const depthSectionsEl = document.getElementById('ycs-analysis-depth-sections');
-  const freeTrialLockEl = document.getElementById('ycs-analysis-free-lock');
   const resetDepthBtn = document.getElementById('ycs-analysis-reset-depth');
   const grayscaleToggle = document.getElementById('ycs-analysis-grayscale-toggle');
 
@@ -207,10 +300,10 @@
   const rightDepthDrapeImg = document.getElementById('ycs-analysis-depth-drape-right');
 
   const loadingOverlay = document.getElementById('ycs-analysis-loading');
-
-  const REALISTIC_DRAPE_OVERLAY_URL =
-    'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/fabric-drape-overlay-550.png?v=1778252521';
-  const REALISTIC_DRAPE_OVERLAY_OPACITY = '0.55';
+  const lipCancelBtns = Array.from(document.querySelectorAll('#ycs-lip-cancel, .ycs-lip-cancel-secondary'));
+  const lipAddShapeBtn = document.getElementById('ycs-lip-add-shape');
+  const lipEditShape1Btn = document.getElementById('ycs-lip-edit-shape-1');
+const lipEditShape2Btn = document.getElementById('ycs-lip-edit-shape-2');
 
   if (
     !paletteSelect ||
@@ -234,6 +327,9 @@
 
   const MIN_SCALE = 0.6;
   const MAX_SCALE = 6;
+  const REALISTIC_DRAPE_OVERLAY_URL =
+    'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/fabric-drape-overlay-550.png?v=1778252521';
+  const REALISTIC_DRAPE_OVERLAY_OPACITY = '0.78';
   const DRAPING_PALETTE_CODE = 'DRAPINGCOLORS';
   const DRAPING_LIP_PALETTE_CODE = 'DRAPINGLIPCOLORS';
 
@@ -288,12 +384,19 @@
   imgLoaded: false,
   loadedImageUrl: '',
   photoSessionKey: '',
+clientFirstName: '',
+clientLastName: '',
+customerPaletteCode: '',
+  signature: {
+    leftPaletteCode: '',
+    rightPaletteCode: '',
+    leftFilter: 'all',
+    rightFilter: 'all'
+  },
   leftColorHex: '',
     rightColorHex: '',
     leftColorName: '',
     rightColorName: '',
-    clientFirstName: '',
-    clientLastName: '',
     depthLeft: '',
     depthRight: '',
     pointerId: null,
@@ -301,16 +404,12 @@
     dragStartY: 0,
     selectedDepth: '',
     selectedUndertoneLane: '',
-    analysisDepthDecision: '',
-    analysisUndertoneDecision: '',
-    analysisChromaDecision: '',
-    analysisCompletedAt: '',
-    analysisCurrentStep: 'depth',
-    analysisMode: 'structured',
     grayscale: false,
     lip: {
       leftColor: '',
       rightColor: '',
+      leftName: '',
+      rightName: '',
       leftOpacity: 0.45,
       rightOpacity: 0.45,
       leftVisible: true,
@@ -319,9 +418,9 @@
       adjusting: false,
       movingPhoto: false,
       closed: false,
-      points: [],
-      shapes: [],
-      activeShapeIndex: 0,
+points: [],
+shapes: [],
+activeShapeIndex: 0,
       dragIndex: -1,
       dragSvg: null,
       showGuides: true
@@ -332,16 +431,6 @@
       chroma: '',
       resultCode: '',
       resultLabel: ''
-    },
-    comparison: {
-      leftPaletteCode: '',
-      rightPaletteCode: '',
-      leftColorHex: '',
-      rightColorHex: '',
-      leftColorName: '',
-      rightColorName: '',
-      leftFilter: 'all',
-      rightFilter: 'all'
     }
   };
 
@@ -368,6 +457,281 @@
     return Math.sqrt(dx * dx + dy * dy);
   }
 
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function drawSignatureExportLabels(ctx, canvas, options) {
+  if (!IS_SIGNATURE_MODE) return;
+
+  const firstName = options.showCustomerName === false ? '' : String(options.firstName || '').trim();
+  const paletteCode = options.showCustomerName === false ? '' : String(options.paletteCode || '').trim().toUpperCase();
+  const colorName = options.showColorName === false ? '' : String(options.colorName || '').trim();
+  const lipName = options.showLipSwatch === false ? '' : String(options.lipName || '').trim();
+  const lipColor = options.showLipSwatch === false ? '' : normalizeHex(options.lipColor || '');
+
+  const exportWidth = canvas.width / 2;
+const exportHeight = canvas.height / 2;
+
+const padding = Math.max(16, Math.round(exportWidth * 0.03));
+const nameFontSize = Math.max(12, Math.round(exportWidth * 0.025));
+const paletteFontSize = Math.max(11, Math.round(exportWidth * 0.022));
+const colorFontSize = Math.max(14, Math.round(exportWidth * 0.034));
+
+  ctx.save();
+
+  if (firstName) {
+    ctx.font = `500 ${nameFontSize}px Poppins, Arial, sans-serif`;
+    ctx.fillStyle = '#7a7a7a';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(firstName, padding, padding);
+  }
+
+  if (paletteCode) {
+    ctx.font = `600 ${paletteFontSize}px Poppins, Arial, sans-serif`;
+
+    const textWidth = ctx.measureText(paletteCode).width;
+    const pillPaddingX = 12;
+    const pillPaddingY = 7;
+    const pillWidth = textWidth + pillPaddingX * 2;
+    const pillHeight = paletteFontSize + pillPaddingY * 2;
+
+    const x = exportWidth - padding - pillWidth;
+    const y = padding;
+
+    ctx.fillStyle = '#111111';
+    roundRect(ctx, x, y, pillWidth, pillHeight, pillHeight / 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(paletteCode, x + pillWidth / 2, y + pillHeight / 2);
+  }
+
+  if (colorName) {
+    ctx.font = `500 ${colorFontSize}px Poppins, Arial, sans-serif`;
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(0,0,0,0.25)';
+    ctx.shadowBlur = 6;
+
+    ctx.fillText(
+      colorName,
+      exportWidth / 2,
+exportHeight - Math.max(30, exportHeight * 0.04)
+    );
+
+    ctx.shadowBlur = 0;
+  }
+
+  if (lipName) {
+    const badgeSize = Math.max(74, Math.round(exportWidth * 0.18));
+    const badgeX = padding;
+    const badgeY = exportHeight - padding - badgeSize;
+    const badgeRadius = Math.max(12, Math.round(badgeSize * 0.16));
+    const textMaxWidth = badgeSize - 14;
+    const textColor = getReadableTextColor(lipColor || '#ffffff');
+
+    ctx.shadowColor = 'rgba(0,0,0,0.18)';
+    ctx.shadowBlur = 8;
+    ctx.fillStyle = lipColor || 'rgba(255,255,255,0.9)';
+    roundRect(ctx, badgeX, badgeY, badgeSize, badgeSize, badgeRadius);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.75)';
+    ctx.lineWidth = 1;
+    roundRect(ctx, badgeX + 0.5, badgeY + 0.5, badgeSize - 1, badgeSize - 1, badgeRadius);
+    ctx.stroke();
+
+    ctx.fillStyle = textColor;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `500 ${Math.max(9, Math.round(badgeSize * 0.13))}px Poppins, Arial, sans-serif`;
+    wrapCanvasText(ctx, lipName, badgeX + badgeSize / 2, badgeY + badgeSize / 2, textMaxWidth, Math.round(badgeSize * 0.17), 3);
+  }
+
+  ctx.restore();
+}
+
+function shouldDrawExportColorLabel(panel) {
+  const toggle = panel === 'right' ? exportLabelRightToggle : exportLabelLeftToggle;
+  return !toggle || toggle.checked;
+}
+
+function shouldDrawExportCustomerName(panel) {
+  const toggle = panel === 'right' ? exportNameRightToggle : exportNameLeftToggle;
+  return !toggle || toggle.checked;
+}
+
+function shouldDrawExportLipSwatch(panel) {
+  const toggle = panel === 'right' ? exportLipSwatchRightToggle : exportLipSwatchLeftToggle;
+  return !!(toggle && toggle.checked);
+}
+
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function formatHexLabel(hex) {
+  return normalizeHex(hex || '').toUpperCase();
+}
+
+function buildSelectedColorHtml(colorName, colorHex, lipName, lipHex) {
+  const drapeHex = formatHexLabel(colorHex);
+  const lipHexLabel = formatHexLabel(lipHex);
+  const lines = [];
+
+  lines.push(escapeHtml(colorName || '—'));
+
+  if (drapeHex) {
+    lines.push(
+      '<span class="ycs-hex-row">Drape: ' +
+      '<button type="button" class="ycs-hex-copy" data-copy-hex="' + drapeHex + '" title="Copy ' + drapeHex + '">' +
+      drapeHex +
+      '</button></span>'
+    );
+  }
+
+  if (lipName || lipHexLabel) {
+    lines.push(
+      '<span class="ycs-lip-label">Lip: ' +
+      escapeHtml(lipName || '—') +
+      (lipHexLabel
+        ? ' <button type="button" class="ycs-hex-copy" data-copy-hex="' + lipHexLabel + '" title="Copy ' + lipHexLabel + '">' + lipHexLabel + '</button>'
+        : '') +
+      '</span>'
+    );
+  }
+
+  return lines.join('<br>');
+}
+
+function getReadableTextColor(hex) {
+  const normalized = normalizeHex(hex);
+  if (!normalized || normalized.length !== 7) return '#2f2a25';
+  const r = parseInt(normalized.slice(1, 3), 16);
+  const g = parseInt(normalized.slice(3, 5), 16);
+  const b = parseInt(normalized.slice(5, 7), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.62 ? '#2f2a25' : '#ffffff';
+}
+
+function wrapCanvasText(ctx, text, centerX, centerY, maxWidth, lineHeight, maxLines) {
+  const words = String(text || '').split(/\s+/).filter(Boolean);
+  const lines = [];
+  let line = '';
+
+  words.forEach(function (word) {
+    const testLine = line ? line + ' ' + word : word;
+    if (ctx.measureText(testLine).width <= maxWidth || !line) {
+      line = testLine;
+    } else {
+      lines.push(line);
+      line = word;
+    }
+  });
+
+  if (line) lines.push(line);
+  const visibleLines = lines.slice(0, maxLines || 3);
+  if (lines.length > visibleLines.length) {
+    visibleLines[visibleLines.length - 1] = visibleLines[visibleLines.length - 1].replace(/\.*$/, '') + '...';
+  }
+
+  const startY = centerY - ((visibleLines.length - 1) * lineHeight) / 2;
+  visibleLines.forEach(function (lineText, index) {
+    ctx.fillText(lineText, centerX, startY + index * lineHeight, maxWidth);
+  });
+}
+
+function syncDrapeLayer(panel, color) {
+  const svg = panel === 'right' ? rightDrapeSvg : leftDrapeSvg;
+  const path = panel === 'right' ? rightDrapePath : leftDrapePath;
+  if (!svg || !path) return;
+
+  const drapeColor = normalizeHex(color || path.getAttribute('fill') || '#e8dfd4');
+  const realisticEnabled = !!(realisticDrapeToggle && realisticDrapeToggle.checked);
+
+  svg.style.setProperty('--analysis-drape-color', drapeColor);
+  svg.style.setProperty('--analysis-drape-overlay-url', 'url("' + REALISTIC_DRAPE_OVERLAY_URL + '")');
+  svg.style.setProperty(
+    '--analysis-drape-overlay-opacity',
+    realisticEnabled ? REALISTIC_DRAPE_OVERLAY_OPACITY : '0'
+  );
+  svg.classList.toggle('drape-realistic', realisticEnabled);
+}
+
+function syncDrapeLayers() {
+  syncDrapeLayer('left');
+  syncDrapeLayer('right');
+}
+
+async function drawRealisticDrapeTexture(ctx, options) {
+  const pathD = options.pathD || '';
+  const drapeY = options.drapeY || 0;
+  const frameWidth = options.frameWidth || 0;
+  const drapeHeight = options.drapeHeight || 0;
+  const fillColor = normalizeHex(options.fillColor || '#e8dfd4') || '#e8dfd4';
+  if (!pathD || !frameWidth || !drapeHeight) return;
+
+  ctx.save();
+  ctx.translate(0, drapeY);
+  ctx.scale(frameWidth / 1000, drapeHeight / 500);
+
+  try {
+    ctx.clip(new Path2D(pathD));
+  } catch (clipError) {
+    console.warn('Could not clip realistic drape texture', clipError);
+  }
+
+  try {
+    const overlayUrl = await getCanvasSafeImageUrl(REALISTIC_DRAPE_OVERLAY_URL);
+    const overlayImg = await loadImage(overlayUrl);
+    ctx.globalCompositeOperation = 'multiply';
+    ctx.globalAlpha = 0.9;
+    ctx.drawImage(overlayImg, 0, 0, 1000, 500);
+  } catch (overlayError) {
+    console.warn('Could not render realistic drape image texture', overlayError);
+  }
+
+  ctx.globalCompositeOperation = 'multiply';
+  ctx.globalAlpha = 0.18;
+  const centerShade = ctx.createRadialGradient(500, 80, 80, 500, 250, 520);
+  centerShade.addColorStop(0, '#ffffff');
+  centerShade.addColorStop(0.55, fillColor);
+  centerShade.addColorStop(1, '#555555');
+  ctx.fillStyle = centerShade;
+  ctx.fillRect(0, 0, 1000, 500);
+
+  ctx.globalCompositeOperation = 'screen';
+  ctx.globalAlpha = 0.16;
+  const highlight = ctx.createLinearGradient(0, 0, 0, 500);
+  highlight.addColorStop(0, '#ffffff');
+  highlight.addColorStop(0.35, 'rgba(255,255,255,0.35)');
+  highlight.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = highlight;
+  ctx.fillRect(0, 0, 1000, 500);
+
+  ctx.restore();
+}
   function normalizeHex(hex) {
     let value = String(hex || '').trim().toLowerCase();
     if (!value) return '';
@@ -378,28 +742,6 @@
     }
 
     return value;
-  }
-
-  function syncDrapeLayer(panel, color) {
-    const wrap = panel === 'right' ? rightDrapeWrap : leftDrapeWrap;
-    const path = panel === 'right' ? rightDrapePath : leftDrapePath;
-    if (!wrap || !path) return;
-
-    const drapeColor = normalizeHex(color || path.getAttribute('fill') || '#e8dfd4');
-    const realisticEnabled = !!(realisticDrapeToggle && realisticDrapeToggle.checked);
-
-    wrap.style.setProperty('--analysis-drape-color', drapeColor);
-    wrap.style.setProperty('--analysis-drape-overlay-url', 'url("' + REALISTIC_DRAPE_OVERLAY_URL + '")');
-    wrap.style.setProperty(
-      '--analysis-drape-overlay-opacity',
-      realisticEnabled ? REALISTIC_DRAPE_OVERLAY_OPACITY : '0'
-    );
-    wrap.classList.toggle('drape-realistic', realisticEnabled);
-  }
-
-  function syncDrapeLayers() {
-    syncDrapeLayer('left');
-    syncDrapeLayer('right');
   }
 
   function clampScale(value) {
@@ -415,33 +757,6 @@
       return match ? match.name : 'Custom Palette';
     }
     return paletteNames[code] || code || '—';
-  }
-
-  async function saveClientColorType(result) {
-    if (!APP_BASE_URL || !CLIENT_RECORD_ID || !result || !result.resultCode) return;
-
-    const firstName = String(state.clientFirstName || '').trim();
-    const lastName = String(state.clientLastName || '').trim();
-    if (!firstName || !lastName) return;
-
-    const response = await fetch(APP_BASE_URL + '/api/update-consultant-client', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        clientRecordId: CLIENT_RECORD_ID,
-        firstName,
-        lastName,
-        paletteCode: result.resultCode,
-        paletteName: result.resultLabel || getPaletteDisplayName(result.resultCode)
-      })
-    });
-    const data = await response.json().catch(function () {
-      return {};
-    });
-
-    if (!response.ok || !data.success) {
-      throw new Error(data.error || 'Could not save color type');
-    }
   }
 
   function getLaneLabel(lane) {
@@ -463,52 +778,8 @@
   }
 
   function getReturnUrl() {
-    const returnUrl = urlParams.get('returnUrl');
-    if (returnUrl) return returnUrl;
-    return '/pages/tools';
-  }
-
-  function buildClientListHref() {
-    return appendAdminPreviewToHref('/pages/tools-clients');
-  }
-
-  function buildManageClientHref() {
-    if (!CLIENT_RECORD_ID) return '/pages/tools-clients';
-
-    const query = new URLSearchParams({
-      clientRecordId: CLIENT_RECORD_ID,
-      edit: '1'
-    });
-
-    addAdminPreviewParam(query);
-    return '/pages/tools-clients?' + query.toString();
-  }
-
-  function getFreeTrialClient(clientId) {
-    return FREE_TRIAL_CLIENTS[String(clientId || '').trim().toLowerCase()] || null;
-  }
-
-  function getFreeTrialStorageKey(clientId, suffix) {
-    return FREE_TRIAL_STORAGE_PREFIX + VIEWER_CUSTOMER_ID + ':' + clientId + ':' + suffix;
-  }
-
-  function getStoredFreeTrialValue(clientId, suffix) {
-    try {
-      return localStorage.getItem(getFreeTrialStorageKey(clientId, suffix)) || '';
-    } catch (error) {
-      console.warn('Could not read free trial demo data', error);
-      return '';
-    }
-  }
-
-  function setStoredFreeTrialValue(clientId, suffix, value) {
-    try {
-      localStorage.setItem(getFreeTrialStorageKey(clientId, suffix), value);
-    } catch (error) {
-      console.warn('Could not save free trial demo data', error);
-      throw new Error('Your browser could not save this trial adjustment.');
-    }
-  }
+  return RETURN_URL || document.referrer || '/pages/tools';
+}
 
   function showLoading(message) {
     if (!loadingOverlay) return;
@@ -528,116 +799,7 @@
     swatchesEl.innerHTML = '';
     undertoneSectionsEl.innerHTML = '';
   }
-function buildSignatureAnalysisHref() {
-  const canUseSignatureStudio =
-    IS_ADMIN || IS_TRADE || IS_CATOOL || IS_CATOOL_GROWTH;
 
-  if (!canUseSignatureStudio) return '/pages/tools-lip-draping';
-
-  const query = new URLSearchParams();
-  query.set('returnUrl', window.location.pathname + window.location.search);
-
-  if (CLIENT_RECORD_ID) {
-    query.set('clientRecordId', CLIENT_RECORD_ID);
-  } else if (ADMIN_CUSTOMER_ID) {
-    query.set('adminCustomerId', ADMIN_CUSTOMER_ID);
-  } else if (SIMPLE_CUSTOMER_ID) {
-    query.set('customerId', SIMPLE_CUSTOMER_ID);
-  }
-
-  if (PHOTO_ID) {
-    query.set('photoId', PHOTO_ID);
-  }
-
-  if (PHOTO_SOURCE) {
-    query.set('photoSource', PHOTO_SOURCE);
-  }
-
-  if (DEMO_CLIENT_ID) {
-    query.set('demoClient', DEMO_CLIENT_ID);
-  }
-
-  query.set('mode', 'trade');
-  addAdminPreviewParam(query);
-
-  const queryString = query.toString();
-  return '/pages/tools-lip-draping' + (queryString ? '?' + queryString : '');
-}
-
-function buildColorAnalysisToolHref() {
-  const query = new URLSearchParams();
-
-  if (CLIENT_RECORD_ID) {
-    query.set('clientRecordId', CLIENT_RECORD_ID);
-  } else if (ADMIN_CUSTOMER_ID) {
-    query.set('adminCustomerId', ADMIN_CUSTOMER_ID);
-  } else if (SIMPLE_CUSTOMER_ID) {
-    query.set('customerId', SIMPLE_CUSTOMER_ID);
-  }
-
-  if (PHOTO_ID) {
-    query.set('photoId', PHOTO_ID);
-  }
-
-  if (PHOTO_SOURCE) {
-    query.set('photoSource', PHOTO_SOURCE);
-  }
-
-  if (DEMO_CLIENT_ID) {
-    query.set('demoClient', DEMO_CLIENT_ID);
-  }
-
-  if (TOOL_MODE) {
-    query.set('mode', TOOL_MODE);
-  }
-
-  const returnUrl = getReturnUrl();
-  if (returnUrl) {
-    query.set('returnUrl', returnUrl);
-  }
-
-  addAdminPreviewParam(query);
-
-  const queryString = query.toString();
-  return '/pages/tools-structured' + (queryString ? '?' + queryString : '');
-}
-
-function updateSignatureAnalysisLink() {
-  if (!signatureAnalysisLink) return;
-
-  const canUseSignatureStudio =
-    IS_ADMIN || IS_TRADE || IS_CATOOL || IS_CATOOL_GROWTH;
-
-  if (!canUseSignatureStudio) {
-    signatureAnalysisLink.hidden = true;
-    signatureAnalysisLink.style.display = 'none';
-    return;
-  }
-
-  signatureAnalysisLink.hidden = false;
-  signatureAnalysisLink.style.display = '';
-  if (IS_SIGNATURE_STUDIO) {
-    signatureAnalysisLink.textContent = 'Switch to Color Analysis Tool';
-    signatureAnalysisLink.href = buildColorAnalysisToolHref();
-  } else {
-    signatureAnalysisLink.textContent = 'Lip & Draping Studio';
-    signatureAnalysisLink.href = buildSignatureAnalysisHref();
-  }
-}
-
-function updateManageClientLink() {
-  if (!manageClientLink) return;
-
-  if (!CLIENT_RECORD_ID) {
-    manageClientLink.hidden = true;
-    manageClientLink.style.display = 'none';
-    return;
-  }
-
-  manageClientLink.hidden = false;
-  manageClientLink.style.display = '';
-  manageClientLink.href = buildManageClientHref();
-}
   function hideSwatchLoading() {
     if (swatchLoadingEl) swatchLoadingEl.hidden = true;
     filtersEl.classList.remove('is-loading');
@@ -671,10 +833,9 @@ function updateManageClientLink() {
 
     try {
       const query = new URLSearchParams({
-        isAdmin: 'true',
-        action: 'list'
+        action: 'getStyleMastersPalettes',
+        isAdmin: 'true'
       });
-      query.set('action', 'getStyleMastersPalettes');
       const response = await fetch('/apps/palette-data?' + query.toString(), { credentials: 'same-origin' });
       const text = await response.text();
       const data = text ? JSON.parse(text) : {};
@@ -713,7 +874,7 @@ function updateManageClientLink() {
         .map(normalizeCustomPaletteOption)
         .filter(Boolean);
     } catch (error) {
-      console.error('Failed to load private custom palettes for analysis tool', error);
+      console.error('Failed to load private custom palettes for signature studio', error);
       return [];
     }
   }
@@ -735,30 +896,30 @@ function updateManageClientLink() {
       });
   }
 
-  function setFreeTrialLockVisible(visible) {
-    if (!freeTrialLockEl) return;
-    freeTrialLockEl.hidden = true;
-    if (undertoneStepEl) {
-      undertoneStepEl.classList.remove('ycs-analysis-free-locked');
-    }
-  }
-
   function getAnalystPaletteCodes(accessString) {
-    if (IS_ADMIN || IS_TRADE || IS_CATOOL || IS_CATOOL_GROWTH || IS_CATOOL_FREE || IS_DIY_CATOOL || IS_FREE_DIY_CATOOL) {
-      return orderPalettesWithCustomPalettes([DRAPING_PALETTE_CODE].concat(ALL_CUSTOMER_PALETTE_CODES));
-    }
+  const adminStyleMastersCodes = styleMastersPaletteOptions.map(function (palette) {
+    return palette.code;
+  });
 
-    const owned = String(accessString || '')
-      .split(',')
-      .map(function (code) { return code.trim().toUpperCase(); })
-      .filter(function (code) { return validPaletteCodes.has(code); });
-
-    return [DRAPING_PALETTE_CODE]
-      .concat(owned.filter(function (code) { return code !== DRAPING_PALETTE_CODE; }))
-      .filter(function (code, index, arr) {
-        return arr.indexOf(code) === index;
-      });
+  if (IS_SIGNATURE_MODE) {
+    return orderPalettesWithCustomPalettes(adminStyleMastersCodes.concat(ALL_CUSTOMER_PALETTE_CODES));
   }
+
+  if (IS_ADMIN || IS_TRADE || IS_CATOOL || IS_CATOOL_GROWTH) {
+    return orderPalettesWithCustomPalettes([DRAPING_PALETTE_CODE].concat(adminStyleMastersCodes, ALL_CUSTOMER_PALETTE_CODES));
+  }
+
+  const owned = String(accessString || '')
+    .split(',')
+    .map(function (code) { return code.trim().toUpperCase(); })
+    .filter(function (code) { return validPaletteCodes.has(code); });
+
+  return [DRAPING_PALETTE_CODE]
+    .concat(owned.filter(function (code) { return code !== DRAPING_PALETTE_CODE; }))
+    .filter(function (code, index, arr) {
+      return arr.indexOf(code) === index;
+    });
+}
 
   function populatePaletteSelect() {
     const palettes = getAnalystPaletteCodes(paletteAccessString);
@@ -771,346 +932,13 @@ function updateManageClientLink() {
       paletteSelect.appendChild(option);
     });
 
-    paletteSelect.value = palettes.indexOf(DRAPING_PALETTE_CODE) !== -1
-      ? DRAPING_PALETTE_CODE
-      : (palettes[0] || '');
+    paletteSelect.value = IS_SIGNATURE_MODE
+  ? (palettes[0] || '')
+  : palettes.indexOf(DRAPING_PALETTE_CODE) !== -1
+    ? DRAPING_PALETTE_CODE
+    : (palettes[0] || '');
 
     updateCurrentPaletteName();
-
-  }
-
-  function populateComparisonPaletteSelects() {
-    if (!leftPaletteSelect || !rightPaletteSelect) return;
-
-    const palettes = getAnalystPaletteCodes(paletteAccessString).filter(function (code) {
-      return code !== DRAPING_PALETTE_CODE;
-    });
-    const fallbackPalettes = palettes.length ? palettes : [DRAPING_PALETTE_CODE];
-
-    [leftPaletteSelect, rightPaletteSelect].forEach(function (selectEl, index) {
-      selectEl.innerHTML = '';
-      fallbackPalettes.forEach(function (code) {
-        const option = document.createElement('option');
-        option.value = code;
-        option.textContent = getPaletteDisplayName(code);
-        selectEl.appendChild(option);
-      });
-
-      const savedCode = index === 0 ? state.comparison.leftPaletteCode : state.comparison.rightPaletteCode;
-      selectEl.value = fallbackPalettes.indexOf(savedCode) !== -1
-        ? savedCode
-        : (fallbackPalettes[index] || fallbackPalettes[0] || '');
-    });
-
-    state.comparison.leftPaletteCode = leftPaletteSelect.value;
-    state.comparison.rightPaletteCode = rightPaletteSelect.value;
-  }
-
-  function populateComparisonColorSelect(selectEl, colors, panel) {
-    if (!selectEl) return;
-    selectEl.innerHTML = '';
-
-    colors.forEach(function (color) {
-      const hex = normalizeHex(color.hex || color.hexCode || color.colorHex || '');
-      if (!hex) return;
-
-      const option = document.createElement('option');
-      option.value = hex;
-      option.textContent = color.name || color.colorName || color.title || 'Color';
-      option.dataset.name = option.textContent;
-      selectEl.appendChild(option);
-    });
-
-    const savedHex = normalizeHex(panel === 'right' ? state.comparison.rightColorHex : state.comparison.leftColorHex);
-    if (savedHex && Array.from(selectEl.options).some(function (option) { return normalizeHex(option.value) === savedHex; })) {
-      selectEl.value = savedHex;
-    }
-
-    const selected = selectEl.selectedOptions[0];
-    if (selected) {
-      if (panel === 'right') {
-        state.comparison.rightColorHex = selected.value;
-        state.comparison.rightColorName = selected.dataset.name || selected.textContent;
-      } else {
-        state.comparison.leftColorHex = selected.value;
-        state.comparison.leftColorName = selected.dataset.name || selected.textContent;
-      }
-      applyDrapeColor(panel, selected.value, selected.dataset.name || selected.textContent);
-    }
-  }
-
-  function getComparisonFilter(panel) {
-    return panel === 'right'
-      ? (state.comparison.rightFilter || 'all')
-      : (state.comparison.leftFilter || 'all');
-  }
-
-  function setComparisonFilter(panel, value) {
-    if (panel === 'right') {
-      state.comparison.rightFilter = value || 'all';
-    } else {
-      state.comparison.leftFilter = value || 'all';
-    }
-  }
-
-  function getComparisonFilteredColors(colors, panel) {
-    const activeFilter = getComparisonFilter(panel);
-    const sortedColors = colors.slice().sort(function (a, b) {
-      return Number(a.sortOrder || 0) - Number(b.sortOrder || 0);
-    });
-
-    if (activeFilter === 'all') {
-      return sortedColors;
-    }
-
-    return sortedColors.filter(function (color) {
-      const categories = getCategoryFromColor(color);
-      return categories.some(function (category) {
-        return String(category).toLowerCase() === activeFilter;
-      });
-    });
-  }
-
-  function populateComparisonFilters(containerEl, colors, panel) {
-    if (!containerEl) return;
-
-    const categorySet = new Set();
-    colors.forEach(function (color) {
-      const categories = getCategoryFromColor(color);
-      categories.forEach(function (category) {
-        if (category) categorySet.add(String(category).toLowerCase());
-      });
-    });
-
-    const filters = [{ key: 'all', label: 'All' }].concat(
-      Array.from(categorySet).map(function (category) {
-        return {
-          key: category,
-          label: category
-        };
-      })
-    );
-
-    const activeFilter = filters.some(function (filter) {
-      return filter.key === getComparisonFilter(panel);
-    })
-      ? getComparisonFilter(panel)
-      : 'all';
-
-    if (activeFilter !== getComparisonFilter(panel)) {
-      setComparisonFilter(panel, activeFilter);
-    }
-
-    containerEl.innerHTML = '';
-    filters.forEach(function (filter) {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'ycs-analysis-comparison-filter';
-      btn.dataset.filter = filter.key;
-      btn.textContent = filter.label;
-      btn.classList.toggle('is-active', filter.key === activeFilter);
-
-      btn.addEventListener('click', function () {
-        setComparisonFilter(panel, filter.key);
-        if (panel === 'right') {
-          state.comparison.rightColorHex = '';
-        } else {
-          state.comparison.leftColorHex = '';
-        }
-        loadComparisonSide(panel);
-      });
-
-      containerEl.appendChild(btn);
-    });
-  }
-
-  function populateComparisonSwatches(containerEl, colors, panel) {
-    if (!containerEl) return;
-
-    containerEl.innerHTML = '';
-
-    colors.forEach(function (color) {
-      const hex = normalizeHex(color.hex || color.hexCode || color.colorHex || '');
-      if (!hex) return;
-
-      const name = color.name || color.colorName || color.title || 'Color';
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'ycs-analysis-comparison-swatch';
-      btn.style.background = hex;
-      btn.dataset.hex = hex;
-      btn.dataset.name = name;
-      btn.setAttribute('aria-label', name);
-      btn.title = name;
-
-      btn.addEventListener('click', function () {
-        if (panel === 'right') {
-          state.comparison.rightColorHex = hex;
-          state.comparison.rightColorName = name;
-        } else {
-          state.comparison.leftColorHex = hex;
-          state.comparison.leftColorName = name;
-        }
-
-        applyDrapeColor(panel, hex, name);
-        refreshComparisonSwatches();
-      });
-
-      containerEl.appendChild(btn);
-    });
-  }
-
-  function refreshComparisonSwatches() {
-    [
-      { el: leftComparisonSwatches, hex: state.comparison.leftColorHex },
-      { el: rightComparisonSwatches, hex: state.comparison.rightColorHex }
-    ].forEach(function (item) {
-      if (!item.el) return;
-
-      const activeHex = normalizeHex(item.hex || '');
-      Array.from(item.el.querySelectorAll('.ycs-analysis-comparison-swatch')).forEach(function (btn) {
-        btn.classList.toggle('is-active', normalizeHex(btn.dataset.hex || '') === activeHex);
-      });
-    });
-  }
-
-  async function loadComparisonSide(panel) {
-    const paletteEl = panel === 'right' ? rightPaletteSelect : leftPaletteSelect;
-    const colorEl = panel === 'right' ? rightColorSelect : leftColorSelect;
-    const filtersContainer = panel === 'right' ? rightComparisonFilters : leftComparisonFilters;
-    const swatchesContainer = panel === 'right' ? rightComparisonSwatches : leftComparisonSwatches;
-    if (!paletteEl) return;
-
-    const paletteCode = paletteEl.value || DRAPING_PALETTE_CODE;
-    const colors = await fetchPaletteColors(paletteCode);
-    const filteredColors = getComparisonFilteredColors(colors, panel);
-
-    if (panel === 'right') {
-      state.comparison.rightPaletteCode = paletteCode;
-    } else {
-      state.comparison.leftPaletteCode = paletteCode;
-    }
-
-    populateComparisonFilters(filtersContainer, colors, panel);
-    populateComparisonColorSelect(colorEl, filteredColors, panel);
-    populateComparisonSwatches(swatchesContainer, filteredColors, panel);
-
-    const savedHex = normalizeHex(panel === 'right' ? state.comparison.rightColorHex : state.comparison.leftColorHex);
-    const colorToApply =
-      filteredColors.find(function (color) {
-        return normalizeHex(color.hex || color.hexCode || color.colorHex || '') === savedHex;
-      }) || filteredColors.find(function (color) {
-        return normalizeHex(color.hex || color.hexCode || color.colorHex || '');
-      });
-
-    if (colorToApply) {
-      const hex = normalizeHex(colorToApply.hex || colorToApply.hexCode || colorToApply.colorHex || '');
-      const name = colorToApply.name || colorToApply.colorName || colorToApply.title || 'Color';
-
-      if (panel === 'right') {
-        state.comparison.rightColorHex = hex;
-        state.comparison.rightColorName = name;
-      } else {
-        state.comparison.leftColorHex = hex;
-        state.comparison.leftColorName = name;
-      }
-
-      applyDrapeColor(panel, hex, name);
-    }
-
-    refreshComparisonSwatches();
-    saveAnalysisSession();
-  }
-
-  function setAnalysisMode(mode) {
-    const previousMode = state.analysisMode;
-    state.analysisMode = mode === 'comparison' ? 'comparison' : 'structured';
-
-    appEl.classList.toggle('is-comparison-mode', state.analysisMode === 'comparison');
-    appEl.classList.toggle('is-structured-mode', state.analysisMode === 'structured');
-
-    if (structuredModeBtn) structuredModeBtn.classList.toggle('is-active', state.analysisMode === 'structured');
-    if (comparisonModeBtn) comparisonModeBtn.classList.toggle('is-active', state.analysisMode === 'comparison');
-    if (comparisonPanelEl) comparisonPanelEl.hidden = state.analysisMode !== 'comparison';
-    comparisonRails.forEach(function (rail) {
-      rail.hidden = state.analysisMode !== 'comparison';
-    });
-
-    if (state.analysisMode === 'structured') {
-      if (paletteSelect && !isDrapingPalette(paletteSelect.value)) {
-        paletteSelect.value = DRAPING_PALETTE_CODE;
-        updateCurrentPaletteName();
-        renderPaletteUI(DRAPING_PALETTE_CODE);
-      }
-      syncStructuredStepVisibility();
-    } else {
-      state.grayscale = false;
-      if (grayscaleToggle) grayscaleToggle.checked = false;
-      hideDepthStageDrapes();
-      setLipVisibilityForCurrentStep();
-      syncLipUiMode();
-      updateImageTransform();
-      [leftImg, rightImg].forEach(function (img) {
-        if (!img) return;
-        img.style.filter = 'none';
-        img.style.webkitFilter = 'none';
-      });
-      if (leftPaletteSelect) {
-        populateComparisonPaletteSelects();
-      }
-      loadComparisonSide('left');
-      loadComparisonSide('right');
-    }
-
-    if (previousMode !== state.analysisMode) {
-      exitLipEditingUi();
-    }
-
-    refreshLipOverlayAfterLayout();
-    updateDecisionSummary();
-    saveAnalysisSession();
-  }
-
-  function syncStructuredStepVisibility() {
-    if (!isDrapingPalette(paletteSelect ? paletteSelect.value : '')) return;
-
-    const hasDepthDecision = !!(state.analysisDepthDecision || state.selectedDepth);
-    const hasUndertoneDecision = !!(
-      state.analysisUndertoneDecision ||
-      state.selectedUndertoneLane ||
-      state.analysisCurrentStep === 'chroma' ||
-      state.analysisCurrentStep === 'complete'
-    );
-
-    if (!hasDepthDecision) {
-      if (depthStepEl) depthStepEl.hidden = false;
-      if (undertoneStepEl) undertoneStepEl.hidden = true;
-      if (chromaStepEl) chromaStepEl.hidden = true;
-      return;
-    }
-
-    state.selectedDepth = state.selectedDepth || state.analysisDepthDecision;
-
-    if (hasUndertoneDecision) {
-      if (depthStepEl) depthStepEl.hidden = true;
-      if (undertoneStepEl) undertoneStepEl.hidden = true;
-      if (chromaStepEl) chromaStepEl.hidden = false;
-
-      if (resetUndertoneBtn) {
-        resetUndertoneBtn.hidden = false;
-        resetUndertoneBtn.removeAttribute('hidden');
-      }
-      return;
-    }
-
-    if (depthStepEl) depthStepEl.hidden = true;
-    if (undertoneStepEl) undertoneStepEl.hidden = false;
-    if (chromaStepEl) chromaStepEl.hidden = true;
-
-    if (resetDepthBtn) {
-      resetDepthBtn.hidden = false;
-      resetDepthBtn.removeAttribute('hidden');
-    }
   }
 
   function updateCurrentPaletteName() {
@@ -1136,12 +964,54 @@ function updateManageClientLink() {
     syncLipOpacityControl();
   }
 
+  function syncSignatureFrameLabels() {
+  if (!IS_SIGNATURE_MODE) return;
+
+  const firstNameEls = Array.from(document.querySelectorAll('[data-signature-first-name]'));
+  const paletteEls = Array.from(document.querySelectorAll('[data-signature-palette-code]'));
+  const leftColorEl = document.querySelector('[data-signature-color-name-left]');
+  const rightColorEl = document.querySelector('[data-signature-color-name-right]');
+
+  firstNameEls.forEach(function (el) {
+    el.textContent = state.clientFirstName || getClientFirstName();
+  });
+
+  paletteEls.forEach(function (el) {
+    const panelEl = el.closest('.ycs-analysis-stage-panel');
+    const panel = panelEl && panelEl.dataset.panel === 'right' ? 'right' : 'left';
+    const code = getSignatureColorTypeCode(panel);
+    el.textContent = code;
+    el.hidden = !code;
+  });
+
+  if (leftColorEl) {
+    leftColorEl.textContent = state.leftColorName || '';
+  }
+
+  if (rightColorEl) {
+    rightColorEl.textContent = state.rightColorName || '';
+  }
+}
+
+function getSignatureColorTypeCode(panel) {
+  return (
+    state.customerPaletteCode ||
+    getCustomerPaletteCode() ||
+    ''
+  );
+}
+
   function syncColorLabels() {
     if (leftColorLabel) {
       if (state.depthLeft && depthStepEl && !depthStepEl.hidden) {
         leftColorLabel.textContent = state.depthLeft;
       } else {
-        leftColorLabel.textContent = state.leftColorName || '—';
+        leftColorLabel.innerHTML = buildSelectedColorHtml(
+          state.leftColorName,
+          state.leftColorHex,
+          state.lip.leftName,
+          state.lip.leftColor
+        );
       }
     }
 
@@ -1149,9 +1019,15 @@ function updateManageClientLink() {
       if (state.depthRight && depthStepEl && !depthStepEl.hidden) {
         rightColorLabel.textContent = state.depthRight;
       } else {
-        rightColorLabel.textContent = state.rightColorName || '—';
+        rightColorLabel.innerHTML = buildSelectedColorHtml(
+          state.rightColorName,
+          state.rightColorHex,
+          state.lip.rightName,
+          state.lip.rightColor
+        );
       }
     }
+    syncSignatureFrameLabels();
   }
 
   function syncZoomSliders(value) {
@@ -1177,16 +1053,10 @@ function updateManageClientLink() {
         rightColorHex: state.rightColorHex,
         leftColorName: state.leftColorName,
         rightColorName: state.rightColorName,
+        signature: state.signature,
         selectedDepth: state.selectedDepth,
         selectedUndertoneLane: state.selectedUndertoneLane,
-        analysisDepthDecision: state.analysisDepthDecision,
-        analysisUndertoneDecision: state.analysisUndertoneDecision,
-        analysisChromaDecision: state.analysisChromaDecision,
-        analysisCompletedAt: state.analysisCompletedAt,
-        analysisCurrentStep: state.analysisCurrentStep,
-        analysisMode: state.analysisMode,
-        comparison: state.comparison,
-        grayscale: state.analysisMode === 'comparison' ? false : !!state.grayscale,
+        grayscale: !!state.grayscale,
         analysisResult: state.analysisResult || {
           depth: '',
           undertone: '',
@@ -1197,15 +1067,17 @@ function updateManageClientLink() {
         lip: {
           leftColor: state.lip.leftColor,
           rightColor: state.lip.rightColor,
+          leftName: state.lip.leftName,
+          rightName: state.lip.rightName,
           leftOpacity: state.lip.leftOpacity,
           rightOpacity: state.lip.rightOpacity,
           leftVisible: state.lip.leftVisible,
           rightVisible: state.lip.rightVisible,
           closed: state.lip.closed,
-          points: state.lip.points,
-          shapes: getCompletedLipShapes(),
-          activeShapeIndex: state.lip.activeShapeIndex || 0,
-          showGuides: state.lip.showGuides
+points: state.lip.points,
+shapes: getCompletedLipShapes(),
+activeShapeIndex: state.lip.activeShapeIndex || 0,
+showGuides: state.lip.showGuides
         }
       };
 
@@ -1215,74 +1087,7 @@ function updateManageClientLink() {
       console.warn('Could not save analysis session', error);
     }
   }
-function getSharedLipStorageKey() {
-  return 'ycs-shared-lip-state:' + (DEMO_CLIENT_ID ? 'demo:' + DEMO_CLIENT_ID : (CLIENT_RECORD_ID || CUSTOMER_ID || 'default'));
-}
 
-function saveSharedLipSession() {
-  try {
-    if (!state.lip || !Array.isArray(state.lip.points) || state.lip.points.length < 3) {
-      return;
-    }
-
-    const payload = {
-      photoSessionKey: state.photoSessionKey || '',
-      lip: {
-        leftColor: state.lip.leftColor,
-        rightColor: state.lip.rightColor,
-        leftOpacity: state.lip.leftOpacity,
-        rightOpacity: state.lip.rightOpacity,
-        leftVisible: state.lip.leftVisible,
-        rightVisible: state.lip.rightVisible,
-        closed: state.lip.closed,
-        points: state.lip.points,
-        shapes: getCompletedLipShapes(),
-        activeShapeIndex: state.lip.activeShapeIndex || 0,
-        showGuides: state.lip.showGuides
-      }
-    };
-
-    sessionStorage.setItem(getSharedLipStorageKey(), JSON.stringify(payload));
-  } catch (error) {
-    console.warn('Could not save shared lip session', error);
-  }
-}
-
-function loadSharedLipSession() {
-  try {
-    const raw = sessionStorage.getItem(getSharedLipStorageKey());
-    return raw ? JSON.parse(raw) : null;
-  } catch (error) {
-    console.warn('Could not load shared lip session', error);
-    return null;
-  }
-}
-
-function applySharedLipState(shared) {
-  if (!shared || !shared.lip) return;
-
-  const lip = shared.lip;
-
-  state.lip.leftColor = lip.leftColor || '';
-  state.lip.rightColor = lip.rightColor || '';
-  state.lip.leftOpacity = typeof lip.leftOpacity === 'number' ? lip.leftOpacity : 0.45;
-  state.lip.rightOpacity = typeof lip.rightOpacity === 'number' ? lip.rightOpacity : 0.45;
-  state.lip.leftVisible = lip.leftVisible !== false;
-  state.lip.rightVisible = lip.rightVisible !== false;
-  state.lip.shapes = Array.isArray(lip.shapes) ? lip.shapes.slice(0, 2) : [];
-  if (state.lip.shapes.length) {
-    state.lip.activeShapeIndex =
-      typeof lip.activeShapeIndex === 'number' ? lip.activeShapeIndex : 0;
-    const activeShape = state.lip.shapes[state.lip.activeShapeIndex] || state.lip.shapes[0];
-    state.lip.points = Array.isArray(activeShape.points) ? activeShape.points : [];
-    state.lip.closed = !!activeShape.closed;
-  } else {
-    state.lip.activeShapeIndex = 0;
-    state.lip.closed = !!lip.closed;
-    state.lip.points = Array.isArray(lip.points) ? lip.points : [];
-  }
-  state.lip.showGuides = lip.showGuides !== false;
-}
   function syncLipOverlayToImage() {
     const pairs = [
       { frame: leftFrame, img: leftImg, svg: leftLipSvg, canvas: leftLipCanvas },
@@ -1322,37 +1127,6 @@ function applySharedLipState(shared) {
         }
       }
     });
-  }
-
-  function refreshLipOverlayAfterLayout() {
-    setLipVisibilityForCurrentStep();
-    syncLipUiMode();
-    syncLipOpacityControl();
-
-    requestAnimationFrame(function () {
-      syncLipOverlayToImage();
-
-      requestAnimationFrame(function () {
-        syncLipOverlayToImage();
-        renderLips();
-      });
-    });
-  }
-
-  function exitLipEditingUi() {
-    state.lip.editing = false;
-    state.lip.adjusting = false;
-    state.lip.dragIndex = -1;
-    state.lip.dragSvg = null;
-    state.lip.movingPhoto = false;
-
-    if (lipMovePhotoBtn) {
-      lipMovePhotoBtn.textContent = 'Move Photo';
-    }
-
-    appEl.classList.remove('is-lip-editing');
-    appEl.classList.remove('is-lip-adjusting');
-    syncLipEditingModeClass();
   }
 
   function syncLipEditingModeClass() {
@@ -1405,8 +1179,6 @@ function applySharedLipState(shared) {
     state.lip.rightColor = '';
     state.lip.closed = false;
     state.lip.points = [];
-    state.lip.shapes = [];
-    state.lip.activeShapeIndex = 0;
     state.lip.dragIndex = -1;
     state.lip.dragSvg = null;
   }
@@ -1423,8 +1195,6 @@ function applySharedLipState(shared) {
   state.lip.movingPhoto = false;
   state.lip.closed = false;
   state.lip.points = [];
-  state.lip.shapes = [];
-  state.lip.activeShapeIndex = 0;
   state.lip.dragIndex = -1;
   state.lip.dragSvg = null;
   state.lip.showGuides = true;
@@ -1465,15 +1235,15 @@ function applySharedLipState(shared) {
   }
 
   function syncLipUiMode() {
-    const undertonesVisible = undertoneStepEl && !undertoneStepEl.hidden;
+    const undertonesVisible = IS_SIGNATURE_MODE
+  ? true
+  : undertoneStepEl && !undertoneStepEl.hidden;
     const hasCompletedMask = state.lip.closed && state.lip.points.length >= 3;
     const isEditing = !!state.lip.editing;
     const isAdjusting = !!state.lip.adjusting;
 
     if (!isEditing && !isAdjusting && !hasCompletedMask && state.lip.points.length > 0) {
       state.lip.points = [];
-      state.lip.shapes = [];
-      state.lip.activeShapeIndex = 0;
       state.lip.closed = false;
     }
 
@@ -1516,6 +1286,7 @@ function applySharedLipState(shared) {
     }
 
     syncLipEditingModeClass();
+    syncLipOpacityControl();
   }
 
   function ensureLipEmptyModeVisible() {
@@ -1545,7 +1316,10 @@ function applySharedLipState(shared) {
 
     if (lipAddShapeBtn) {
       const shapes = getCompletedLipShapes();
-      lipAddShapeBtn.disabled = !state.lip.closed || shapes.length >= 2;
+
+      lipAddShapeBtn.disabled =
+      !state.lip.closed ||      // must finish first shape
+      shapes.length >= 2;       // max 2 shapes
     }
 
     if (lipEditShape1Btn) {
@@ -1557,8 +1331,33 @@ function applySharedLipState(shared) {
     }
 
     syncLipUiMode();
-  }
+    syncLipOpacityControl();
+  } //updateLipActionButton
 
+
+    // 🔑 KEY FIX: always exit shape creation cleanly
+   lipCancelBtns.forEach(function (lipCancelBtn) {
+  lipCancelBtn.onclick = function () {
+    state.lip.editing = false;
+    state.lip.adjusting = false;
+    state.lip.movingPhoto = false;
+    state.lip.dragIndex = -1;
+    state.lip.dragSvg = null;
+
+    if (lipMovePhotoBtn) {
+      lipMovePhotoBtn.textContent = 'Move Photo';
+    }
+
+    appEl.classList.remove('is-lip-editing');
+    appEl.classList.remove('is-lip-adjusting');
+
+    updateLipActionButtons();
+    syncLipUiMode();
+    syncLipOpacityControl();
+    renderLips();
+    saveAnalysisSession();
+  };
+});
   if (lipDoneBtn) {
     lipDoneBtn.onclick = function () {
       state.lip.editing = false;
@@ -1598,16 +1397,13 @@ function applySharedLipState(shared) {
     leftImg.style.transform = transform;
     rightImg.style.transform = transform;
 
-    const filterValue = shouldApplyGrayscale() ? 'grayscale(1)' : 'none';
+    const filterValue = state.grayscale ? 'grayscale(1)' : 'none';
     leftImg.style.filter = filterValue;
-    leftImg.style.webkitFilter = filterValue;
     rightImg.style.filter = filterValue;
-    rightImg.style.webkitFilter = filterValue;
 
     Array.from(document.querySelectorAll('.ycs-analysis-depth-photo')).forEach(function (img) {
       img.style.transform = transform;
       img.style.filter = filterValue;
-      img.style.webkitFilter = filterValue;
     });
 
     requestAnimationFrame(syncLipOverlayToImage);
@@ -1639,95 +1435,12 @@ function applySharedLipState(shared) {
 
   function reapplyImageTransformAfterRender() {
     updateImageTransform();
-    syncLipOverlayToImage();
-    renderLips();
     requestAnimationFrame(function () {
       updateImageTransform();
-      syncLipOverlayToImage();
-      renderLips();
-      requestAnimationFrame(function () {
-        updateImageTransform();
-        syncLipOverlayToImage();
-        renderLips();
-      });
+      requestAnimationFrame(updateImageTransform);
     });
-    window.setTimeout(function () {
-      updateImageTransform();
-      syncLipOverlayToImage();
-      renderLips();
-    }, 80);
+    window.setTimeout(updateImageTransform, 80);
   }
-
-  function getAnalysisStatePayload() {
-    return {
-      analysisDepthDecision: state.analysisDepthDecision || '',
-      analysisUndertoneDecision: state.analysisUndertoneDecision || '',
-      analysisChromaDecision: state.analysisChromaDecision || '',
-      analysisCompletedAt: state.analysisCompletedAt || '',
-      analysisCurrentStep: state.analysisCurrentStep || 'depth'
-    };
-  }
-
-  function applySavedAnalysisDecisions(transform) {
-    if (!transform || typeof transform !== 'object') return;
-
-    state.analysisDepthDecision = transform.analysisDepthDecision || '';
-    state.analysisUndertoneDecision = transform.analysisUndertoneDecision || '';
-    state.analysisChromaDecision = transform.analysisChromaDecision || '';
-    state.analysisCompletedAt = transform.analysisCompletedAt || '';
-    state.analysisCurrentStep = transform.analysisCurrentStep || (
-      state.analysisChromaDecision
-        ? 'complete'
-        : state.analysisUndertoneDecision
-          ? 'chroma'
-          : state.analysisDepthDecision
-            ? 'undertone'
-            : 'depth'
-    );
-
-    if (state.analysisDepthDecision) {
-      state.selectedDepth = state.analysisDepthDecision;
-      state.analysisResult.depth = state.analysisDepthDecision;
-    }
-
-    if (state.analysisUndertoneDecision) {
-      const labelToLane = {
-        'Light Warm': 'light-warm',
-        'Light Cool': 'light-cool',
-        'Medium Warm': 'med-warm',
-        'Medium Cool': 'med-cool',
-        'Deep Warm': 'deep-warm',
-        'Deep Cool': 'deep-cool'
-      };
-      state.selectedUndertoneLane = labelToLane[state.analysisUndertoneDecision] || state.selectedUndertoneLane;
-      state.analysisResult.undertone = state.analysisUndertoneDecision;
-    }
-
-    if (state.analysisChromaDecision) {
-      state.analysisResult.chroma = state.analysisChromaDecision;
-      state.analysisResult.resultLabel = state.analysisChromaDecision;
-    }
-  }
-
-  function updateDecisionSummary() {
-    if (!decisionSummaryEl) return;
-
-    const items = [
-      state.analysisDepthDecision ? 'Depth: ' + state.analysisDepthDecision : '',
-      state.analysisUndertoneDecision ? 'Undertone: ' + state.analysisUndertoneDecision : '',
-      state.analysisChromaDecision ? 'Result: ' + state.analysisChromaDecision : ''
-    ].filter(Boolean);
-
-    decisionSummaryEl.hidden = !items.length || state.analysisMode !== 'structured';
-    decisionSummaryEl.textContent = items.join(' • ');
-  }
-
-  function saveAnalysisProgress(options) {
-    updateDecisionSummary();
-    saveAnalysisSession();
-    savePhotoTransform(Object.assign({ silent: true }, options || {}));
-  }
-
   function getCompletedLipShapes() {
     const shapes = Array.isArray(state.lip.shapes) ? state.lip.shapes.slice() : [];
 
@@ -1735,15 +1448,15 @@ function applySharedLipState(shared) {
       shapes[state.lip.activeShapeIndex || 0] = {
         points: state.lip.points,
         closed: true
-      };
+        };
     }
 
     return shapes
       .filter(function (shape) {
         return shape && Array.isArray(shape.points) && shape.points.length >= 3;
-      })
-      .slice(0, 2);
-  }
+        })
+    .slice(0, 2);
+  }//getCompletedLipShapes
 
   function hasCompletedLipShapes(lip) {
     return !!(
@@ -1756,56 +1469,35 @@ function applySharedLipState(shared) {
   }
 
   function setActiveLipShape(index) {
-    const shape = state.lip.shapes[index];
-    if (!shape || !Array.isArray(shape.points)) return;
+  const shape = state.lip.shapes[index];
 
-    state.lip.activeShapeIndex = index;
-    state.lip.points = shape.points.slice();
-    state.lip.closed = !!shape.closed;
-    state.lip.editing = false;
-    state.lip.adjusting = true;
-    state.lip.dragIndex = -1;
-    state.lip.dragSvg = null;
+  if (!shape || !Array.isArray(shape.points)) return;
 
-    appEl.classList.remove('is-lip-editing');
-    appEl.classList.add('is-lip-adjusting');
+  state.lip.activeShapeIndex = index;
+  state.lip.points = shape.points.slice();
+  state.lip.closed = !!shape.closed;
+  state.lip.editing = false;
+  state.lip.adjusting = true;
+  state.lip.dragIndex = -1;
+  state.lip.dragSvg = null;
 
-    if (lipStatus) {
-      lipStatus.textContent = 'Editing lip shape ' + (index + 1) + '. Drag points to refine.';
-    }
+  appEl.classList.remove('is-lip-editing');
+  appEl.classList.add('is-lip-adjusting');
 
-    updateLipActionButtons();
-    renderLips();
+  if (lipStatus) {
+    lipStatus.textContent = 'Editing lip shape ' + (index + 1) + '. Drag points to refine.';
   }
+
+  updateLipActionButtons();
+  renderLips();
+} // setActiveLipShape
 
   async function savePhotoTransform(options) {
     options = options || {};
     const silent = !!options.silent;
 
-    if (IS_FREE_ANALYSIS_DEMO) {
-      const payload = {
-        photoTransform: {
-          x: state.x,
-          y: state.y,
-          scale: state.scale
-        },
-        analysisState: getAnalysisStatePayload(),
-        lipMask: {
-          shapes: getCompletedLipShapes()
-        }
-      };
-
-      try {
-        setStoredFreeTrialValue(DEMO_CLIENT_ID, 'transform', JSON.stringify(payload));
-        if (!silent) alert('Position saved.');
-      } catch (error) {
-        if (!silent) alert(error.message || 'Could not save position');
-      }
-      return;
-    }
-
     if (!ACTIVE_RECORD_ID) {
-      if (!silent) alert(IS_DIY_MODE ? 'No saved photo found.' : 'No client record ID found.');
+      if (!silent) alert('No client record ID found.');
       return;
     }
 
@@ -1816,32 +1508,30 @@ function applySharedLipState(shared) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(
-              CLIENT_RECORD_ID
+          CLIENT_RECORD_ID
             ? {
                 clientRecordId: CLIENT_RECORD_ID,
                 photoTransform: {
-                  x: state.x,
-                  y: state.y,
-                  scale: state.scale
-                },
-                analysisState: getAnalysisStatePayload(),
-                lipMask: {
-                  shapes: getCompletedLipShapes()
-                }
+  x: state.x,
+  y: state.y,
+  scale: state.scale
+},
+lipMask: {
+  shapes: getCompletedLipShapes()
+}
               }
             : {
                 customerId: CUSTOMER_ID,
-                photoId: PHOTO_ID,
-                photoSource: PHOTO_SOURCE,
-                photoTransform: {
-                  x: state.x,
-                  y: state.y,
-                  scale: state.scale
-                },
-                analysisState: getAnalysisStatePayload(),
-                lipMask: {
-                  shapes: getCompletedLipShapes()
-                }
+photoId: PHOTO_ID,
+photoSource: PHOTO_SOURCE,
+photoTransform: {
+  x: state.x,
+  y: state.y,
+  scale: state.scale
+},
+lipMask: {
+  shapes: getCompletedLipShapes()
+}
               }
         )
       });
@@ -1864,33 +1554,8 @@ function applySharedLipState(shared) {
   }
 
   async function restoreSavedPhotoPosition() {
-    if (IS_FREE_ANALYSIS_DEMO) {
-      const storedTransform = getStoredFreeTrialValue(DEMO_CLIENT_ID, 'transform');
-
-      if (!storedTransform) {
-        alert('No saved position found.');
-        return;
-      }
-
-      try {
-        const parsed = JSON.parse(storedTransform);
-        if (!parsed.photoTransform) {
-          alert('No saved position found.');
-          return;
-        }
-
-        applySavedTransform(parsed.photoTransform);
-        reapplyImageTransformAfterRender();
-        alert('Saved position restored.');
-      } catch (error) {
-        console.warn('Could not restore trial transform', error);
-        alert('Could not restore saved position.');
-      }
-      return;
-    }
-
     if (!ACTIVE_RECORD_ID) {
-      alert(IS_DIY_MODE ? 'No saved photo found.' : 'No client record ID found.');
+      alert('No client record ID found.');
       return;
     }
 
@@ -1903,7 +1568,7 @@ function applySharedLipState(shared) {
           : APP_BASE_URL +
             '/api/get-photo?customerId=' + encodeURIComponent(CUSTOMER_ID) +
             (PHOTO_ID ? '&photoId=' + encodeURIComponent(PHOTO_ID) : '') +
-            (PHOTO_SOURCE ? '&photoSource=' + encodeURIComponent(PHOTO_SOURCE) : '')
+            (PHOTO_SOURCE ? '&source=' + encodeURIComponent(PHOTO_SOURCE) : '')
       );
       const data = await response.json();
 
@@ -1977,7 +1642,7 @@ function refreshGuidedSwatches() {
 function refreshAllSwatchHighlights() {
   refreshStandardSwatches();
   refreshGuidedSwatches();
-  refreshComparisonSwatches();
+  refreshSignatureSideHighlights();
 }
 
   function updateDrapeShape() {
@@ -1987,7 +1652,6 @@ function refreshAllSwatchHighlights() {
 
     leftDrapePath.setAttribute('d', d);
     rightDrapePath.setAttribute('d', d);
-    syncDrapeLayers();
   }
 
   async function fetchPaletteColors(paletteCode) {
@@ -2022,7 +1686,21 @@ function refreshAllSwatchHighlights() {
       return [];
     }
   }
+async function fetchSignatureLipColors(paletteCode) {
+  try {
+    const url =
+      '/apps/palette-data?action=getSignatureLipColors&palette=' +
+      encodeURIComponent(paletteCode);
 
+    const res = await fetch(url, { credentials: 'same-origin' });
+    const data = await res.json();
+
+    return Array.isArray(data.lipColors) ? data.lipColors : [];
+  } catch (error) {
+    console.error('Failed to load signature lip colors', error);
+    return [];
+  }
+}
   function getCategoryFromColor(color) {
     const raw =
       color.categories ||
@@ -2119,9 +1797,311 @@ function refreshAllSwatchHighlights() {
 
       syncLipUiMode();
       renderLips();
+      saveAnalysisSession();
     };
   }
+function renderSignatureLipSwatches(colors) {
+  if (!lipSwatchContainer) return;
 
+  lipSwatchContainer.innerHTML = '';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'ycs-analysis-guided-swatches';
+
+  if (!colors || !colors.length) {
+    const empty = document.createElement('div');
+    empty.className = 'ycs-analysis-guided-empty';
+    empty.textContent = 'No lip colors for this palette yet.';
+    lipSwatchContainer.appendChild(empty);
+    return;
+  }
+
+  colors.forEach(function (color) {
+    const hex = normalizeHex(color.hex || '');
+    const name = color.name || 'Lip Color';
+
+    if (!hex) return;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'ycs-analysis-guided-swatch';
+    btn.style.background = hex;
+    btn.title = name;
+    btn.setAttribute('aria-label', name);
+
+    btn.addEventListener('click', function () {
+  if (state.activePanel === 'right') {
+    state.lip.rightColor = hex;
+    state.lip.rightName = name;
+    state.lip.rightVisible = true;
+  } else {
+    state.lip.leftColor = hex;
+    state.lip.leftName = name;
+    state.lip.leftVisible = true;
+  }
+
+  syncLipUiMode();
+  renderLips();
+  syncColorLabels();   // 👈 IMPORTANT
+  saveAnalysisSession();
+});
+
+    wrap.appendChild(btn);
+  });
+
+  lipSwatchContainer.appendChild(wrap);
+}
+
+function getSignatureSideRefs(panel) {
+  const isRight = panel === 'right';
+  return {
+    paletteSelect: isRight ? signatureRightPaletteSelect : signatureLeftPaletteSelect,
+    filtersEl: isRight ? signatureRightDrapeFilters : signatureLeftDrapeFilters,
+    drapeSwatchesEl: isRight ? signatureRightDrapeSwatches : signatureLeftDrapeSwatches,
+    lipSwatchesEl: isRight ? signatureRightLipSwatches : signatureLeftLipSwatches
+  };
+}
+
+function getSignatureSideFilter(panel) {
+  return panel === 'right'
+    ? (state.signature.rightFilter || 'all')
+    : (state.signature.leftFilter || 'all');
+}
+
+function setSignatureSideFilter(panel, value) {
+  if (panel === 'right') {
+    state.signature.rightFilter = value || 'all';
+  } else {
+    state.signature.leftFilter = value || 'all';
+  }
+}
+
+function syncSignatureLipVisibilityControl(panel) {
+  const isRight = panel === 'right';
+  const anchorBtn = isRight ? signatureRightLipEditBtn : signatureLeftLipEditBtn;
+  const sectionEl = anchorBtn ? anchorBtn.closest('.ycs-signature-side-section--lip') : null;
+  const visible = isRight ? state.lip.rightVisible : state.lip.leftVisible;
+  const hasCompletedMask = getCompletedLipShapes().length > 0;
+
+  if (sectionEl) {
+    sectionEl.classList.toggle('is-lip-collapsed', !visible && hasCompletedMask);
+  }
+}
+
+function populateSignatureSidePaletteSelects() {
+  if (!IS_SIGNATURE_MODE) return;
+  const palettes = getAnalystPaletteCodes(paletteAccessString);
+  const selects = [signatureLeftPaletteSelect, signatureRightPaletteSelect].filter(Boolean);
+
+  selects.forEach(function (selectEl, index) {
+    const panel = index === 1 ? 'right' : 'left';
+    const savedCode = panel === 'right' ? state.signature.rightPaletteCode : state.signature.leftPaletteCode;
+    selectEl.innerHTML = '';
+
+    palettes.forEach(function (code) {
+      const option = document.createElement('option');
+      option.value = code;
+      option.textContent = getPaletteDisplayName(code);
+      selectEl.appendChild(option);
+    });
+
+    selectEl.value = palettes.indexOf(savedCode) !== -1
+      ? savedCode
+      : (palettes[index] || palettes[0] || '');
+
+    if (panel === 'right') {
+      state.signature.rightPaletteCode = selectEl.value;
+    } else {
+      state.signature.leftPaletteCode = selectEl.value;
+    }
+  });
+}
+
+function getSignatureFilteredColors(colors, panel) {
+  const activeFilter = getSignatureSideFilter(panel);
+  const sortedColors = colors.slice().sort(function (a, b) {
+    return Number(a.sortOrder || 0) - Number(b.sortOrder || 0);
+  });
+
+  if (activeFilter === 'all') return sortedColors;
+
+  return sortedColors.filter(function (color) {
+    return getCategoryFromColor(color).some(function (category) {
+      return String(category).toLowerCase() === activeFilter;
+    });
+  });
+}
+
+function renderSignatureSideFilters(containerEl, colors, panel) {
+  if (!containerEl) return;
+
+  const categorySet = new Set();
+  colors.forEach(function (color) {
+    getCategoryFromColor(color).forEach(function (category) {
+      if (category) categorySet.add(String(category).toLowerCase());
+    });
+  });
+
+  const filters = [{ key: 'all', label: 'All' }].concat(
+    Array.from(categorySet).map(function (category) {
+      return { key: category, label: category };
+    })
+  );
+
+  const activeFilter = filters.some(function (filter) {
+    return filter.key === getSignatureSideFilter(panel);
+  }) ? getSignatureSideFilter(panel) : 'all';
+
+  setSignatureSideFilter(panel, activeFilter);
+  containerEl.innerHTML = '';
+
+  filters.forEach(function (filter) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'ycs-signature-side-filter';
+    btn.textContent = filter.label;
+    btn.classList.toggle('is-active', filter.key === activeFilter);
+
+    btn.addEventListener('click', function () {
+      setSignatureSideFilter(panel, filter.key);
+      renderSignatureSide(panel);
+    });
+
+    containerEl.appendChild(btn);
+  });
+}
+
+function renderSignatureSideDrapeSwatches(containerEl, colors, panel) {
+  if (!containerEl) return;
+  containerEl.innerHTML = '';
+
+  if (!colors.length) {
+    const empty = document.createElement('p');
+    empty.className = 'ycs-signature-side-empty';
+    empty.textContent = 'No colors found.';
+    containerEl.appendChild(empty);
+    return;
+  }
+
+  colors.forEach(function (color) {
+    const hex = normalizeHex(color.hex || color.hexCode || color.colorHex || '');
+    const name = color.name || color.colorName || color.title || 'Color';
+    if (!hex) return;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'ycs-signature-side-swatch';
+    btn.style.background = hex;
+    btn.dataset.hex = hex;
+    btn.title = name + ' ' + formatHexLabel(hex);
+    btn.setAttribute('aria-label', name + ' ' + formatHexLabel(hex));
+
+    btn.addEventListener('click', function () {
+      setActivePanel(panel);
+      applyDrapeColor(panel, hex, name);
+      refreshSignatureSideHighlights();
+    });
+
+    containerEl.appendChild(btn);
+  });
+}
+
+function renderSignatureSideLipSwatches(containerEl, colors, panel) {
+  if (!containerEl) return;
+  containerEl.innerHTML = '';
+
+  if (!colors.length) {
+    const empty = document.createElement('p');
+    empty.className = 'ycs-signature-side-empty';
+    empty.textContent = 'No lip colors for this palette yet.';
+    containerEl.appendChild(empty);
+    return;
+  }
+
+  colors.forEach(function (color) {
+    const hex = normalizeHex(color.hex || color.hexCode || color.colorHex || '');
+    const name = color.name || color.colorName || color.title || 'Lip Color';
+    if (!hex) return;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'ycs-signature-side-swatch';
+    btn.style.background = hex;
+    btn.dataset.hex = hex;
+    btn.title = name + ' ' + formatHexLabel(hex);
+    btn.setAttribute('aria-label', name + ' ' + formatHexLabel(hex));
+
+    btn.addEventListener('click', function () {
+      setActivePanel(panel);
+      if (panel === 'right') {
+        state.lip.rightColor = hex;
+        state.lip.rightName = name;
+        state.lip.rightVisible = true;
+      } else {
+        state.lip.leftColor = hex;
+        state.lip.leftName = name;
+        state.lip.leftVisible = true;
+      }
+
+      syncLipUiMode();
+      renderLips();
+      syncColorLabels();
+      refreshSignatureSideHighlights();
+      saveAnalysisSession();
+    });
+
+    containerEl.appendChild(btn);
+  });
+}
+
+async function renderSignatureSide(panel) {
+  if (!IS_SIGNATURE_MODE) return;
+  const refs = getSignatureSideRefs(panel);
+  if (!refs.paletteSelect) return;
+
+  const paletteCode = refs.paletteSelect.value || paletteSelect.value || '';
+  if (panel === 'right') {
+    state.signature.rightPaletteCode = paletteCode;
+  } else {
+    state.signature.leftPaletteCode = paletteCode;
+  }
+
+  syncSignatureFrameLabels();
+
+  const colors = await fetchPaletteColors(paletteCode);
+  const lipColors = await fetchSignatureLipColors(paletteCode);
+  const filteredColors = getSignatureFilteredColors(colors, panel);
+
+  renderSignatureSideFilters(refs.filtersEl, colors, panel);
+  renderSignatureSideDrapeSwatches(refs.drapeSwatchesEl, filteredColors, panel);
+  renderSignatureSideLipSwatches(refs.lipSwatchesEl, lipColors, panel);
+  refreshSignatureSideHighlights();
+  if (!isRestoringSession) {
+    saveAnalysisSession();
+  }
+}
+
+function refreshSignatureSideHighlights() {
+  if (!IS_SIGNATURE_MODE) return;
+
+  [
+    { panel: 'left', drapeHex: state.leftColorHex, lipHex: state.lip.leftColor },
+    { panel: 'right', drapeHex: state.rightColorHex, lipHex: state.lip.rightColor }
+  ].forEach(function (item) {
+    const refs = getSignatureSideRefs(item.panel);
+    if (refs.drapeSwatchesEl) {
+      Array.from(refs.drapeSwatchesEl.querySelectorAll('.ycs-signature-side-swatch')).forEach(function (btn) {
+        btn.classList.toggle('is-active', normalizeHex(btn.dataset.hex || '') === normalizeHex(item.drapeHex || ''));
+      });
+    }
+
+    if (refs.lipSwatchesEl) {
+      Array.from(refs.lipSwatchesEl.querySelectorAll('.ycs-signature-side-swatch')).forEach(function (btn) {
+        btn.classList.toggle('is-active', normalizeHex(btn.dataset.hex || '') === normalizeHex(item.lipHex || ''));
+      });
+    }
+  });
+}
   function renderLipSwatches(warmColors, coolColors) {
     if (!lipSwatchContainer) return;
 
@@ -2195,10 +2175,16 @@ function refreshAllSwatchHighlights() {
   }
 
   function renderModeForPalette(paletteCode) {
-    const guided = isDrapingPalette(paletteCode);
-    guidedPanelEl.hidden = !guided;
-    standardPanelEl.hidden = guided;
+  if (IS_SIGNATURE_MODE) {
+    guidedPanelEl.hidden = true;
+    standardPanelEl.hidden = false;
+    return;
   }
+
+  const guided = isDrapingPalette(paletteCode);
+  guidedPanelEl.hidden = !guided;
+  standardPanelEl.hidden = guided;
+}
 
   function getDepthDrapeImage(depth) {
     const map = {
@@ -2219,14 +2205,12 @@ function refreshAllSwatchHighlights() {
       rightDepthDrapeImg.hidden = false;
       rightDrapePath.style.visibility = 'visible';
       rightDrapePath.setAttribute('fill', '#ffffff');
-      syncDrapeLayer('right', '#ffffff');
     } else {
       state.depthLeft = depth;
       leftDepthDrapeImg.src = src;
       leftDepthDrapeImg.hidden = false;
       leftDrapePath.style.visibility = 'visible';
       leftDrapePath.setAttribute('fill', '#ffffff');
-      syncDrapeLayer('left', '#ffffff');
     }
 
     syncColorLabels();
@@ -2251,7 +2235,6 @@ function refreshAllSwatchHighlights() {
 
     leftDrapePath.setAttribute('fill', state.leftColorHex || '#e8dfd4');
     rightDrapePath.setAttribute('fill', state.rightColorHex || '#e8dfd4');
-    syncDrapeLayers();
 
     syncColorLabels();
   }
@@ -2259,84 +2242,141 @@ function refreshAllSwatchHighlights() {
   function updatePhotoPrepLink() {
   if (!photoPrepLink) return;
 
-  const returnUrl = window.location.pathname + window.location.search;
-  const step = depthStepEl && !depthStepEl.hidden
-    ? 'depth'
-    : undertoneStepEl && !undertoneStepEl.hidden
-      ? 'undertones'
-      : chromaStepEl && !chromaStepEl.hidden
-        ? 'chroma'
-        : 'depth';
+  const currentSignatureUrl =
+    window.location.pathname + window.location.search;
 
-  const prepMode = IS_DIY_MODE ? 'diy' : 'trade';
-  let hrefBase = '/pages/tools-photo-prep?workflow=color-analysis&mode=' + encodeURIComponent(prepMode) + '&returnStep=' + encodeURIComponent(step);
-  if (ADMIN_VIEW_AS) {
-    hrefBase += '&viewAs=' + encodeURIComponent(ADMIN_VIEW_AS);
-  }
+  const mode = (urlParams.get('mode') || '').trim().toLowerCase();
 
-  if (DEMO_CLIENT_ID) {
-    photoPrepLink.href =
-      hrefBase +
-      '&demoClient=' + encodeURIComponent(DEMO_CLIENT_ID) +
-      '&returnUrl=' + encodeURIComponent(returnUrl);
-    return;
+  if (mode === 'member' && (ADMIN_CUSTOMER_ID || CLIENT_RECORD_ID)) {
+  const memberCustomerId = ADMIN_CUSTOMER_ID || CLIENT_RECORD_ID;
+
+  const prepQuery = new URLSearchParams({
+  mode: 'member',
+  workflow: 'member-photo',
+  adminCustomerId: memberCustomerId,
+  returnUrl: currentSignatureUrl
+});
+
+if (PHOTO_ID) {
+  prepQuery.set('photoId', PHOTO_ID);
+}
+
+if (PHOTO_SOURCE) {
+  prepQuery.set('photoSource', PHOTO_SOURCE);
+}
+
+addAdminPreviewParam(prepQuery);
+
+photoPrepLink.href =
+  '/pages/tools-photo-prep?' + prepQuery.toString();
+
+  return;
+}
+
+  photoPrepLink.textContent = 'Photo Prep';
+
+  const prepMode = urlParams.get('mode') === 'diy' ? 'diy' : 'trade';
+  const prepQuery = new URLSearchParams({
+    mode: prepMode,
+    workflow: 'color-analysis',
+    returnStep: 'lip-draping',
+    returnUrl: currentSignatureUrl
+  });
+
+  if (CLIENT_RECORD_ID) {
+    prepQuery.set('clientRecordId', CLIENT_RECORD_ID);
+  } else if (ADMIN_CUSTOMER_ID) {
+    prepQuery.set('adminCustomerId', ADMIN_CUSTOMER_ID);
+  } else if (SIMPLE_CUSTOMER_ID) {
+    prepQuery.set('customerId', SIMPLE_CUSTOMER_ID);
+  } else if (VIEWER_CUSTOMER_ID && prepMode !== 'trade') {
+    prepQuery.set('customerId', VIEWER_CUSTOMER_ID);
   }
 
   if (PHOTO_ID) {
-    hrefBase += '&photoId=' + encodeURIComponent(PHOTO_ID);
+    prepQuery.set('photoId', PHOTO_ID);
   }
 
   if (PHOTO_SOURCE) {
-    hrefBase += '&photoSource=' + encodeURIComponent(PHOTO_SOURCE);
+    prepQuery.set('photoSource', PHOTO_SOURCE);
   }
 
-  if (CLIENT_RECORD_ID) {
-    photoPrepLink.href =
-      hrefBase +
-      '&clientRecordId=' + encodeURIComponent(CLIENT_RECORD_ID) +
-      '&returnUrl=' + encodeURIComponent(returnUrl);
-    return;
-  }
-
-  if (ADMIN_CUSTOMER_ID) {
-    photoPrepLink.href =
-      hrefBase +
-      '&adminCustomerId=' + encodeURIComponent(ADMIN_CUSTOMER_ID) +
-      '&returnUrl=' + encodeURIComponent(returnUrl);
-    return;
-  }
-
-  if (SIMPLE_CUSTOMER_ID) {
-    photoPrepLink.href =
-      hrefBase +
-      '&customerId=' + encodeURIComponent(SIMPLE_CUSTOMER_ID) +
-      '&returnUrl=' + encodeURIComponent(returnUrl);
-    return;
-  }
-
-  if (VIEWER_CUSTOMER_ID) {
-    photoPrepLink.href =
-      hrefBase +
-      '&customerId=' + encodeURIComponent(VIEWER_CUSTOMER_ID) +
-      '&returnUrl=' + encodeURIComponent(returnUrl);
-    return;
-  }
-
+  addAdminPreviewParam(prepQuery);
   photoPrepLink.href =
-    hrefBase + '&returnUrl=' + encodeURIComponent(returnUrl);
+    '/pages/tools-photo-prep?' +
+    prepQuery.toString();
 }
 
 function updateBackLink() {
-  if (!backBtn) return;
+  if (!signatureBackLink) return;
 
-  if (IS_DIY_MODE) {
-    backBtn.textContent = 'Photo Prep';
-    backBtn.href = photoPrepLink ? photoPrepLink.href : appendAdminPreviewToHref('/pages/tools-photo-prep?mode=diy&workflow=color-analysis');
+  const mode = (urlParams.get('mode') || '').trim().toLowerCase();
+
+  if (mode === 'member' && (ADMIN_CUSTOMER_ID || CLIENT_RECORD_ID)) {
+    signatureBackLink.textContent = 'Back to Member Photos';
+    signatureBackLink.href = '/pages/member-photos';
     return;
   }
 
-  backBtn.textContent = 'My Clients';
-  backBtn.href = buildClientListHref();
+  signatureBackLink.textContent = 'Back to Client List';
+  signatureBackLink.href = appendAdminPreviewToHref('/pages/tools-photo-prep?mode=trade&workflow=color-analysis');
+}
+
+function buildManageClientHref() {
+  if (!CLIENT_RECORD_ID) return appendAdminPreviewToHref('/pages/tools-clients');
+
+  const query = new URLSearchParams({
+    clientRecordId: CLIENT_RECORD_ID,
+    edit: '1'
+  });
+
+  addAdminPreviewParam(query);
+  return '/pages/tools-clients?' + query.toString();
+}
+
+function updateManageClientLink() {
+  if (!manageClientLink) return;
+
+  if (!CLIENT_RECORD_ID) {
+    manageClientLink.hidden = true;
+    manageClientLink.style.display = 'none';
+    return;
+  }
+
+  manageClientLink.hidden = false;
+  manageClientLink.style.display = '';
+  manageClientLink.href = buildManageClientHref();
+}
+
+function buildStandardAnalysisHref() {
+  const query = new URLSearchParams();
+  query.set('returnUrl', window.location.pathname + window.location.search);
+  query.set('mode', 'trade');
+
+  if (CLIENT_RECORD_ID) {
+    query.set('clientRecordId', CLIENT_RECORD_ID);
+  } else if (ADMIN_CUSTOMER_ID) {
+    query.set('adminCustomerId', ADMIN_CUSTOMER_ID);
+  } else if (SIMPLE_CUSTOMER_ID) {
+    query.set('customerId', SIMPLE_CUSTOMER_ID);
+  }
+
+  if (PHOTO_ID) {
+    query.set('photoId', PHOTO_ID);
+  }
+
+  if (PHOTO_SOURCE) {
+    query.set('photoSource', PHOTO_SOURCE);
+  }
+
+  addAdminPreviewParam(query);
+  const queryString = query.toString();
+  return '/pages/tools-structured' + (queryString ? '?' + queryString : '');
+}
+
+function updateStandardAnalysisLink() {
+  if (!standardAnalysisLink) return;
+  standardAnalysisLink.href = buildStandardAnalysisHref();
 }
 
   function getChromaDisplayLabel(lane, type) {
@@ -2396,9 +2436,85 @@ function updateBackLink() {
   }
 
   function getAnalysisStorageKey() {
-    return 'ycs-analysis-state:' + (DEMO_CLIENT_ID ? 'demo:' + DEMO_CLIENT_ID : (CLIENT_RECORD_ID || CUSTOMER_ID || 'default'));
+    return 'ycs-analysis-state:' + (CLIENT_RECORD_ID || CUSTOMER_ID || 'default');
   }
+function getSharedLipStorageKey() {
+  return 'ycs-shared-lip-state:' + (CLIENT_RECORD_ID || CUSTOMER_ID || 'default');
+}
 
+function saveSharedLipSession() {
+  try {
+    if (!state.lip || !Array.isArray(state.lip.points) || state.lip.points.length < 3) {
+      return;
+    }
+
+    const payload = {
+      photoSessionKey: state.photoSessionKey || '',
+      lip: {
+        leftColor: state.lip.leftColor,
+        rightColor: state.lip.rightColor,
+        leftOpacity: state.lip.leftOpacity,
+        rightOpacity: state.lip.rightOpacity,
+        leftVisible: state.lip.leftVisible,
+        rightVisible: state.lip.rightVisible,
+        closed: state.lip.closed,
+points: state.lip.points,
+shapes: getCompletedLipShapes(),
+activeShapeIndex: state.lip.activeShapeIndex || 0,
+showGuides: state.lip.showGuides
+      }
+    };
+
+    sessionStorage.setItem(getSharedLipStorageKey(), JSON.stringify(payload));
+  } catch (error) {
+    console.warn('Could not save shared lip session', error);
+  }
+}
+
+function loadSharedLipSession() {
+  try {
+    const raw = sessionStorage.getItem(getSharedLipStorageKey());
+    return raw ? JSON.parse(raw) : null;
+  } catch (error) {
+    console.warn('Could not load shared lip session', error);
+    return null;
+  }
+}
+
+function applySharedLipState(shared) {
+  if (!shared || !shared.lip) return;
+
+  const lip = shared.lip;
+
+  state.lip.leftColor = lip.leftColor || '';
+  state.lip.rightColor = lip.rightColor || '';
+  state.lip.leftOpacity = typeof lip.leftOpacity === 'number' ? lip.leftOpacity : 0.45;
+  state.lip.rightOpacity = typeof lip.rightOpacity === 'number' ? lip.rightOpacity : 0.45;
+  state.lip.leftVisible = lip.leftVisible !== false;
+  state.lip.rightVisible = lip.rightVisible !== false;
+  state.lip.shapes = Array.isArray(lip.shapes) ? lip.shapes.slice(0, 2) : [];
+
+if (state.lip.shapes.length) {
+  state.lip.activeShapeIndex =
+    typeof lip.activeShapeIndex === 'number' ? lip.activeShapeIndex : 0;
+
+  const activeShape = state.lip.shapes[state.lip.activeShapeIndex] || state.lip.shapes[0];
+
+  state.lip.points = Array.isArray(activeShape.points) ? activeShape.points : [];
+  state.lip.closed = !!activeShape.closed;
+} else {
+  state.lip.activeShapeIndex = 0;
+  state.lip.closed = !!lip.closed;
+  state.lip.points = Array.isArray(lip.points) ? lip.points : [];
+}
+
+state.lip.showGuides = lip.showGuides !== false;
+state.lip.editing = false;
+state.lip.adjusting = false;
+state.lip.movingPhoto = false;
+appEl.classList.remove('is-lip-editing');
+appEl.classList.remove('is-lip-adjusting');
+}
   function loadAnalysisSession() {
     try {
       const raw = sessionStorage.getItem(getAnalysisStorageKey());
@@ -2420,16 +2536,11 @@ function updateBackLink() {
     state.leftColorName = saved.leftColorName || '';
     state.rightColorName = saved.rightColorName || '';
 
+    state.signature = Object.assign({}, state.signature, saved.signature || {});
+
     state.selectedDepth = saved.selectedDepth || '';
     state.selectedUndertoneLane = saved.selectedUndertoneLane || '';
-    state.analysisDepthDecision = saved.analysisDepthDecision || '';
-    state.analysisUndertoneDecision = saved.analysisUndertoneDecision || '';
-    state.analysisChromaDecision = saved.analysisChromaDecision || '';
-    state.analysisCompletedAt = saved.analysisCompletedAt || '';
-    state.analysisCurrentStep = saved.analysisCurrentStep || 'depth';
-    state.analysisMode = saved.analysisMode === 'comparison' ? 'comparison' : 'structured';
-    state.comparison = saved.comparison || state.comparison;
-    state.grayscale = saved.analysisMode === 'comparison' ? false : !!saved.grayscale;
+    state.grayscale = !!saved.grayscale;
 
     state.analysisResult = saved.analysisResult || {
       depth: '',
@@ -2441,30 +2552,34 @@ function updateBackLink() {
     if (saved.lip) {
   state.lip.leftColor = saved.lip.leftColor || '';
   state.lip.rightColor = saved.lip.rightColor || '';
-    state.lip.leftOpacity = typeof saved.lip.leftOpacity === 'number' ? saved.lip.leftOpacity : 0.45;
+  state.lip.leftName = saved.lip.leftName || '';
+  state.lip.rightName = saved.lip.rightName || '';
+  state.lip.leftOpacity = typeof saved.lip.leftOpacity === 'number' ? saved.lip.leftOpacity : 0.45;
   state.lip.rightOpacity = typeof saved.lip.rightOpacity === 'number' ? saved.lip.rightOpacity : 0.45;
   state.lip.leftVisible = saved.lip.leftVisible !== false;
   state.lip.rightVisible = saved.lip.rightVisible !== false;
+  state.lip.shapes = Array.isArray(saved.lip.shapes) ? saved.lip.shapes.slice(0, 2) : [];
 
-  const savedHasLipShapes = hasCompletedLipShapes(saved.lip);
-  const currentHasLipShapes = getCompletedLipShapes().length > 0;
+if (state.lip.shapes.length) {
+  state.lip.activeShapeIndex =
+    typeof saved.lip.activeShapeIndex === 'number' ? saved.lip.activeShapeIndex : 0;
 
-  if (savedHasLipShapes || !currentHasLipShapes) {
-    state.lip.shapes = Array.isArray(saved.lip.shapes) ? saved.lip.shapes.slice(0, 2) : [];
-    if (state.lip.shapes.length) {
-      state.lip.activeShapeIndex =
-        typeof saved.lip.activeShapeIndex === 'number' ? saved.lip.activeShapeIndex : 0;
-      const activeShape = state.lip.shapes[state.lip.activeShapeIndex] || state.lip.shapes[0];
-      state.lip.points = Array.isArray(activeShape.points) ? activeShape.points : [];
-      state.lip.closed = !!activeShape.closed;
-    } else {
-      state.lip.activeShapeIndex = 0;
-      state.lip.closed = !!saved.lip.closed;
-      state.lip.points = Array.isArray(saved.lip.points) ? saved.lip.points : [];
-    }
-  }
+  const activeShape = state.lip.shapes[state.lip.activeShapeIndex] || state.lip.shapes[0];
 
-  state.lip.showGuides = saved.lip.showGuides !== false;
+  state.lip.points = Array.isArray(activeShape.points) ? activeShape.points : [];
+  state.lip.closed = !!activeShape.closed;
+} else {
+  state.lip.activeShapeIndex = 0;
+  state.lip.closed = !!saved.lip.closed;
+  state.lip.points = Array.isArray(saved.lip.points) ? saved.lip.points : [];
+}
+
+state.lip.showGuides = saved.lip.showGuides !== false;
+state.lip.editing = false;
+state.lip.adjusting = false;
+state.lip.movingPhoto = false;
+appEl.classList.remove('is-lip-editing');
+appEl.classList.remove('is-lip-adjusting');
 }
     if (grayscaleToggle) {
       grayscaleToggle.checked = !!state.grayscale;
@@ -2473,7 +2588,6 @@ function updateBackLink() {
     setActivePanel(state.activePanel);
     syncColorLabels();
     updateImageTransform();
-    updateDecisionSummary();
   }
 
   async function restoreGuidedFlowFromSession() {
@@ -2502,7 +2616,8 @@ function updateBackLink() {
     }
 
     const shouldShowDepthStep =
-      state.analysisCurrentStep === 'depth' || !state.selectedDepth;
+      !state.selectedDepth ||
+      (saved.analysisCurrentStep && saved.analysisCurrentStep === 'depth');
 
     if (shouldShowDepthStep) {
       renderDepthStep();
@@ -2513,22 +2628,17 @@ function updateBackLink() {
     hideDepthStageDrapes();
 
     if (state.selectedDepth) {
-      const shouldReturnToChroma =
-        state.selectedUndertoneLane &&
-        state.analysisCurrentStep !== 'undertone' &&
-        state.analysisCurrentStep !== 'depth';
-
       if (depthStepEl) depthStepEl.hidden = true;
       if (undertoneStepEl) undertoneStepEl.hidden = false;
       if (chromaStepEl) chromaStepEl.hidden = true;
 
       await renderUndertoneSections(state.selectedDepth);
 
-      if (!state.selectedUndertoneLane || state.analysisCurrentStep === 'undertone') {
+      if (!state.selectedUndertoneLane) {
         showLipEmptyModeNow();
       }
 
-      if (shouldReturnToChroma) {
+      if (state.selectedUndertoneLane) {
         await renderChromaStep(state.selectedUndertoneLane);
 
         if (state.analysisResult && state.analysisResult.resultLabel) {
@@ -2558,36 +2668,7 @@ function updateBackLink() {
       rightDrapePath.setAttribute('fill', state.rightColorHex);
     }
 
-    syncDrapeLayers();
     refreshAllSwatchHighlights();
-  }
-
-  async function restoreGuidedFlowFromDecisions() {
-    if (!state.analysisDepthDecision) return false;
-
-    if (depthStepEl) depthStepEl.hidden = true;
-    if (undertoneStepEl) undertoneStepEl.hidden = false;
-    if (chromaStepEl) chromaStepEl.hidden = true;
-
-    state.selectedDepth = state.analysisDepthDecision;
-    await renderUndertoneSections(state.selectedDepth);
-
-    const shouldReturnToChroma =
-      state.selectedUndertoneLane &&
-      state.analysisCurrentStep !== 'undertone' &&
-      state.analysisCurrentStep !== 'depth';
-
-    if (shouldReturnToChroma) {
-      await renderChromaStep(state.selectedUndertoneLane);
-    }
-
-    if (state.analysisChromaDecision && chromaResultEl && chromaResultTextEl) {
-      chromaResultEl.hidden = false;
-      chromaResultTextEl.textContent = state.analysisChromaDecision;
-    }
-
-    updateDecisionSummary();
-    return true;
   }
 
   function commitAnalysisResult(lane, chroma) {
@@ -2598,40 +2679,18 @@ function updateBackLink() {
     state.analysisResult.chroma = result.chroma;
     state.analysisResult.resultCode = result.resultCode;
     state.analysisResult.resultLabel = result.resultLabel;
-    state.analysisChromaDecision = result.resultLabel;
-    state.analysisCompletedAt = new Date().toISOString();
-    state.analysisCurrentStep = 'complete';
 
     if (chromaResultEl && chromaResultTextEl) {
       chromaResultEl.hidden = false;
       chromaResultTextEl.textContent = state.analysisResult.resultLabel;
     }
 
-    saveAnalysisProgress();
-    saveClientColorType(result)
-      .then(function () {
-        if (chromaResultEl && chromaResultTextEl) {
-          chromaResultEl.hidden = false;
-          chromaResultTextEl.textContent = state.analysisResult.resultLabel + ' saved to client';
-        }
-      })
-      .catch(function (error) {
-        console.warn('Client color type save failed', error);
-        if (chromaResultEl && chromaResultTextEl) {
-          chromaResultEl.hidden = false;
-          chromaResultTextEl.textContent = state.analysisResult.resultLabel + ' selected. Client color type could not be saved.';
-        }
-      });
+    saveAnalysisSession();
   }
 
   function resetGuidedFlow() {
     state.selectedDepth = '';
     state.selectedUndertoneLane = '';
-    state.analysisDepthDecision = '';
-    state.analysisUndertoneDecision = '';
-    state.analysisChromaDecision = '';
-    state.analysisCompletedAt = '';
-    state.analysisCurrentStep = 'depth';
 
     state.analysisResult.depth = '';
     state.analysisResult.undertone = '';
@@ -2642,7 +2701,6 @@ function updateBackLink() {
     if (depthStepEl) depthStepEl.hidden = false;
     if (undertoneStepEl) undertoneStepEl.hidden = true;
     if (chromaStepEl) chromaStepEl.hidden = true;
-    setFreeTrialLockVisible(false);
 
     if (depthSectionsEl) depthSectionsEl.innerHTML = '';
     if (undertoneSectionsEl) undertoneSectionsEl.innerHTML = '';
@@ -2656,14 +2714,11 @@ function updateBackLink() {
     setLipVisibilityForCurrentStep();
 
     if (!isRestoringSession) {
-      saveAnalysisProgress();
+      saveAnalysisSession();
     }
   }
 
   function resetAnalysisForNewPhoto() {
-  state.x = 0;
-  state.y = 0;
-  state.scale = 1;
   state.leftColorHex = '';
   state.rightColorHex = '';
   state.leftColorName = '';
@@ -2681,12 +2736,12 @@ function updateBackLink() {
   resetLipStateForNewPhoto();
   hideDepthStageDrapes();
   resetGuidedFlow();
-  syncZoomSliders(state.scale);
   syncColorLabels();
   setActivePanel('left');
   setLipVisibilityForCurrentStep();
   syncLipUiMode();
   syncLipOpacityControl();
+  syncSignatureFrameLabels();
   renderLips();
 }
 
@@ -2710,48 +2765,29 @@ function updateBackLink() {
     return btn;
   }
 
-  function isUndertoneStepVisible() {
-    return !!(
-      state.analysisMode !== 'comparison' &&
-      undertoneStepEl &&
-      !undertoneStepEl.hidden
-    );
-  }
-
-  function isDepthStepVisible() {
-    return !!(
-      state.analysisMode !== 'comparison' &&
-      depthStepEl &&
-      !depthStepEl.hidden
-    );
-  }
-
-  function shouldApplyGrayscale() {
-    return !!state.grayscale && isDepthStepVisible();
-  }
-
   function setLipVisibilityForCurrentStep() {
-    const showLipsNow = isUndertoneStepVisible();
+  const undertonesVisible = undertoneStepEl && !undertoneStepEl.hidden;
+  const showLipsNow = IS_SIGNATURE_MODE ? true : !!undertonesVisible;
 
-    if (leftLipSvg) leftLipSvg.style.display = showLipsNow ? '' : 'none';
-    if (rightLipSvg) rightLipSvg.style.display = showLipsNow ? '' : 'none';
+  if (leftLipSvg) leftLipSvg.style.display = showLipsNow ? '' : 'none';
+  if (rightLipSvg) rightLipSvg.style.display = showLipsNow ? '' : 'none';
 
-    if (leftLipCanvas) {
-      leftLipCanvas.style.display = showLipsNow ? '' : 'none';
-      if (!showLipsNow) {
-        const ctx = leftLipCanvas.getContext('2d');
-        ctx.clearRect(0, 0, leftLipCanvas.width, leftLipCanvas.height);
-      }
-    }
-
-    if (rightLipCanvas) {
-      rightLipCanvas.style.display = showLipsNow ? '' : 'none';
-      if (!showLipsNow) {
-        const ctx = rightLipCanvas.getContext('2d');
-        ctx.clearRect(0, 0, rightLipCanvas.width, rightLipCanvas.height);
-      }
+  if (leftLipCanvas) {
+    leftLipCanvas.style.display = showLipsNow ? '' : 'none';
+    if (!showLipsNow) {
+      const ctx = leftLipCanvas.getContext('2d');
+      ctx.clearRect(0, 0, leftLipCanvas.width, leftLipCanvas.height);
     }
   }
+
+  if (rightLipCanvas) {
+    rightLipCanvas.style.display = showLipsNow ? '' : 'none';
+    if (!showLipsNow) {
+      const ctx = rightLipCanvas.getContext('2d');
+      ctx.clearRect(0, 0, rightLipCanvas.width, rightLipCanvas.height);
+    }
+  }
+}
 
   function createChromaColumn(fullLabel, colors, lane, chroma) {
     const col = document.createElement('div');
@@ -2820,20 +2856,11 @@ function updateBackLink() {
     state.analysisResult.chroma = '';
     state.analysisResult.resultCode = '';
     state.analysisResult.resultLabel = '';
-    state.analysisUndertoneDecision = getLaneLabel(lane);
-    state.analysisChromaDecision = '';
-    state.analysisCompletedAt = '';
-    state.analysisCurrentStep = 'chroma';
-    exitLipEditingUi();
     saveAnalysisSession();
 
     if (undertoneStepEl) undertoneStepEl.hidden = true;
 
     chromaStepEl.hidden = false;
-    if (resetUndertoneBtn) {
-      resetUndertoneBtn.hidden = false;
-      resetUndertoneBtn.removeAttribute('hidden');
-    }
     setLipVisibilityForCurrentStep();
     chromaSectionsEl.innerHTML = '';
     updateLipActionButtons();
@@ -3080,11 +3107,6 @@ function updateBackLink() {
     commitBtn.className = 'ycs-analysis-commit-btn';
     commitBtn.textContent = 'Continue with ' + getLaneLabel(lane);
     commitBtn.addEventListener('click', function () {
-      state.analysisUndertoneDecision = getLaneLabel(lane);
-      state.analysisChromaDecision = '';
-      state.analysisCompletedAt = '';
-      state.analysisCurrentStep = 'chroma';
-      saveAnalysisProgress();
       renderChromaStep(lane);
     });
 
@@ -3221,7 +3243,6 @@ function updateBackLink() {
     depthStepEl.hidden = false;
     undertoneStepEl.hidden = true;
     chromaStepEl.hidden = true;
-    setFreeTrialLockVisible(false);
 
     depthSectionsEl.innerHTML = '';
 
@@ -3242,11 +3263,6 @@ function updateBackLink() {
   async function selectDepth(depth) {
     state.selectedDepth = depth;
     state.analysisResult.depth = depth;
-    state.analysisDepthDecision = depth;
-    state.analysisUndertoneDecision = '';
-    state.analysisChromaDecision = '';
-    state.analysisCompletedAt = '';
-    state.analysisCurrentStep = 'undertone';
 
     state.grayscale = false;
     if (grayscaleToggle) grayscaleToggle.checked = false;
@@ -3276,7 +3292,7 @@ requestAnimationFrame(function () {
     syncColorLabels();
     updateLipActionButtons();
     ensureLipEmptyModeVisible();
-    saveAnalysisProgress();
+    saveAnalysisSession();
   }
 
   function updateFilterArrows() {
@@ -3311,31 +3327,53 @@ requestAnimationFrame(function () {
   }
 
   async function renderPaletteUI(paletteCode) {
-    showSwatchLoading();
+  showSwatchLoading();
 
-    state.activeFilter = 'all';
-    state.currentPaletteColors = await fetchPaletteColors(paletteCode);
-    if (isDrapingPalette(paletteCode)) {
-      await ensureDrapingLipColorsLoaded();
-    }
+  state.activeFilter = 'all';
+  state.currentPaletteColors = await fetchPaletteColors(paletteCode);
 
-    renderModeForPalette(paletteCode);
-    resetGuidedFlow();
+  renderModeForPalette(paletteCode);
 
-    if (isDrapingPalette(paletteCode)) {
-      renderDepthStep();
-      filtersEl.innerHTML = '';
-      swatchesEl.innerHTML = '';
-      renderLipSwatches([], []);
+  if (IS_SIGNATURE_MODE) {
+    if (signatureLeftPaletteSelect || signatureRightPaletteSelect) {
+      await Promise.all([
+        renderSignatureSide('left'),
+        renderSignatureSide('right')
+      ]);
     } else {
       renderFilterButtons();
       renderFilteredSwatches();
-      undertoneSectionsEl.innerHTML = '';
-      renderLipSwatches([], []);
+
+      const signatureLipColors = await fetchSignatureLipColors(paletteCode);
+      renderSignatureLipSwatches(signatureLipColors);
     }
 
+    setLipVisibilityForCurrentStep();
+    syncLipUiMode();
+    syncLipOpacityControl();
+    renderLips();
+
     hideSwatchLoading();
+    return;
   }
+
+  resetGuidedFlow();
+
+  if (isDrapingPalette(paletteCode)) {
+    await ensureDrapingLipColorsLoaded();
+    renderDepthStep();
+    filtersEl.innerHTML = '';
+    swatchesEl.innerHTML = '';
+    renderLipSwatches([], []);
+  } else {
+    renderFilterButtons();
+    renderFilteredSwatches();
+    undertoneSectionsEl.innerHTML = '';
+    renderLipSwatches([], []);
+  }
+
+  hideSwatchLoading();
+}
 
   function loadSingleImage(imgEl, src) {
   return new Promise(function (resolve, reject) {
@@ -3363,66 +3401,8 @@ requestAnimationFrame(function () {
   }
 
   async function fetchSavedPhoto() {
-  if (IS_FREE_ANALYSIS_DEMO) {
-    const demoClient = getFreeTrialClient(DEMO_CLIENT_ID);
-    if (!demoClient) {
-      alert(IS_FREE_DIY_CATOOL ? 'Demo photo was not found.' : 'Trial client was not found.');
-      return null;
-    }
-
-    showLoading(IS_FREE_DIY_CATOOL ? 'Loading demo photo…' : 'Loading trial photo…');
-
-    try {
-      const adjustedUrl = getStoredFreeTrialValue(DEMO_CLIENT_ID, 'adjusted');
-      const activePhotoUrl = adjustedUrl || demoClient.photoUrl;
-      state.clientFirstName = demoClient.firstName || '';
-      state.clientLastName = demoClient.lastName || '';
-      await loadPhotoIntoPanels(activePhotoUrl);
-
-      const storedTransform = getStoredFreeTrialValue(DEMO_CLIENT_ID, 'transform');
-      if (storedTransform) {
-        try {
-          const parsed = JSON.parse(storedTransform);
-          applySavedTransform(parsed.photoTransform || null);
-          applySavedAnalysisDecisions(parsed.analysisState || parsed.photoTransform || null);
-
-          if (parsed.lipMask) {
-            if (Array.isArray(parsed.lipMask.shapes) && parsed.lipMask.shapes.length) {
-              state.lip.shapes = parsed.lipMask.shapes.slice(0, 2);
-              state.lip.activeShapeIndex = 0;
-              const activeShape = state.lip.shapes[0] || {};
-              state.lip.points = Array.isArray(activeShape.points) ? activeShape.points : [];
-              state.lip.closed = !!activeShape.closed;
-              state.lip.editing = false;
-              state.lip.adjusting = false;
-              state.lip.showGuides = true;
-              appEl.classList.remove('is-lip-editing');
-              appEl.classList.remove('is-lip-adjusting');
-              syncLipUiMode();
-              syncLipOpacityControl();
-              renderLips();
-            }
-          }
-        } catch (parseError) {
-          console.warn('Could not restore trial transform', parseError);
-        }
-      }
-
-      hideLoading();
-      return {
-        activePhotoUrl: activePhotoUrl,
-        activePhotoSessionKey: 'demo:' + DEMO_CLIENT_ID + ':' + activePhotoUrl
-      };
-    } catch (error) {
-      console.error('Failed to load demo photo', error);
-      hideLoading();
-      alert(error.message || (IS_FREE_DIY_CATOOL ? 'Could not load the demo photo.' : 'Could not load the trial photo.'));
-      return null;
-    }
-  }
-
   if (!ACTIVE_RECORD_ID) {
-    alert(IS_DIY_MODE ? 'No saved photo found.' : 'No client record ID found.');
+    alert('No client record ID found.');
     return;
   }
 
@@ -3433,36 +3413,33 @@ requestAnimationFrame(function () {
       CLIENT_RECORD_ID
         ? APP_BASE_URL + '/api/get-photo?clientRecordId=' + encodeURIComponent(CLIENT_RECORD_ID)
         : APP_BASE_URL +
-          '/api/get-photo?customerId=' + encodeURIComponent(CUSTOMER_ID) +
-          (PHOTO_ID ? '&photoId=' + encodeURIComponent(PHOTO_ID) : '') +
-          (PHOTO_SOURCE ? '&photoSource=' + encodeURIComponent(PHOTO_SOURCE) : '')
+'/api/get-photo?customerId=' + encodeURIComponent(CUSTOMER_ID) +
+(PHOTO_ID ? '&photoId=' + encodeURIComponent(PHOTO_ID) : '') +
+(PHOTO_SOURCE ? '&source=' + encodeURIComponent(PHOTO_SOURCE) : '')
     );
     const data = await res.json();
+    state.clientFirstName = data.firstName || getClientFirstName() || '';
+state.clientLastName = data.lastName || getClientLastName() || '';
+state.customerPaletteCode = getCustomerPaletteCode() || data.customerPaletteCode || '';
+syncSignatureFrameLabels();
 
     if (!res.ok) {
       throw new Error(data.error || 'Could not load photo');
     }
 
     if (!data || !data.activePhotoUrl) {
-      throw new Error(IS_DIY_MODE ? 'No saved photo found.' : 'No saved photo found for this client.');
+      throw new Error('No saved photo found for this client.');
     }
 
-    rememberLastAnalysisClient();
     await loadPhotoIntoPanels(data.activePhotoUrl);
-state.clientFirstName = data.firstName || state.clientFirstName || '';
-state.clientLastName = data.lastName || state.clientLastName || '';
-if (!HAS_NEW_PHOTO_FLAG) {
-  applySavedTransform(data.photoTransform || null);
-}
-applySavedAnalysisDecisions(data.photoTransform || null);
+applySavedTransform(data.photoTransform || null);
 
 if (data.lipMask) {
   if (Array.isArray(data.lipMask.shapes) && data.lipMask.shapes.length) {
     state.lip.shapes = data.lipMask.shapes.slice(0, 2);
     state.lip.activeShapeIndex = 0;
-    const activeShape = state.lip.shapes[0] || {};
-    state.lip.points = Array.isArray(activeShape.points) ? activeShape.points : [];
-    state.lip.closed = !!activeShape.closed;
+    state.lip.points = state.lip.shapes[0].points || [];
+    state.lip.closed = !!state.lip.shapes[0].closed;
   } else if (Array.isArray(data.lipMask.points)) {
     state.lip.shapes = [
       {
@@ -3508,43 +3485,6 @@ return null;
     });
   }
 
-  function slugifyFilePart(value, fallback) {
-    const slug = String(value || '')
-      .trim()
-      .toLowerCase()
-      .replace(/&/g, ' and ')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-
-    return slug || fallback;
-  }
-
-  function getExportColorName(panel) {
-    const isRight = panel === 'right';
-    if (depthStepEl && !depthStepEl.hidden) {
-      return isRight ? state.depthRight : state.depthLeft;
-    }
-
-    return isRight ? state.rightColorName : state.leftColorName;
-  }
-
-  function getClientNameForExport() {
-    const demoClient = DEMO_CLIENT_ID ? getFreeTrialClient(DEMO_CLIENT_ID) : null;
-    return {
-      firstName: state.clientFirstName || (demoClient && demoClient.firstName) || 'client',
-      lastName: state.clientLastName || (demoClient && demoClient.lastName) || 'photo'
-    };
-  }
-
-  function buildDrapedExportFileName(colorName) {
-    const clientName = getClientNameForExport();
-    const color = slugifyFilePart(colorName, 'color');
-    const firstName = slugifyFilePart(clientName.firstName, 'client');
-    const lastName = slugifyFilePart(clientName.lastName, 'photo');
-
-    return color + '-' + firstName + '-' + lastName + '.png';
-  }
-
   async function getCanvasSafeImageUrl(src) {
     const imageUrl = String(src || '').trim();
     if (!imageUrl || !APP_BASE_URL) return imageUrl;
@@ -3570,8 +3510,8 @@ return null;
     if (!canvas) return false;
 
     try {
-      const ctx = canvas.getContext('2d');
-      ctx.getImageData(0, 0, 1, 1);
+      const canvasContext = canvas.getContext('2d');
+      canvasContext.getImageData(0, 0, 1, 1);
       return true;
     } catch (error) {
       console.warn('Canvas layer is not export-safe:', error);
@@ -3621,54 +3561,6 @@ return null;
     return data.image || null;
   }
 
-  function shouldDrawExportColorLabel(panel) {
-    const toggle = panel === 'right' ? exportLabelRightToggle : exportLabelLeftToggle;
-    return !toggle || toggle.checked;
-  }
-
-  function drawExportColorLabel(ctx, frameWidth, frameHeight, colorName, panel) {
-    if (!(IS_TRADE || IS_ADMIN || IS_CATOOL || IS_CATOOL_GROWTH)) return;
-    if (!shouldDrawExportColorLabel(panel)) return;
-
-    const label = String(colorName || '').trim();
-    if (!label) return;
-
-    const fontSize = Math.max(12, Math.round(frameWidth * 0.032));
-    const paddingX = Math.round(fontSize * 0.9);
-    const paddingY = Math.round(fontSize * 0.42);
-    const y = frameHeight - Math.round(fontSize * 1.15);
-
-    ctx.save();
-    ctx.font = '700 ' + fontSize + 'px Arial, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-
-    const textWidth = ctx.measureText(label).width;
-    const pillWidth = Math.min(frameWidth - 24, textWidth + paddingX * 2);
-    const pillHeight = fontSize + paddingY * 2;
-    const pillX = (frameWidth - pillWidth) / 2;
-    const pillY = y - pillHeight / 2;
-    const radius = pillHeight / 2;
-
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.82)';
-    ctx.beginPath();
-    ctx.moveTo(pillX + radius, pillY);
-    ctx.lineTo(pillX + pillWidth - radius, pillY);
-    ctx.quadraticCurveTo(pillX + pillWidth, pillY, pillX + pillWidth, pillY + radius);
-    ctx.lineTo(pillX + pillWidth, pillY + pillHeight - radius);
-    ctx.quadraticCurveTo(pillX + pillWidth, pillY + pillHeight, pillX + pillWidth - radius, pillY + pillHeight);
-    ctx.lineTo(pillX + radius, pillY + pillHeight);
-    ctx.quadraticCurveTo(pillX, pillY + pillHeight, pillX, pillY + pillHeight - radius);
-    ctx.lineTo(pillX, pillY + radius);
-    ctx.quadraticCurveTo(pillX, pillY, pillX + radius, pillY);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.fillStyle = '#222222';
-    ctx.fillText(label, frameWidth / 2, y);
-    ctx.restore();
-  }
-
   async function downloadPanelView(panel) {
     if (!state.imgLoaded || !state.loadedImageUrl) {
       alert('No photo loaded.');
@@ -3678,14 +3570,18 @@ return null;
     const isRight = panel === 'right';
     const frameEl = isRight ? rightFrame : leftFrame;
     const drapePathEl = isRight ? rightDrapePath : leftDrapePath;
-    const colorName = getExportColorName(panel);
+    const colorName = isRight ? state.rightColorName : state.leftColorName;
     const drapeColorHex = isRight ? state.rightColorHex : state.leftColorHex;
-    const lipColorHex = isRight ? state.lip.rightColor : state.lip.leftColor;
+    const lipName = isRight ? state.lip.rightName : state.lip.leftName;
+    const lipColor = isRight ? state.lip.rightColor : state.lip.leftColor;
 
     try {
-      const frameRect = frameEl.getBoundingClientRect();
-      const frameWidth = Math.round(frameRect.width);
-      const frameHeight = Math.round(frameRect.height);
+  const frameRect = frameEl.getBoundingClientRect();
+  const frameWidth = Math.round(frameRect.width);
+  const frameHeight = Math.round(frameRect.height);
+
+  let signatureDrapeY = frameHeight * 0.72;
+  let signatureDrapeHeight = frameHeight * 0.28;
 
       const canvas = document.createElement('canvas');
       canvas.width = frameWidth * 2;
@@ -3704,42 +3600,32 @@ return null;
       const drawWidth = photoRect.width;
       const drawHeight = photoRect.height;
 
-      ctx.filter = shouldApplyGrayscale() ? 'grayscale(1)' : 'none';
+      ctx.filter = state.grayscale ? 'grayscale(1)' : 'none';
       ctx.drawImage(uploadedImg, drawX, drawY, drawWidth, drawHeight);
       ctx.filter = 'none';
-
       const lipCanvas = isRight ? rightLipCanvas : leftLipCanvas;
-      const lipColor = isRight ? state.lip.rightColor : state.lip.leftColor;
-      const lipVisible = isRight ? state.lip.rightVisible : state.lip.leftVisible;
-      const lipOpacity = isRight ? state.lip.rightOpacity : state.lip.leftOpacity;
 
-      if (
-        isUndertoneStepVisible() &&
-        lipCanvas &&
-        lipCanvas.width > 0 &&
-        lipCanvas.height > 0 &&
-        lipVisible &&
-        lipColor &&
-        state.lip.closed
-      ) {
-        if (isCanvasExportSafe(lipCanvas)) {
-          try {
-            const lipRect = lipCanvas.getBoundingClientRect();
-            ctx.drawImage(
-              lipCanvas,
-              lipRect.left - frameRect.left,
-              lipRect.top - frameRect.top,
-              lipRect.width,
-              lipRect.height
-            );
-          } catch (lipExportError) {
-            console.warn('Could not include lips in exported draped view:', lipExportError);
-            drawExportLipFallback(ctx, drawX, drawY, drawWidth, drawHeight, lipColor, lipOpacity);
-          }
-        } else {
-          drawExportLipFallback(ctx, drawX, drawY, drawWidth, drawHeight, lipColor, lipOpacity);
-        }
-      }
+if (lipCanvas) {
+  const lipRect = lipCanvas.getBoundingClientRect();
+  const frameRectForLip = frameEl.getBoundingClientRect();
+
+  const lipX = lipRect.left - frameRectForLip.left;
+  const lipY = lipRect.top - frameRectForLip.top;
+  const lipW = lipRect.width;
+  const lipH = lipRect.height;
+  const lipOpacity = isRight ? state.lip.rightOpacity : state.lip.leftOpacity;
+
+  if (isCanvasExportSafe(lipCanvas)) {
+    try {
+      ctx.drawImage(lipCanvas, lipX, lipY, lipW, lipH);
+    } catch (lipDrawError) {
+      console.warn('Could not draw lip canvas layer; using export fallback:', lipDrawError);
+      drawExportLipFallback(ctx, drawX, drawY, drawWidth, drawHeight, lipColor, lipOpacity);
+    }
+  } else {
+    drawExportLipFallback(ctx, drawX, drawY, drawWidth, drawHeight, lipColor, lipOpacity);
+  }
+}
 
       const pathD = drapePathEl.getAttribute('d') || '';
       const fillColor = drapePathEl.getAttribute('fill') || '#e8dfd4';
@@ -3767,76 +3653,98 @@ return null;
         }
 
         ctx.drawImage(drapeImg, 0, drapeY, frameWidth, drapeHeight);
+        signatureDrapeY = drapeY;
+        signatureDrapeHeight = drapeHeight;
 
         const depthOverlayEl = isRight ? rightDepthDrapeImg : leftDepthDrapeImg;
         const hasDepthOverlay =
           depthOverlayEl && !depthOverlayEl.hidden && depthOverlayEl.getAttribute('src');
 
         if (realisticDrapeToggle && realisticDrapeToggle.checked && !hasDepthOverlay) {
-          try {
-            const overlayUrl = await getCanvasSafeImageUrl(REALISTIC_DRAPE_OVERLAY_URL);
-            const overlayImg = await loadImage(overlayUrl);
-
-            ctx.save();
-            ctx.translate(0, drapeY);
-            ctx.scale(frameWidth / 1000, drapeHeight / 500);
-            ctx.clip(new Path2D(pathD));
-            ctx.globalCompositeOperation = 'multiply';
-            ctx.globalAlpha = Number(REALISTIC_DRAPE_OVERLAY_OPACITY);
-            ctx.drawImage(overlayImg, 0, 0, 1000, 500);
-            ctx.restore();
-          } catch (overlayError) {
-            console.warn('Could not render realistic drape overlay', overlayError);
-          }
+          await drawRealisticDrapeTexture(ctx, {
+            pathD: pathD,
+            drapeY: drapeY,
+            frameWidth: frameWidth,
+            drapeHeight: drapeHeight,
+            fillColor: fillColor
+          });
         }
 
         if (hasDepthOverlay) {
-          try {
-            const depthOverlayUrl = await getCanvasSafeImageUrl(depthOverlayEl.getAttribute('src'));
-            const depthOverlayImg = await loadImage(depthOverlayUrl);
-            const overlayRect = depthOverlayEl.getBoundingClientRect();
-            const frameRect2 = frameEl.getBoundingClientRect();
+          const depthOverlayUrl = await getCanvasSafeImageUrl(depthOverlayEl.getAttribute('src'));
+          const depthOverlayImg = await loadImage(depthOverlayUrl);
+          const overlayRect = depthOverlayEl.getBoundingClientRect();
+          const frameRect2 = frameEl.getBoundingClientRect();
 
-            const overlayX = overlayRect.left - frameRect2.left;
-            const overlayY = overlayRect.top - frameRect2.top;
-            const overlayWidth = overlayRect.width;
-            const overlayHeight = overlayRect.height;
+          const overlayX = overlayRect.left - frameRect2.left;
+          const overlayY = overlayRect.top - frameRect2.top;
+          const overlayWidth = overlayRect.width;
+          const overlayHeight = overlayRect.height;
 
-            ctx.drawImage(depthOverlayImg, overlayX, overlayY, overlayWidth, overlayHeight);
-          } catch (depthOverlayError) {
-            console.warn('Could not include depth overlay in exported draped view:', depthOverlayError);
-          }
+          ctx.drawImage(depthOverlayImg, overlayX, overlayY, overlayWidth, overlayHeight);
         }
       } finally {
         URL.revokeObjectURL(svgUrl);
       }
+      drawSignatureExportLabels(ctx, canvas, {
+  firstName: state.clientFirstName || getClientFirstName(),
+  paletteCode: getSignatureColorTypeCode(panel),
+  colorName: colorName,
+  lipName: lipName,
+  lipColor: lipColor,
+  showColorName: shouldDrawExportColorLabel(panel),
+  showCustomerName: shouldDrawExportCustomerName(panel),
+  showLipSwatch: shouldDrawExportLipSwatch(panel),
+  drapeY: signatureDrapeY,
+  drapeHeight: signatureDrapeHeight
+});
+      //saved file name
+      function slugify(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
 
-      drawExportColorLabel(ctx, frameWidth, frameHeight, colorName, panel);
+const color = slugify(colorName) || 'color';
+const lip = slugify(lipName) || 'none';
+const firstName = slugify(state.clientFirstName || getClientFirstName()) || 'client';
+const lastName = slugify(state.clientLastName || getClientLastName()) || 'photo';
+const fileName = [color, 'lip', lip, firstName, lastName].join('-');
 
-      const fileName = buildDrapedExportFileName(colorName);
+
       const dataUrl = canvas.toDataURL('image/png');
 
-      const link = document.createElement('a');
-      link.href = dataUrl;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-
-      saveDrapedImageForReport({
+      try {
+        await saveDrapedImageForReport({
           imageBase64: dataUrl,
           clientRecordId: CLIENT_RECORD_ID,
           customerId: CUSTOMER_ID,
           consultantId: VIEWER_CUSTOMER_ID,
-          paletteCode: paletteSelect ? paletteSelect.value : '',
+          paletteCode: isRight
+            ? (signatureRightPaletteSelect && signatureRightPaletteSelect.value) || paletteSelect.value || ''
+            : (signatureLeftPaletteSelect && signatureLeftPaletteSelect.value) || paletteSelect.value || '',
           panel: panel,
           drapeColorName: colorName,
           drapeColorHex: drapeColorHex,
-          lipColorHex: lipColorHex,
+          lipColorName: lipName,
+          lipColorHex: lipColor,
           fileName: fileName
-        }).catch(function (saveError) {
+        });
+      } catch (saveError) {
         console.warn('Could not save draped image for report selection:', saveError);
-      });
+        window.setTimeout(function () {
+          alert('The PNG downloaded, but it could not be saved for report selection yet.');
+        }, 0);
+      }
+
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = `${fileName}.png`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
     } catch (error) {
       console.error('Could not download panel view', error);
       alert('Could not save this view. Please try again.');
@@ -4000,38 +3908,7 @@ return null;
     d += ' Z';
     return d;
   } // buildSmoothClosedPath
-async function fetchSignatureLipColors({ baseId, token, paletteCode }) {
-  const tableName =
-    process.env.AIRTABLE_SIGNATURE_LIP_COLORS_TABLE || "SignatureLipColors";
 
-  const records = await fetchAllAirtableRecords({
-    baseId,
-    tableName,
-    token,
-    sortField: "SortOrder",
-  });
-
-  return records
-    .map((record) => {
-      const f = record.fields || {};
-
-      const paletteCodes = String(f.PaletteCodes || "")
-        .split(",")
-        .map((code) => code.toUpperCase().trim())
-        .filter(Boolean);
-
-      return {
-        name: normalizeField(f.ColorName),
-        hex: normalizeField(f.Hex),
-        sortOrder: Number(normalizeField(f.SortOrder)) || 999,
-        paletteCodes,
-      };
-    })
-    .filter((color) => color.name && color.hex)
-    .filter((color) => color.paletteCodes.includes(paletteCode))
-    .sort((a, b) => a.sortOrder - b.sortOrder)
-    .map(({ paletteCodes, ...color }) => color);
-}
   function recolorLipsOnCanvas(imgEl, canvas, shapes, hex, opacity) {
   if (!imgEl || !canvas || !Array.isArray(shapes) || !shapes.length || !hex) return;
 
@@ -4132,12 +4009,7 @@ maskCtx.filter = 'none';
 }// recolorLipsOnCanvas
 
   function renderLips() {
-    if (!leftLipPath || !rightLipPath) return;
-
-    if (!isUndertoneStepVisible()) {
-      setLipVisibilityForCurrentStep();
-      return;
-    }
+  if (!leftLipPath || !rightLipPath) return;
 
   const guideGroups = [leftLipGuides, rightLipGuides];
   const mainPaths = [leftLipPath, rightLipPath];
@@ -4327,19 +4199,151 @@ if (lipVisible && lipColor && state.lip.closed) {
     }
 
     renderLips();
+    saveAnalysisSession();
   });
 }
 
-function syncLipOpacityControl() {
-  if (!lipOpacityInput || !lipOpacityValue) return;
+function setLipOpacityForPanel(panel, value) {
+  const opacity = Math.max(0.1, Math.min(0.8, parseFloat(value) || 0.45));
 
+  if (panel === 'right') {
+    state.lip.rightOpacity = opacity;
+  } else {
+    state.lip.leftOpacity = opacity;
+  }
+
+  syncLipOpacityControl();
+  renderLips();
+  saveAnalysisSession();
+}
+
+function syncSignatureLipSideControl(panel) {
+  const isRight = panel === 'right';
+  const input = isRight ? signatureRightLipOpacityInput : signatureLeftLipOpacityInput;
+  const valueEl = isRight ? signatureRightLipOpacityValue : signatureLeftLipOpacityValue;
+  const visibilityBtn = isRight ? signatureRightLipVisibilityBtn : signatureLeftLipVisibilityBtn;
+  const editBtn = isRight ? signatureRightLipEditBtn : signatureLeftLipEditBtn;
+  const value = isRight ? state.lip.rightOpacity : state.lip.leftOpacity;
+  const visible = isRight ? state.lip.rightVisible : state.lip.leftVisible;
+  const hasCompletedMask = getCompletedLipShapes().length > 0;
+  const sectionEl = editBtn ? editBtn.closest('.ycs-signature-side-section--lip') : null;
+
+  if (sectionEl) {
+    sectionEl.classList.toggle('has-lip-shape', hasCompletedMask);
+  }
+
+  syncSignatureLipVisibilityControl(panel);
+
+  if (editBtn) {
+    editBtn.textContent = hasCompletedMask ? 'Edit' : 'Create Lip';
+  }
+
+  if (input) {
+    input.value = String(value);
+    input.disabled = !hasCompletedMask;
+  }
+
+  if (valueEl) {
+    valueEl.textContent = Math.round(value * 100) + '%';
+  }
+
+  if (visibilityBtn) {
+    visibilityBtn.disabled = !hasCompletedMask;
+    visibilityBtn.textContent = visible ? 'Hide Lips' : 'Show Lips';
+  }
+}
+
+function syncLipOpacityControl() {
   const value = state.activePanel === 'right'
     ? state.lip.rightOpacity
     : state.lip.leftOpacity;
 
-  lipOpacityInput.value = String(value);
-  lipOpacityValue.textContent = Math.round(value * 100) + '%';
+  if (lipOpacityInput && lipOpacityValue) {
+    lipOpacityInput.value = String(value);
+    lipOpacityValue.textContent = Math.round(value * 100) + '%';
+  }
+
+  syncSignatureLipSideControl('left');
+  syncSignatureLipSideControl('right');
 }
+
+function enterLipEditOrAdjustMode() {
+  state.lip.movingPhoto = false;
+  if (lipMovePhotoBtn) lipMovePhotoBtn.textContent = 'Move Photo';
+
+  if (state.lip.closed && state.lip.points.length > 0) {
+    state.lip.editing = false;
+    state.lip.adjusting = true;
+    state.lip.dragIndex = -1;
+    state.lip.dragSvg = null;
+    appEl.classList.remove('is-lip-editing');
+    appEl.classList.add('is-lip-adjusting');
+
+    if (lipStatus) {
+      lipStatus.textContent = 'You can edit the shape by dragging the handles.';
+    }
+  } else {
+    state.lip.editing = true;
+    state.lip.adjusting = false;
+    state.lip.dragIndex = -1;
+    state.lip.dragSvg = null;
+    appEl.classList.add('is-lip-editing');
+    appEl.classList.remove('is-lip-adjusting');
+
+    if (lipStatus) {
+      lipStatus.textContent = 'Click around the lips. When it looks right, click Finish Shape.';
+    }
+  }
+
+  updateLipActionButtons();
+  syncLipOpacityControl();
+  renderLips();
+  saveAnalysisSession();
+}
+
+[
+  { panel: 'left', input: signatureLeftLipOpacityInput },
+  { panel: 'right', input: signatureRightLipOpacityInput }
+].forEach(function (item) {
+  if (!item.input) return;
+
+  item.input.addEventListener('input', function () {
+    setLipOpacityForPanel(item.panel, this.value);
+  });
+});
+
+[
+  { panel: 'left', button: signatureLeftLipVisibilityBtn },
+  { panel: 'right', button: signatureRightLipVisibilityBtn }
+].forEach(function (item) {
+  if (!item.button) return;
+
+  item.button.addEventListener('click', function () {
+    setActivePanel(item.panel);
+
+    if (item.panel === 'right') {
+      state.lip.rightVisible = !state.lip.rightVisible;
+    } else {
+      state.lip.leftVisible = !state.lip.leftVisible;
+    }
+
+    syncLipUiMode();
+    renderLips();
+    saveAnalysisSession();
+  });
+});
+
+[
+  { panel: 'left', button: signatureLeftLipEditBtn },
+  { panel: 'right', button: signatureRightLipEditBtn }
+].forEach(function (item) {
+  if (!item.button) return;
+
+  item.button.addEventListener('click', function () {
+    setActivePanel(item.panel);
+    enterLipEditOrAdjustMode();
+  });
+});
 
   if (lipGuidesToggleBtn) {
     lipGuidesToggleBtn.onclick = function () {
@@ -4348,16 +4352,14 @@ function syncLipOpacityControl() {
       renderLips();
     };
   }
-
+// LIP HANDLERS
   if (lipEditBtn) {
   lipEditBtn.onclick = function () {
-      state.lip.editing = true;
-      state.lip.adjusting = false;
-      state.lip.closed = false;
-      state.lip.points = [];
-      state.lip.shapes = [];
-      state.lip.activeShapeIndex = 0;
-      state.lip.dragIndex = -1;
+    state.lip.editing = true;
+    state.lip.adjusting = false;
+    state.lip.closed = false;
+    state.lip.points = [];
+    state.lip.dragIndex = -1;
     state.lip.dragSvg = null;
 
     if (leftLipSvg) leftLipSvg.style.display = '';
@@ -4376,42 +4378,6 @@ function syncLipOpacityControl() {
     renderLips();
   };
 }
-
-  if (lipEditAgainBtn) {
-    lipEditAgainBtn.onclick = function () {
-      state.lip.movingPhoto = false;
-      if (lipMovePhotoBtn) lipMovePhotoBtn.textContent = 'Move Photo';
-
-      if (state.lip.closed && state.lip.points.length > 0) {
-        state.lip.editing = false;
-        state.lip.adjusting = true;
-        state.lip.dragIndex = -1;
-        state.lip.dragSvg = null;
-        appEl.classList.remove('is-lip-editing');
-        appEl.classList.add('is-lip-adjusting');
-
-        if (lipStatus) {
-          lipStatus.textContent = 'You can edit the shape by dragging the handles.';
-        }
-      } else {
-        state.lip.editing = true;
-        state.lip.adjusting = false;
-        state.lip.dragIndex = -1;
-        state.lip.dragSvg = null;
-        appEl.classList.add('is-lip-editing');
-        appEl.classList.remove('is-lip-adjusting');
-
-        if (lipStatus) {
-          lipStatus.textContent = 'Click around the lips. When it looks right, click Finish Shape.';
-        }
-      }
-
-      updateLipActionButtons();
-      syncLipOpacityControl();
-      renderLips();
-    };
-  }
-
 if (lipEditShape1Btn) {
   lipEditShape1Btn.onclick = function () {
     setActiveLipShape(0);
@@ -4423,6 +4389,11 @@ if (lipEditShape2Btn) {
     setActiveLipShape(1);
   };
 }
+  if (lipEditAgainBtn) {
+    lipEditAgainBtn.onclick = function () {
+      enterLipEditOrAdjustMode();
+    };
+  }
 
   if (lipMovePhotoBtn) {
     lipMovePhotoBtn.onclick = function () {
@@ -4460,8 +4431,8 @@ if (lipEditShape2Btn) {
       renderLips();
       saveAnalysisSession();
       savePhotoTransform({ silent: true });
-    };
-  }
+    }; // onclick
+  } //lipFinishBttn
 
 if (lipAddShapeBtn) {
   lipAddShapeBtn.onclick = function () {
@@ -4492,8 +4463,7 @@ if (lipAddShapeBtn) {
     updateLipActionButtons();
     renderLips();
   };
-}
-
+} //lipAddShapeBtn
   if (lipUndoBtn) {
     lipUndoBtn.onclick = function () {
       if (!state.lip.points.length) return;
@@ -4523,8 +4493,6 @@ if (lipAddShapeBtn) {
       if (lipMovePhotoBtn) lipMovePhotoBtn.textContent = 'Move Photo';
 
       state.lip.points = [];
-      state.lip.shapes = [];
-      state.lip.activeShapeIndex = 0;
       state.lip.closed = false;
       state.lip.editing = true;
       state.lip.adjusting = false;
@@ -4549,8 +4517,6 @@ if (lipAddShapeBtn) {
       if (lipMovePhotoBtn) lipMovePhotoBtn.textContent = 'Move Photo';
 
       state.lip.points = [];
-      state.lip.shapes = [];
-      state.lip.activeShapeIndex = 0;
       state.lip.closed = false;
       state.lip.editing = true;
       state.lip.adjusting = false;
@@ -4643,9 +4609,9 @@ const y = ((e.clientY - svgRect.top) / svgRect.height) * 1000;
       const pt = getLipPointFromSvgEvent(e, svg);
       state.lip.points[state.lip.dragIndex] = pt;
       state.lip.shapes[state.lip.activeShapeIndex || 0] = {
-        points: state.lip.points,
-        closed: state.lip.closed
-      };
+  points: state.lip.points,
+  closed: state.lip.closed
+};
       renderLips();
     });
 
@@ -4662,9 +4628,47 @@ const y = ((e.clientY - svgRect.top) / svgRect.height) * 1000;
     });
   });
 
+  if (backBtn) {
+    backBtn.addEventListener('click', function () {
+      if (document.referrer && document.referrer.indexOf('/pages/') !== -1) {
+        window.history.back();
+      } else {
+        window.location.href = getReturnUrl();
+      }
+    });
+  }
+
   activePanelButtons.forEach(function (btn) {
     btn.addEventListener('click', function () {
       setActivePanel(btn.dataset.panel);
+    });
+  });
+
+  if (signatureReferenceWheelSelect) {
+    signatureReferenceWheelSelect.addEventListener('change', syncSignatureReferenceWheel);
+    syncSignatureReferenceWheel();
+  }
+
+  document.addEventListener('click', function (event) {
+    const copyBtn = event.target.closest('.ycs-hex-copy');
+    if (!copyBtn) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const hex = copyBtn.dataset.copyHex || copyBtn.textContent.trim();
+    if (!hex) return;
+
+    navigator.clipboard.writeText(hex).then(function () {
+      const original = copyBtn.textContent;
+      copyBtn.textContent = 'Copied';
+      copyBtn.classList.add('is-copied');
+      window.setTimeout(function () {
+        copyBtn.textContent = original;
+        copyBtn.classList.remove('is-copied');
+      }, 900);
+    }).catch(function () {
+      window.prompt('Copy hex code', hex);
     });
   });
 
@@ -4677,6 +4681,7 @@ const y = ((e.clientY - svgRect.top) / svgRect.height) * 1000;
         event.target.closest('.ycs-analysis-swatch') ||
         event.target.closest('.ycs-analysis-guided-swatch') ||
         event.target.closest('.ycs-analysis-palette-select') ||
+        event.target.closest('.ycs-hex-copy') ||
         event.target.closest('.ycs-analysis-drag-layer')
       ) {
         return;
@@ -4708,9 +4713,13 @@ const y = ((e.clientY - svgRect.top) / svgRect.height) * 1000;
   }
 
   if (paletteSelect) {
-    paletteSelect.addEventListener('change', function () {
-      updateCurrentPaletteName();
+  paletteSelect.addEventListener('change', function () {
+    updateCurrentPaletteName();
+    syncSignatureFrameLabels();
 
+    // In Signature mode, keep the currently draped colors when switching palettes.
+    // Only the swatch list should change.
+    if (!IS_SIGNATURE_MODE) {
       state.leftColorHex = '';
       state.rightColorHex = '';
       state.leftColorName = '';
@@ -4718,60 +4727,33 @@ const y = ((e.clientY - svgRect.top) / svgRect.height) * 1000;
 
       syncColorLabels();
       setActivePanel('left');
-      saveAnalysisSession();
-      renderPaletteUI(this.value);
+    }
+
+    saveAnalysisSession();
+    renderPaletteUI(this.value);
+  });
+}
+
+  if (signatureLeftPaletteSelect) {
+    signatureLeftPaletteSelect.addEventListener('change', function () {
+      state.signature.leftPaletteCode = this.value;
+      state.signature.leftFilter = 'all';
+      renderSignatureSide('left');
     });
   }
 
-  if (structuredModeBtn) {
-    structuredModeBtn.addEventListener('click', function () {
-      setAnalysisMode('structured');
+  if (signatureRightPaletteSelect) {
+    signatureRightPaletteSelect.addEventListener('change', function () {
+      state.signature.rightPaletteCode = this.value;
+      state.signature.rightFilter = 'all';
+      renderSignatureSide('right');
     });
   }
 
-  if (comparisonModeBtn) {
-    comparisonModeBtn.addEventListener('click', function () {
-      setAnalysisMode('comparison');
-    });
-  }
-
-  if (comparisonBackBtn) {
-    comparisonBackBtn.addEventListener('click', function () {
-      setAnalysisMode('structured');
-    });
-  }
-
-  if (leftPaletteSelect) {
-    leftPaletteSelect.addEventListener('change', function () {
-      state.comparison.leftColorHex = '';
-      state.comparison.leftFilter = 'all';
-      loadComparisonSide('left');
-    });
-  }
-
-  if (rightPaletteSelect) {
-    rightPaletteSelect.addEventListener('change', function () {
-      state.comparison.rightColorHex = '';
-      state.comparison.rightFilter = 'all';
-      loadComparisonSide('right');
-    });
-  }
-
-  if (leftColorSelect) {
-    leftColorSelect.addEventListener('change', function () {
-      const selected = leftColorSelect.selectedOptions[0];
-      state.comparison.leftColorHex = leftColorSelect.value;
-      state.comparison.leftColorName = selected ? (selected.dataset.name || selected.textContent) : '';
-      applyDrapeColor('left', state.comparison.leftColorHex, state.comparison.leftColorName);
-    });
-  }
-
-  if (rightColorSelect) {
-    rightColorSelect.addEventListener('change', function () {
-      const selected = rightColorSelect.selectedOptions[0];
-      state.comparison.rightColorHex = rightColorSelect.value;
-      state.comparison.rightColorName = selected ? (selected.dataset.name || selected.textContent) : '';
-      applyDrapeColor('right', state.comparison.rightColorHex, state.comparison.rightColorName);
+  if (realisticDrapeToggle) {
+    realisticDrapeToggle.checked = true;
+    realisticDrapeToggle.addEventListener('change', function () {
+      syncDrapeLayers();
     });
   }
 
@@ -4792,10 +4774,6 @@ const y = ((e.clientY - svgRect.top) / svgRect.height) * 1000;
     state.analysisResult.chroma = '';
     state.analysisResult.resultCode = '';
     state.analysisResult.resultLabel = '';
-    state.analysisUndertoneDecision = '';
-    state.analysisChromaDecision = '';
-    state.analysisCompletedAt = '';
-    state.analysisCurrentStep = state.analysisDepthDecision ? 'undertone' : 'depth';
 
     if (undertoneStepEl) undertoneStepEl.hidden = false;
     if (chromaStepEl) chromaStepEl.hidden = true;
@@ -4823,7 +4801,7 @@ const y = ((e.clientY - svgRect.top) / svgRect.height) * 1000;
       renderLips();
     });
 
-    saveAnalysisProgress();
+    saveAnalysisSession();
   });
 } // resetUnderToneBtn handler
 
@@ -4848,12 +4826,10 @@ const y = ((e.clientY - svgRect.top) / svgRect.height) * 1000;
     });
   }
 
-  if (signatureAnalysisLink) {
-    updateSignatureAnalysisLink();
-    signatureAnalysisLink.addEventListener('click', function () {
-      signatureAnalysisLink.href = IS_SIGNATURE_STUDIO
-        ? buildColorAnalysisToolHref()
-        : buildSignatureAnalysisHref();
+  if (standardAnalysisLink) {
+    updateStandardAnalysisLink();
+    standardAnalysisLink.addEventListener('click', function () {
+      standardAnalysisLink.href = buildStandardAnalysisHref();
     });
   }
 
@@ -4861,13 +4837,6 @@ const y = ((e.clientY - svgRect.top) / svgRect.height) * 1000;
     updateManageClientLink();
     manageClientLink.addEventListener('click', function () {
       manageClientLink.href = buildManageClientHref();
-    });
-  }
-
-  if (realisticDrapeToggle) {
-    realisticDrapeToggle.checked = false;
-    realisticDrapeToggle.addEventListener('change', function () {
-      syncDrapeLayers();
     });
   }
 
@@ -4936,53 +4905,114 @@ window.addEventListener('pointercancel', endGesturePointer);
   if (!CAN_USE_ANALYSIS_TOOL) {
     console.warn('Analysis tool loaded without consultant/admin privileges.');
   }
-
+  window.addEventListener('pageshow', function () {
+  syncSignatureFrameLabels();
+    });
   (async function initAnalysisTool() {
-  updateLipActionButtons();
-  updateDrapeShape();
-  syncZoomSliderBounds();
-  const customPaletteResults = await Promise.all([
-    loadAdminStyleMastersPalettes(),
-    loadPrivateCustomPalettes()
-  ]);
-  styleMastersPaletteOptions = customPaletteResults[0];
-  privateCustomPaletteOptions = customPaletteResults[1];
-  populatePaletteSelect();
-  populateComparisonPaletteSelects();
+    updateLipActionButtons();
+    updateDrapeShape();
+    syncZoomSliderBounds();
+    syncDrapeLayers();
+    const customPaletteResults = await Promise.all([
+      loadAdminStyleMastersPalettes(),
+      loadPrivateCustomPalettes()
+    ]);
+    styleMastersPaletteOptions = customPaletteResults[0];
+    privateCustomPaletteOptions = customPaletteResults[1];
+    populatePaletteSelect();
+    populateSignatureSidePaletteSelects();
 
-  const saved = loadAnalysisSession();
-  if (saved && saved.paletteCode && paletteSelect) {
-    paletteSelect.value = isDrapingPalette(saved.paletteCode) || isCustomPaletteCode(saved.paletteCode)
-      ? saved.paletteCode
-      : DRAPING_PALETTE_CODE;
-    updateCurrentPaletteName();
-  }
+const saved = loadAnalysisSession();
+        if (saved && saved.paletteCode && paletteSelect) {
+            paletteSelect.value = saved.paletteCode;
+            updateCurrentPaletteName();
+        }
 
-  setActivePanel('left');
-  syncColorLabels();
+    setActivePanel('left');
+    syncColorLabels();
 
-  isRestoringSession = true;
+    isRestoringSession = true;
 
-  await renderPaletteUI(paletteSelect.value);
+    await renderPaletteUI(paletteSelect.value);
 
-  const photoData = await fetchSavedPhoto();
-  state.photoSessionKey =
-    photoData && photoData.activePhotoSessionKey
-      ? String(photoData.activePhotoSessionKey)
-      : (photoData && photoData.activePhotoUrl ? String(photoData.activePhotoUrl) : '');
+    const photoData = await fetchSavedPhoto();
+    state.photoSessionKey =
+        photoData && photoData.activePhotoSessionKey
+        ? String(photoData.activePhotoSessionKey)
+         : (photoData && photoData.activePhotoUrl ? String(photoData.activePhotoUrl) : '');
 
-  const latestSaved = loadAnalysisSession();
-  const savedPhotoSessionKey =
-    latestSaved && latestSaved.photoSessionKey
-      ? String(latestSaved.photoSessionKey)
-      : '';
+    const latestSaved = loadAnalysisSession();
+    const savedPhotoSessionKey =
+     latestSaved && latestSaved.photoSessionKey
+         ? String(latestSaved.photoSessionKey)
+         : '';
 
-  const shouldRestoreSavedSession =
-  !!latestSaved &&
-  !!state.photoSessionKey &&
-  savedPhotoSessionKey === state.photoSessionKey &&
-  !forceDepthReturn &&
-  !HAS_NEW_PHOTO_FLAG;
+    const shouldRestoreSavedSession =
+        !!latestSaved &&
+        !!state.photoSessionKey &&
+        savedPhotoSessionKey === state.photoSessionKey &&
+        !forceDepthReturn &&
+        !HAS_NEW_PHOTO_FLAG;
+
+
+
+    if (IS_SIGNATURE_MODE) {
+        if (shouldRestoreSavedSession) {
+            applySavedAnalysisState(latestSaved);
+            setActivePanel(state.activePanel);
+            syncColorLabels();
+            populateSignatureSidePaletteSelects();
+            await Promise.all([
+                renderSignatureSide('left'),
+                renderSignatureSide('right')
+            ]);
+        }
+
+        const sharedLip = loadSharedLipSession();
+        const sharedLipPhotoKey =
+            sharedLip && sharedLip.photoSessionKey
+            ? String(sharedLip.photoSessionKey)
+            : '';
+        const latestSavedPhotoKey =
+            latestSaved && latestSaved.photoSessionKey
+            ? String(latestSaved.photoSessionKey)
+            : '';
+        const canApplySharedLip =
+            sharedLip &&
+            sharedLip.lip &&
+            hasCompletedLipShapes(sharedLip.lip) &&
+            (!sharedLipPhotoKey || sharedLipPhotoKey === state.photoSessionKey);
+        const canApplyLatestSavedLip =
+            latestSaved &&
+            latestSaved.lip &&
+            hasCompletedLipShapes(latestSaved.lip) &&
+            latestSavedPhotoKey === state.photoSessionKey;
+
+        if (canApplySharedLip) {
+            applySharedLipState(sharedLip);
+            } else if (canApplyLatestSavedLip) {
+                applySharedLipState({ lip: latestSaved.lip });
+                }
+
+        isRestoringSession = false;
+
+        requestAnimationFrame(function () {
+            updateImageTransform();
+            syncLipOverlayToImage();
+            setLipVisibilityForCurrentStep();
+            syncLipUiMode();
+            syncLipOpacityControl();
+            renderLips();
+            refreshSignatureSideHighlights();
+        });
+
+        updatePhotoPrepLink();
+        updateBackLink();
+        updateStandardAnalysisLink();
+        updateManageClientLink();
+        syncLipOpacityControl();
+        return;
+}
 
   if (forceDepthReturn && isDrapingPalette(paletteSelect.value)) {
     resetAnalysisForNewPhoto();
@@ -4990,8 +5020,6 @@ window.addEventListener('pointercancel', endGesturePointer);
     saveAnalysisSession();
   } else if (shouldRestoreSavedSession) {
     await restoreGuidedFlowFromSession();
-  } else if (await restoreGuidedFlowFromDecisions()) {
-    saveAnalysisSession();
   } else {
     resetAnalysisForNewPhoto();
     if (isDrapingPalette(paletteSelect.value)) {
@@ -5013,9 +5041,8 @@ window.addEventListener('pointercancel', endGesturePointer);
 
   updatePhotoPrepLink();
   updateBackLink();
-  updateSignatureAnalysisLink();
+  updateStandardAnalysisLink();
   updateManageClientLink();
-  setAnalysisMode(saved && saved.analysisMode === 'comparison' ? 'comparison' : 'structured');
 
   ensureLipEmptyModeVisible();
   requestAnimationFrame(function () {

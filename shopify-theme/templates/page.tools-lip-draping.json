@@ -1,0 +1,9 @@
+{
+  "sections": {
+    "main": {
+      "type": "ycs-member-lip-draping",
+      "settings": {}
+    }
+  },
+  "order": ["main"]
+}
