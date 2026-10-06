@@ -127,10 +127,10 @@
       <div class="ycs-palette-topnav">
         <a class="ycs-palette-nav-link" href="/pages/my-ycs">My YCS</a>
         <a class="ycs-palette-nav-link" href="/pages/ycs-color-palettes">YCS Color Palettes</a>
-        <a class="ycs-palette-nav-link ycs-member-palette-contact" href="mailto:support@yourcolorstyle.com">Contact</a>
         {% if is_admin %}
           <a class="ycs-palette-nav-link" href="/pages/my-wardrobes">My Wardrobes</a>
         {% endif %}
+        <a class="ycs-palette-nav-link ycs-member-palette-contact" href="mailto:support@yourcolorstyle.com">Contact</a>
       </div>
 
       <div class="ycs-palette-header">
@@ -228,7 +228,7 @@
 <style>
   .shopify-section-header, #shopify-section-header, .site-header, .header-wrapper, .header, #shopify-section-footer, .shopify-section--footer, .site-footer, footer.footer, footer[role="contentinfo"] { display: none !important; }
   body { margin-top: 0 !important; padding-top: 0 !important; }
-  .ycs-member-palette-contact { margin-left: auto; }
+  .ycs-palette-nav-link.ycs-member-palette-contact { margin-left: auto !important; }
   .ycs-category-nav-wrap {
     position: relative;
     flex: 1 1 auto;
