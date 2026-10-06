@@ -1,0 +1,9 @@
+{
+  "sections": {
+    "main": {
+      "type": "ycs-member-palette-viewer",
+      "settings": {}
+    }
+  },
+  "order": ["main"]
+}

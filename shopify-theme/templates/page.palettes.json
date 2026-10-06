@@ -1,0 +1,9 @@
+{
+  "sections": {
+    "main": {
+      "type": "my-ycs-palettes",
+      "settings": {}
+    }
+  },
+  "order": ["main"]
+}
