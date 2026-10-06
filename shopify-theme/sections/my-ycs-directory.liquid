@@ -28,10 +28,32 @@
   {% else %}
     <header class="ycs-directory__header">
       <p class="ycs-directory__kicker">My YCS</p>
-      <h1>Directory</h1>
+      <h1>Get Listed in the Color Analyst Directory</h1>
+      <p>Your YCS membership includes a listing in the <strong>Your Color Style Color Analyst Directory</strong>, helping people who visit YourColorStyle.com find a color analyst to work with.</p>
     </header>
 
-    <div class="ycs-directory__content" aria-label="Directory content"></div>
+    <div class="ycs-directory__content" aria-label="Directory listing instructions">
+      <h2>Submit Your Listing</h2>
+      <p>To create your listing, please email me the following information:</p>
+
+      <ul>
+        <li><strong>Your name</strong></li>
+        <li><strong>Business name</strong> (if applicable)</li>
+        <li><strong>Location</strong> &mdash; City, State/Province, Country</li>
+        <li><strong>Services offered</strong> &mdash; In-person, virtual, or both</li>
+        <li><strong>Website URL</strong></li>
+        <li><strong>Email address</strong> you'd like potential clients to use</li>
+        <li><strong>Social media link</strong> (optional)</li>
+        <li><strong>Profile photo or business logo</strong></li>
+        <li><strong>Short bio</strong> &mdash; 2&ndash;3 sentences about you and your color analysis services</li>
+      </ul>
+
+      <p>Once I receive your information, I'll create your listing and add it to the directory.</p>
+
+      <a href="mailto:support@yourcolorstyle.com?subject=My%20Color%20Analyst%20Directory%20Listing" class="ycs-directory__button">Submit My Listing</a>
+
+      <p class="ycs-directory__note"><em>Your directory listing is available while your YCS membership is active.</em></p>
+    </div>
   {% endif %}
 </section>
 
@@ -89,6 +111,10 @@
     max-width: 780px;
   }
 
+  .ycs-directory__header {
+    margin-bottom: 36px;
+  }
+
   .ycs-directory__kicker {
     margin: 0 0 8px;
     color: #bd315b;
@@ -111,6 +137,44 @@
     color: #686a72;
     font-size: 17px;
     line-height: 1.6;
+  }
+
+  .ycs-directory__header > p:not(.ycs-directory__kicker),
+  .ycs-directory__content p,
+  .ycs-directory__content li {
+    color: #5f626a;
+    font-size: 17px;
+    line-height: 1.65;
+  }
+
+  .ycs-directory__content {
+    max-width: 780px;
+  }
+
+  .ycs-directory__content h2 {
+    margin: 0 0 12px;
+    color: #292a30;
+    font-size: 28px;
+    line-height: 1.25;
+    letter-spacing: 0;
+  }
+
+  .ycs-directory__content p {
+    margin: 0 0 20px;
+  }
+
+  .ycs-directory__content ul {
+    margin: 0 0 24px;
+    padding-left: 24px;
+  }
+
+  .ycs-directory__content li + li {
+    margin-top: 6px;
+  }
+
+  .ycs-directory__note {
+    margin-top: 22px !important;
+    font-size: 15px !important;
   }
 
   .ycs-directory__button {
