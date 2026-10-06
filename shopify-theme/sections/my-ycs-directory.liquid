@@ -33,6 +33,24 @@
       <p>This membership is not available on your account.</p>
     </div>
   {% else %}
+    {% if ycs_free_member %}
+      <header class="ycs-directory__header">
+        <p class="ycs-directory__kicker">My YCS</p>
+        <h1>Get Listed in the Color Analyst Directory</h1>
+        <p>Connect with people who are looking for professional color analysis services.</p>
+        <p>YCS members can be listed in the <strong>Your Color Style Color Analyst Directory</strong>, giving potential clients a way to discover you and learn more about your services.</p>
+      </header>
+
+      <div class="ycs-directory__content" aria-label="Directory membership information">
+        <h2>Your Directory Listing</h2>
+        <p><strong>&#128274; Directory listings are included with YCS membership.</strong></p>
+        <p>Join Your Color Style to submit your business information and be included in the directory while your membership is active.</p>
+        <a href="/" class="ycs-directory__button">Join Your Color Style</a>
+        <p class="ycs-directory__secondary-action">
+          <a href="/pages/color-analyst-directory">View the Color Analyst Directory &rarr;</a>
+        </p>
+      </div>
+    {% else %}
     <header class="ycs-directory__header">
       <p class="ycs-directory__kicker">My YCS</p>
       <h1>Get Listed in the Color Analyst Directory</h1>
@@ -57,14 +75,11 @@
 
       <p>Once I receive your information, I'll create your listing and add it to the directory.</p>
 
-      {% if ycs_free_member %}
-        <span class="ycs-directory__button ycs-directory__button--locked" aria-label="Directory listing is locked">Locked</span>
-      {% else %}
-        <a href="mailto:support@yourcolorstyle.com?subject=My%20Color%20Analyst%20Directory%20Listing" class="ycs-directory__button">Submit My Listing</a>
-      {% endif %}
+      <a href="mailto:support@yourcolorstyle.com?subject=My%20Color%20Analyst%20Directory%20Listing" class="ycs-directory__button">Submit My Listing</a>
 
       <p class="ycs-directory__note"><em>Your directory listing is available while your YCS membership is active.</em></p>
     </div>
+    {% endif %}
   {% endif %}
 </section>
 
@@ -203,10 +218,18 @@
     text-decoration: none;
   }
 
-  .ycs-directory__button--locked {
-    background: #ece9e7;
-    color: #77737a;
-    cursor: not-allowed;
+  .ycs-directory__secondary-action {
+    margin-top: 20px !important;
+  }
+
+  .ycs-directory__secondary-action a {
+    color: #bd315b;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .ycs-directory__secondary-action a:hover {
+    text-decoration: underline;
   }
 
   @media (max-width: 720px) {
