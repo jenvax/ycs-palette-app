@@ -1,8 +1,14 @@
 {% assign ycs_member_access = false %}
+{% assign ycs_free_member = false %}
 {% if customer %}
   {% assign ycs_member_tags = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
   {% if ycs_member_tags contains ',YCSMEMBER,' or ycs_member_tags contains ',FREEMEMBER,' %}
     {% assign ycs_member_access = true %}
+  {% endif %}
+  {% if ycs_member_tags contains ',FREEMEMBER,' %}
+    {% unless ycs_member_tags contains ',YCSMEMBER,' %}
+      {% assign ycs_free_member = true %}
+    {% endunless %}
   {% endif %}
 {% endif %}
 
@@ -31,16 +37,18 @@
       <h1>Learn</h1>
     </header>
 
-    <div class="ycs-learn-hub__grid">
-      <article class="ycs-learn-card">
-        <div class="ycs-learn-card__accent"></div>
-        <div class="ycs-learn-card__body">
-          <h2>Free Color Analysis Training</h2>
-          <p><em>Discover how the YCS approach uses depth, undertones and chroma to understand your coloring.</em></p>
-          <a href="/products/learn-color-analysis" class="ycs-learn-hub__button">Continue Training &rarr;</a>
-        </div>
-      </article>
-    </div>
+    {% if ycs_free_member %}
+      <div class="ycs-learn-hub__grid">
+        <article class="ycs-learn-card">
+          <div class="ycs-learn-card__accent"></div>
+          <div class="ycs-learn-card__body">
+            <h2>Free Color Analysis Training</h2>
+            <p><em>Discover how the YCS approach uses depth, undertones and chroma to understand your coloring.</em></p>
+            <a href="/products/learn-color-analysis" class="ycs-learn-hub__button">Continue Training &rarr;</a>
+          </div>
+        </article>
+      </div>
+    {% endif %}
   {% endif %}
 </section>
 
