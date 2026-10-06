@@ -1,0 +1,139 @@
+{% assign ycs_member_access = false %}
+{% if customer %}
+  {% assign ycs_member_tags = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
+  {% if ycs_member_tags contains ',YCSMEMBER,' %}
+    {% assign ycs_member_access = true %}
+  {% endif %}
+{% endif %}
+
+<section class="ycs-directory">
+  <nav class="ycs-directory__nav" aria-label="Membership navigation">
+    <a href="/pages/my-ycs" class="ycs-directory__back">Back to My YCS</a>
+  </nav>
+
+  {% if customer == nil %}
+    <div class="ycs-directory__message">
+      <p class="ycs-directory__kicker">Your Color Style</p>
+      <h1>Directory</h1>
+      <p>Please sign in to access your membership.</p>
+      <a href="{{ routes.account_login_url }}" class="ycs-directory__button">Sign In</a>
+    </div>
+  {% elsif ycs_member_access == false %}
+    <div class="ycs-directory__message">
+      <p class="ycs-directory__kicker">Your Color Style</p>
+      <h1>Directory</h1>
+      <p>This membership is not available on your account.</p>
+    </div>
+  {% else %}
+    <header class="ycs-directory__header">
+      <p class="ycs-directory__kicker">My YCS</p>
+      <h1>Directory</h1>
+    </header>
+
+    <div class="ycs-directory__content" aria-label="Directory content"></div>
+  {% endif %}
+</section>
+
+{% style %}
+  .shopify-section-header,
+  #shopify-section-header,
+  .site-header,
+  .header-wrapper,
+  .header {
+    display: none !important;
+  }
+
+  body {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  .ycs-directory {
+    max-width: 1180px;
+    min-height: 60vh;
+    margin: 0 auto;
+    padding: 28px 24px 72px;
+    color: #313238;
+  }
+
+  .ycs-directory__nav {
+    margin-bottom: 42px;
+  }
+
+  .ycs-directory__back {
+    color: #4b4d55;
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .ycs-directory__back:hover {
+    text-decoration: underline;
+  }
+
+  .ycs-directory__header,
+  .ycs-directory__message {
+    max-width: 780px;
+  }
+
+  .ycs-directory__kicker {
+    margin: 0 0 8px;
+    color: #bd315b;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: uppercase;
+  }
+
+  .ycs-directory h1 {
+    margin: 0 0 12px;
+    color: #292a30;
+    font-size: 42px;
+    line-height: 1.14;
+    letter-spacing: 0;
+  }
+
+  .ycs-directory__message > p:not(.ycs-directory__kicker) {
+    margin: 0;
+    color: #686a72;
+    font-size: 17px;
+    line-height: 1.6;
+  }
+
+  .ycs-directory__button {
+    display: inline-flex;
+    min-height: 46px;
+    margin-top: 22px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    background: #cf3f65;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    padding: 12px 20px;
+    text-decoration: none;
+  }
+
+  @media (max-width: 720px) {
+    .ycs-directory {
+      padding: 22px 16px 52px;
+    }
+
+    .ycs-directory__nav {
+      margin-bottom: 30px;
+    }
+
+    .ycs-directory h1 {
+      font-size: 32px;
+    }
+  }
+{% endstyle %}
+
+{% schema %}
+{
+  "name": "My YCS Directory",
+  "settings": [],
+  "presets": [{ "name": "My YCS Directory" }]
+}
+{% endschema %}

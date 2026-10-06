@@ -1,0 +1,9 @@
+{
+  "sections": {
+    "main": {
+      "type": "my-ycs-directory",
+      "settings": {}
+    }
+  },
+  "order": ["main"]
+}
