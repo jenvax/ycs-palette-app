@@ -1,7 +1,7 @@
 {
   "sections": {
     "main": {
-      "type": "my-ycs-analyze",
+      "type": "my-ycs-tools",
       "settings": {}
     }
   },

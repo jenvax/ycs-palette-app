@@ -469,11 +469,11 @@
   }
 
   function buildClientListHref() {
-    return appendAdminPreviewToHref('/pages/analyze-clients');
+    return appendAdminPreviewToHref('/pages/tools-clients');
   }
 
   function buildManageClientHref() {
-    if (!CLIENT_RECORD_ID) return '/pages/analyze-clients';
+    if (!CLIENT_RECORD_ID) return '/pages/tools-clients';
 
     const query = new URLSearchParams({
       clientRecordId: CLIENT_RECORD_ID,
@@ -481,7 +481,7 @@
     });
 
     addAdminPreviewParam(query);
-    return '/pages/analyze-clients?' + query.toString();
+    return '/pages/tools-clients?' + query.toString();
   }
 
   function getFreeTrialClient(clientId) {
@@ -599,7 +599,7 @@ function buildColorAnalysisToolHref() {
   addAdminPreviewParam(query);
 
   const queryString = query.toString();
-  return '/pages/analyze-structured' + (queryString ? '?' + queryString : '');
+  return '/pages/tools-structured' + (queryString ? '?' + queryString : '');
 }
 
 function updateSignatureAnalysisLink() {
@@ -2269,7 +2269,7 @@ function refreshAllSwatchHighlights() {
         : 'depth';
 
   const prepMode = IS_DIY_MODE ? 'diy' : 'trade';
-  let hrefBase = '/pages/analyze-photo-prep?workflow=color-analysis&mode=' + encodeURIComponent(prepMode) + '&returnStep=' + encodeURIComponent(step);
+  let hrefBase = '/pages/tools-photo-prep?workflow=color-analysis&mode=' + encodeURIComponent(prepMode) + '&returnStep=' + encodeURIComponent(step);
   if (ADMIN_VIEW_AS) {
     hrefBase += '&viewAs=' + encodeURIComponent(ADMIN_VIEW_AS);
   }
@@ -2331,7 +2331,7 @@ function updateBackLink() {
 
   if (IS_DIY_MODE) {
     backBtn.textContent = 'Photo Prep';
-    backBtn.href = photoPrepLink ? photoPrepLink.href : appendAdminPreviewToHref('/pages/analyze-photo-prep?mode=diy&workflow=color-analysis');
+    backBtn.href = photoPrepLink ? photoPrepLink.href : appendAdminPreviewToHref('/pages/tools-photo-prep?mode=diy&workflow=color-analysis');
     return;
   }
 

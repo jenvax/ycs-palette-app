@@ -202,10 +202,10 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
       {% if can_use_client_management and is_personal_mode_request != true %}
         <nav class="ycs-photo-prep-tool-nav" aria-label="Color analysis tools">
           <a href="/pages/my-ycs" class="ycs-photo-prep-back">My YCS</a>
-          <a href="/pages/analyze" class="ycs-photo-prep-back">Analyze</a>
-          <a href="/pages/analyze-clients" class="ycs-photo-prep-back">My Clients</a>
-          <a id="ycs-photo-prep-manage-client-nav" href="/pages/analyze-clients" class="ycs-photo-prep-back" hidden>Manage Client</a>
-          <a id="ycs-photo-prep-structured-nav" href="/pages/analyze-structured" class="ycs-photo-prep-back" hidden>Structured Analysis</a>
+          <a href="/pages/tools" class="ycs-photo-prep-back">Tools</a>
+          <a href="/pages/tools-clients" class="ycs-photo-prep-back">My Clients</a>
+          <a id="ycs-photo-prep-manage-client-nav" href="/pages/tools-clients" class="ycs-photo-prep-back" hidden>Manage Client</a>
+          <a id="ycs-photo-prep-structured-nav" href="/pages/tools-structured" class="ycs-photo-prep-back" hidden>Structured Analysis</a>
         </nav>
       {% endif %}
       {% unless can_use_client_management and is_personal_mode_request != true %}
@@ -462,7 +462,7 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
             </button>
 
             <div class="ycs-photo-prep-analysis-actions">
-              <a id="ycs-prep-start-analysis-btn" href="/pages/analyze-structured" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary">
+              <a id="ycs-prep-start-analysis-btn" href="/pages/tools-structured" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary">
                 Continue
               </a>
             </div>
@@ -1331,7 +1331,7 @@ const pageBuilderFlag = (params.get('pb') || '').trim();
 const isToolsReturnUrl =
   safeReturnUrl.includes('view=tools') ||
   safeReturnUrl.includes('view=catools') ||
-  safeReturnUrl.includes('/pages/analyze-structureds');
+  safeReturnUrl.includes('/pages/tools');
 const returnLabel = isToolsReturnUrl ? 'Tools' : 'My Color Palettes';
 const WORKFLOW = (params.get('workflow') || '').trim().toLowerCase() || '';
 const REQUESTED_PALETTE_CODE = (params.get('palette') || '').trim();
@@ -1608,7 +1608,7 @@ function hideLoadingView() {
 }
 
 function buildMyClientsUrl() {
-  const url = new URL('/pages/analyze-clients', window.location.origin);
+  const url = new URL('/pages/tools-clients', window.location.origin);
   if (adminViewAs) url.searchParams.set('viewAs', adminViewAs);
   if (pageBuilderFlag) url.searchParams.set('pb', pageBuilderFlag);
   return url.pathname + url.search;
@@ -1711,7 +1711,7 @@ function syncColorAnalysisToolNav(structuredHref, signatureHref) {
   const hasPhoto = !!(state.hasLoadedPhoto || state.originalPhotoUrl || state.adjustedPhotoUrl || state.activePhotoUrl);
 
   if (hasClient) {
-    const manageClientUrl = new URL('/pages/analyze-clients', window.location.origin);
+    const manageClientUrl = new URL('/pages/tools-clients', window.location.origin);
     manageClientUrl.searchParams.set('clientRecordId', state.clientRecordId);
     manageClientUrl.searchParams.set('edit', '1');
     setToolNavLink(manageClientNavLink, manageClientUrl.pathname + manageClientUrl.search, true);
@@ -1719,7 +1719,7 @@ function syncColorAnalysisToolNav(structuredHref, signatureHref) {
     setToolNavLink(manageClientNavLink, '', false);
   }
 
-  setToolNavLink(structuredNavLink, structuredHref || '/pages/analyze-structured', hasClient && hasPhoto);
+  setToolNavLink(structuredNavLink, structuredHref || '/pages/tools-structured', hasClient && hasPhoto);
   setToolNavLink(lipNavLink, signatureHref || '/pages/signature-color-analysis', hasClient && hasPhoto);
 }
 
@@ -1810,7 +1810,7 @@ function updateStartAnalysisLink() {
     return;
   }
 
-  let href = '/pages/analyze-structured';
+  let href = '/pages/tools-structured';
 
   if (IS_DIY_MODE) {
     state.customerId = VIEWER_CUSTOMER_ID;
@@ -2900,7 +2900,7 @@ state.previewOffsetY = 0;
   }
 
   function colorAnalysisToolUrl(clientRecordId) {
-    const url = new URL('/pages/analyze-structured', window.location.origin);
+    const url = new URL('/pages/tools-structured', window.location.origin);
     url.searchParams.set('clientRecordId', clientRecordId);
     url.searchParams.set('mode', 'trade');
     addAdminPreviewParam(url.searchParams);

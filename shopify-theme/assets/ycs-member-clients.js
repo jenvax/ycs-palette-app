@@ -2821,7 +2821,7 @@
   }
 
   function photoPrepUrl(client) {
-    const url = new URL("/pages/analyze-photo-prep", window.location.origin);
+    const url = new URL("/pages/tools-photo-prep", window.location.origin);
     url.searchParams.set("mode", "trade");
     url.searchParams.set("workflow", "color-analysis");
     url.searchParams.set("clientRecordId", client.clientRecordId);
@@ -2829,7 +2829,7 @@
   }
 
   function structuredAnalysisUrl(client) {
-    const url = new URL("/pages/analyze-structured", window.location.origin);
+    const url = new URL("/pages/tools-structured", window.location.origin);
     url.searchParams.set("mode", "trade");
     url.searchParams.set("clientRecordId", client.clientRecordId);
     return url.pathname + url.search;
@@ -2877,7 +2877,7 @@
 
   function updateShellMode(mode, client) {
     if (pageBackLinkEl) {
-      pageBackLinkEl.href = pageBackLinkEl.dataset.toolsHref || "/pages/analyze";
+      pageBackLinkEl.href = pageBackLinkEl.dataset.toolsHref || "/pages/tools";
       pageBackLinkEl.textContent = "Tools";
       pageBackLinkEl.dataset.ycsBackMode = "tools";
     }

@@ -14,20 +14,20 @@
   {% if customer == nil %}
     <header class="ycs-analyze-hub__header">
       <p class="ycs-analyze-hub__kicker">Your Color Style</p>
-      <h1>Analyze</h1>
+      <h1>Tools</h1>
       <p>Please sign in to access your membership.</p>
       <a href="{{ routes.account_login_url }}" class="ycs-analyze-hub__button">Sign In</a>
     </header>
   {% elsif ycs_member_access == false %}
     <header class="ycs-analyze-hub__header">
       <p class="ycs-analyze-hub__kicker">Your Color Style</p>
-      <h1>Analyze</h1>
+      <h1>Tools</h1>
       <p>This membership is not available on your account.</p>
     </header>
   {% else %}
     <header class="ycs-analyze-hub__header">
       <p class="ycs-analyze-hub__kicker">My YCS</p>
-      <h1>Analyze</h1>
+      <h1>Tools</h1>
       <p>Manage clients and create guided color analyses.</p>
     </header>
 
@@ -37,7 +37,7 @@
         <div class="ycs-analyze-card__body">
           <h2>My Clients</h2>
           <p>View clients, prepare photos, and continue saved reports.</p>
-          <a href="/pages/analyze-clients" class="ycs-analyze-hub__button">Open My Clients</a>
+          <a href="/pages/tools-clients" class="ycs-analyze-hub__button">Open My Clients</a>
         </div>
       </article>
 
@@ -46,7 +46,7 @@
         <div class="ycs-analyze-card__body">
           <h2>Structured Analysis</h2>
           <p>Select or create a client, prepare their photo, and begin an analysis.</p>
-          <a href="/pages/analyze-photo-prep?mode=trade&amp;workflow=color-analysis&amp;returnUrl=%2Fpages%2Fanalyze" class="ycs-analyze-hub__button">Open Tool</a>
+          <a href="/pages/tools-photo-prep?mode=trade&amp;workflow=color-analysis&amp;returnUrl=%2Fpages%2Ftools" class="ycs-analyze-hub__button">Open Tool</a>
         </div>
       </article>
     </div>
@@ -86,8 +86,8 @@
 
 {% schema %}
 {
-  "name": "My YCS Analyze",
+  "name": "My YCS Tools",
   "settings": [],
-  "presets": [{ "name": "My YCS Analyze" }]
+  "presets": [{ "name": "My YCS Tools" }]
 }
 {% endschema %}

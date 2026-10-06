@@ -157,28 +157,28 @@
       <nav class="ycs-clients__nav" aria-label="Color analysis tools">
         <a href="/pages/my-ycs" class="ycs-clients__back-link" data-ycs-leave-client-view>My YCS</a>
         <a
-          href="/pages/analyze"
+          href="/pages/tools"
           class="ycs-clients__back-link"
           data-ycs-clients-back-link
-          data-tools-href="/pages/analyze"
+          data-tools-href="/pages/tools"
           data-ycs-leave-client-view
-        >Analyze</a>
+        >Tools</a>
         <a
-          href="/pages/analyze-clients{% if admin_view_as != '' %}?viewAs={{ admin_view_as }}{% endif %}"
+          href="/pages/tools-clients{% if admin_view_as != '' %}?viewAs={{ admin_view_as }}{% endif %}"
           class="ycs-clients__back-link is-active"
           data-ycs-clients-nav-selected
           data-ycs-leave-client-view
           hidden
         >My Clients</a>
         <a
-          href="/pages/analyze-photo-prep?mode=trade&workflow=color-analysis{% if admin_view_as != '' %}&viewAs={{ admin_view_as }}{% endif %}"
+          href="/pages/tools-photo-prep?mode=trade&workflow=color-analysis{% if admin_view_as != '' %}&viewAs={{ admin_view_as }}{% endif %}"
           class="ycs-clients__back-link"
           data-ycs-clients-nav-photo-prep
           data-ycs-leave-client-view
           hidden
         >Photo Prep</a>
         <a
-          href="/pages/analyze-structured{% if admin_view_as != '' %}?viewAs={{ admin_view_as }}{% endif %}"
+          href="/pages/tools-structured{% if admin_view_as != '' %}?viewAs={{ admin_view_as }}{% endif %}"
           class="ycs-clients__back-link"
           data-ycs-clients-nav-structured
           data-ycs-leave-client-view
@@ -193,7 +193,7 @@
         <h1 class="ycs-clients__title">My Clients</h1>
         <p class="ycs-clients__subtitle">View and manage your color analysis clients.</p>
       </div>
-      <a href="/pages/analyze-clients?newClient=1{% if admin_view_as != '' %}&viewAs={{ admin_view_as }}{% endif %}" class="ycs-clients__button" data-ycs-add-client>Add Client</a>
+      <a href="/pages/tools-clients?newClient=1{% if admin_view_as != '' %}&viewAs={{ admin_view_as }}{% endif %}" class="ycs-clients__button" data-ycs-add-client>Add Client</a>
     </div>
 
     {% if actual_is_admin %}
