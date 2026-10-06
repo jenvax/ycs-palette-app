@@ -1,0 +1,9 @@
+{
+  "sections": {
+    "main": {
+      "type": "ycs-member-clients",
+      "settings": {}
+    }
+  },
+  "order": ["main"]
+}

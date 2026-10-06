@@ -1,0 +1,9 @@
+{
+  "sections": {
+    "main": {
+      "type": "ycs-member-analysis",
+      "settings": {}
+    }
+  },
+  "order": ["main"]
+}

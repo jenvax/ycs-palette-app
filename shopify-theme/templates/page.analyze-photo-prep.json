@@ -1,0 +1,9 @@
+{
+  "sections": {
+    "main": {
+      "type": "ycs-member-photo-prep",
+      "settings": {}
+    }
+  },
+  "order": ["main"]
+}
