@@ -1,0 +1,81 @@
+{% assign ycs_member_access = false %}
+{% if customer %}
+  {% assign ycs_member_tags = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
+  {% if ycs_member_tags contains ',YCSMEMBER,' or ycs_member_tags contains ',FREEMEMBER,' %}
+    {% assign ycs_member_access = true %}
+  {% endif %}
+{% endif %}
+
+<section class="ycs-learn-hub">
+  <nav class="ycs-learn-hub__nav" aria-label="Membership navigation">
+    <a href="/pages/my-ycs" class="ycs-learn-hub__link">Back to My YCS</a>
+    <a href="mailto:support@yourcolorstyle.com" class="ycs-learn-hub__link">Contact</a>
+  </nav>
+
+  {% if customer == nil %}
+    <header class="ycs-learn-hub__header">
+      <p class="ycs-learn-hub__kicker">Your Color Style</p>
+      <h1>Learn</h1>
+      <p>Please sign in to access your membership.</p>
+      <a href="{{ routes.account_login_url }}" class="ycs-learn-hub__button">Sign In</a>
+    </header>
+  {% elsif ycs_member_access == false %}
+    <header class="ycs-learn-hub__header">
+      <p class="ycs-learn-hub__kicker">Your Color Style</p>
+      <h1>Learn</h1>
+      <p>This membership is not available on your account.</p>
+    </header>
+  {% else %}
+    <header class="ycs-learn-hub__header">
+      <p class="ycs-learn-hub__kicker">My YCS</p>
+      <h1>Learn</h1>
+    </header>
+
+    <div class="ycs-learn-hub__grid">
+      <article class="ycs-learn-card">
+        <div class="ycs-learn-card__accent"></div>
+        <div class="ycs-learn-card__body">
+          <h2>Free Color Analysis Training</h2>
+          <p><em>Discover how the YCS approach uses depth, undertones and chroma to understand your coloring.</em></p>
+          <a href="/products/learn-color-analysis" class="ycs-learn-hub__button">Continue Training &rarr;</a>
+        </div>
+      </article>
+    </div>
+  {% endif %}
+</section>
+
+{% style %}
+  .shopify-section-header, #shopify-section-header, .site-header, .header-wrapper, .header, #shopify-section-footer, .shopify-section--footer, .site-footer, footer.footer, footer[role="contentinfo"] { display: none !important; }
+  body { margin-top: 0 !important; padding-top: 0 !important; }
+  .ycs-learn-hub { max-width: 1180px; margin: 0 auto; padding: 28px 24px 72px; color: #313238; }
+  .ycs-learn-hub__nav { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 42px; }
+  .ycs-learn-hub__link { color: #4b4d55; font-size: 15px; font-weight: 600; text-decoration: none; }
+  .ycs-learn-hub__link:hover { text-decoration: underline; }
+  .ycs-learn-hub__header { max-width: 780px; margin-bottom: 42px; }
+  .ycs-learn-hub__kicker { margin: 0 0 8px; color: #bd315b; font-size: 13px; font-weight: 700; letter-spacing: 0; text-transform: uppercase; }
+  .ycs-learn-hub__header h1 { margin: 0 0 12px; color: #292a30; font-size: 42px; line-height: 1.14; letter-spacing: 0; }
+  .ycs-learn-hub__header > p:not(.ycs-learn-hub__kicker) { margin: 0; color: #686a72; font-size: 19px; line-height: 1.6; }
+  .ycs-learn-hub__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+  .ycs-learn-card { overflow: hidden; border: 1px solid #e7e3df; border-radius: 8px; background: #fff; box-shadow: 0 8px 24px rgba(37, 39, 46, .06); }
+  .ycs-learn-card__accent { height: 10px; background: linear-gradient(90deg, #385c7d, #56a3ae, #83c998, #e6bd59); }
+  .ycs-learn-card__body { display: flex; min-height: 230px; flex-direction: column; align-items: flex-start; padding: 28px; }
+  .ycs-learn-card h2 { margin: 0 0 10px; color: #303139; font-size: 24px; line-height: 1.32; letter-spacing: 0; }
+  .ycs-learn-card p { margin: 0 0 28px; color: #686a72; font-size: 17px; line-height: 1.55; }
+  .ycs-learn-hub__button { display: inline-flex; min-height: 46px; margin-top: auto; align-items: center; justify-content: center; border-radius: 6px; background: #cf3f65; color: #fff; font-size: 15px; font-weight: 700; line-height: 1.2; padding: 12px 20px; text-decoration: none; }
+  .ycs-learn-hub__button:hover { background: #b72f55; color: #fff; }
+  @media (max-width: 720px) {
+    .ycs-learn-hub { padding: 22px 16px 52px; }
+    .ycs-learn-hub__nav { margin-bottom: 30px; }
+    .ycs-learn-hub__header h1 { font-size: 32px; }
+    .ycs-learn-hub__grid { grid-template-columns: 1fr; }
+    .ycs-learn-card__body { min-height: 205px; padding: 24px; }
+  }
+{% endstyle %}
+
+{% schema %}
+{
+  "name": "My YCS Learn",
+  "settings": [],
+  "presets": [{ "name": "My YCS Learn" }]
+}
+{% endschema %}

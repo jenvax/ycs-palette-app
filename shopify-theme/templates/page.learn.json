@@ -1,0 +1,9 @@
+{
+  "sections": {
+    "main": {
+      "type": "my-ycs-learn",
+      "settings": {}
+    }
+  },
+  "order": ["main"]
+}

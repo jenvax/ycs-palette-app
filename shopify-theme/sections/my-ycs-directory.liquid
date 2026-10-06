@@ -1,8 +1,15 @@
 {% assign ycs_member_access = false %}
+{% assign ycs_free_member = false %}
 {% if customer %}
   {% assign ycs_member_tags = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
   {% if ycs_member_tags contains ',YCSMEMBER,' %}
     {% assign ycs_member_access = true %}
+  {% endif %}
+  {% if ycs_member_tags contains ',FREEMEMBER,' %}
+    {% assign ycs_member_access = true %}
+    {% unless ycs_member_tags contains ',YCSMEMBER,' %}
+      {% assign ycs_free_member = true %}
+    {% endunless %}
   {% endif %}
 {% endif %}
 
@@ -50,7 +57,11 @@
 
       <p>Once I receive your information, I'll create your listing and add it to the directory.</p>
 
-      <a href="mailto:support@yourcolorstyle.com?subject=My%20Color%20Analyst%20Directory%20Listing" class="ycs-directory__button">Submit My Listing</a>
+      {% if ycs_free_member %}
+        <span class="ycs-directory__button ycs-directory__button--locked" aria-label="Directory listing is locked">Locked</span>
+      {% else %}
+        <a href="mailto:support@yourcolorstyle.com?subject=My%20Color%20Analyst%20Directory%20Listing" class="ycs-directory__button">Submit My Listing</a>
+      {% endif %}
 
       <p class="ycs-directory__note"><em>Your directory listing is available while your YCS membership is active.</em></p>
     </div>
@@ -190,6 +201,12 @@
     font-weight: 700;
     padding: 12px 20px;
     text-decoration: none;
+  }
+
+  .ycs-directory__button--locked {
+    background: #ece9e7;
+    color: #77737a;
+    cursor: not-allowed;
   }
 
   @media (max-width: 720px) {

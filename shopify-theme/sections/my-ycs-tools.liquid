@@ -1,8 +1,15 @@
 {% assign ycs_member_access = false %}
+{% assign ycs_free_member = false %}
 {% if customer %}
   {% assign ycs_member_tags = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
   {% if ycs_member_tags contains ',YCSMEMBER,' %}
     {% assign ycs_member_access = true %}
+  {% endif %}
+  {% if ycs_member_tags contains ',FREEMEMBER,' %}
+    {% assign ycs_member_access = true %}
+    {% unless ycs_member_tags contains ',YCSMEMBER,' %}
+      {% assign ycs_free_member = true %}
+    {% endunless %}
   {% endif %}
 {% endif %}
 
@@ -38,7 +45,11 @@
         <div class="ycs-analyze-card__body">
           <h2>My Clients</h2>
           <p>View clients, prepare photos, and continue saved reports.</p>
-          <a href="/pages/tools-clients" class="ycs-analyze-hub__button">Open My Clients</a>
+          {% if ycs_free_member %}
+            <span class="ycs-analyze-hub__button ycs-analyze-hub__button--locked" aria-label="My Clients is locked">Locked</span>
+          {% else %}
+            <a href="/pages/tools-clients" class="ycs-analyze-hub__button">Open My Clients</a>
+          {% endif %}
         </div>
       </article>
 
@@ -47,7 +58,11 @@
         <div class="ycs-analyze-card__body">
           <h2>Structured Analysis</h2>
           <p>Select or create a client, prepare their photo, and begin an analysis.</p>
-          <a href="/pages/tools-photo-prep?mode=trade&amp;workflow=color-analysis&amp;returnUrl=%2Fpages%2Ftools" class="ycs-analyze-hub__button">Open Tool</a>
+          {% if ycs_free_member %}
+            <span class="ycs-analyze-hub__button ycs-analyze-hub__button--locked" aria-label="Structured Analysis is locked">Locked</span>
+          {% else %}
+            <a href="/pages/tools-photo-prep?mode=trade&amp;workflow=color-analysis&amp;returnUrl=%2Fpages%2Ftools" class="ycs-analyze-hub__button">Open Tool</a>
+          {% endif %}
         </div>
       </article>
     </div>
@@ -76,6 +91,8 @@
   .ycs-analyze-card p { margin: 0 0 28px; color: #686a72; font-size: 17px; line-height: 1.55; }
   .ycs-analyze-hub__button { display: inline-flex; min-height: 46px; margin-top: auto; align-items: center; justify-content: center; border-radius: 6px; background: #cf3f65; color: #fff; font-size: 15px; font-weight: 700; line-height: 1.2; padding: 12px 20px; text-decoration: none; }
   .ycs-analyze-hub__button:hover { background: #b72f55; color: #fff; }
+  .ycs-analyze-hub__button--locked { background: #ece9e7; color: #77737a; cursor: not-allowed; }
+  .ycs-analyze-hub__button--locked:hover { background: #ece9e7; color: #77737a; }
   @media (max-width: 720px) {
     .ycs-analyze-hub { padding: 22px 16px 52px; }
     .ycs-analyze-hub__topnav { margin-bottom: 30px; }

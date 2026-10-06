@@ -1,8 +1,15 @@
 {% assign ycs_member_access = false %}
+{% assign ycs_free_member = false %}
 {% if customer %}
   {% assign ycs_member_tags = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
   {% if ycs_member_tags contains ',YCSMEMBER,' %}
     {% assign ycs_member_access = true %}
+  {% endif %}
+  {% if ycs_member_tags contains ',FREEMEMBER,' %}
+    {% assign ycs_member_access = true %}
+    {% unless ycs_member_tags contains ',YCSMEMBER,' %}
+      {% assign ycs_free_member = true %}
+    {% endunless %}
   {% endif %}
 {% endif %}
 
@@ -37,7 +44,11 @@
         <div class="ycs-palettes-card__body">
           <h2>YCS Color Palettes</h2>
           <p>Explore the complete collection of Your Color Style color palettes included with your membership.</p>
-          <a href="/pages/ycs-color-palettes" class="ycs-palettes-hub__button">View YCS Palettes</a>
+          {% if ycs_free_member %}
+            <span class="ycs-palettes-hub__button ycs-palettes-hub__button--locked" aria-label="YCS Color Palettes is locked">Locked</span>
+          {% else %}
+            <a href="/pages/ycs-color-palettes" class="ycs-palettes-hub__button">View YCS Palettes</a>
+          {% endif %}
         </div>
       </article>
 
@@ -46,7 +57,11 @@
         <div class="ycs-palettes-card__body">
           <h2>My Custom Palettes</h2>
           <p>Create and manage personalized color palettes using your own custom colors.</p>
-          <a href="/pages/my-custom-palettes" class="ycs-palettes-hub__button">My Custom Palettes</a>
+          {% if ycs_free_member %}
+            <span class="ycs-palettes-hub__button ycs-palettes-hub__button--locked" aria-label="My Custom Palettes is locked">Locked</span>
+          {% else %}
+            <a href="/pages/my-custom-palettes" class="ycs-palettes-hub__button">My Custom Palettes</a>
+          {% endif %}
         </div>
       </article>
     </div>
@@ -75,6 +90,8 @@
   .ycs-palettes-card p { margin: 0 0 28px; color: #686a72; font-size: 17px; line-height: 1.55; }
   .ycs-palettes-hub__button { display: inline-flex; min-height: 46px; margin-top: auto; align-items: center; justify-content: center; border-radius: 6px; background: #cf3f65; color: #fff; font-size: 15px; font-weight: 700; line-height: 1.2; padding: 12px 20px; text-decoration: none; }
   .ycs-palettes-hub__button:hover { background: #b72f55; color: #fff; }
+  .ycs-palettes-hub__button--locked { background: #ece9e7; color: #77737a; cursor: not-allowed; }
+  .ycs-palettes-hub__button--locked:hover { background: #ece9e7; color: #77737a; }
   @media (max-width: 720px) {
     .ycs-palettes-hub { padding: 22px 16px 52px; }
     .ycs-palettes-hub__nav { margin-bottom: 30px; }
