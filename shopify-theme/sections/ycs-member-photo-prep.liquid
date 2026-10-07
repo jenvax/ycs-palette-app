@@ -206,6 +206,7 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
           <a href="/pages/tools" class="ycs-photo-prep-back">Tools</a>
           <a href="/pages/tools-clients" class="ycs-photo-prep-back">My Clients</a>
           <a id="ycs-photo-prep-manage-client-nav" href="/pages/tools-clients" class="ycs-photo-prep-back" hidden>Manage Client</a>
+          <a href="/pages/tools-photo-prep" class="ycs-photo-prep-back is-active" aria-current="page">Photo Prep</a>
           <a id="ycs-photo-prep-structured-nav" href="/pages/tools-structured" class="ycs-photo-prep-back" hidden>Structured Analysis</a>
           <a id="ycs-photo-prep-lip-nav" href="/pages/tools-lip-draping" class="ycs-photo-prep-back" hidden>Lip &amp; Draping Studio</a>
         </nav>
@@ -215,6 +216,7 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
           {% render 'my-ycs-logo' %}
           <a href="{{ routes.account_url }}" class="ycs-photo-prep-back">My Account</a>
           <a id="ycs-photo-prep-back-link" href="/pages/tools" class="ycs-photo-prep-back">Tools</a>
+          <a href="/pages/tools-photo-prep" class="ycs-photo-prep-back is-active" aria-current="page">Photo Prep</a>
         </nav>
       {% endunless %}
       <a href="mailto:support@yourcolorstyle.com" class="ycs-photo-prep-back ycs-photo-prep-contact">Contact</a>
