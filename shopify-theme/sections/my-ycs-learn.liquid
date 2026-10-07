@@ -43,46 +43,62 @@
       <h1>Learn</h1>
     </header>
 
-    {% if ycs_free_member %}
-      <div class="ycs-learn-hub__grid">
-        <article class="ycs-learn-card">
-          <div class="ycs-learn-card__accent"></div>
-          <div class="ycs-learn-card__body">
-            <h2>Free Color Analysis Training</h2>
-            <p><em>Discover how the YCS approach uses depth, undertones and chroma to understand your coloring.</em></p>
-            <a href="/products/learn-color-analysis" class="ycs-learn-hub__button">Continue Training &rarr;</a>
-          </div>
-        </article>
-      </div>
-    {% else %}
-      {% assign learning_menu = section.settings.learning_menu %}
-      {% if learning_menu == blank %}
-        {% assign learning_menu = linklists['ycs-learning-library'] %}
-      {% endif %}
-      {% if learning_menu != blank and learning_menu.links.size > 0 %}
-        <div class="ycs-learn-hub__grid" data-topic-grid>
-          {% for topic in learning_menu.links %}
-            {% assign topic_parts = topic.title | split: '|' %}
-            {% assign topic_title = topic_parts.first | strip %}
-            {% assign topic_description = topic_parts[1] | strip %}
+    {% assign learning_menu = section.settings.learning_menu %}
+    {% if learning_menu == blank %}
+      {% assign learning_menu = linklists['ycs-learning-library'] %}
+    {% endif %}
+    {% if learning_menu != blank and learning_menu.links.size > 0 %}
+      <div class="ycs-learn-hub__grid" data-topic-grid>
+        {% for topic in learning_menu.links %}
+          {% assign topic_parts = topic.title | split: '|' %}
+          {% assign topic_title = topic_parts.first | strip %}
+          {% assign topic_description = topic_parts[1] | strip %}
+          {% assign topic_key = topic_title | handleize %}
+          {% assign show_topic = true %}
+          {% assign topic_unlocked = true %}
+          {% unless ycs_free_member %}
+            {% if topic_key == 'free-color-analysis-training' %}
+              {% assign show_topic = false %}
+            {% endif %}
+          {% endunless %}
+          {% if ycs_free_member %}
+            {% unless topic_key == 'start-here' or topic_key == 'free-color-analysis-training' or topic_key == 'using-the-ycs-tools' %}
+              {% assign topic_unlocked = false %}
+            {% endunless %}
+          {% endif %}
+          {% if show_topic %}
             <article class="ycs-learn-card">
               <div class="ycs-learn-card__accent"></div>
               <div class="ycs-learn-card__body">
                 <h2>{{ topic_title | escape }}</h2>
                 <p>{% if topic_description != blank %}{{ topic_description | escape }}{% else %}{{ topic.links.size }} lesson{% unless topic.links.size == 1 %}s{% endunless %}{% endif %}</p>
-                {% if topic.links.size == 1 %}
+                {% if topic_unlocked == false %}
+                  <span class="ycs-learn-hub__button ycs-learn-hub__button--locked" aria-label="{{ topic_title | escape }} is locked">Locked</span>
+                {% elsif topic.links.size == 1 %}
                   <a class="ycs-learn-hub__button" href="{{ topic.links.first.url }}">Open Lesson</a>
                 {% else %}
                   <button class="ycs-learn-hub__button" type="button" data-open-topic="{{ forloop.index0 }}" data-topic-title="{{ topic_title | escape }}">Explore Topic</button>
                 {% endif %}
               </div>
             </article>
-          {% endfor %}
-        </div>
+          {% endif %}
+        {% endfor %}
+      </div>
 
-        {% for topic in learning_menu.links %}
-          {% assign topic_parts = topic.title | split: '|' %}
-          {% assign topic_title = topic_parts.first | strip %}
+      {% for topic in learning_menu.links %}
+        {% assign topic_parts = topic.title | split: '|' %}
+        {% assign topic_title = topic_parts.first | strip %}
+        {% assign topic_key = topic_title | handleize %}
+        {% assign render_topic_lessons = true %}
+        {% unless ycs_free_member %}
+          {% if topic_key == 'free-color-analysis-training' %}{% assign render_topic_lessons = false %}{% endif %}
+        {% endunless %}
+        {% if ycs_free_member %}
+          {% unless topic_key == 'start-here' or topic_key == 'free-color-analysis-training' or topic_key == 'using-the-ycs-tools' %}
+            {% assign render_topic_lessons = false %}
+          {% endunless %}
+        {% endif %}
+        {% if render_topic_lessons %}
           <section class="ycs-learn-topic" data-topic="{{ forloop.index0 }}" hidden>
             <header class="ycs-learn-topic__header">
               <p class="ycs-learn-hub__kicker">YCS Learning Library</p>
@@ -105,12 +121,12 @@
               {% endfor %}
             </div>
           </section>
-        {% endfor %}
-      {% elsif ycs_member_tags contains ',YCS_ADMIN,' %}
-        <div class="ycs-learn-admin-note">
-          Select a navigation menu in the My YCS Learn section settings. Top-level links become topics and nested links become lessons.
-        </div>
-      {% endif %}
+        {% endif %}
+      {% endfor %}
+    {% elsif ycs_member_tags contains ',YCS_ADMIN,' %}
+      <div class="ycs-learn-admin-note">
+        Select a navigation menu in the My YCS Learn section settings. Top-level links become topics and nested links become lessons.
+      </div>
     {% endif %}
   {% endif %}
 </section>
@@ -183,6 +199,8 @@
   .ycs-learn-card p { margin: 0 0 28px; color: #686a72; font-size: 17px; line-height: 1.55; }
   .ycs-learn-hub__button { display: inline-flex; min-height: 46px; margin-top: auto; align-items: center; justify-content: center; border-radius: 6px; background: #cf3f65; color: #fff; font-size: 15px; font-weight: 700; line-height: 1.2; padding: 12px 20px; text-decoration: none; }
   .ycs-learn-hub__button:hover { background: #b72f55; color: #fff; }
+  .ycs-learn-hub__button--locked { background: #ece9ef; color: #66636d; cursor: not-allowed; }
+  .ycs-learn-hub__button--locked:hover { background: #ece9ef; color: #66636d; }
   button.ycs-learn-hub__button { border: 0; cursor: pointer; }
   .ycs-learn-topic { max-width: 900px; margin: 0 auto; }
   .ycs-learn-topic__header { margin-bottom: 30px; }

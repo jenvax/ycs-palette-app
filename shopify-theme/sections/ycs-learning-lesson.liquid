@@ -1,7 +1,26 @@
 {% assign lesson_access = false %}
+{% assign lesson_is_free_member = false %}
+{% assign lesson_topic_key = '' %}
 {% if customer %}
   {% assign lesson_tags = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
   {% if lesson_tags contains ',YCSMEMBER,' or lesson_tags contains ',TRADE,' or lesson_tags contains ',YCS_ADMIN,' %}
+    {% assign lesson_access = true %}
+  {% elsif lesson_tags contains ',FREEMEMBER,' %}
+    {% assign lesson_is_free_member = true %}
+  {% endif %}
+{% endif %}
+{% if lesson_is_free_member %}
+  {% assign lesson_learning_menu = linklists['ycs-learning-library'] %}
+  {% for lesson_topic in lesson_learning_menu.links %}
+    {% for lesson_link in lesson_topic.links %}
+      {% if lesson_link.url == request.path %}
+        {% assign lesson_topic_parts = lesson_topic.title | split: '|' %}
+        {% assign lesson_topic_title = lesson_topic_parts.first | strip %}
+        {% assign lesson_topic_key = lesson_topic_title | handleize %}
+      {% endif %}
+    {% endfor %}
+  {% endfor %}
+  {% if lesson_topic_key == 'start-here' or lesson_topic_key == 'free-color-analysis-training' or lesson_topic_key == 'using-the-ycs-tools' %}
     {% assign lesson_access = true %}
   {% endif %}
 {% endif %}
