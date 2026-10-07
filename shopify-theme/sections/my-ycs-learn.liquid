@@ -58,7 +58,11 @@
               <div class="ycs-learn-card__body">
                 <h2>{{ topic.title | escape }}</h2>
                 <p>{{ topic.links.size }} lesson{% unless topic.links.size == 1 %}s{% endunless %}</p>
-                <button class="ycs-learn-hub__button" type="button" data-open-topic="{{ forloop.index0 }}">Explore Topic</button>
+                {% if topic.links.size == 1 %}
+                  <a class="ycs-learn-hub__button" href="{{ topic.links.first.url }}">Open Lesson</a>
+                {% else %}
+                  <button class="ycs-learn-hub__button" type="button" data-open-topic="{{ forloop.index0 }}">Explore Topic</button>
+                {% endif %}
               </div>
             </article>
           {% endfor %}
