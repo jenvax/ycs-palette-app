@@ -115,8 +115,16 @@ async function shopify(query, variables) {
 }
 
 export async function getCustomerDirectoryEligibility(id) {
-  const data = await shopify(`query($id: ID!) { customer(id: $id) { tags } }`, { id: `gid://shopify/Customer/${customerId(id)}` });
-  return hasDirectoryAccess(data.customer?.tags || []);
+  try {
+    const data = await shopify(`query($id: ID!) { customer(id: $id) { tags } }`, { id: `gid://shopify/Customer/${customerId(id)}` });
+    return hasDirectoryAccess(data.customer?.tags || []);
+  } catch (error) {
+    console.warn("Shopify directory eligibility lookup failed; using synced Airtable tags", error.message);
+    const params = new URLSearchParams({ filterByFormula: `{CustomerId}="${escapeFormula(customerId(id))}"`, maxRecords: "1" });
+    const data = await airtable(`https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/${encodeURIComponent("CustomerDirectory")}?${params}`);
+    const tags = String(data.records?.[0]?.fields?.Tags || "").split(",");
+    return hasDirectoryAccess(tags);
+  }
 }
 
 export async function getPublishedDirectoryListings() {
@@ -125,8 +133,17 @@ export async function getPublishedDirectoryListings() {
   const records = data.records || [];
   if (!records.length) return [];
   const ids = records.map((record) => `gid://shopify/Customer/${customerId(record.fields?.CustomerId)}`);
-  const result = await shopify(`query($ids: [ID!]!) { nodes(ids: $ids) { ... on Customer { id tags } } }`, { ids });
-  const eligible = new Set((result.nodes || []).filter((node) => node && hasDirectoryAccess(node.tags)).map((node) => customerId(node.id)));
+  let eligible;
+  try {
+    const result = await shopify(`query($ids: [ID!]!) { nodes(ids: $ids) { ... on Customer { id tags } } }`, { ids });
+    eligible = new Set((result.nodes || []).filter((node) => node && hasDirectoryAccess(node.tags)).map((node) => customerId(node.id)));
+  } catch (error) {
+    console.warn("Shopify public directory eligibility lookup failed; using synced Airtable tags", error.message);
+    const clauses = records.map((record) => `{CustomerId}="${escapeFormula(customerId(record.fields?.CustomerId))}"`).join(",");
+    const params = new URLSearchParams({ filterByFormula: `OR(${clauses})` });
+    const customers = await airtable(`https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/${encodeURIComponent("CustomerDirectory")}?${params}`);
+    eligible = new Set((customers.records || []).filter((record) => hasDirectoryAccess(String(record.fields?.Tags || "").split(","))).map((record) => customerId(record.fields?.CustomerId)));
+  }
   return records.filter((record) => eligible.has(customerId(record.fields?.CustomerId))).map(serialize);
 }
 
