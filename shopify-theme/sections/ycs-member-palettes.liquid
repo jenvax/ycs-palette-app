@@ -3,6 +3,7 @@
 {% if should_render_ycs_color_analysis_tools %}
 <div class="ycs-my-palettes ycs-member-palettes ycs-member-palettes--{{ section.settings.member_view | default: 'ycs' }}">
   <div class="ycs-palette-topnav">
+    {% render 'my-ycs-logo' %}
     <a href="/pages/my-ycs" class="palette-back-link">Back to My YCS</a>
     {% if section.settings.member_view == 'custom' %}
       <a href="/pages/ycs-color-palettes" class="palette-back-link">YCS Color Palettes</a>

@@ -201,6 +201,7 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
     <div class="ycs-photo-prep-topbar">
       {% if can_use_client_management and is_personal_mode_request != true %}
         <nav class="ycs-photo-prep-tool-nav" aria-label="Color analysis tools">
+          {% render 'my-ycs-logo' %}
           <a href="/pages/my-ycs" class="ycs-photo-prep-back">My YCS</a>
           <a href="/pages/tools" class="ycs-photo-prep-back">Tools</a>
           <a href="/pages/tools-clients" class="ycs-photo-prep-back">My Clients</a>
@@ -211,6 +212,7 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
       {% endif %}
       {% unless can_use_client_management and is_personal_mode_request != true %}
         <nav class="ycs-photo-prep-tool-nav" aria-label="Photo draping tools">
+          {% render 'my-ycs-logo' %}
           <a href="{{ routes.account_url }}" class="ycs-photo-prep-back">My Account</a>
           <a id="ycs-photo-prep-back-link" href="/pages/tools" class="ycs-photo-prep-back">Tools</a>
         </nav>

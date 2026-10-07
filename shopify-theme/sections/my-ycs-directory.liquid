@@ -3,7 +3,7 @@
 {% if tags contains ',YCSMEMBER,' or tags contains ',TRADE,' %}{% assign paid = true %}{% endif %}
 {% if tags contains ',FREEMEMBER,' %}{% assign free = true %}{% endif %}
 <section class="dir"{% if paid %} data-directory-manager data-url="/apps/palette-data" data-customer-id="{{ customer.id }}"{% endif %}>
-  <nav><a href="/pages/my-ycs">Back to My YCS</a><a href="mailto:support@yourcolorstyle.com">Contact</a></nav>
+  <nav>{% render 'my-ycs-logo' %}<a href="/pages/my-ycs">Back to My YCS</a><a href="mailto:support@yourcolorstyle.com">Contact</a></nav>
   {% if customer == nil %}
     <h1>Directory</h1><p>Please sign in to access your membership.</p><a class="btn" href="{{ routes.account_login_url }}">Sign In</a>
   {% elsif paid %}
