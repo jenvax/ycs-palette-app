@@ -41,8 +41,12 @@
     var scale = baseScale * Number(zoom.value);
     var width = source.naturalWidth * scale;
     var height = source.naturalHeight * scale;
-    offsetX = Math.max((canvas.width - width) / 2, Math.min((width - canvas.width) / 2, offsetX));
-    offsetY = Math.max((canvas.height - height) / 2, Math.min((height - canvas.height) / 2, offsetY));
+    offsetX = width <= canvas.width
+      ? 0
+      : Math.max((canvas.width - width) / 2, Math.min((width - canvas.width) / 2, offsetX));
+    offsetY = height <= canvas.height
+      ? 0
+      : Math.max((canvas.height - height) / 2, Math.min((height - canvas.height) / 2, offsetY));
   }
 
   function draw() {
@@ -51,21 +55,19 @@
     var scale = baseScale * Number(zoom.value);
     var width = source.naturalWidth * scale;
     var height = source.naturalHeight * scale;
-    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, canvas.width, canvas.height);
     context.drawImage(source, (canvas.width - width) / 2 + offsetX, (canvas.height - height) / 2 + offsetY, width, height);
   }
 
   function openImage(image) {
-    if (image.naturalWidth < 600 || image.naturalHeight < 750) {
-      source = null;
-      showError('Choose a larger photo. It must be at least 600 × 750 pixels for a clear directory image.');
-      dialog.showModal();
-      return;
-    }
     source = image;
-    baseScale = Math.max(canvas.width / source.naturalWidth, canvas.height / source.naturalHeight);
+    var containScale = Math.min(canvas.width / source.naturalWidth, canvas.height / source.naturalHeight);
+    var coverScale = Math.max(canvas.width / source.naturalWidth, canvas.height / source.naturalHeight);
+    baseScale = containScale;
     offsetX = 0;
     offsetY = 0;
+    zoom.max = String(Math.max(3, Math.ceil((coverScale / containScale) * 3)));
     zoom.value = '1';
     showError('');
     draw();
