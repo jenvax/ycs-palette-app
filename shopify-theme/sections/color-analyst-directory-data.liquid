@@ -1,0 +1,173 @@
+<style>
+  #ycs-analyst-directory .analyst-card__image {
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    margin-bottom: 10px;
+    border-radius: 14px;
+    object-fit: cover;
+  }
+
+  #ycs-analyst-directory .analyst-card__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 8px;
+  }
+</style>
+
+<script>
+  (function () {
+    'use strict';
+
+    var root = document.getElementById('ycs-analyst-directory');
+    if (!root) return;
+
+    var originalSearch = root.querySelector('#ycs-dir-search');
+    var originalFormat = root.querySelector('#ycs-dir-format');
+    var originalCountry = root.querySelector('#ycs-dir-country');
+    var originalReset = root.querySelector('#ycs-dir-reset');
+    var cards = root.querySelector('#ycs-dir-cards');
+    var count = root.querySelector('#ycs-dir-count');
+    if (!originalSearch || !originalFormat || !originalCountry || !originalReset || !cards || !count) return;
+
+    function withoutOldListeners(element) {
+      var clone = element.cloneNode(true);
+      element.replaceWith(clone);
+      return clone;
+    }
+
+    var search = withoutOldListeners(originalSearch);
+    var format = withoutOldListeners(originalFormat);
+    var country = withoutOldListeners(originalCountry);
+    var reset = withoutOldListeners(originalReset);
+    var listings = [];
+
+    function element(tag, className, text) {
+      var node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text !== undefined) node.textContent = text;
+      return node;
+    }
+
+    function formatsFor(listing) {
+      if (listing.services === 'Both') return ['Online', 'In person'];
+      if (listing.services === 'Virtual') return ['Online'];
+      if (listing.services === 'In-Person') return ['In person'];
+      return [];
+    }
+
+    function safeUrl(value) {
+      try {
+        var url = new URL(value);
+        return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : null;
+      } catch (error) {
+        return null;
+      }
+    }
+
+    function renderCountries() {
+      while (country.options.length > 1) country.remove(1);
+      Array.from(new Set(listings.map(function (listing) { return listing.country; }).filter(Boolean)))
+        .sort()
+        .forEach(function (name) {
+          var option = element('option', '', name);
+          option.value = name;
+          country.appendChild(option);
+        });
+    }
+
+    function render() {
+      var term = search.value.trim().toLowerCase();
+      var selectedFormat = format.value;
+      var selectedCountry = country.value;
+      var matches = listings.filter(function (listing) {
+        var text = [listing.name, listing.businessName, listing.city, listing.stateProvince, listing.country, listing.bio].join(' ').toLowerCase();
+        return (!term || text.includes(term)) &&
+          (!selectedFormat || formatsFor(listing).includes(selectedFormat)) &&
+          (!selectedCountry || listing.country === selectedCountry);
+      });
+
+      cards.replaceChildren();
+      count.textContent = matches.length + ' analyst' + (matches.length === 1 ? '' : 's') + ' found';
+
+      if (!matches.length) {
+        var empty = element('div', 'empty');
+        empty.appendChild(element('h3', '', listings.length ? 'No matching analysts' : 'Listings coming soon'));
+        empty.appendChild(element('p', '', listings.length ? 'Try a different search or clear the filters.' : "We're preparing the directory of independent color analysts. Please check back for updates."));
+        cards.appendChild(empty);
+        return;
+      }
+
+      matches.forEach(function (listing) {
+        var card = element('article', 'analyst-card');
+        if (listing.imageUrl) {
+          var image = element('img', 'analyst-card__image');
+          image.src = listing.imageUrl;
+          image.alt = listing.businessName || listing.name;
+          image.width = 320;
+          image.height = 400;
+          card.appendChild(image);
+        }
+        card.appendChild(element('h3', '', listing.businessName || listing.name));
+        if (listing.businessName && listing.name) card.appendChild(element('p', '', listing.name));
+        card.appendChild(element('div', 'location', [listing.city, listing.stateProvince, listing.country].filter(Boolean).join(', ')));
+        card.appendChild(element('div', 'services', formatsFor(listing).join(' · ')));
+        card.appendChild(element('p', 'description', listing.bio));
+
+        var links = element('div', 'analyst-card__links');
+        var website = safeUrl(listing.websiteUrl);
+        if (website) {
+          var websiteLink = element('a', 'btn', 'Visit Website');
+          websiteLink.href = website;
+          websiteLink.target = '_blank';
+          websiteLink.rel = 'noopener noreferrer';
+          links.appendChild(websiteLink);
+        }
+        if (listing.contactEmail) {
+          var emailLink = element('a', 'btn', 'Email Analyst');
+          emailLink.href = 'mailto:' + listing.contactEmail;
+          links.appendChild(emailLink);
+        }
+        card.appendChild(links);
+        cards.appendChild(card);
+      });
+    }
+
+    search.addEventListener('input', render);
+    format.addEventListener('change', render);
+    country.addEventListener('change', render);
+    reset.addEventListener('click', function () {
+      search.value = '';
+      format.value = '';
+      country.value = '';
+      render();
+      search.focus();
+    });
+
+    count.textContent = 'Loading analysts...';
+    fetch('/apps/palette-data?action=publicColorAnalystDirectory', { headers: { Accept: 'application/json' } })
+      .then(function (response) {
+        return response.json().then(function (data) {
+          if (!response.ok) throw new Error(data.error || 'Unable to load directory');
+          return data;
+        });
+      })
+      .then(function (data) {
+        listings = Array.isArray(data.listings) ? data.listings : [];
+        renderCountries();
+        render();
+      })
+      .catch(function () {
+        count.textContent = 'The directory could not be loaded. Please try again.';
+        cards.replaceChildren();
+      });
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Directory listing data",
+  "settings": [],
+  "presets": [{ "name": "Directory listing data" }]
+}
+{% endschema %}
