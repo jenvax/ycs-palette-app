@@ -9,6 +9,20 @@
 {% elsif ycs_menu_path contains '/directory' %}
   {% assign ycs_menu_section = 'directory' %}
 {% endif %}
+{% assign ycs_submenu_section = '' %}
+{% if ycs_menu_path contains '/tools-clients' %}
+  {% assign ycs_submenu_section = 'clients' %}
+{% elsif ycs_menu_path contains '/tools-photo-prep' or ycs_menu_path contains '/photo-prep' %}
+  {% assign ycs_submenu_section = 'photo-prep' %}
+{% elsif ycs_menu_path contains '/tools-lip-draping' %}
+  {% assign ycs_submenu_section = 'lip-draping' %}
+{% elsif ycs_menu_path contains '/tools-structured' %}
+  {% assign ycs_submenu_section = 'structured' %}
+{% elsif ycs_menu_path contains 'palette' or ycs_menu_path contains '/member-color' %}
+  {% assign ycs_submenu_section = 'palettes' %}
+{% elsif ycs_menu_path == '/pages/tools' %}
+  {% assign ycs_submenu_section = 'tools' %}
+{% endif %}
 
 <header class="my-ycs-menu-shell" data-my-ycs-menu>
   <div class="my-ycs-menu-shell__inner">
@@ -35,8 +49,20 @@
   </div>
 </header>
 
+<nav class="my-ycs-submenu" aria-label="Professional tools navigation">
+  <div class="my-ycs-submenu__inner">
+    <span class="my-ycs-submenu__label">Tools</span>
+    <a href="/pages/tools-clients"{% if ycs_submenu_section == 'clients' %} class="is-active" aria-current="page"{% endif %}>My Clients</a>
+    <a href="/pages/tools"{% if ycs_submenu_section == 'tools' %} class="is-active" aria-current="page"{% endif %}>Tools</a>
+    <a href="/pages/palettes"{% if ycs_submenu_section == 'palettes' %} class="is-active" aria-current="page"{% endif %}>Palettes</a>
+    <a href="/pages/tools-photo-prep?mode=trade&amp;workflow=color-analysis&amp;returnUrl=%2Fpages%2Ftools"{% if ycs_submenu_section == 'photo-prep' %} class="is-active" aria-current="page"{% endif %}>Photo Prep</a>
+    <a href="/pages/tools-lip-draping"{% if ycs_submenu_section == 'lip-draping' %} class="is-active" aria-current="page"{% endif %}>Lip &amp; Draping Studio</a>
+    <a href="/pages/tools-structured"{% if ycs_submenu_section == 'structured' %} class="is-active" aria-current="page"{% endif %}>Structured Analysis</a>
+  </div>
+</nav>
+
 <style>
-  nav:has(> .my-ycs-menu-shell),div:has(> .my-ycs-menu-shell){display:block!important;min-height:76px!important;margin-bottom:28px!important;padding:0!important}
+  nav:has(> .my-ycs-menu-shell),div:has(> .my-ycs-menu-shell){display:block!important;min-height:126px!important;margin-bottom:28px!important;padding:0!important}
   nav:has(> .my-ycs-menu-shell)>a,div:has(> .my-ycs-menu-shell)>a{display:none!important}
   .my-ycs-menu-shell{position:fixed;top:0;left:0;z-index:10020;width:100%;border-bottom:1px solid #ece9f2;background:rgba(255,255,255,.97);box-shadow:0 4px 18px rgba(26,32,48,.06);backdrop-filter:blur(12px)}
   .my-ycs-menu-shell__inner{display:flex;align-items:center;width:min(100% - 48px,1440px);min-height:76px;margin:0 auto}
@@ -49,16 +75,22 @@
   .my-ycs-menu-shell__utility{margin-left:auto!important;padding-left:20px!important;border-left:1px solid #dedbe7!important}
   .my-ycs-menu-shell__utility a+a{margin-left:4px!important;padding-left:28px!important;border-left:1px solid #dedbe7!important;border-radius:0!important}
   .my-ycs-menu-shell__utility a:hover{color:#5c31bd!important}
+  .my-ycs-submenu{position:fixed!important;top:76px!important;left:0!important;z-index:10019!important;display:block!important;width:100%!important;margin:0!important;padding:0!important;border:0!important;border-bottom:1px solid #e7e3f0!important;background:#f8f6ff!important;box-shadow:none!important}
+  .my-ycs-submenu__inner{display:flex;align-items:center;width:min(100% - 48px,1440px);min-height:50px;margin:0 auto;gap:28px;overflow-x:auto;scrollbar-width:none}.my-ycs-submenu__inner::-webkit-scrollbar{display:none}
+  .my-ycs-submenu__label{flex:0 0 auto;color:#5c31bd;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+  .my-ycs-submenu a{position:relative!important;display:inline-flex!important;flex:0 0 auto!important;align-items:center!important;min-height:50px!important;margin:0!important;padding:0 2px!important;border:0!important;border-radius:0!important;background:transparent!important;color:#55566a!important;font-size:14px!important;font-weight:650!important;line-height:1!important;text-decoration:none!important;box-shadow:none!important;white-space:nowrap}
+  .my-ycs-submenu a:hover,.my-ycs-submenu a.is-active{color:#5c31bd!important}.my-ycs-submenu a.is-active::after{position:absolute;right:0;bottom:0;left:0;height:3px;border-radius:3px 3px 0 0;background:#6c3ddd;content:""}
   .my-ycs-menu-shell__toggle{display:none;align-items:center;justify-content:center;flex-direction:column;gap:3px;width:52px;min-height:52px;margin-left:auto;padding:5px;border:0;background:transparent;color:#111b35;font:inherit;font-size:11px;cursor:pointer}
   .my-ycs-menu-shell__toggle-icon,.my-ycs-menu-shell__toggle-icon::before,.my-ycs-menu-shell__toggle-icon::after{display:block;width:23px;height:2px;background:#111b35;content:"";transition:transform .2s ease,opacity .2s ease}
   .my-ycs-menu-shell__toggle-icon{position:relative}.my-ycs-menu-shell__toggle-icon::before{position:absolute;top:-7px;left:0}.my-ycs-menu-shell__toggle-icon::after{position:absolute;top:7px;left:0}
   .my-ycs-menu-shell.is-open .my-ycs-menu-shell__toggle-icon{background:transparent}.my-ycs-menu-shell.is-open .my-ycs-menu-shell__toggle-icon::before{top:0;transform:rotate(45deg)}.my-ycs-menu-shell.is-open .my-ycs-menu-shell__toggle-icon::after{top:0;transform:rotate(-45deg)}
   @media(max-width:1100px){
-    nav:has(> .my-ycs-menu-shell),div:has(> .my-ycs-menu-shell){min-height:68px!important;margin-bottom:22px!important}
+    nav:has(> .my-ycs-menu-shell),div:has(> .my-ycs-menu-shell){min-height:118px!important;margin-bottom:22px!important}
     .my-ycs-menu-shell__inner{width:100%;min-height:68px;padding:0 16px}.my-ycs-menu-shell__logo{margin-right:0!important}.my-ycs-menu-shell__logo img{width:104px}.my-ycs-menu-shell__toggle{display:flex}
     .my-ycs-menu-shell__drawer{position:absolute;top:100%;left:0;right:0;display:none;max-height:calc(100vh - 68px);padding:12px 16px 20px;border-top:1px solid #ece9f2;background:#fff;box-shadow:0 14px 26px rgba(26,32,48,.12);overflow-y:auto}.my-ycs-menu-shell.is-open .my-ycs-menu-shell__drawer{display:block}
     .my-ycs-menu-shell__primary,.my-ycs-menu-shell__utility{display:grid!important;grid-template-columns:1fr!important;gap:3px!important}.my-ycs-menu-shell__primary a,.my-ycs-menu-shell__utility a{justify-content:flex-start!important;width:100%;min-height:42px!important;padding:0 12px!important;border-radius:8px!important}
     .my-ycs-menu-shell__utility{margin:10px 0 0!important;padding:10px 0 0!important;border-top:1px solid #dedbe7!important;border-left:0!important}.my-ycs-menu-shell__utility a+a{margin:0!important;padding-left:12px!important;border-left:0!important;border-radius:8px!important}
+    .my-ycs-submenu{top:68px!important}.my-ycs-submenu__inner{width:100%;min-height:50px;padding:0 16px;gap:24px}.my-ycs-submenu a{min-height:50px!important}
   }
 </style>
 
