@@ -57,6 +57,7 @@
 
   function openImage(image) {
     if (image.naturalWidth < 600 || image.naturalHeight < 750) {
+      source = null;
       showError('Choose a larger photo. It must be at least 600 × 750 pixels for a clear directory image.');
       dialog.showModal();
       return;
@@ -73,6 +74,7 @@
 
   function loadFile(file) {
     if (!file) return;
+    source = null;
     if (!/^image\/(jpeg|png|webp)$/.test(file.type) || file.size > 5 * 1024 * 1024) {
       showError('Choose a JPG, PNG, or WebP image up to 5 MB.');
       dialog.showModal();
