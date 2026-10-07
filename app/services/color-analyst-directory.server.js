@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import sharp from "sharp";
 
 export const DIRECTORY_TABLE = process.env.AIRTABLE_DIRECTORY_TABLE || "ColorAnalystDirectory";
 export const DIRECTORY_BIO_LIMIT = 300;
@@ -148,14 +149,29 @@ export async function getPublishedDirectoryListings() {
   return records.filter((record) => eligible.has(customerId(record.fields?.CustomerId))).map(serialize);
 }
 
-export async function uploadDirectoryImage(imageBase64, ownerId) {
+export async function validateDirectoryImageUpload(imageBase64) {
   const match = clean(imageBase64).match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/);
   if (!match || Buffer.byteLength(match[2], "base64") > 5 * 1024 * 1024) throw Object.assign(new Error("Upload a JPG, PNG, or WebP image up to 5 MB"), { status: 400 });
+  const buffer = Buffer.from(match[2], "base64");
+  let metadata;
+  try {
+    metadata = await sharp(buffer).metadata();
+  } catch {
+    throw Object.assign(new Error("Choose a valid JPG, PNG, or WebP image"), { status: 400 });
+  }
+  if (metadata.width !== 800 || metadata.height !== 1000) throw Object.assign(new Error("Save the photo as an 800 × 1000 crop before uploading"), { status: 400 });
+  return { contentType: match[1], buffer };
+}
+
+export async function uploadDirectoryImage(imageBase64, ownerId) {
+  await validateDirectoryImageUpload(imageBase64);
   const timestamp = Math.floor(Date.now() / 1000);
   const folder = `ycs-directory/${customerId(ownerId)}`;
-  const signature = crypto.createHash("sha1").update(`folder=${folder}&timestamp=${timestamp}${process.env.CLOUDINARY_API_SECRET}`).digest("hex");
+  const publicId = "profile";
+  const signatureParams = `folder=${folder}&invalidate=true&overwrite=true&public_id=${publicId}&timestamp=${timestamp}`;
+  const signature = crypto.createHash("sha1").update(`${signatureParams}${process.env.CLOUDINARY_API_SECRET}`).digest("hex");
   const form = new FormData();
-  form.append("file", imageBase64); form.append("api_key", process.env.CLOUDINARY_API_KEY); form.append("timestamp", String(timestamp)); form.append("folder", folder); form.append("signature", signature);
+  form.append("file", imageBase64); form.append("api_key", process.env.CLOUDINARY_API_KEY); form.append("timestamp", String(timestamp)); form.append("folder", folder); form.append("public_id", publicId); form.append("overwrite", "true"); form.append("invalidate", "true"); form.append("signature", signature);
   const response = await fetch(`https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload`, { method: "POST", body: form });
   const data = await response.json();
   if (!response.ok) throw new Error(data?.error?.message || "Image upload failed");
