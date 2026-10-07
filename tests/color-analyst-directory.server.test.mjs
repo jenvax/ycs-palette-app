@@ -17,13 +17,13 @@ test("publish validation requires complete valid fields", () => {
   assert.ok(validateDirectoryListing({ ...listing, websiteUrl:"nope" }).websiteUrl);
 });
 
-test("bio validation rejects new or edited content over 300 characters without truncating it", () => {
+test("bio validation rejects new or edited content over 180 characters without truncating it", () => {
   const bio = "A".repeat(DIRECTORY_BIO_LIMIT + 1);
   const listing = normalizeDirectoryListing({ bio });
 
-  assert.equal(DIRECTORY_BIO_LIMIT, 300);
+  assert.equal(DIRECTORY_BIO_LIMIT, 180);
   assert.equal(listing.bio, bio);
-  assert.equal(validateDirectoryListing(listing).bio, "Use 300 characters or fewer");
+  assert.equal(validateDirectoryListing(listing).bio, "Use 180 characters or fewer");
 });
 
 test("directory image validation requires the final 800 by 1000 crop", async () => {

@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import sharp from "sharp";
 
 export const DIRECTORY_TABLE = process.env.AIRTABLE_DIRECTORY_TABLE || "ColorAnalystDirectory";
-export const DIRECTORY_BIO_LIMIT = 300;
+export const DIRECTORY_BIO_LIMIT = 180;
 export const DIRECTORY_MEMBER_TAGS = new Set(["YCSMEMBER", "TRADE", "YCS_ADMIN"]);
 
 const clean = (value) => String(value || "").trim();
