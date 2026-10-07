@@ -92,11 +92,13 @@ Show Style Masters Hub button if:
     {% endfor %}
   {% endif %}
 
-  {% if has_trade_access or has_color_analysis_tool %}
-    <a href="/pages/my-palettes?view=catools" class="account-tool">
-      Color Analysis Tools
-    </a>
-  {% endif %}
+  {% unless palette_access_string contains ',TRADE,' %}
+    {% if has_trade_access or has_color_analysis_tool %}
+      <a href="/pages/my-palettes?view=catools" class="account-tool">
+        Color Analysis Tools
+      </a>
+    {% endif %}
+  {% endunless %}
 
   <a href="/pages/digital-downloads" class="account-tool">
     Downloads
