@@ -1,0 +1,361 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "page": {
+      "type": "page-template",
+      "disabled": true,
+      "settings": {
+        "section_width": false,
+        "width": 1200,
+        "hide_ttl": true,
+        "hide_hdft": false,
+        "breadcrumb": false
+      }
+    },
+    "cutom_html_Me8gzX": {
+      "type": "cutom-HTML",
+      "name": "Custom HTML",
+      "settings": {
+        "title": "",
+        "custom_HTML": "<!-- YCS FIND A COLOR ANALYST DIRECTORY | Shopify Custom HTML\nSETUP: Edit the ANALYSTS array near the bottom to add approved listings.\nNo invented listings are shown. This page does not collect applications or\nautomatically validate subscriptions. Manage eligibility separately.\n-->\n<style>\n.ycs-directory{--ink:#12253f;--text:#505868;--purple:#6657bd;--border:#e7e3ee;--wash:#f7f5fb;--white:#fff;font-family:Poppins,system-ui,-apple-system,\"Segoe UI\",sans-serif;color:var(--ink);line-height:1.65;overflow:hidden}\n.ycs-directory *{box-sizing:border-box}\n.ycs-directory .wrap{width:min(1160px,calc(100% - 36px));margin:auto}\n.ycs-directory h1,.ycs-directory h2{font-family:Georgia,\"Times New Roman\",serif;font-weight:400;line-height:1.12;letter-spacing:-.035em;margin:0 0 18px}\n.ycs-directory h1{font-size:clamp(2.7rem,5vw,4.8rem)}\n.ycs-directory h2{font-size:clamp(2rem,3.4vw,3rem)}\n.ycs-directory h3{font-size:1.16rem;line-height:1.35;margin:0 0 8px}\n.ycs-directory p{color:var(--text);margin:0 0 16px}\n.ycs-directory a{color:var(--purple)}\n.ycs-directory .eyebrow{display:block;color:var(--purple);font-size:.75rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase;margin-bottom:14px}\n.ycs-directory .directory-header{padding:58px 0 44px;background:radial-gradient(circle at 7% 8%,#e9e1ff 0,transparent 34%),radial-gradient(circle at 95% 75%,#e2efff 0,transparent 30%),#faf9fc}\n.ycs-directory .header-content{max-width:820px}\n.ycs-directory .header-lead{font-size:1.08rem;max-width:720px;margin-bottom:12px}\n.ycs-directory .header-note{font-size:.8rem;color:#6b7080;max-width:800px;margin:0}\n.ycs-directory .section{padding:72px 0}\n.ycs-directory .section--soft{background:var(--wash)}\n.ycs-directory .intro{max-width:780px;margin-bottom:28px}\n.ycs-directory .filters{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:12px;padding:20px;background:var(--white);border:1px solid var(--border);border-radius:20px}\n.ycs-directory label{display:block;font-weight:700;font-size:.8rem;margin:0 0 5px}\n.ycs-directory input,.ycs-directory select{width:100%;min-height:47px;border:1px solid #d9d5e2;border-radius:9px;padding:10px 12px;background:#fff;color:var(--ink);font:inherit;font-size:.91rem}\n.ycs-directory input:focus,.ycs-directory select:focus{outline:2px solid #9e8cf2;outline-offset:1px}\n.ycs-directory button,.ycs-directory .btn{display:inline-flex;justify-content:center;align-items:center;min-height:47px;padding:10px 20px;border:0;border-radius:999px;background:linear-gradient(90deg,#7b5cff,#4da1ff);color:#fff!important;text-decoration:none;font:inherit;font-weight:750;font-size:.84rem;cursor:pointer}\n.ycs-directory .reset{align-self:end;background:#f0edf7;color:var(--ink)!important}\n.ycs-directory .results-line{font-size:.87rem;margin:22px 0 16px;color:var(--text)}\n.ycs-directory .cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}\n.ycs-directory .analyst-card{background:#fff;border:1px solid var(--border);border-radius:22px;padding:26px;display:flex;flex-direction:column;gap:8px}\n.ycs-directory .analyst-card .location{font-size:.86rem;color:var(--purple);font-weight:700}\n.ycs-directory .analyst-card .services{font-size:.85rem;color:var(--text)}\n.ycs-directory .analyst-card .description{font-size:.92rem;flex:1}\n.ycs-directory .analyst-card .btn{align-self:flex-start;margin-top:8px}\n.ycs-directory .empty{padding:42px 26px;border:1px dashed #cfc7e2;border-radius:20px;background:#fff;text-align:center;grid-column:1/-1}\n.ycs-directory .empty p{max-width:520px;margin:8px auto 0}\n.ycs-directory .note{margin-top:26px;font-size:.82rem;color:var(--text)}\n.ycs-directory .split{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:start}\n.ycs-directory .info{padding:28px;border:1px solid var(--border);border-radius:22px;background:#fff}\n.ycs-directory .info ul{padding-left:20px;color:var(--text);margin:8px 0 0}\n.ycs-directory .info li{margin-bottom:8px}\n.ycs-directory .cta{background:#12253f;padding:65px 0;text-align:center}\n.ycs-directory .cta h2{color:#fff}\n.ycs-directory .cta p{color:#e2e4ec;max-width:670px;margin:0 auto 24px}\n.ycs-directory .cta .btn{background:#fff;color:#12253f!important}\n.ycs-directory [hidden]{display:none!important}\n@media(max-width:950px){.ycs-directory .split{grid-template-columns:1fr}.ycs-directory .filters{grid-template-columns:1fr 1fr}.ycs-directory .cards{grid-template-columns:repeat(2,minmax(0,1fr))} }\n@media(max-width:600px){.ycs-directory .directory-header{padding:42px 0 32px}.ycs-directory .section{padding:52px 0}.ycs-directory .filters,.ycs-directory .cards{grid-template-columns:1fr}.ycs-directory .btn{width:100% } }\n</style>\n\n<div class=\"ycs-directory\" id=\"ycs-analyst-directory\">\n  <section class=\"directory-header\">\n    <div class=\"wrap\">\n      <div class=\"header-content\">\n        <span class=\"eyebrow\">Your Color Style</span>\n        <h1>Find a Color Analyst</h1>\n        <p class=\"header-lead\">Connect with an independent color analyst for personalized color analysis, online or in person.</p>\n        <p class=\"header-note\">Analysts listed here are independent professionals. Services, availability, pricing, and appointments are arranged directly with each analyst.</p>\n      </div>\n    </div>\n  </section>\n\n  <section class=\"section section--soft\" id=\"analyst-listings\">\n    <div class=\"wrap\">\n      <span class=\"eyebrow\">Browse professionals</span>\n      <h2>Connect with a color analyst</h2>\n      <p class=\"intro\">Search by name or location, and filter by service format. Contact the analyst directly for current offerings and appointments.</p>\n      <div class=\"filters\" role=\"search\" aria-label=\"Filter analyst listings\">\n        <div>\n<label for=\"ycs-dir-search\">Name or location</label><input id=\"ycs-dir-search\" type=\"search\" placeholder=\"Search name, city, state or country\">\n</div>\n        <div>\n<label for=\"ycs-dir-format\">Service format</label><select id=\"ycs-dir-format\"><option value=\"\">All formats</option>\n<option value=\"Online\">Online</option>\n<option value=\"In person\">In person</option></select>\n</div>\n        <div>\n<label for=\"ycs-dir-country\">Country</label><select id=\"ycs-dir-country\"><option value=\"\">All countries</option></select>\n</div>\n        <button type=\"button\" class=\"reset\" id=\"ycs-dir-reset\">Clear filters</button>\n      </div>\n      <p class=\"results-line\" id=\"ycs-dir-count\" aria-live=\"polite\"></p>\n      <div class=\"cards\" id=\"ycs-dir-cards\" aria-live=\"polite\">\n        <div class=\"empty\">\n<h3>Listings coming soon</h3>\n<p>We're preparing the directory of independent color analysts. Please check back for updates.</p>\n</div>\n      </div>\n      <p class=\"note\"><strong>Important:</strong> Analysts are independent providers, not employees or agents of Your Color Style. Each analyst sets their own services, methods, fees, scheduling, and policies. Directory inclusion is not a YCS certification or guarantee of results. Please confirm details directly before booking.</p>\n    </div>\n  </section>\n\n  <section class=\"section\">\n    <div class=\"wrap split\">\n      <div>\n        <span class=\"eyebrow\">For clients</span>\n        <h2>What should I ask before booking?</h2>\n        <p>Color analysis can be offered online, in person, or as part of a broader styling service. Choose a professional whose process suits your needs.</p>\n      </div>\n      <div class=\"info\">\n        <h3>Helpful questions</h3>\n        <ul>\n          <li>Do you offer online sessions, in-person appointments, or both?</li>\n          <li>What is included in the analysis and final deliverables?</li>\n          <li>Which color analysis method do you use?</li>\n          <li>What are your pricing, turnaround time, and booking policies?</li>\n        </ul>\n      </div>\n    </div>\n  </section>\n\n  <section class=\"cta\">\n    <div class=\"wrap\">\n      <span class=\"eyebrow\" style=\"color:#c7bdff\">For professionals</span>\n      <h2>Would you like your business listed?</h2>\n      <p>Eligible active YCS Professional Toolkit subscribers who provide color analysis services can request an optional listing in this directory. You may also offer other styling or beauty services. A listing does not guarantee client inquiries or bookings.</p>\n      <!-- Replace the href below with your actual Toolkit product URL if it changes. -->\n      <a class=\"btn\" href=\"/products/color-analysis-tool\">Explore the Professional Toolkit</a>\n    </div>\n  </section>\n</div>\n\n<script>\n(function(){\n  \"use strict\";\n  /*\n    DIRECTORY MAINTENANCE\n    Add ONLY approved, current, opted-in analysts here.\n    Example FORMAT (remove comment markers and replace with actual data):\n    {\n      name: \"Analyst Name\",\n      business: \"Business Name\",\n      city: \"City\",\n      region: \"State or Region\",\n      country: \"Country\",\n      formats: [\"Online\", \"In person\"],\n      services: \"Personal color analysis, wardrobe styling\",\n      description: \"One or two factual sentences supplied by the analyst.\",\n      website: \"https://example.com/booking\"\n    }\n    Website must be a verified HTTPS URL for the analyst's own site or booking page.\n    Never paste private contact information without the analyst's permission.\n  */\n  var ANALYSTS = [];\n\n  var root=document.getElementById(\"ycs-analyst-directory\");\n  if(!root)return;\n  var search=root.querySelector(\"#ycs-dir-search\");\n  var format=root.querySelector(\"#ycs-dir-format\");\n  var country=root.querySelector(\"#ycs-dir-country\");\n  var reset=root.querySelector(\"#ycs-dir-reset\");\n  var cards=root.querySelector(\"#ycs-dir-cards\");\n  var count=root.querySelector(\"#ycs-dir-count\");\n\n  function node(tag,cls,value){\n    var el=document.createElement(tag);\n    if(cls)el.className=cls;\n    if(value!==undefined)el.textContent=value;\n    return el;\n  }\n  function safeUrl(url){\n    try{var u=new URL(url);return u.protocol===\"https:\"?u.href:null;}catch(e){return null;}\n  }\n  var countries=[...new Set(ANALYSTS.map(function(a){return a.country;}).filter(Boolean))].sort();\n  countries.forEach(function(c){var o=node(\"option\",\"\",c);o.value=c;country.appendChild(o);});\n  function render(){\n    var term=search.value.trim().toLocaleLowerCase();\n    var selectedFormat=format.value;\n    var selectedCountry=country.value;\n    var matches=ANALYSTS.filter(function(a){\n      var haystack=[a.name,a.business,a.city,a.region,a.country,a.services].join(\" \").toLocaleLowerCase();\n      return (!term||haystack.includes(term))&&(!selectedFormat||(a.formats||[]).includes(selectedFormat))&&(!selectedCountry||a.country===selectedCountry);\n    });\n    cards.replaceChildren();\n    count.textContent=matches.length+\" analyst\"+(matches.length===1?\"\":\"s\")+\" found\";\n    if(!matches.length){\n      var empty=node(\"div\",\"empty\");\n      empty.appendChild(node(\"h3\",\"\",ANALYSTS.length?\"No matching analysts\":\"Listings coming soon\"));\n      empty.appendChild(node(\"p\",\"\",ANALYSTS.length?\"Try a different search or clear the filters.\":\"We're preparing the directory of independent color analysts. Please check back for updates.\"));\n      cards.appendChild(empty);\n      return;\n    }\n    matches.forEach(function(a){\n      var card=node(\"article\",\"analyst-card\");\n      card.appendChild(node(\"h3\",\"\",a.business||a.name));\n      if(a.business&&a.name)card.appendChild(node(\"p\",\"\",a.name));\n      card.appendChild(node(\"div\",\"location\",[a.city,a.region,a.country].filter(Boolean).join(\", \")));\n      if(a.formats&&a.formats.length)card.appendChild(node(\"div\",\"services\",a.formats.join(\" · \")));\n      if(a.services)card.appendChild(node(\"div\",\"services\",a.services));\n      if(a.description)card.appendChild(node(\"p\",\"description\",a.description));\n      var url=safeUrl(a.website);\n      if(url){var link=node(\"a\",\"btn\",\"Visit Analyst Website\");link.href=url;link.target=\"_blank\";link.rel=\"noopener noreferrer\";link.setAttribute(\"aria-label\",\"Visit \"+(a.business||a.name)+\" website (opens in new tab)\");card.appendChild(link);}\n      cards.appendChild(card);\n    });\n  }\n  [search,format,country].forEach(function(el){el.addEventListener(\"input\",render);});\n  reset.addEventListener(\"click\",function(){search.value=\"\";format.value=\"\";country.value=\"\";render();search.focus();});\n  render();\n})();\n</script>"
+      }
+    },
+    "ycs_my_palettes": {
+      "type": "my-palettes",
+      "blocks": {
+        "palette_cwl": {
+          "type": "palette",
+          "settings": {
+            "title": "Clear Warm Light",
+            "subtitle": "Bright • Warm • Light",
+            "palette_code": "CWL",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/expanded-digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #e84855, #f59f4c, #f4d35e, #64b96a, #45a8e5)"
+          }
+        },
+        "palette_cwlg": {
+          "type": "palette",
+          "settings": {
+            "title": "Clear Warm Light for Gray Hair",
+            "subtitle": "Bright • Warm • Light • Gray Hair",
+            "palette_code": "CWLG",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #d94c6a, #f2a36f, #d7c5aa, #a9b6b1, #6ea7d8)"
+          }
+        },
+        "palette_cwm": {
+          "type": "palette",
+          "settings": {
+            "title": "Clear Warm Medium",
+            "subtitle": "Bright • Warm • Medium",
+            "palette_code": "CWM",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/expanded-digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #c8323d, #e87338, #ddb54a, #3f9960, #2378b8)"
+          }
+        },
+        "palette_cwmg": {
+          "type": "palette",
+          "settings": {
+            "title": "Clear Warm Medium for Gray Hair",
+            "subtitle": "Bright • Warm • Medium • Gray Hair",
+            "palette_code": "CWMG",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #b93645, #d47743, #b8a173, #8e9b93, #327db8)"
+          }
+        },
+        "palette_cwd": {
+          "type": "palette",
+          "settings": {
+            "title": "Clear Warm Deep",
+            "subtitle": "Bright • Warm • Deep",
+            "palette_code": "CWD",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/expanded-digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #8e1f2f, #a94f2f, #b8872e, #276246, #174f83)"
+          }
+        },
+        "palette_cwdg": {
+          "type": "palette",
+          "settings": {
+            "title": "Clear Warm Deep for Gray Hair",
+            "subtitle": "Bright • Warm • Deep • Gray Hair",
+            "palette_code": "CWDG",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #7f2030, #9b5235, #86724b, #687066, #214f7a)"
+          }
+        },
+        "palette_ccl": {
+          "type": "palette",
+          "settings": {
+            "title": "Clear Cool Light",
+            "subtitle": "Bright • Cool • Light",
+            "palette_code": "CCL",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/expanded-digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #e23d7b, #b95ee8, #56a7f2, #42c1b2, #d9d7f1)"
+          }
+        },
+        "palette_ccm": {
+          "type": "palette",
+          "settings": {
+            "title": "Clear Cool Medium",
+            "subtitle": "Bright • Cool • Medium",
+            "palette_code": "CCM",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/expanded-digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #bd245f, #8f42c4, #2873bf, #238f91, #6c6cc8)"
+          }
+        },
+        "palette_ccd": {
+          "type": "palette",
+          "settings": {
+            "title": "Clear Cool Deep",
+            "subtitle": "Bright • Cool • Deep",
+            "palette_code": "CCD",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/expanded-digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #7f163f, #5f2b86, #174d87, #155d62, #322d72)"
+          }
+        },
+        "palette_swl": {
+          "type": "palette",
+          "settings": {
+            "title": "Soft Warm Light",
+            "subtitle": "Soft • Warm • Light",
+            "palette_code": "SWL",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/expanded-digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #d9797f, #e0a36f, #d8bf76, #91b37d, #77a7c5)"
+          }
+        },
+        "palette_swlg": {
+          "type": "palette",
+          "settings": {
+            "title": "Soft Warm Light for Gray Hair",
+            "subtitle": "Soft • Warm • Light • Gray Hair",
+            "palette_code": "SWLG",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #c9787f, #d6a178, #c3b695, #a6aaa0, #7fa5bd)"
+          }
+        },
+        "palette_swm": {
+          "type": "palette",
+          "settings": {
+            "title": "Soft Warm Medium",
+            "subtitle": "Soft • Warm • Medium",
+            "palette_code": "SWM",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/expanded-digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #b75d63, #bf8058, #b49a5d, #708d63, #5c849b)"
+          }
+        },
+        "palette_swmg": {
+          "type": "palette",
+          "settings": {
+            "title": "Soft Warm Medium for Gray Hair",
+            "subtitle": "Soft • Warm • Medium • Gray Hair",
+            "palette_code": "SWMG",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #a65f67, #b07d5f, #95896d, #7d8176, #5f8498)"
+          }
+        },
+        "palette_swd": {
+          "type": "palette",
+          "settings": {
+            "title": "Soft Warm Deep",
+            "subtitle": "Soft • Warm • Deep",
+            "palette_code": "SWD",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/expanded-digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #7d3d46, #82553b, #7a683d, #465b3d, #38566a)"
+          }
+        },
+        "palette_swdg": {
+          "type": "palette",
+          "settings": {
+            "title": "Soft Warm Deep for Gray Hair",
+            "subtitle": "Soft • Warm • Deep • Gray Hair",
+            "palette_code": "SWDG",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #743e47, #765743, #6f6654, #5f6259, #3d5968)"
+          }
+        },
+        "palette_scl": {
+          "type": "palette",
+          "settings": {
+            "title": "Soft Cool Light",
+            "subtitle": "Soft • Cool • Light",
+            "palette_code": "SCL",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/expanded-digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #d77ca8, #aa8acf, #7aa5d5, #75bbb6, #b8b4d8)"
+          }
+        },
+        "palette_scm": {
+          "type": "palette",
+          "settings": {
+            "title": "Soft Cool Medium",
+            "subtitle": "Soft • Cool • Medium",
+            "palette_code": "SCM",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/expanded-digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #ad5e86, #8469a8, #5f82ac, #5a928f, #817fb0)"
+          }
+        },
+        "palette_scd": {
+          "type": "palette",
+          "settings": {
+            "title": "Soft Cool Deep",
+            "subtitle": "Soft • Cool • Deep",
+            "palette_code": "SCD",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/expanded-digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #743d5b, #584671, #3c5b78, #3d6462, #4b4d78)"
+          }
+        },
+        "palette_lo": {
+          "type": "palette",
+          "settings": {
+            "title": "Light Olive",
+            "subtitle": "Olive • Light",
+            "palette_code": "LO",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/expanded-digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #c96d6a, #d79562, #c5b86a, #9aaa62, #6f8b6d)"
+          }
+        },
+        "palette_mo": {
+          "type": "palette",
+          "settings": {
+            "title": "Medium Olive",
+            "subtitle": "Olive • Medium",
+            "palette_code": "MO",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/expanded-digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #9f4d4d, #b07342, #8d8542, #667b43, #456c5b)"
+          }
+        },
+        "palette_do": {
+          "type": "palette",
+          "settings": {
+            "title": "Deep Olive",
+            "subtitle": "Olive • Deep",
+            "palette_code": "DO",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/expanded-digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #6f2733, #7c4933, #635d2e, #3f582c, #25483f)"
+          }
+        },
+        "palette_sample": {
+          "type": "palette",
+          "settings": {
+            "title": "Sample Color Palette",
+            "subtitle": "Free trial colors",
+            "palette_code": "SAMPLE",
+            "visibility": "customer",
+            "product_link": "https://yourcolorstyle.com/products/expanded-digital-color-palettes",
+            "printable_pdf_url": "",
+            "mobile_pdf_url": "",
+            "gradient": "linear-gradient(to right, #d94c6a, #f2b880, #d9d7f1)"
+          }
+        }
+      },
+      "block_order": [
+        "palette_cwl",
+        "palette_cwlg",
+        "palette_cwm",
+        "palette_cwmg",
+        "palette_cwd",
+        "palette_cwdg",
+        "palette_ccl",
+        "palette_ccm",
+        "palette_ccd",
+        "palette_swl",
+        "palette_swlg",
+        "palette_swm",
+        "palette_swmg",
+        "palette_swd",
+        "palette_swdg",
+        "palette_scl",
+        "palette_scm",
+        "palette_scd",
+        "palette_lo",
+        "palette_mo",
+        "palette_do",
+        "palette_sample"
+      ],
+      "settings": {
+        "heading": "My Color Palettes",
+        "intro": "Open your digital color fans below."
+      }
+    },
+    "directory_listing_data": {
+      "type": "color-analyst-directory-data",
+      "settings": {}
+    }
+  },
+  "order": [
+    "page",
+    "cutom_html_Me8gzX",
+    "directory_listing_data",
+    "ycs_my_palettes"
+  ]
+}
