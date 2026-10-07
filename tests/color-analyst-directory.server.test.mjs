@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { hasDirectoryAccess, normalizeDirectoryListing, validateDirectoryListing } from "../app/services/color-analyst-directory.server.js";
+import { DIRECTORY_BIO_LIMIT, hasDirectoryAccess, normalizeDirectoryListing, validateDirectoryListing } from "../app/services/color-analyst-directory.server.js";
 
 test("YCSMEMBER and TRADE have directory access", () => {
   assert.equal(hasDirectoryAccess(["YCSMEMBER"]), true);
@@ -14,4 +14,13 @@ test("publish validation requires complete valid fields", () => {
   assert.deepEqual(validateDirectoryListing(listing), {});
   assert.ok(validateDirectoryListing(normalizeDirectoryListing({})).name);
   assert.ok(validateDirectoryListing({ ...listing, websiteUrl:"nope" }).websiteUrl);
+});
+
+test("bio validation rejects new or edited content over 300 characters without truncating it", () => {
+  const bio = "A".repeat(DIRECTORY_BIO_LIMIT + 1);
+  const listing = normalizeDirectoryListing({ bio });
+
+  assert.equal(DIRECTORY_BIO_LIMIT, 300);
+  assert.equal(listing.bio, bio);
+  assert.equal(validateDirectoryListing(listing).bio, "Use 300 characters or fewer");
 });

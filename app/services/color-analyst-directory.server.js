@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 
 export const DIRECTORY_TABLE = process.env.AIRTABLE_DIRECTORY_TABLE || "ColorAnalystDirectory";
-export const DIRECTORY_BIO_LIMIT = 600;
+export const DIRECTORY_BIO_LIMIT = 300;
 export const DIRECTORY_MEMBER_TAGS = new Set(["YCSMEMBER", "TRADE", "YCS_ADMIN"]);
 
 const clean = (value) => String(value || "").trim();
@@ -25,7 +25,7 @@ export function normalizeDirectoryListing(input = {}) {
     socialUrl: clean(input.socialUrl).slice(0, 500),
     imageUrl: clean(input.imageUrl).slice(0, 1000),
     imagePublicId: clean(input.imagePublicId).slice(0, 300),
-    bio: clean(input.bio).slice(0, DIRECTORY_BIO_LIMIT)
+    bio: clean(input.bio)
   };
 }
 
@@ -84,6 +84,7 @@ export async function saveOwnDirectoryListing(id, input, { publish = false } = {
   const owner = customerId(id);
   const listing = normalizeDirectoryListing(input);
   const errors = publish ? validateDirectoryListing(listing) : {};
+  if (listing.bio.length > DIRECTORY_BIO_LIMIT) errors.bio = `Use ${DIRECTORY_BIO_LIMIT} characters or fewer`;
   if (Object.keys(errors).length) throw Object.assign(new Error("Please complete the required fields"), { status: 422, errors });
   const existing = await findByCustomerId(owner);
   const now = new Date().toISOString();

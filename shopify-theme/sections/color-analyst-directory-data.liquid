@@ -13,6 +13,13 @@
     gap: 10px;
     margin-top: 8px;
   }
+
+  #ycs-analyst-directory .analyst-card h3 {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
 </style>
 
 <script>
@@ -124,7 +131,8 @@
           links.appendChild(websiteLink);
         }
         if (listing.contactEmail) {
-          var emailLink = element('a', 'btn', 'Email Analyst');
+          var firstName = String(listing.name || '').trim().split(/\s+/)[0];
+          var emailLink = element('a', 'btn', firstName ? 'Email ' + firstName : 'Email Analyst');
           emailLink.href = 'mailto:' + listing.contactEmail;
           links.appendChild(emailLink);
         }
