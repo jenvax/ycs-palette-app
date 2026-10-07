@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  var root = document.querySelector('[data-app]');
+  var root = document.querySelector('[data-directory-manager], [data-app]');
   if (!root) return;
 
   var form = root.querySelector('[data-form]');
