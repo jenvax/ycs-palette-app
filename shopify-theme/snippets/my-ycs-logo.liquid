@@ -8,10 +8,14 @@
 <style>
   .my-ycs-logo{position:fixed!important;top:22px;left:28px;z-index:10020;display:inline-flex!important;align-items:center;min-height:0!important;margin:0;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;text-decoration:none!important}
   .my-ycs-logo img{display:block;width:120px;height:auto;max-width:none}
-  nav:has(> .my-ycs-logo),div:has(> .my-ycs-logo){padding-left:140px}
+  nav:has(> .my-ycs-logo),div:has(> .my-ycs-logo){display:flex!important;align-items:center!important;justify-content:flex-start!important;flex-wrap:wrap!important;gap:10px!important;padding-left:140px!important}
+  nav:has(> .my-ycs-logo)>a:not(.my-ycs-logo),div:has(> .my-ycs-logo)>a:not(.my-ycs-logo){display:inline-flex!important;align-items:center!important;justify-content:center!important;min-height:38px!important;padding:0 18px!important;border:1px solid #e6ded5!important;border-radius:999px!important;background:#fff!important;color:#2f2a25!important;font-size:14px!important;font-weight:800!important;line-height:1!important;text-decoration:none!important;box-shadow:none!important;transition:all .15s ease!important}
+  nav:has(> .my-ycs-logo)>a:not(.my-ycs-logo):hover,nav:has(> .my-ycs-logo)>a:not(.my-ycs-logo).is-active,div:has(> .my-ycs-logo)>a:not(.my-ycs-logo):hover,div:has(> .my-ycs-logo)>a:not(.my-ycs-logo).is-active{border-color:#111!important;background:#111!important;color:#fff!important;text-decoration:none!important}
+  nav:has(> .my-ycs-logo)>a[href^="mailto:"],div:has(> .my-ycs-logo)>a[href^="mailto:"]{margin-left:auto!important}
   @media(max-width:640px){
     .my-ycs-logo{top:16px;left:16px}
     .my-ycs-logo img{width:104px}
-    nav:has(> .my-ycs-logo),div:has(> .my-ycs-logo){padding-top:58px;padding-left:0}
+    nav:has(> .my-ycs-logo),div:has(> .my-ycs-logo){padding-top:58px!important;padding-left:0!important}
+    nav:has(> .my-ycs-logo)>a[href^="mailto:"],div:has(> .my-ycs-logo)>a[href^="mailto:"]{margin-left:0!important}
   }
 </style>
