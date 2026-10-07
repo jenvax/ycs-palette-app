@@ -56,11 +56,14 @@
       {% if learning_menu != blank and learning_menu.links.size > 0 %}
         <div class="ycs-learn-hub__grid" data-topic-grid>
           {% for topic in learning_menu.links %}
+            {% assign topic_parts = topic.title | split: '|' %}
+            {% assign topic_title = topic_parts.first | strip %}
+            {% assign topic_description = topic_parts[1] | strip %}
             <article class="ycs-learn-card">
               <div class="ycs-learn-card__accent"></div>
               <div class="ycs-learn-card__body">
-                <h2>{{ topic.title | escape }}</h2>
-                <p>{{ topic.links.size }} lesson{% unless topic.links.size == 1 %}s{% endunless %}</p>
+                <h2>{{ topic_title | escape }}</h2>
+                <p>{% if topic_description != blank %}{{ topic_description | escape }}{% else %}{{ topic.links.size }} lesson{% unless topic.links.size == 1 %}s{% endunless %}{% endif %}</p>
                 {% if topic.links.size == 1 %}
                   <a class="ycs-learn-hub__button" href="{{ topic.links.first.url }}">Open Lesson</a>
                 {% else %}
@@ -72,17 +75,23 @@
         </div>
 
         {% for topic in learning_menu.links %}
+          {% assign topic_parts = topic.title | split: '|' %}
+          {% assign topic_title = topic_parts.first | strip %}
           <section class="ycs-learn-topic" data-topic="{{ forloop.index0 }}" hidden>
             <button class="ycs-learn-topic__back" type="button" data-close-topic>&larr; All Topics</button>
             <header class="ycs-learn-topic__header">
               <p class="ycs-learn-hub__kicker">Learning Library</p>
-              <h2>{{ topic.title | escape }}</h2>
+              <h2>{{ topic_title | escape }}</h2>
             </header>
             <div class="ycs-learn-hub__grid">
               {% for lesson in topic.links %}
+                {% assign lesson_parts = lesson.title | split: '|' %}
+                {% assign lesson_title = lesson_parts.first | strip %}
+                {% assign lesson_description = lesson_parts[1] | strip %}
                 <article class="ycs-learn-card ycs-learn-card--lesson">
                   <div class="ycs-learn-card__body">
-                    <h3>{{ lesson.title | escape }}</h3>
+                    <h3>{{ lesson_title | escape }}</h3>
+                    {% if lesson_description != blank %}<p>{{ lesson_description | escape }}</p>{% endif %}
                     <a class="ycs-learn-hub__button" href="{{ lesson.url }}">Open Lesson</a>
                   </div>
                 </article>
@@ -135,7 +144,7 @@
   .ycs-learn-hub__kicker { margin: 0 0 8px; color: #bd315b; font-size: 13px; font-weight: 700; letter-spacing: 0; text-transform: uppercase; }
   .ycs-learn-hub__header h1 { margin: 0 0 12px; color: #292a30; font-size: 42px; line-height: 1.14; letter-spacing: 0; }
   .ycs-learn-hub__header > p:not(.ycs-learn-hub__kicker) { margin: 0; color: #686a72; font-size: 19px; line-height: 1.6; }
-  .ycs-learn-hub__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+  .ycs-learn-hub__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
   .ycs-learn-card { overflow: hidden; border: 1px solid #e7e3df; border-radius: 8px; background: #fff; box-shadow: 0 8px 24px rgba(37, 39, 46, .06); }
   .ycs-learn-card__accent { height: 10px; background: linear-gradient(90deg, #385c7d, #56a3ae, #83c998, #e6bd59); }
   .ycs-learn-card__body { display: flex; min-height: 230px; flex-direction: column; align-items: flex-start; padding: 28px; }
@@ -151,7 +160,10 @@
   .ycs-learn-card--lesson .ycs-learn-card__body { min-height: 180px; }
   .ycs-learn-admin-note { max-width: 760px; padding: 20px; border-left: 4px solid #bd315b; background: #fff3f6; color: #555861; line-height: 1.6; }
   .ycs-learn-hub [hidden] { display: none !important; }
-  @media (max-width: 720px) {
+  @media (max-width: 980px) {
+    .ycs-learn-hub__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 640px) {
     .ycs-learn-hub { padding: 22px 16px 52px; }
     .ycs-learn-hub__nav { margin-bottom: 30px; }
     .ycs-learn-hub__header h1 { font-size: 32px; }
