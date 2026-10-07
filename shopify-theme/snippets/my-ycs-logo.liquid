@@ -79,11 +79,13 @@
   nav:has(> .my-ycs-menu-shell),div:has(> .my-ycs-menu-shell){display:block!important;min-height:76px!important;margin-bottom:28px!important;padding:0!important}
   nav:has(> .my-ycs-submenu),div:has(> .my-ycs-submenu){min-height:126px!important}
   nav:has(> .my-ycs-menu-shell)>a,div:has(> .my-ycs-menu-shell)>a{display:none!important}
-  div:has(> nav > .my-ycs-menu-shell[data-original-tools-nav]),div:has(> div > .my-ycs-menu-shell[data-original-tools-nav]){min-height:50px!important}
-  nav:has(> .my-ycs-menu-shell[data-original-tools-nav]),div:has(> .my-ycs-menu-shell[data-original-tools-nav]){position:fixed!important;top:76px!important;right:0!important;left:0!important;z-index:10019!important;display:flex!important;align-items:center!important;flex-wrap:wrap!important;width:100%!important;min-height:50px!important;margin:0!important;padding:0 max(24px,calc((100vw - 1440px)/2))!important;gap:28px!important;border:0!important;border-bottom:1px solid #e7e3f0!important;background:#f8f6ff!important;box-shadow:none!important}
+  div:has(> nav.has-contextual-links > .my-ycs-menu-shell[data-original-tools-nav]),div:has(> div.has-contextual-links > .my-ycs-menu-shell[data-original-tools-nav]){min-height:50px!important}
+  nav:has(> .my-ycs-menu-shell[data-original-tools-nav]),div:has(> .my-ycs-menu-shell[data-original-tools-nav]){position:fixed!important;top:76px!important;right:0!important;left:0!important;z-index:10019!important;display:none!important;align-items:center!important;flex-wrap:wrap!important;width:100%!important;min-height:50px!important;margin:0!important;padding:0 max(24px,calc((100vw - 1440px)/2))!important;gap:28px!important;border:0!important;border-bottom:1px solid #e7e3f0!important;background:#f8f6ff!important;box-shadow:none!important}
+  nav.has-contextual-links:has(> .my-ycs-menu-shell[data-original-tools-nav]),div.has-contextual-links:has(> .my-ycs-menu-shell[data-original-tools-nav]){display:flex!important}
   nav:has(> .my-ycs-menu-shell[data-original-tools-nav])::before,div:has(> .my-ycs-menu-shell[data-original-tools-nav])::before{flex:0 0 auto;color:#5c31bd;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;content:"Tools"}
   nav:has(> .my-ycs-menu-shell[data-original-tools-nav])>a,div:has(> .my-ycs-menu-shell[data-original-tools-nav])>a{position:relative!important;display:inline-flex!important;flex:0 0 auto!important;align-items:center!important;justify-content:center!important;min-height:50px!important;margin:0!important;padding:0 2px!important;border:0!important;border-radius:0!important;background:transparent!important;color:#55566a!important;font-size:14px!important;font-weight:650!important;line-height:1!important;text-decoration:none!important;box-shadow:none!important;white-space:nowrap}
   nav:has(> .my-ycs-menu-shell[data-original-tools-nav])>a[hidden],div:has(> .my-ycs-menu-shell[data-original-tools-nav])>a[hidden]{display:none!important}
+  nav:has(> .my-ycs-menu-shell[data-original-tools-nav])>a[data-global-nav-duplicate],div:has(> .my-ycs-menu-shell[data-original-tools-nav])>a[data-global-nav-duplicate]{display:none!important}
   nav:has(> .my-ycs-menu-shell[data-original-tools-nav])>a:hover,nav:has(> .my-ycs-menu-shell[data-original-tools-nav])>a.is-active,div:has(> .my-ycs-menu-shell[data-original-tools-nav])>a:hover,div:has(> .my-ycs-menu-shell[data-original-tools-nav])>a.is-active{color:#5c31bd!important}
   nav:has(> .my-ycs-menu-shell[data-original-tools-nav])>a.is-active::after,div:has(> .my-ycs-menu-shell[data-original-tools-nav])>a.is-active::after{position:absolute;right:0;bottom:0;left:0;height:3px;border-radius:3px 3px 0 0;background:#6c3ddd;content:""}
   .my-ycs-menu-shell{position:fixed!important;top:0!important;right:0!important;left:0!important;z-index:10020!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important;border-bottom:1px solid #ece9f2!important;background:rgba(255,255,255,.97)!important;box-shadow:0 4px 18px rgba(26,32,48,.06)!important;backdrop-filter:blur(12px)}
@@ -119,5 +121,29 @@
 </style>
 
 <script>
-  (function(){var menu=document.querySelector('[data-my-ycs-menu]');if(!menu||menu.dataset.ready==='true')return;menu.dataset.ready='true';var toggle=menu.querySelector('.my-ycs-menu-shell__toggle');var label=menu.querySelector('[data-menu-label]');toggle.addEventListener('click',function(){var open=menu.classList.toggle('is-open');toggle.setAttribute('aria-expanded',open?'true':'false');label.textContent=open?'Close':'Menu';});})();
+  (function(){
+    var menu=document.querySelector('[data-my-ycs-menu]');
+    if(!menu||menu.dataset.ready==='true')return;
+    menu.dataset.ready='true';
+    var toggle=menu.querySelector('.my-ycs-menu-shell__toggle');
+    var label=menu.querySelector('[data-menu-label]');
+    toggle.addEventListener('click',function(){var open=menu.classList.toggle('is-open');toggle.setAttribute('aria-expanded',open?'true':'false');label.textContent=open?'Close':'Menu';});
+    if(menu.hasAttribute('data-original-tools-nav')){
+      var contextualNav=menu.parentElement;
+      var globalLabels=['my ycs','tools','contact','my account'];
+      var syncContextualNav=function(){
+        var hasContextualLink=false;
+        Array.prototype.forEach.call(contextualNav.children,function(child){
+          if(child.tagName!=='A')return;
+          var labelText=(child.textContent||'').trim().toLowerCase();
+          var isGlobal=globalLabels.indexOf(labelText)!==-1;
+          if(isGlobal)child.setAttribute('data-global-nav-duplicate','');else child.removeAttribute('data-global-nav-duplicate');
+          if(!isGlobal&&!child.hidden)hasContextualLink=true;
+        });
+        contextualNav.classList.toggle('has-contextual-links',hasContextualLink);
+      };
+      new MutationObserver(syncContextualNav).observe(contextualNav,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden']});
+      if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',syncContextualNav);else syncContextualNav();
+    }
+  })();
 </script>
