@@ -66,12 +66,33 @@
         <div class="ycs-member-card__body">
           <h2>Directory</h2>
           <p class="ycs-member-card__subtitle">Get discovered by potential clients with your Color Analyst Directory listing.</p>
-          <a href="/pages/directory" class="ycs-member-hub__button">Submit My Listing</a>
+          <a href="/pages/directory" class="ycs-member-hub__button" data-directory-button>Submit My Listing</a>
         </div>
       </article>
     </div>
   {% endif %}
 </section>
+
+{% if customer and ycs_member_access %}
+  <script>
+    (function () {
+      var button = document.querySelector('[data-directory-button]');
+      if (!button) return;
+
+      fetch('/apps/palette-data?action=colorAnalystDirectory', { headers: { Accept: 'application/json' } })
+        .then(function (response) {
+          if (!response.ok) throw new Error('Unable to load directory listing');
+          return response.json();
+        })
+        .then(function (data) {
+          if (data.listing && data.listing.status === 'published') {
+            button.textContent = 'Edit My Listing';
+          }
+        })
+        .catch(function () {});
+    })();
+  </script>
+{% endif %}
 
 {% style %}
   .shopify-section-header,
