@@ -1,17 +1,52 @@
 <style>
+  #ycs-analyst-directory .cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px;
+  }
+
+  #ycs-analyst-directory .analyst-card {
+    display: grid;
+    grid-template-columns: minmax(150px, 38%) minmax(0, 1fr);
+    align-items: stretch;
+    gap: 20px;
+    padding: 18px;
+  }
+
   #ycs-analyst-directory .analyst-card__image {
     width: 100%;
     aspect-ratio: 4 / 5;
-    margin-bottom: 10px;
+    margin: 0;
     border-radius: 14px;
     object-fit: cover;
+  }
+
+  #ycs-analyst-directory .analyst-card__content {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #ycs-analyst-directory .analyst-card__name {
+    margin-bottom: 10px;
+    font-size: 0.92rem;
+  }
+
+  #ycs-analyst-directory .analyst-card .location {
+    margin-bottom: 2px;
+  }
+
+  #ycs-analyst-directory .analyst-card .description {
+    margin-top: 12px;
+    font-size: 0.88rem;
+    line-height: 1.55;
   }
 
   #ycs-analyst-directory .analyst-card__links {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
-    margin-top: 8px;
+    margin-top: auto;
+    padding-top: 10px;
   }
 
   #ycs-analyst-directory .analyst-card h3 {
@@ -19,6 +54,24 @@
     overflow: hidden;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
+  }
+
+  @media (max-width: 800px) {
+    #ycs-analyst-directory .cards {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 600px) {
+    #ycs-analyst-directory .analyst-card {
+      grid-template-columns: 1fr;
+    }
+
+    #ycs-analyst-directory .analyst-card__image {
+      width: 60%;
+      max-width: 190px;
+      justify-self: center;
+    }
   }
 </style>
 
@@ -115,11 +168,12 @@
           image.height = 400;
           card.appendChild(image);
         }
-        card.appendChild(element('h3', '', listing.businessName || listing.name));
-        if (listing.businessName && listing.name) card.appendChild(element('p', '', listing.name));
-        card.appendChild(element('div', 'location', [listing.city, listing.stateProvince, listing.country].filter(Boolean).join(', ')));
-        card.appendChild(element('div', 'services', formatsFor(listing).join(' · ')));
-        card.appendChild(element('p', 'description', listing.bio));
+        var content = element('div', 'analyst-card__content');
+        content.appendChild(element('h3', '', listing.businessName || listing.name));
+        if (listing.businessName && listing.name) content.appendChild(element('p', 'analyst-card__name', listing.name));
+        content.appendChild(element('div', 'location', [listing.city, listing.stateProvince, listing.country].filter(Boolean).join(', ')));
+        content.appendChild(element('div', 'services', formatsFor(listing).join(' · ')));
+        content.appendChild(element('p', 'description', listing.bio));
 
         var links = element('div', 'analyst-card__links');
         var website = safeUrl(listing.websiteUrl);
@@ -136,7 +190,8 @@
           emailLink.href = 'mailto:' + listing.contactEmail;
           links.appendChild(emailLink);
         }
-        card.appendChild(links);
+        content.appendChild(links);
+        card.appendChild(content);
         cards.appendChild(card);
       });
     }
