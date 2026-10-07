@@ -2855,8 +2855,8 @@
     const hasPhoto = hasClient && clientHasPhoto(client);
 
     if (selectedClientNavLink) {
-      selectedClientNavLink.hidden = !hasClient;
-      if (hasClient) selectedClientNavLink.href = listUrl();
+      selectedClientNavLink.hidden = false;
+      selectedClientNavLink.href = listUrl();
     }
 
     if (photoPrepNavLink) {
