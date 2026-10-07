@@ -5,6 +5,7 @@ import { hasDirectoryAccess, normalizeDirectoryListing, validateDirectoryListing
 test("YCSMEMBER and TRADE have directory access", () => {
   assert.equal(hasDirectoryAccess(["YCSMEMBER"]), true);
   assert.equal(hasDirectoryAccess(["trade"]), true);
+  assert.equal(hasDirectoryAccess(["YCS_ADMIN"]), true);
   assert.equal(hasDirectoryAccess(["FREEMEMBER"]), false);
 });
 

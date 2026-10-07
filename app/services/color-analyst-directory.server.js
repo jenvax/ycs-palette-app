@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 
 export const DIRECTORY_TABLE = process.env.AIRTABLE_DIRECTORY_TABLE || "ColorAnalystDirectory";
 export const DIRECTORY_BIO_LIMIT = 600;
-export const DIRECTORY_MEMBER_TAGS = new Set(["YCSMEMBER", "TRADE"]);
+export const DIRECTORY_MEMBER_TAGS = new Set(["YCSMEMBER", "TRADE", "YCS_ADMIN"]);
 
 const clean = (value) => String(value || "").trim();
 const customerId = (value) => clean(value).replace("gid://shopify/Customer/", "");

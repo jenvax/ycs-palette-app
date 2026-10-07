@@ -100,8 +100,10 @@ async function upsertCustomerDirectoryFromWebhook(payload) {
   const upperTags = tags.map((tag) => tag.toUpperCase());
   const isVIP = upperTags.includes("VIP");
   const isAdmin = upperTags.includes("YCS_ADMIN");
+  const isYcsMember = upperTags.includes("YCSMEMBER");
+  const isTrade = upperTags.includes("TRADE");
   const paletteTags = tags.filter((tag) => PALETTE_TAGS.has(tag.toUpperCase()));
-  const shouldTrack = isVIP || isAdmin || paletteTags.length > 0;
+  const shouldTrack = isVIP || isAdmin || isYcsMember || isTrade || paletteTags.length > 0;
   const nowIso = new Date().toISOString();
   const existing = await findCustomerDirectoryRecord(customerId);
   const existingFields = existing?.fields || {};
@@ -113,7 +115,7 @@ async function upsertCustomerDirectoryFromWebhook(payload) {
     LastName: String(payload.last_name || existingFields.LastName || "").trim(),
     Tags: tags.join(", "),
     PaletteTags: paletteTags.join(", "),
-    MembershipStatus: isVIP || isAdmin ? "Active" : "Inactive",
+    MembershipStatus: isVIP || isAdmin || isYcsMember || isTrade ? "Active" : "Inactive",
     LastSyncedAt: nowIso
   };
 
