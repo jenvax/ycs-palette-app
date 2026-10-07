@@ -864,6 +864,15 @@
                       Open Palette
                     </a>
 
+                    {% if is_trade %}
+                      <button
+                        type="button"
+                        class="ycs-palette-card__button ycs-palette-card__button--secondary"
+                        data-ycs-pdf-palette-code="{{ palette_code | escape }}"
+                        data-ycs-pdf-palette-title="{{ block.settings.title | escape }}">
+                        PDF
+                      </button>
+                    {% endif %}
                   </div>
                 </div>
               </div>
