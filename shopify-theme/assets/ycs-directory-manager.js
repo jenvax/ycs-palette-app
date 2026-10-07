@@ -179,6 +179,8 @@
     });
     root.querySelectorAll('[data-status-action]').forEach(function (button) {
       button.textContent = published ? 'Unpublish' : 'Publish Listing';
+      button.classList.toggle('btn', !published);
+      button.classList.toggle('link', published);
     });
   }
 
