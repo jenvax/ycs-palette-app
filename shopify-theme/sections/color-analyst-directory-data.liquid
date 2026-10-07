@@ -1,25 +1,26 @@
 <style>
   #ycs-analyst-directory .cards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 22px;
+    gap: 16px;
   }
 
   #ycs-analyst-directory .analyst-card {
     display: grid;
-    grid-template-columns: minmax(150px, 38%) minmax(0, 1fr);
+    grid-template-columns: 150px minmax(0, 1fr);
     align-items: stretch;
-    gap: 20px;
-    padding: 18px;
+    gap: 16px;
+    padding: 14px;
+    border-radius: 14px;
   }
 
   #ycs-analyst-directory .analyst-card__image {
     display: block;
-    width: 100%;
+    width: 150px;
     height: auto;
     aspect-ratio: 4 / 5;
     align-self: start;
     margin: 0;
-    border-radius: 14px;
+    border-radius: 9px;
     object-fit: cover;
   }
 
@@ -29,37 +30,97 @@
     flex-direction: column;
   }
 
-  #ycs-analyst-directory .analyst-card__name {
-    margin-bottom: 10px;
-    font-size: 0.92rem;
-  }
-
-  #ycs-analyst-directory .analyst-card .location {
-    margin-bottom: 2px;
-  }
-
-  #ycs-analyst-directory .analyst-card .description {
-    margin-top: 12px;
-    font-size: 0.88rem;
-    line-height: 1.55;
-  }
-
-  #ycs-analyst-directory .analyst-card__links {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: auto;
-    padding-top: 10px;
-  }
-
   #ycs-analyst-directory .analyst-card h3 {
     display: -webkit-box;
     overflow: hidden;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
+    margin: 0 0 6px;
+    font-size: 23px;
+    line-height: 1.2;
   }
 
-  @media (max-width: 800px) {
+  #ycs-analyst-directory .analyst-card__name {
+    margin: -2px 0 7px;
+    font-size: 16px;
+    line-height: 1.35;
+  }
+
+  #ycs-analyst-directory .analyst-card .location {
+    margin-bottom: 7px;
+    color: #545b6a;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  #ycs-analyst-directory .analyst-card__badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  #ycs-analyst-directory .analyst-card__badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: 3px 8px;
+    border: 1px solid #dcd6ef;
+    border-radius: 999px;
+    background: #f0ecfb;
+    color: #4f438f;
+    font-size: 11px;
+    font-weight: 750;
+    line-height: 1;
+  }
+
+  #ycs-analyst-directory .analyst-card__badge--online {
+    border-color: #cdddf3;
+    background: #eaf2fb;
+    color: #315d89;
+  }
+
+  #ycs-analyst-directory .analyst-card .description {
+    margin: 10px 0 0;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  #ycs-analyst-directory .analyst-card__links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-top: auto;
+    padding-top: 9px;
+  }
+
+  #ycs-analyst-directory .analyst-card__links .btn {
+    width: auto !important;
+    min-height: 36px;
+    padding: 6px 12px;
+    border: 1px solid #6657bd;
+    border-radius: 6px;
+    background: #fff;
+    color: #5749a5 !important;
+    font-size: 12px;
+  }
+
+  #ycs-analyst-directory .analyst-card__email {
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+    color: #5749a5;
+    font-size: 13px;
+    font-weight: 750;
+    text-decoration: none;
+  }
+
+  #ycs-analyst-directory .analyst-card a:focus-visible {
+    outline: 2px solid #6657bd;
+    outline-offset: 3px;
+  }
+
+  @media (max-width: 900px) {
     #ycs-analyst-directory .cards {
       grid-template-columns: 1fr;
     }
@@ -67,13 +128,21 @@
 
   @media (max-width: 600px) {
     #ycs-analyst-directory .analyst-card {
-      grid-template-columns: 1fr;
+      grid-template-columns: 96px minmax(0, 1fr);
+      gap: 12px;
+      padding: 12px;
     }
 
     #ycs-analyst-directory .analyst-card__image {
-      width: 60%;
-      max-width: 190px;
-      justify-self: center;
+      width: 96px;
+    }
+
+    #ycs-analyst-directory .analyst-card h3 {
+      font-size: 20px;
+    }
+
+    #ycs-analyst-directory .analyst-card .description {
+      font-size: 14px;
     }
   }
 </style>
@@ -105,6 +174,11 @@
     var reset = withoutOldListeners(originalReset);
     var listings = [];
 
+    Array.from(format.options).forEach(function (option) {
+      if (option.value === 'Online') option.textContent = 'ONLINE';
+      if (option.value === 'In person') option.textContent = 'IN PERSON';
+    });
+
     function element(tag, className, text) {
       var node = document.createElement(tag);
       if (className) node.className = className;
@@ -117,6 +191,12 @@
       if (listing.services === 'Virtual') return ['Online'];
       if (listing.services === 'In-Person') return ['In person'];
       return [];
+    }
+
+    function displayLocation(listing) {
+      var countryName = String(listing.country || '').trim();
+      var isUnitedStates = /^(us|usa|u\.s\.|u\.s\.a\.|united states|united states of america)$/i.test(countryName);
+      return [listing.city, listing.stateProvince, isUnitedStates ? '' : countryName].filter(Boolean).join(', ');
     }
 
     function safeUrl(value) {
@@ -151,7 +231,7 @@
       });
 
       cards.replaceChildren();
-      count.textContent = matches.length + ' analyst' + (matches.length === 1 ? '' : 's') + ' found';
+      count.textContent = matches.length + ' Color Analyst' + (matches.length === 1 ? '' : 's');
 
       if (!matches.length) {
         var empty = element('div', 'empty');
@@ -174,8 +254,13 @@
         var content = element('div', 'analyst-card__content');
         content.appendChild(element('h3', '', listing.businessName || listing.name));
         if (listing.businessName && listing.name) content.appendChild(element('p', 'analyst-card__name', listing.name));
-        content.appendChild(element('div', 'location', [listing.city, listing.stateProvince, listing.country].filter(Boolean).join(', ')));
-        content.appendChild(element('div', 'services', formatsFor(listing).join(' · ')));
+        content.appendChild(element('div', 'location', displayLocation(listing)));
+        var badges = element('div', 'analyst-card__badges');
+        formatsFor(listing).forEach(function (formatName) {
+          var badgeClass = formatName === 'Online' ? 'analyst-card__badge analyst-card__badge--online' : 'analyst-card__badge analyst-card__badge--person';
+          badges.appendChild(element('span', badgeClass, formatName === 'Online' ? 'ONLINE' : 'IN PERSON'));
+        });
+        content.appendChild(badges);
         content.appendChild(element('p', 'description', listing.bio));
 
         var links = element('div', 'analyst-card__links');
@@ -189,7 +274,7 @@
         }
         if (listing.contactEmail) {
           var firstName = String(listing.name || '').trim().split(/\s+/)[0];
-          var emailLink = element('a', 'btn', firstName ? 'Email ' + firstName : 'Email Analyst');
+          var emailLink = element('a', 'analyst-card__email', (firstName ? 'Email ' + firstName : 'Email Analyst') + ' →');
           emailLink.href = 'mailto:' + listing.contactEmail;
           links.appendChild(emailLink);
         }
