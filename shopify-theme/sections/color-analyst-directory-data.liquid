@@ -10,7 +10,7 @@
     grid-template-columns: 120px minmax(0, 1fr);
     align-items: stretch;
     gap: 12px;
-    min-height: 300px;
+    min-height: 280px;
     padding: 12px;
     border-radius: 12px;
   }
@@ -24,6 +24,10 @@
     margin: 0;
     border-radius: 7px;
     object-fit: cover;
+  }
+
+  #ycs-analyst-directory .analyst-card__media {
+    min-width: 0;
   }
 
   #ycs-analyst-directory .analyst-card__content {
@@ -58,7 +62,9 @@
   #ycs-analyst-directory .analyst-card__badges {
     display: flex;
     flex-wrap: wrap;
+    justify-content: center;
     gap: 5px;
+    margin-top: 7px;
   }
 
   #ycs-analyst-directory .analyst-card__badge {
@@ -246,24 +252,26 @@
 
       matches.forEach(function (listing) {
         var card = element('article', 'analyst-card');
+        var media = element('div', 'analyst-card__media');
         if (listing.imageUrl) {
           var image = element('img', 'analyst-card__image');
           image.src = listing.imageUrl;
           image.alt = listing.businessName || listing.name;
           image.width = 320;
           image.height = 400;
-          card.appendChild(image);
+          media.appendChild(image);
         }
-        var content = element('div', 'analyst-card__content');
-        content.appendChild(element('h3', '', listing.businessName || listing.name));
-        if (listing.businessName && listing.name) content.appendChild(element('p', 'analyst-card__name', listing.name));
-        content.appendChild(element('div', 'location', displayLocation(listing)));
         var badges = element('div', 'analyst-card__badges');
         formatsFor(listing).forEach(function (formatName) {
           var badgeClass = formatName === 'Online' ? 'analyst-card__badge analyst-card__badge--online' : 'analyst-card__badge analyst-card__badge--person';
           badges.appendChild(element('span', badgeClass, formatName === 'Online' ? 'ONLINE' : 'IN PERSON'));
         });
-        content.appendChild(badges);
+        media.appendChild(badges);
+        card.appendChild(media);
+        var content = element('div', 'analyst-card__content');
+        content.appendChild(element('h3', '', listing.businessName || listing.name));
+        if (listing.businessName && listing.name) content.appendChild(element('p', 'analyst-card__name', listing.name));
+        content.appendChild(element('div', 'location', displayLocation(listing)));
         content.appendChild(element('p', 'description', listing.bio));
 
         var links = element('div', 'analyst-card__links');
