@@ -27,6 +27,21 @@
 {% if ycs_menu_path contains '/tools-clients' or ycs_menu_path contains '/tools-photo-prep' or ycs_menu_path contains '/tools-lip-draping' or ycs_menu_path contains '/tools-structured' %}
   {% assign ycs_use_original_tool_nav = true %}
 {% endif %}
+{% assign ycs_lesson_topic_title = '' %}
+{% assign ycs_lesson_topic_index = '' %}
+{% if page.template_suffix == 'ycs-learning-lesson' %}
+  {% assign ycs_learning_menu = linklists['ycs-learning-library'] %}
+  {% for ycs_topic in ycs_learning_menu.links %}
+    {% assign ycs_topic_index = forloop.index0 %}
+    {% for ycs_lesson in ycs_topic.links %}
+      {% if ycs_lesson.url == ycs_menu_path %}
+        {% assign ycs_topic_parts = ycs_topic.title | split: '|' %}
+        {% assign ycs_lesson_topic_title = ycs_topic_parts.first | strip %}
+        {% assign ycs_lesson_topic_index = ycs_topic_index %}
+      {% endif %}
+    {% endfor %}
+  {% endfor %}
+{% endif %}
 
 <header class="my-ycs-menu-shell" data-my-ycs-menu{% if ycs_use_original_tool_nav %} data-original-tools-nav{% endif %}>
   <div class="my-ycs-menu-shell__inner">
@@ -58,6 +73,9 @@
     <div class="my-ycs-submenu__inner">
       {% if page.template_suffix == 'ycs-learning-lesson' %}
         <a href="/pages/learn">Back to Learn</a>
+        {% if ycs_lesson_topic_title != blank %}
+          <a href="/pages/learn?topic={{ ycs_lesson_topic_index }}">{{ ycs_lesson_topic_title | escape }}</a>
+        {% endif %}
         <a href="{{ request.path }}" class="is-active" aria-current="page">{{ page.title | escape }}</a>
       {% elsif ycs_menu_path == '/pages/ycs-color-palettes' or ycs_menu_path == '/pages/my-custom-palettes' %}
         <span class="my-ycs-submenu__label">Palettes</span>

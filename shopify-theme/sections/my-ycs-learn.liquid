@@ -129,22 +129,32 @@
       if (learnHeader) learnHeader.hidden = false;
       if (topicNav) topicNav.hidden = true;
       document.querySelector('.ycs-learn-hub').classList.remove('is-topic-open');
+      window.history.replaceState({}, '', '/pages/learn');
     }
-    document.querySelectorAll('[data-open-topic]').forEach(function (button) {
-      button.addEventListener('click', function () {
-        grid.hidden = true;
-        if (learnHeader) learnHeader.hidden = true;
-        if (topicNav) topicNav.hidden = false;
-        if (topicCurrent) topicCurrent.textContent = button.dataset.topicTitle || '';
-        document.querySelector('.ycs-learn-hub').classList.add('is-topic-open');
-        topics.forEach(function (topic) {
-          topic.hidden = topic.dataset.topic !== button.dataset.openTopic;
-        });
+    function showTopic(button, updateUrl) {
+      grid.hidden = true;
+      if (learnHeader) learnHeader.hidden = true;
+      if (topicNav) topicNav.hidden = false;
+      if (topicCurrent) {
+        topicCurrent.textContent = button.dataset.topicTitle || '';
+        topicCurrent.href = '/pages/learn?topic=' + encodeURIComponent(button.dataset.openTopic);
+      }
+      document.querySelector('.ycs-learn-hub').classList.add('is-topic-open');
+      topics.forEach(function (topic) {
+        topic.hidden = topic.dataset.topic !== button.dataset.openTopic;
       });
+      if (updateUrl) window.history.replaceState({}, '', '/pages/learn?topic=' + encodeURIComponent(button.dataset.openTopic));
+    }
+    var topicButtons = Array.from(document.querySelectorAll('[data-open-topic]'));
+    topicButtons.forEach(function (button) {
+      button.addEventListener('click', function () { showTopic(button, true); });
     });
     document.querySelectorAll('[data-close-topic]').forEach(function (button) {
       button.addEventListener('click', showGrid);
     });
+    var requestedTopic = new URLSearchParams(window.location.search).get('topic');
+    var requestedButton = topicButtons.find(function (button) { return button.dataset.openTopic === requestedTopic; });
+    if (requestedButton) showTopic(requestedButton, false);
   })();
 </script>
 
