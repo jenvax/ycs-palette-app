@@ -192,9 +192,21 @@
     var reset = withoutOldListeners(originalReset);
     var listings = [];
 
+    var formatLabel = format.closest('label');
+    if (formatLabel) {
+      Array.from(formatLabel.childNodes).some(function (node) {
+        if (node.nodeType !== Node.TEXT_NODE || !node.textContent.trim()) return false;
+        node.textContent = 'Color Analysis Options';
+        return true;
+      });
+      var labelText = formatLabel.querySelector('span');
+      if (labelText) labelText.textContent = 'Color Analysis Options';
+    }
+
     Array.from(format.options).forEach(function (option) {
-      if (option.value === 'Online') option.textContent = 'ONLINE';
-      if (option.value === 'In person') option.textContent = 'IN PERSON';
+      if (!option.value) option.textContent = 'All options';
+      if (option.value === 'Online') option.textContent = 'Online';
+      if (option.value === 'In person') option.textContent = 'In-Person';
     });
 
     function element(tag, className, text) {
@@ -273,7 +285,7 @@
         var badges = element('div', 'analyst-card__badges');
         formatsFor(listing).forEach(function (formatName) {
           var badgeClass = formatName === 'Online' ? 'analyst-card__badge analyst-card__badge--online' : 'analyst-card__badge analyst-card__badge--person';
-          badges.appendChild(element('span', badgeClass, formatName === 'Online' ? 'ONLINE' : 'IN PERSON'));
+          badges.appendChild(element('span', badgeClass, formatName === 'Online' ? 'Online Color Analysis' : 'In-Person Color Analysis'));
         });
         media.appendChild(badges);
         card.appendChild(media);
