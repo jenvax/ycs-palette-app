@@ -3003,6 +3003,17 @@ state.previewOffsetY = 0;
       const email = client.email || 'No email';
       const clientRecordId = client.clientRecordId || client.airtableRecordId || '';
       const hasPhoto = clientHasSavedPhoto(client);
+      const openUrl = hasPhoto
+        ? colorAnalysisToolUrl(clientRecordId)
+        : (function () {
+            const url = new URL(window.location.pathname, window.location.origin);
+            url.searchParams.set('clientRecordId', clientRecordId);
+            url.searchParams.set('mode', 'trade');
+            url.searchParams.set('workflow', 'color-analysis');
+            url.searchParams.set('returnUrl', safeReturnUrl);
+            addAdminPreviewParam(url.searchParams);
+            return url.pathname + url.search;
+          })();
 
       return `
         <div class="ycs-photo-prep-recent-item">
@@ -3010,8 +3021,8 @@ state.previewOffsetY = 0;
             <p class="ycs-photo-prep-recent-name">${escapeHtml(fullName)}</p>
             <p class="ycs-photo-prep-recent-meta">${escapeHtml(email)}</p>
           </div>
-          <button
-            type="button"
+          <a
+            href="${escapeHtml(openUrl)}"
             class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary ycs-prep-open-client-btn"
             data-client-record-id="${escapeHtml(clientRecordId)}"
             data-first-name="${escapeHtml(client.firstName || '')}"
@@ -3023,7 +3034,7 @@ state.previewOffsetY = 0;
             data-has-photo="${hasPhoto ? 'true' : 'false'}"
           >
             Open
-          </button>
+          </a>
         </div>
       `;
     }).join('');
@@ -4468,6 +4479,7 @@ if (addMemberPhotoBtn) {
   }
 
   if (!openBtn) return;
+  event.preventDefault();
 
   const clientRecordId = String(openBtn.dataset.clientRecordId || '').trim();
   if (!clientRecordId) {
