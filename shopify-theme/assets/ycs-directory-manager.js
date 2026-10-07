@@ -163,10 +163,19 @@
     previewCard.replaceChildren(card);
   }
 
-  function updateActionLabels() {
+  function comparable(data) {
+    var fields = ['name', 'businessName', 'city', 'stateProvince', 'country', 'services', 'websiteUrl', 'contactEmail', 'socialUrl', 'bio', 'imageUrl', 'imagePublicId'];
+    return JSON.stringify(fields.map(function (field) { return String((data && data[field]) || '').trim(); }));
+  }
+
+  function updateActionLabels(previewData) {
     var published = listing && listing.status === 'published';
+    var changed = published && comparable(previewData || savedDraft() || listing) !== comparable(listing);
     root.querySelectorAll('[data-publish]').forEach(function (button) {
       button.textContent = published ? 'Update Listing' : 'Publish Listing';
+    });
+    root.querySelectorAll('[data-update]').forEach(function (button) {
+      button.hidden = !changed;
     });
     root.querySelectorAll('[data-status-action]').forEach(function (button) {
       button.textContent = published ? 'Unpublish' : 'Publish Listing';
@@ -179,7 +188,7 @@
     renderCard(data || formData());
     form.hidden = true;
     preview.hidden = false;
-    updateActionLabels();
+    updateActionLabels(data || formData());
     showFormStatus('');
   }
 
@@ -189,14 +198,14 @@
     preview.hidden = true;
     form.hidden = false;
     form.querySelectorAll('[data-cancel]').forEach(function (button) { button.hidden = !listing; });
-    updateActionLabels();
+    updateActionLabels(draft || listing || {});
     showMessage('');
   }
 
   function publish() {
     var data = form.hidden ? (savedDraft() || listing) : formData();
     showMessage('Publishing listing...');
-    root.querySelectorAll('[data-publish], [data-status-action]').forEach(function (button) { button.disabled = true; });
+    root.querySelectorAll('[data-publish], [data-update], [data-status-action]').forEach(function (button) { button.disabled = true; });
     request({ operation: 'publish', listing: data }).then(function (response) {
       listing = response.listing;
       localStorage.removeItem(draftKey);
@@ -207,7 +216,7 @@
     }).catch(function (error) {
       showMessage(error.message + (error.errors ? ' ' + Object.keys(error.errors).join(', ') + '.' : ''), true);
     }).finally(function () {
-      root.querySelectorAll('[data-publish], [data-status-action]').forEach(function (button) { button.disabled = false; });
+      root.querySelectorAll('[data-publish], [data-update], [data-status-action]').forEach(function (button) { button.disabled = false; });
     });
   }
 
@@ -216,7 +225,7 @@
     root.querySelectorAll('[data-status-action]').forEach(function (button) { button.disabled = true; });
     request({ operation: 'unpublish' }).then(function (response) {
       listing = response.listing;
-      updateActionLabels();
+      updateActionLabels(listing);
       showMessage('Your listing has been unpublished.');
     }).catch(function (error) {
       showMessage(error.message, true);
@@ -228,6 +237,7 @@
   root.querySelectorAll('[data-edit]').forEach(function (button) { button.addEventListener('click', showForm); });
   root.querySelectorAll('[data-preview-button]').forEach(function (button) { button.addEventListener('click', function () { showPreview(formData()); }); });
   root.querySelectorAll('[data-publish]').forEach(function (button) { button.addEventListener('click', publish); });
+  root.querySelectorAll('[data-update]').forEach(function (button) { button.addEventListener('click', publish); });
   root.querySelectorAll('[data-status-action]').forEach(function (button) {
     button.addEventListener('click', function () { listing && listing.status === 'published' ? unpublish() : publish(); });
   });
@@ -264,7 +274,7 @@
     loading.hidden = true;
     if (listing) {
       fill(listing);
-      showPreview(listing);
+      showPreview(savedDraft() || listing);
     } else {
       fill(savedDraft() || {});
       showForm();
