@@ -657,7 +657,9 @@ async function fetchShopifyCustomersForDirectory({ shop, accessToken }) {
   const customersById = new Map();
   const customerGroups = await Promise.all([
     fetchShopifyCustomersForDirectoryByQuery({ shop, accessToken, customerQuery: "tag:VIP" }),
-    fetchShopifyCustomersForDirectoryByQuery({ shop, accessToken, customerQuery: "tag:YCS_ADMIN" })
+    fetchShopifyCustomersForDirectoryByQuery({ shop, accessToken, customerQuery: "tag:YCS_ADMIN" }),
+    fetchShopifyCustomersForDirectoryByQuery({ shop, accessToken, customerQuery: "tag:YCSMEMBER" }),
+    fetchShopifyCustomersForDirectoryByQuery({ shop, accessToken, customerQuery: "tag:TRADE" })
   ]);
 
   customerGroups.flat().forEach((customer) => {
@@ -673,6 +675,8 @@ async function fetchShopifyCustomersForDirectory({ shop, accessToken }) {
     const paletteTags = tags.filter((tag) => PALETTE_TAGS.has(String(tag).toUpperCase().trim()));
     const isVIP = tags.includes("VIP");
     const isAdmin = tags.some((tag) => String(tag).trim().toUpperCase() === "YCS_ADMIN");
+    const isYcsMember = tags.some((tag) => String(tag).trim().toUpperCase() === "YCSMEMBER");
+    const isTrade = tags.some((tag) => String(tag).trim().toUpperCase() === "TRADE");
 
     let name = `${customer.firstName || ""} ${customer.lastName || ""}`.trim();
     if (!name && customer.email) name = customer.email.split("@")[0];
@@ -688,6 +692,8 @@ async function fetchShopifyCustomersForDirectory({ shop, accessToken }) {
   paletteTags,
   isVIP,
   isAdmin,
+  isYcsMember,
+  isTrade,
   joinedDate
 };
   });
@@ -735,7 +741,7 @@ async function syncCustomerDirectoryFromShopify({ shop, accessToken, baseId, tok
 
     const currentIsAdmin = Boolean(customer.isAdmin);
     let membershipStatus = "Unknown";
-    if (currentIsAdmin) membershipStatus = "Active";
+    if (currentIsAdmin || customer.isYcsMember || customer.isTrade) membershipStatus = "Active";
     else if (currentIsVIP && customer.joinedDate) membershipStatus = "Active";
     else if (currentIsVIP && !customer.joinedDate) membershipStatus = "Legacy";
     else membershipStatus = "Inactive";
@@ -745,6 +751,8 @@ async function syncCustomerDirectoryFromShopify({ shop, accessToken, baseId, tok
       FirstName: customer.firstName,
       LastName: customer.lastName,
       Email: customer.email,
+      Tags: customer.tags.join(", "),
+      PaletteTags: customer.paletteTags.join(", "),
       MembershipStatus: membershipStatus,
       LastSyncedAt: nowIso
     };
@@ -778,6 +786,8 @@ async function syncCustomerDirectoryFromShopify({ shop, accessToken, baseId, tok
       [String(existingFields.FirstName || ""), fieldsToWrite.FirstName],
       [String(existingFields.LastName || ""), fieldsToWrite.LastName],
       [String(existingFields.Email || ""), fieldsToWrite.Email],
+      [String(existingFields.Tags || ""), fieldsToWrite.Tags],
+      [String(existingFields.PaletteTags || ""), fieldsToWrite.PaletteTags],
       [String(existingFields.MembershipStatus || ""), fieldsToWrite.MembershipStatus],
       [String(existingFields.JoinedDate || ""), String(fieldsToWrite.JoinedDate || "")]
     ];

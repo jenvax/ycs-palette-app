@@ -162,7 +162,9 @@ async function fetchShopifyCustomers({ shop, accessToken }) {
   const customersById = new Map();
   const customerGroups = await Promise.all([
     fetchShopifyCustomersByQuery({ shop, accessToken, customerQuery: "tag:VIP" }),
-    fetchShopifyCustomersByQuery({ shop, accessToken, customerQuery: "tag:YCS_ADMIN" })
+    fetchShopifyCustomersByQuery({ shop, accessToken, customerQuery: "tag:YCS_ADMIN" }),
+    fetchShopifyCustomersByQuery({ shop, accessToken, customerQuery: "tag:YCSMEMBER" }),
+    fetchShopifyCustomersByQuery({ shop, accessToken, customerQuery: "tag:TRADE" })
   ]);
 
   customerGroups.flat().forEach((customer) => {
@@ -194,6 +196,8 @@ async function fetchShopifyCustomers({ shop, accessToken }) {
       paletteTags,
       isAdmin: upperTags.includes("YCS_ADMIN"),
       isVIP: upperTags.includes("VIP"),
+      isYcsMember: upperTags.includes("YCSMEMBER"),
+      isTrade: upperTags.includes("TRADE"),
       joinedDate
     };
   })
@@ -324,7 +328,9 @@ async function syncCustomerDirectory({ shop, accessToken, baseId, token }) {
     const currentIsVIP = Boolean(customer.isVIP);
 
     const currentIsAdmin = Boolean(customer.isAdmin);
-    let membershipStatus = currentIsVIP || currentIsAdmin ? "Active" : "Inactive";
+    let membershipStatus = currentIsVIP || currentIsAdmin || customer.isYcsMember || customer.isTrade
+      ? "Active"
+      : "Inactive";
 
 const fieldsToWrite = {
   CustomerId: customer.customerId,
