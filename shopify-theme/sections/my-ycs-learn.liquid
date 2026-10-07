@@ -2,11 +2,11 @@
 {% assign ycs_free_member = false %}
 {% if customer %}
   {% assign ycs_member_tags = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
-  {% if ycs_member_tags contains ',YCSMEMBER,' or ycs_member_tags contains ',FREEMEMBER,' %}
+  {% if ycs_member_tags contains ',YCSMEMBER,' or ycs_member_tags contains ',TRADE,' or ycs_member_tags contains ',FREEMEMBER,' %}
     {% assign ycs_member_access = true %}
   {% endif %}
   {% if ycs_member_tags contains ',FREEMEMBER,' %}
-    {% unless ycs_member_tags contains ',YCSMEMBER,' %}
+    {% unless ycs_member_tags contains ',YCSMEMBER,' or ycs_member_tags contains ',TRADE,' %}
       {% assign ycs_free_member = true %}
     {% endunless %}
   {% endif %}

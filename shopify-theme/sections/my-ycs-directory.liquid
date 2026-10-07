@@ -1,256 +1,30 @@
-{% assign ycs_member_access = false %}
-{% assign ycs_free_member = false %}
-{% if customer %}
-  {% assign ycs_member_tags = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
-  {% if ycs_member_tags contains ',YCSMEMBER,' %}
-    {% assign ycs_member_access = true %}
-  {% endif %}
-  {% if ycs_member_tags contains ',FREEMEMBER,' %}
-    {% assign ycs_member_access = true %}
-    {% unless ycs_member_tags contains ',YCSMEMBER,' %}
-      {% assign ycs_free_member = true %}
-    {% endunless %}
-  {% endif %}
-{% endif %}
-
-<section class="ycs-directory">
-  <nav class="ycs-directory__nav" aria-label="Membership navigation">
-    <a href="/pages/my-ycs" class="ycs-directory__back">Back to My YCS</a>
-    <a href="mailto:support@yourcolorstyle.com" class="ycs-directory__back">Contact</a>
-  </nav>
-
-  {% if customer == nil %}
-    <div class="ycs-directory__message">
-      <p class="ycs-directory__kicker">Your Color Style</p>
-      <h1>Directory</h1>
-      <p>Please sign in to access your membership.</p>
-      <a href="{{ routes.account_login_url }}" class="ycs-directory__button">Sign In</a>
-    </div>
-  {% elsif ycs_member_access == false %}
-    <div class="ycs-directory__message">
-      <p class="ycs-directory__kicker">Your Color Style</p>
-      <h1>Directory</h1>
-      <p>This membership is not available on your account.</p>
-    </div>
-  {% else %}
-    {% if ycs_free_member %}
-      <header class="ycs-directory__header">
-        <p class="ycs-directory__kicker">My YCS</p>
-        <h1>Get Listed in the Color Analyst Directory</h1>
-        <p>Connect with people who are looking for professional color analysis services.</p>
-        <p>YCS members can be listed in the <strong>Your Color Style Color Analyst Directory</strong>, giving potential clients a way to discover you and learn more about your services.</p>
-      </header>
-
-      <div class="ycs-directory__content" aria-label="Directory membership information">
-        <h2>Your Directory Listing</h2>
-        <p><strong>&#128274; Directory listings are included with YCS membership.</strong></p>
-        <p>Join Your Color Style to submit your business information and be included in the directory while your membership is active.</p>
-        <a href="/" class="ycs-directory__button">Join Your Color Style</a>
-        <p class="ycs-directory__secondary-action">
-          <a href="/pages/color-analyst-directory">View the Color Analyst Directory &rarr;</a>
-        </p>
-      </div>
-    {% else %}
-    <header class="ycs-directory__header">
-      <p class="ycs-directory__kicker">My YCS</p>
-      <h1>Get Listed in the Color Analyst Directory</h1>
-      <p>Your YCS membership includes a listing in the <strong>Your Color Style Color Analyst Directory</strong>, helping people who visit YourColorStyle.com find a color analyst to work with.</p>
-    </header>
-
-    <div class="ycs-directory__content" aria-label="Directory listing instructions">
-      <h2>Submit Your Listing</h2>
-      <p>To create your listing, please email me the following information:</p>
-
-      <ul>
-        <li><strong>Your name</strong></li>
-        <li><strong>Business name</strong> (if applicable)</li>
-        <li><strong>Location</strong> &mdash; City, State/Province, Country</li>
-        <li><strong>Services offered</strong> &mdash; In-person, virtual, or both</li>
-        <li><strong>Website URL</strong></li>
-        <li><strong>Email address</strong> you'd like potential clients to use</li>
-        <li><strong>Social media link</strong> (optional)</li>
-        <li><strong>Profile photo or business logo</strong></li>
-        <li><strong>Short bio</strong> &mdash; 2&ndash;3 sentences about you and your color analysis services</li>
-      </ul>
-
-      <p>Once I receive your information, I'll create your listing and add it to the directory.</p>
-
-      <a href="mailto:support@yourcolorstyle.com?subject=My%20Color%20Analyst%20Directory%20Listing" class="ycs-directory__button">Submit My Listing</a>
-
-      <p class="ycs-directory__note"><em>Your directory listing is available while your YCS membership is active.</em></p>
-    </div>
-    {% endif %}
-  {% endif %}
+{% assign tags = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
+{% assign paid = false %}{% assign free = false %}
+{% if tags contains ',YCSMEMBER,' or tags contains ',TRADE,' %}{% assign paid = true %}{% endif %}
+{% if tags contains ',FREEMEMBER,' %}{% assign free = true %}{% endif %}
+<section class="dir" data-app data-url="/apps/palette-data">
+ <nav><a href="/pages/my-ycs">Back to My YCS</a><a href="mailto:support@yourcolorstyle.com">Contact</a></nav>
+ {% if customer == nil %}<h1>Directory</h1><p>Please sign in to access your membership.</p><a class="btn" href="{{ routes.account_login_url }}">Sign In</a>
+ {% elsif paid %}
+ <header><small>MY YCS</small><h1>My Directory Listing</h1><p>Create and manage the listing potential clients see in the Your Color Style Color Analyst Directory.</p></header>
+ <p data-msg hidden></p><p data-load>Loading your listing...</p>
+ <section data-empty hidden><h2>Create Your Listing</h2><p>Add your services, location, contact details, and photo. You can save a draft before publishing.</p><button class="btn" data-create>Create Listing</button></section>
+ <section class="summary" data-summary hidden><div><b data-state></b><h2 data-title></h2><p data-location></p></div><div class="actions"><button class="btn" data-edit>Edit</button><button data-preview>Preview</button><button data-toggle></button><button class="link" data-delete>Delete</button></div></section>
+ <form data-form hidden novalidate><div class="grid">
+  <label>Your name<input name="name" maxlength="120" required></label><label>Business name (optional)<input name="businessName" maxlength="160"></label>
+  <label>City<input name="city" maxlength="100" required></label><label>State / Province<input name="stateProvince" maxlength="100" required></label><label>Country<input name="country" maxlength="100" required></label>
+  <label>Services offered<select name="services" required><option value="">Choose one</option><option>In-Person</option><option>Virtual</option><option>Both</option></select></label>
+  <label>Website URL<input name="websiteUrl" type="url" placeholder="https://" required></label><label>Contact email<input name="contactEmail" type="email" required></label>
+  <label class="wide">Social media URL (optional)<input name="socialUrl" type="url" placeholder="https://"></label>
+  <label class="wide">Profile photo or business logo<input name="image" type="file" accept="image/jpeg,image/png,image/webp"><span>JPG, PNG, or WebP, up to 5 MB. A 4:5 image works best.</span></label><img data-image hidden alt="Listing image preview" width="180" height="225">
+  <label class="wide">Short bio<textarea name="bio" maxlength="600" rows="6" required></textarea><span><i data-count>0</i>/600 characters. Aim for 2-3 sentences.</span></label>
+ </div><div class="actions"><button type="button" data-save>Save Draft</button><button class="btn" type="button" data-publish>Publish Listing</button><button class="link" type="button" data-cancel>Cancel</button></div></form>
+ <dialog data-dialog><button class="close" data-close aria-label="Close">&times;</button><div data-card></div></dialog>
+ {% elsif free %}<header><small>MY YCS</small><h1>Get Listed in the Color Analyst Directory</h1><p>Connect with people who are looking for professional color analysis services.</p><p>YCS members can be listed in the <strong>Your Color Style Color Analyst Directory</strong>, giving potential clients a way to discover you and learn more about your services.</p></header><section class="summary"><div><h2>Your Directory Listing</h2><p><strong>&#128274; Directory listings are included with YCS membership.</strong></p><p>Join Your Color Style to submit your business information and be included in the directory while your membership is active.</p><a class="btn" href="{{ routes.root_url }}">Join Your Color Style</a><p><a href="/pages/color-analyst-directory">View the Color Analyst Directory &rarr;</a></p></div></section>
+ {% else %}<h1>Directory</h1><p>This membership is not available on your account.</p>{% endif %}
 </section>
-
-{% style %}
-  .shopify-section-header,
-  #shopify-section-header,
-  .site-header,
-  .header-wrapper,
-  .header {
-    display: none !important;
-  }
-
-  #shopify-section-footer,
-  .shopify-section--footer,
-  .site-footer,
-  footer.footer,
-  footer[role="contentinfo"] {
-    display: none !important;
-  }
-
-  body {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-  }
-
-  .ycs-directory {
-    max-width: 1180px;
-    min-height: 60vh;
-    margin: 0 auto;
-    padding: 28px 24px 72px;
-    color: #313238;
-  }
-
-  .ycs-directory__nav {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-    margin-bottom: 42px;
-  }
-
-  .ycs-directory__back {
-    color: #4b4d55;
-    font-size: 15px;
-    font-weight: 600;
-    text-decoration: none;
-  }
-
-  .ycs-directory__back:hover {
-    text-decoration: underline;
-  }
-
-  .ycs-directory__header,
-  .ycs-directory__message {
-    max-width: 780px;
-  }
-
-  .ycs-directory__header {
-    margin-bottom: 36px;
-  }
-
-  .ycs-directory__kicker {
-    margin: 0 0 8px;
-    color: #bd315b;
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 0;
-    text-transform: uppercase;
-  }
-
-  .ycs-directory h1 {
-    margin: 0 0 12px;
-    color: #292a30;
-    font-size: 42px;
-    line-height: 1.14;
-    letter-spacing: 0;
-  }
-
-  .ycs-directory__message > p:not(.ycs-directory__kicker) {
-    margin: 0;
-    color: #686a72;
-    font-size: 17px;
-    line-height: 1.6;
-  }
-
-  .ycs-directory__header > p:not(.ycs-directory__kicker),
-  .ycs-directory__content p,
-  .ycs-directory__content li {
-    color: #5f626a;
-    font-size: 17px;
-    line-height: 1.65;
-  }
-
-  .ycs-directory__content {
-    max-width: 780px;
-  }
-
-  .ycs-directory__content h2 {
-    margin: 0 0 12px;
-    color: #292a30;
-    font-size: 28px;
-    line-height: 1.25;
-    letter-spacing: 0;
-  }
-
-  .ycs-directory__content p {
-    margin: 0 0 20px;
-  }
-
-  .ycs-directory__content ul {
-    margin: 0 0 24px;
-    padding-left: 24px;
-  }
-
-  .ycs-directory__content li + li {
-    margin-top: 6px;
-  }
-
-  .ycs-directory__note {
-    margin-top: 22px !important;
-    font-size: 15px !important;
-  }
-
-  .ycs-directory__button {
-    display: inline-flex;
-    min-height: 46px;
-    margin-top: 22px;
-    align-items: center;
-    justify-content: center;
-    border-radius: 6px;
-    background: #cf3f65;
-    color: #fff;
-    font-size: 15px;
-    font-weight: 700;
-    padding: 12px 20px;
-    text-decoration: none;
-  }
-
-  .ycs-directory__secondary-action {
-    margin-top: 20px !important;
-  }
-
-  .ycs-directory__secondary-action a {
-    color: #bd315b;
-    font-weight: 700;
-    text-decoration: none;
-  }
-
-  .ycs-directory__secondary-action a:hover {
-    text-decoration: underline;
-  }
-
-  @media (max-width: 720px) {
-    .ycs-directory {
-      padding: 22px 16px 52px;
-    }
-
-    .ycs-directory__nav {
-      margin-bottom: 30px;
-    }
-
-    .ycs-directory h1 {
-      font-size: 32px;
-    }
-  }
-{% endstyle %}
-
-{% schema %}
-{
-  "name": "My YCS Directory",
-  "settings": [],
-  "presets": [{ "name": "My YCS Directory" }]
-}
-{% endschema %}
+{% if paid %}<script>
+(function(){var a=document.querySelector('[data-app]'),f=a.querySelector('[data-form]'),l=null,img={imageUrl:'',imagePublicId:''},q=function(s){return a.querySelector(s)},url=a.dataset.url+'?action=colorAnalystDirectory';function req(b){return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}).then(function(r){return r.json().then(function(d){if(!r.ok){var e=new Error(d.error||'Something went wrong.');e.errors=d.errors;throw e}return d})})}function msg(t,e){var x=q('[data-msg]');x.hidden=!t;x.textContent=t;x.className=e?'error':''}function val(n){return f.elements[n].value.trim()}function data(){return{name:val('name'),businessName:val('businessName'),city:val('city'),stateProvince:val('stateProvince'),country:val('country'),services:val('services'),websiteUrl:val('websiteUrl'),contactEmail:val('contactEmail'),socialUrl:val('socialUrl'),bio:val('bio'),imageUrl:img.imageUrl,imagePublicId:img.imagePublicId}}function fill(x){Object.keys(x||{}).forEach(function(k){if(f.elements[k]&&k!=='image')f.elements[k].value=x[k]||''});img={imageUrl:x.imageUrl||'',imagePublicId:x.imagePublicId||''};q('[data-image]').hidden=!img.imageUrl;q('[data-image]').src=img.imageUrl;q('[data-count]').textContent=f.elements.bio.value.length}function state(){f.hidden=true;q('[data-load]').hidden=true;q('[data-empty]').hidden=!!l;q('[data-summary]').hidden=!l;if(l){q('[data-state]').textContent=l.status==='published'?'Published':'Draft';q('[data-title]').textContent=l.businessName||l.name;q('[data-location]').textContent=[l.city,l.stateProvince,l.country].filter(Boolean).join(', ');q('[data-toggle]').textContent=l.status==='published'?'Unpublish':'Publish'}}function edit(){q('[data-empty]').hidden=true;q('[data-summary]').hidden=true;f.hidden=false;msg('')}function save(op){req({operation:op,listing:data()}).then(function(d){l=d.listing;fill(l);state();msg(op==='publish'?'Your listing is published.':'Draft saved.')}).catch(function(e){msg(e.message+(e.errors?' '+Object.keys(e.errors).join(', ')+'.':''),true)})}function card(x){var d=document.createElement('article');d.className='card';var p=document.createElement('img');p.src=x.imageUrl;d.appendChild(p);var b=document.createElement('div'),h=document.createElement('h2');h.textContent=x.businessName||x.name;b.appendChild(h);['businessName','location','services','bio'].forEach(function(k){var v=k==='businessName'&&x.businessName?x.name:k==='location'?[x.city,x.stateProvince,x.country].filter(Boolean).join(', '):x[k];if(v){var z=document.createElement('p');z.textContent=v;b.appendChild(z)}});d.appendChild(b);return d}fetch(url).then(function(r){return r.json().then(function(d){if(!r.ok)throw new Error(d.error);return d})}).then(function(d){l=d.listing;if(l)fill(l);state()}).catch(function(e){q('[data-load]').hidden=true;msg(e.message,true)});q('[data-create]').onclick=function(){fill({});edit()};q('[data-edit]').onclick=edit;q('[data-cancel]').onclick=state;q('[data-save]').onclick=function(){save('save')};q('[data-publish]').onclick=function(){save('publish')};q('[data-toggle]').onclick=function(){if(l.status==='published')req({operation:'unpublish'}).then(function(d){l=d.listing;state();msg('Your listing is now a draft.')});else{fill(l);edit()}};q('[data-delete]').onclick=function(){if(confirm('Delete your directory listing? This cannot be undone.'))req({operation:'delete'}).then(function(){l=null;state();msg('Your listing was deleted.')})};q('[data-preview]').onclick=function(){q('[data-card]').replaceChildren(card(l));q('[data-dialog]').showModal()};q('[data-close]').onclick=function(){q('[data-dialog]').close()};f.elements.bio.oninput=function(){q('[data-count]').textContent=this.value.length};f.elements.image.onchange=function(){var z=this.files[0];if(!z)return;if(z.size>5242880)return msg('Choose an image up to 5 MB.',true);var r=new FileReader;r.onload=function(){msg('Uploading image...');req({operation:'uploadImage',imageBase64:r.result}).then(function(d){img=d;fill(Object.assign(data(),d));msg('Image uploaded.')}).catch(function(e){msg(e.message,true)})};r.readAsDataURL(z)}})();
+</script>{% endif %}
+{% style %}.shopify-section-header,#shopify-section-header,.site-header,.header-wrapper,.header,#shopify-section-footer,.shopify-section--footer,.site-footer,footer{display:none!important}.dir{max-width:1120px;min-height:60vh;margin:auto;padding:28px 24px 72px;color:#313238}.dir nav{display:flex;justify-content:space-between;margin-bottom:42px}.dir a{color:#b93455;font-weight:700;text-decoration:none}.dir header{max-width:780px;margin-bottom:34px}.dir small{color:#bd315b;font-weight:700}.dir h1{font-size:42px;margin:8px 0 12px}.dir p{font-size:17px;line-height:1.6;color:#5f626a}.btn,.dir button{min-height:44px;border:1px solid #cf3f65;border-radius:6px;background:#fff;color:#bd315b;font-weight:700;padding:10px 18px;cursor:pointer}.btn{display:inline-flex;align-items:center;background:#cf3f65!important;color:#fff!important}.summary{display:flex;justify-content:space-between;gap:24px;max-width:850px;border:1px solid #e3d9dc;border-radius:8px;padding:24px}.actions{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:20px}.link{border:0!important;background:none!important}.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:850px}.grid label{display:flex;flex-direction:column;gap:7px;font-weight:700}.grid input,.grid select,.grid textarea{border:1px solid #c9c4c6;border-radius:5px;padding:11px;font:inherit}.grid span{font-weight:400;color:#70727a}.wide{grid-column:1/-1}[data-image],.card img{width:180px;aspect-ratio:4/5;object-fit:cover;border-radius:6px}.error{padding:12px;border-left:4px solid #b93455;background:#fff0f3}.card{display:grid;grid-template-columns:180px 1fr;gap:24px}dialog{max-width:760px;border:0;border-radius:8px;padding:32px}.close{float:right;border:0!important;font-size:26px}@media(max-width:700px){.dir{padding:22px 16px}.dir h1{font-size:32px}.grid{grid-template-columns:1fr}.wide{grid-column:auto}.summary,.card{display:block}}{% endstyle %}
+{% schema %}{"name":"My YCS Directory","settings":[],"presets":[{"name":"My YCS Directory"}]}{% endschema %}

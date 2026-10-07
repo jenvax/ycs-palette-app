@@ -5,7 +5,7 @@
 {% endif %}
 
 {% assign is_ycs_member = false %}
-{% if customer and palette_access_string contains ',YCSMEMBER,' %}
+{% if customer and palette_access_string contains ',YCSMEMBER,' or customer and palette_access_string contains ',TRADE,' %}
   {% assign is_ycs_member = true %}
 {% endif %}
 
@@ -1015,7 +1015,7 @@
 const hasTradeAccess = PALETTE_ACCESS.includes(',TRADE,') || app.dataset.isTradeJulyCohort === 'true';
 const hasCatoolAccess = PALETTE_ACCESS.includes(',CATOOL,');
 const hasYcsProAccess = PALETTE_ACCESS.includes(',YCSPRO,');
-const hasYcsMemberAccess = PALETTE_ACCESS.includes(',YCSMEMBER,');
+const hasYcsMemberAccess = PALETTE_ACCESS.includes(',YCSMEMBER,') || PALETTE_ACCESS.includes(',TRADE,');
 const hasTradeSeptCohortAccess = app.dataset.isTradeSeptCohort === 'true';
 
 const hasAllPaletteAccess =

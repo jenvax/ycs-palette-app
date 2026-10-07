@@ -6,6 +6,15 @@ import {
 import { validateClientPaletteAccessToken } from "../services/trade-client-palette-links.server.js";
 import { createTradePaletteAccessToken } from "../services/trade-palette-access-token.server.js";
 import { giveTradeClientPaletteAccess } from "../services/trade-palette-access.server.js";
+import {
+  deleteOwnDirectoryListing,
+  getCustomerDirectoryEligibility,
+  getOwnDirectoryListing,
+  getPublishedDirectoryListings,
+  saveOwnDirectoryListing,
+  setOwnDirectoryStatus,
+  uploadDirectoryImage
+} from "../services/color-analyst-directory.server.js";
 import { authenticate } from "../shopify.server";
 import crypto from "node:crypto";
 
@@ -362,6 +371,18 @@ function verifyAppProxySignature(url, sharedSecret) {
   } catch {
     return false;
   }
+}
+
+async function requireSignedDirectoryCustomer(request, url) {
+  try {
+    await authenticate.public.appProxy(request);
+  } catch (authError) {
+    if (!verifyAppProxySignature(url, process.env.SHOPIFY_API_SECRET)) throw authError;
+  }
+  const id = normalizeCustomerId(url.searchParams.get("logged_in_customer_id"));
+  if (!id) throw Object.assign(new Error("Please sign in to manage your directory listing"), { status: 401 });
+  if (!(await getCustomerDirectoryEligibility(id))) throw Object.assign(new Error("An active YCS membership is required"), { status: 403 });
+  return id;
 }
 
 function firstSavedDrapedField(fields, names) {
@@ -1185,6 +1206,25 @@ export async function loader({ request }) {
   const AIRTABLE_FAVORITES_TABLE =
     process.env.AIRTABLE_FAVORITES_TABLE || "PaletteFavorites";
 
+  if (action === "publicColorAnalystDirectory") {
+    try {
+      return Response.json({ listings: await getPublishedDirectoryListings() });
+    } catch (error) {
+      console.error("publicColorAnalystDirectory failed:", error);
+      return Response.json({ error: "Unable to load the directory" }, { status: 500 });
+    }
+  }
+
+  if (action === "colorAnalystDirectory") {
+    try {
+      const ownerId = await requireSignedDirectoryCustomer(request, url);
+      return Response.json({ listing: await getOwnDirectoryListing(ownerId) });
+    } catch (error) {
+      console.error("colorAnalystDirectory loader failed:", error);
+      return Response.json({ error: error.message || "Unable to load your listing" }, { status: error.status || 500 });
+    }
+  }
+
   if (!AIRTABLE_TOKEN || !AIRTABLE_BASE_ID || !AIRTABLE_TABLE_NAME) {
     return Response.json(
       { error: "Missing Airtable server configuration" },
@@ -1923,6 +1963,29 @@ export async function action({ request }) {
 
   if (request.method !== "POST") {
     return Response.json({ error: "Method not allowed" }, { status: 405 });
+  }
+
+  if (actionName === "colorAnalystDirectory") {
+    try {
+      const ownerId = await requireSignedDirectoryCustomer(request, url);
+      const body = await request.json();
+      const operation = String(body.operation || "save");
+      if (operation === "delete") {
+        await deleteOwnDirectoryListing(ownerId);
+        return Response.json({ success: true, listing: null });
+      }
+      if (operation === "unpublish") {
+        return Response.json({ success: true, listing: await setOwnDirectoryStatus(ownerId, "draft") });
+      }
+      if (operation === "uploadImage") {
+        return Response.json({ success: true, ...(await uploadDirectoryImage(body.imageBase64, ownerId)) });
+      }
+      const listing = await saveOwnDirectoryListing(ownerId, body.listing, { publish: operation === "publish" });
+      return Response.json({ success: true, listing });
+    } catch (error) {
+      console.error("colorAnalystDirectory action failed:", error);
+      return Response.json({ error: error.message || "Unable to update your listing", errors: error.errors || {} }, { status: error.status || 500 });
+    }
   }
 
   if (actionName === "removeBackground") {

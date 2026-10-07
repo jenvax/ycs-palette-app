@@ -19,7 +19,7 @@
   {% endif %}
 
   {% assign is_ycs_member = false %}
-  {% if customer and palette_access_string contains ',YCSMEMBER,' %}
+  {% if customer and palette_access_string contains ',YCSMEMBER,' or customer and palette_access_string contains ',TRADE,' %}
     {% assign is_ycs_member = true %}
   {% endif %}
 
