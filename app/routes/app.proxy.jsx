@@ -11,6 +11,7 @@ import {
   getCustomerDirectoryEligibility,
   getOwnDirectoryListing,
   getPublishedDirectoryListings,
+  hasDirectoryAccess,
   saveOwnDirectoryListing,
   setOwnDirectoryStatus,
   uploadDirectoryImage
@@ -374,14 +375,26 @@ function verifyAppProxySignature(url, sharedSecret) {
 }
 
 async function requireSignedDirectoryCustomer(request, url) {
+  let proxyContext;
   try {
-    await authenticate.public.appProxy(request);
+    proxyContext = await authenticate.public.appProxy(request);
   } catch (authError) {
     if (!verifyAppProxySignature(url, process.env.SHOPIFY_API_SECRET)) throw authError;
   }
   const id = normalizeCustomerId(url.searchParams.get("logged_in_customer_id"));
   if (!id) throw Object.assign(new Error("Please sign in to manage your directory listing"), { status: 401 });
-  if (!(await getCustomerDirectoryEligibility(id))) throw Object.assign(new Error("An active YCS membership is required"), { status: 403 });
+  let eligible = false;
+  if (proxyContext?.admin) {
+    const response = await proxyContext.admin.graphql(
+      `#graphql query DirectoryCustomerAccess($id: ID!) { customer(id: $id) { tags } }`,
+      { variables: { id: `gid://shopify/Customer/${id}` } }
+    );
+    const result = await response.json();
+    eligible = hasDirectoryAccess(result.data?.customer?.tags || []);
+  } else {
+    eligible = await getCustomerDirectoryEligibility(id);
+  }
+  if (!eligible) throw Object.assign(new Error("An active YCS membership is required"), { status: 403 });
   return id;
 }
 
