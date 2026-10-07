@@ -58,6 +58,7 @@
     <div class="my-ycs-submenu__inner">
       {% if page.template_suffix == 'ycs-learning-lesson' %}
         <a href="/pages/learn">Back to Learn</a>
+        <a href="{{ request.path }}" class="is-active" aria-current="page">{{ page.title | escape }}</a>
       {% elsif ycs_menu_path == '/pages/ycs-color-palettes' or ycs_menu_path == '/pages/my-custom-palettes' %}
         <span class="my-ycs-submenu__label">Palettes</span>
         <a href="/pages/ycs-color-palettes"{% if ycs_menu_path == '/pages/ycs-color-palettes' %} class="is-active" aria-current="page"{% endif %}>YCS Color Palettes</a>
