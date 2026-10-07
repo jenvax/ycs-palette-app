@@ -465,7 +465,7 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
               Save Adjusted Photo
             </button>
 
-            <div class="ycs-photo-prep-analysis-actions">
+            <div class="ycs-photo-prep-analysis-actions" hidden aria-hidden="true">
               <a id="ycs-prep-start-analysis-btn" href="/pages/tools-structured" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary">
                 Continue
               </a>
@@ -996,6 +996,10 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
     display: grid;
     gap: 10px;
     margin-left: auto;
+  }
+
+  .ycs-photo-prep-analysis-actions[hidden] {
+    display: none !important;
   }
 
   .ycs-photo-prep-status {
