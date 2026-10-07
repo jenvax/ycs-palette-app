@@ -50,6 +50,9 @@
       </div>
     {% else %}
       {% assign learning_menu = section.settings.learning_menu %}
+      {% if learning_menu == blank %}
+        {% assign learning_menu = linklists['ycs-learning-library'] %}
+      {% endif %}
       {% if learning_menu != blank and learning_menu.links.size > 0 %}
         <div class="ycs-learn-hub__grid" data-topic-grid>
           {% for topic in learning_menu.links %}
