@@ -1,6 +1,6 @@
 <style>
   #ycs-analyst-directory .cards {
-    grid-template-columns: repeat(2, minmax(0, 460px));
+    grid-template-columns: repeat(3, minmax(0, 420px));
     grid-auto-rows: 1fr;
     align-items: stretch;
     justify-content: center;
@@ -9,7 +9,7 @@
 
   #ycs-analyst-directory .analyst-card {
     display: grid;
-    grid-template-columns: 120px minmax(0, 1fr);
+    grid-template-columns: 110px minmax(0, 1fr);
     align-items: stretch;
     gap: 12px;
     min-height: 260px;
@@ -20,7 +20,7 @@
 
   #ycs-analyst-directory .analyst-card__image {
     display: block;
-    width: 120px;
+    width: 110px;
     height: auto;
     aspect-ratio: 4 / 5;
     align-self: start;
@@ -39,19 +39,13 @@
     flex-direction: column;
   }
 
-  @media (min-width: 1500px) {
-    #ycs-analyst-directory .cards {
-      grid-template-columns: repeat(3, minmax(0, 420px));
-    }
-  }
-
   #ycs-analyst-directory .analyst-card h3 {
     display: -webkit-box;
     overflow: hidden;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
     margin: 0 0 4px;
-    font-size: 19px;
+    font-size: 18px;
     line-height: 1.18;
   }
 
@@ -139,11 +133,15 @@
 
   @media (max-width: 900px) {
     #ycs-analyst-directory .cards {
-      grid-template-columns: minmax(0, 460px);
+      grid-template-columns: repeat(2, minmax(0, 420px));
     }
   }
 
   @media (max-width: 600px) {
+    #ycs-analyst-directory .cards {
+      grid-template-columns: minmax(0, 460px);
+    }
+
     #ycs-analyst-directory .analyst-card {
       grid-template-columns: 78px minmax(0, 1fr);
       gap: 10px;
