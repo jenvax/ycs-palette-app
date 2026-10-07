@@ -73,7 +73,10 @@
                 <h2>{{ topic_title | escape }}</h2>
                 <p>{% if topic_description != blank %}{{ topic_description | escape }}{% else %}{{ topic.links.size }} lesson{% unless topic.links.size == 1 %}s{% endunless %}{% endif %}</p>
                 {% if topic_unlocked == false %}
-                  <span class="ycs-learn-hub__button ycs-learn-hub__button--locked" aria-label="{{ topic_title | escape }} is locked">Locked</span>
+                  <div class="ycs-learn-card__member-feature">
+                    <strong><span aria-hidden="true">&#128274;</span> YCS MEMBER FEATURE</strong>
+                    <a class="ycs-learn-hub__button" href="/#pricing">Join YCS &rarr;</a>
+                  </div>
                 {% elsif topic.links.size == 1 %}
                   <a class="ycs-learn-hub__button" href="{{ topic.links.first.url }}">Open Lesson</a>
                 {% else %}
@@ -199,8 +202,9 @@
   .ycs-learn-card p { margin: 0 0 28px; color: #686a72; font-size: 17px; line-height: 1.55; }
   .ycs-learn-hub__button { display: inline-flex; min-height: 46px; margin-top: auto; align-items: center; justify-content: center; border-radius: 6px; background: #cf3f65; color: #fff; font-size: 15px; font-weight: 700; line-height: 1.2; padding: 12px 20px; text-decoration: none; }
   .ycs-learn-hub__button:hover { background: #b72f55; color: #fff; }
-  .ycs-learn-hub__button--locked { background: #ece9ef; color: #66636d; cursor: not-allowed; }
-  .ycs-learn-hub__button--locked:hover { background: #ece9ef; color: #66636d; }
+  .ycs-learn-card__member-feature { display: flex; margin-top: auto; flex-direction: column; align-items: flex-start; gap: 12px; }
+  .ycs-learn-card__member-feature strong { color: #5c31bd; font-size: 12px; font-weight: 800; letter-spacing: 0; }
+  .ycs-learn-card__member-feature .ycs-learn-hub__button { margin-top: 0; }
   button.ycs-learn-hub__button { border: 0; cursor: pointer; }
   .ycs-learn-topic { max-width: 900px; margin: 0 auto; }
   .ycs-learn-topic__header { margin-bottom: 30px; }
