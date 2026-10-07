@@ -45,7 +45,7 @@ Show Style Masters Hub button if:
 <div class="account-quick-links">
   {% assign palette_access_string = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
 
-  {% if palette_access_string contains ',YCSMEMBER,' or palette_access_string contains ',TRADE,' or palette_access_string contains ',FREEMEMBER,' %}
+  {% if palette_access_string contains ',YCSMEMBER,' or palette_access_string contains ',TRADE,' or palette_access_string contains ',FREEMEMBER,' or palette_access_string contains ',YCS_ADMIN,' %}
     <a href="/pages/my-ycs" class="account-tool account-tool--primary">
       My YCS
     </a>

@@ -1,0 +1,35 @@
+{% assign lesson_access = false %}
+{% if customer %}
+  {% assign lesson_tags = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
+  {% if lesson_tags contains ',YCSMEMBER,' or lesson_tags contains ',TRADE,' or lesson_tags contains ',YCS_ADMIN,' %}
+    {% assign lesson_access = true %}
+  {% endif %}
+{% endif %}
+
+<main class="ycs-lesson">
+  <nav class="ycs-lesson__nav">
+    <a href="/pages/learn">Back to Learn</a>
+    <a href="mailto:support@yourcolorstyle.com">Contact</a>
+  </nav>
+  {% if customer == nil %}
+    <h1>{{ page.title | escape }}</h1>
+    <p>Please sign in to access this lesson.</p>
+    <a class="ycs-lesson__button" href="{{ routes.account_login_url }}">Sign In</a>
+  {% elsif lesson_access %}
+    <article>
+      <p class="ycs-lesson__kicker">YCS Learning Library</p>
+      <h1>{{ page.title | escape }}</h1>
+      <div class="ycs-lesson__content rte">{{ page.content }}</div>
+    </article>
+  {% else %}
+    <h1>{{ page.title | escape }}</h1>
+    <p>An active YCS membership is required to access this lesson.</p>
+  {% endif %}
+</main>
+
+{% style %}
+  .shopify-section-header,#shopify-section-header,.site-header,.header-wrapper,.header,#shopify-section-footer,.shopify-section--footer,.site-footer,footer{display:none!important}
+  body{margin-top:0!important;padding-top:0!important}.ycs-lesson{max-width:900px;margin:0 auto;padding:28px 24px 80px;color:#313238}.ycs-lesson__nav{display:flex;justify-content:space-between;gap:20px;margin-bottom:52px}.ycs-lesson__nav a{color:#4b4d55;font-weight:600;text-decoration:none}.ycs-lesson__kicker{margin:0 0 8px;color:#bd315b;font-size:13px;font-weight:700;text-transform:uppercase}.ycs-lesson h1{margin:0 0 30px;font-size:42px;line-height:1.15;letter-spacing:0}.ycs-lesson__content{font-size:18px;line-height:1.7}.ycs-lesson__content h2,.ycs-lesson__content h3{margin-top:1.7em;letter-spacing:0}.ycs-lesson__content img{max-width:100%;height:auto}.ycs-lesson__button{display:inline-flex;margin-top:18px;padding:12px 20px;border-radius:6px;background:#cf3f65;color:#fff;font-weight:700;text-decoration:none}@media(max-width:700px){.ycs-lesson{padding:22px 16px 60px}.ycs-lesson__nav{margin-bottom:36px}.ycs-lesson h1{font-size:32px}.ycs-lesson__content{font-size:17px}}
+{% endstyle %}
+
+{% schema %}{"name":"YCS learning lesson","settings":[],"presets":[{"name":"YCS learning lesson"}]}{% endschema %}

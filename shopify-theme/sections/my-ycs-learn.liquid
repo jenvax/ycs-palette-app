@@ -2,11 +2,11 @@
 {% assign ycs_free_member = false %}
 {% if customer %}
   {% assign ycs_member_tags = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
-  {% if ycs_member_tags contains ',YCSMEMBER,' or ycs_member_tags contains ',TRADE,' or ycs_member_tags contains ',FREEMEMBER,' %}
+  {% if ycs_member_tags contains ',YCSMEMBER,' or ycs_member_tags contains ',TRADE,' or ycs_member_tags contains ',FREEMEMBER,' or ycs_member_tags contains ',YCS_ADMIN,' %}
     {% assign ycs_member_access = true %}
   {% endif %}
   {% if ycs_member_tags contains ',FREEMEMBER,' %}
-    {% unless ycs_member_tags contains ',YCSMEMBER,' or ycs_member_tags contains ',TRADE,' %}
+    {% unless ycs_member_tags contains ',YCSMEMBER,' or ycs_member_tags contains ',TRADE,' or ycs_member_tags contains ',YCS_ADMIN,' %}
       {% assign ycs_free_member = true %}
     {% endunless %}
   {% endif %}
@@ -48,9 +48,74 @@
           </div>
         </article>
       </div>
+    {% else %}
+      {% assign learning_menu = section.settings.learning_menu %}
+      {% if learning_menu != blank and learning_menu.links.size > 0 %}
+        <div class="ycs-learn-hub__grid" data-topic-grid>
+          {% for topic in learning_menu.links %}
+            <article class="ycs-learn-card">
+              <div class="ycs-learn-card__accent"></div>
+              <div class="ycs-learn-card__body">
+                <h2>{{ topic.title | escape }}</h2>
+                <p>{{ topic.links.size }} lesson{% unless topic.links.size == 1 %}s{% endunless %}</p>
+                <button class="ycs-learn-hub__button" type="button" data-open-topic="{{ forloop.index0 }}">Explore Topic</button>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+
+        {% for topic in learning_menu.links %}
+          <section class="ycs-learn-topic" data-topic="{{ forloop.index0 }}" hidden>
+            <button class="ycs-learn-topic__back" type="button" data-close-topic>&larr; All Topics</button>
+            <header class="ycs-learn-topic__header">
+              <p class="ycs-learn-hub__kicker">Learning Library</p>
+              <h2>{{ topic.title | escape }}</h2>
+            </header>
+            <div class="ycs-learn-hub__grid">
+              {% for lesson in topic.links %}
+                <article class="ycs-learn-card ycs-learn-card--lesson">
+                  <div class="ycs-learn-card__body">
+                    <h3>{{ lesson.title | escape }}</h3>
+                    <a class="ycs-learn-hub__button" href="{{ lesson.url }}">Open Lesson</a>
+                  </div>
+                </article>
+              {% else %}
+                <p>No lessons have been added to this topic yet.</p>
+              {% endfor %}
+            </div>
+          </section>
+        {% endfor %}
+      {% elsif ycs_member_tags contains ',YCS_ADMIN,' %}
+        <div class="ycs-learn-admin-note">
+          Select a navigation menu in the My YCS Learn section settings. Top-level links become topics and nested links become lessons.
+        </div>
+      {% endif %}
     {% endif %}
   {% endif %}
 </section>
+
+<script>
+  (function () {
+    var grid = document.querySelector('[data-topic-grid]');
+    if (!grid) return;
+    var topics = Array.from(document.querySelectorAll('[data-topic]'));
+    function showGrid() {
+      grid.hidden = false;
+      topics.forEach(function (topic) { topic.hidden = true; });
+    }
+    document.querySelectorAll('[data-open-topic]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        grid.hidden = true;
+        topics.forEach(function (topic) {
+          topic.hidden = topic.dataset.topic !== button.dataset.openTopic;
+        });
+      });
+    });
+    document.querySelectorAll('[data-close-topic]').forEach(function (button) {
+      button.addEventListener('click', showGrid);
+    });
+  })();
+</script>
 
 {% style %}
   .shopify-section-header, #shopify-section-header, .site-header, .header-wrapper, .header, #shopify-section-footer, .shopify-section--footer, .site-footer, footer.footer, footer[role="contentinfo"] { display: none !important; }
@@ -68,9 +133,17 @@
   .ycs-learn-card__accent { height: 10px; background: linear-gradient(90deg, #385c7d, #56a3ae, #83c998, #e6bd59); }
   .ycs-learn-card__body { display: flex; min-height: 230px; flex-direction: column; align-items: flex-start; padding: 28px; }
   .ycs-learn-card h2 { margin: 0 0 10px; color: #303139; font-size: 24px; line-height: 1.32; letter-spacing: 0; }
+  .ycs-learn-card h3 { margin: 0 0 22px; color: #303139; font-size: 21px; line-height: 1.35; letter-spacing: 0; }
   .ycs-learn-card p { margin: 0 0 28px; color: #686a72; font-size: 17px; line-height: 1.55; }
   .ycs-learn-hub__button { display: inline-flex; min-height: 46px; margin-top: auto; align-items: center; justify-content: center; border-radius: 6px; background: #cf3f65; color: #fff; font-size: 15px; font-weight: 700; line-height: 1.2; padding: 12px 20px; text-decoration: none; }
   .ycs-learn-hub__button:hover { background: #b72f55; color: #fff; }
+  button.ycs-learn-hub__button { border: 0; cursor: pointer; }
+  .ycs-learn-topic__back { margin: 0 0 28px; padding: 0; border: 0; background: none; color: #4b4d55; font: inherit; font-weight: 700; cursor: pointer; }
+  .ycs-learn-topic__header { margin-bottom: 28px; }
+  .ycs-learn-topic__header h2 { margin: 0; font-size: 34px; letter-spacing: 0; }
+  .ycs-learn-card--lesson .ycs-learn-card__body { min-height: 180px; }
+  .ycs-learn-admin-note { max-width: 760px; padding: 20px; border-left: 4px solid #bd315b; background: #fff3f6; color: #555861; line-height: 1.6; }
+  .ycs-learn-hub [hidden] { display: none !important; }
   @media (max-width: 720px) {
     .ycs-learn-hub { padding: 22px 16px 52px; }
     .ycs-learn-hub__nav { margin-bottom: 30px; }
@@ -83,7 +156,13 @@
 {% schema %}
 {
   "name": "My YCS Learn",
-  "settings": [],
+  "settings": [
+    {
+      "type": "link_list",
+      "id": "learning_menu",
+      "label": "Learning library menu"
+    }
+  ],
   "presets": [{ "name": "My YCS Learn" }]
 }
 {% endschema %}
