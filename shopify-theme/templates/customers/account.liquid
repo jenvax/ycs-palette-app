@@ -1,6 +1,10 @@
 <!-- breadcrumb -->
 {% include 'breadcrumb' %}
 
+<div class="my-ycs-account-navigation">
+  {% render 'my-ycs-logo' %}
+</div>
+
 <div class="page-width">
   <h1 class="page-title">{{ 'customer.account.title' | t }}</h1>
 
@@ -174,6 +178,20 @@ Show Style Masters Hub button if:
   </div>
 </div>
 <style>
+  .shopify-section-header,
+  #shopify-section-header,
+  .site-header,
+  .header-wrapper,
+  .header,
+  .breadcrumb,
+  nav.breadcrumb {
+    display: none !important;
+  }
+
+  .my-ycs-account-navigation {
+    min-height: 76px;
+  }
+
   .account-resources-title {
   font-size: 16px;
   font-weight: 600;

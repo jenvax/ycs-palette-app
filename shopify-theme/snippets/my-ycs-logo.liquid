@@ -1,6 +1,8 @@
 {% assign ycs_menu_path = request.path %}
 {% assign ycs_menu_section = 'my-ycs' %}
-{% if page.template_suffix == 'ycs-learning-lesson' or ycs_menu_path contains '/learn' %}
+{% if ycs_menu_path == routes.account_url %}
+  {% assign ycs_menu_section = 'account' %}
+{% elsif page.template_suffix == 'ycs-learning-lesson' or ycs_menu_path contains '/learn' %}
   {% assign ycs_menu_section = 'learn' %}
 {% elsif ycs_menu_path contains '/tools' or ycs_menu_path contains '/photo-prep' or ycs_menu_path contains '/my-photos' or ycs_menu_path contains '/draping-studio' %}
   {% assign ycs_menu_section = 'tools' %}
@@ -67,13 +69,13 @@
       </nav>
       <nav class="my-ycs-menu-shell__utility" aria-label="Account navigation">
         <a href="mailto:support@yourcolorstyle.com">Contact</a>
-        <a href="{{ routes.account_url }}">My Account</a>
+        <a href="{{ routes.account_url }}"{% if ycs_menu_section == 'account' %} class="is-active" aria-current="page"{% endif %}>My Account</a>
       </nav>
     </div>
   </div>
 </header>
 
-{% unless ycs_menu_path == '/pages/learn' or ycs_menu_path == '/pages/tools' or ycs_menu_path == '/pages/palettes' or ycs_menu_path == '/pages/directory' or ycs_menu_path == '/pages/my-ycs' or ycs_use_original_tool_nav %}
+{% unless ycs_menu_section == 'account' or ycs_menu_path == '/pages/learn' or ycs_menu_path == '/pages/tools' or ycs_menu_path == '/pages/palettes' or ycs_menu_path == '/pages/directory' or ycs_menu_path == '/pages/my-ycs' or ycs_use_original_tool_nav %}
   <nav class="my-ycs-submenu" aria-label="{% if page.template_suffix == 'ycs-learning-lesson' %}Lesson navigation{% elsif ycs_menu_section == 'create' %}Palette navigation{% else %}Professional tools navigation{% endif %}">
     <div class="my-ycs-submenu__inner">
       {% if page.template_suffix == 'ycs-learning-lesson' %}
@@ -125,7 +127,7 @@
   .my-ycs-menu-shell__primary a:hover,.my-ycs-menu-shell__primary a.is-active{background:#f0ebff!important;color:#5c31bd!important}
   .my-ycs-menu-shell__utility{margin-left:auto!important;padding-left:20px!important;border-left:1px solid #dedbe7!important}
   .my-ycs-menu-shell__utility a+a{margin-left:4px!important;padding-left:28px!important;border-left:1px solid #dedbe7!important;border-radius:0!important}
-  .my-ycs-menu-shell__utility a:hover{color:#5c31bd!important}
+  .my-ycs-menu-shell__utility a:hover,.my-ycs-menu-shell__utility a.is-active{background:#f0ebff!important;color:#5c31bd!important}
   .my-ycs-submenu{position:fixed!important;top:76px!important;left:0!important;z-index:10019!important;display:block!important;width:100%!important;margin:0!important;padding:0!important;border:0!important;border-bottom:1px solid #e7e3f0!important;background:#f8f6ff!important;box-shadow:none!important}
   .my-ycs-submenu__inner{display:flex;align-items:center;width:min(100% - 48px,1440px);min-height:50px;margin:0 auto;gap:28px;overflow-x:auto;scrollbar-width:none}.my-ycs-submenu__inner::-webkit-scrollbar{display:none}
   .my-ycs-submenu__label{flex:0 0 auto;color:#5c31bd;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
