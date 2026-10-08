@@ -366,10 +366,15 @@
         "heading": "YCS Color Palettes",
         "intro": "Explore the complete collection of Your Color Style color palettes included with your membership."
       }
+    },
+    "app_footer": {
+      "type": "my-ycs-app-footer",
+      "settings": {}
     }
   },
   "order": [
     "page",
-    "ycs_color_analysis_tools"
+    "ycs_color_analysis_tools",
+    "app_footer"
   ]
 }

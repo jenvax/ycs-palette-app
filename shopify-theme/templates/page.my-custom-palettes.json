@@ -366,10 +366,15 @@
         "heading": "My Custom Palettes",
         "intro": "Create and manage personalized color palettes using your own custom colors."
       }
+    },
+    "app_footer": {
+      "type": "my-ycs-app-footer",
+      "settings": {}
     }
   },
   "order": [
     "page",
-    "ycs_color_analysis_tools"
+    "ycs_color_analysis_tools",
+    "app_footer"
   ]
 }

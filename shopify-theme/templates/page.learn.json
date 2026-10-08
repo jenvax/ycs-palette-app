@@ -3,7 +3,11 @@
     "main": {
       "type": "my-ycs-learn",
       "settings": {}
+    },
+    "app_footer": {
+      "type": "my-ycs-app-footer",
+      "settings": {}
     }
   },
-  "order": ["main"]
+  "order": ["main", "app_footer"]
 }
