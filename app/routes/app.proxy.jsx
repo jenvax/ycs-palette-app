@@ -1240,8 +1240,14 @@ export async function loader({ request }) {
 
   if (action === "colorAnalystDirectory") {
     try {
-      const ownerId = await requireSignedDirectoryCustomer(request, url);
-      return Response.json({ listing: await getOwnDirectoryListing(ownerId) });
+      const listingPromise = loggedInCustomerId
+        ? getOwnDirectoryListing(loggedInCustomerId)
+        : Promise.resolve(null);
+      const [, listing] = await Promise.all([
+        requireSignedDirectoryCustomer(request, url),
+        listingPromise,
+      ]);
+      return Response.json({ listing });
     } catch (error) {
       console.error("colorAnalystDirectory loader failed:", error);
       return Response.json({ error: error.message || "Unable to load your listing" }, { status: error.status || 500 });

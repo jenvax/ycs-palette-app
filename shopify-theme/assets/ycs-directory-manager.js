@@ -13,6 +13,7 @@
   var imagePreview = root.querySelector('[data-image]');
   var endpoint = root.dataset.url + '?action=colorAnalystDirectory';
   var draftKey = 'ycs-directory-draft-' + root.dataset.customerId;
+  var listingCacheKey = 'ycs-directory-listing-' + root.dataset.customerId;
   var listing = null;
   var image = { imageUrl: '', imagePublicId: '' };
   var saveTimer = null;
@@ -80,6 +81,18 @@
   function savedDraft() {
     try { return JSON.parse(localStorage.getItem(draftKey) || 'null'); }
     catch (error) { return null; }
+  }
+
+  function cachedListing() {
+    try { return JSON.parse(localStorage.getItem(listingCacheKey) || 'null'); }
+    catch (error) { return null; }
+  }
+
+  function cacheListing(data) {
+    try {
+      if (data) localStorage.setItem(listingCacheKey, JSON.stringify(data));
+      else localStorage.removeItem(listingCacheKey);
+    } catch (error) {}
   }
 
   function persistDraft() {
@@ -210,6 +223,7 @@
     root.querySelectorAll('[data-publish], [data-update], [data-status-action]').forEach(function (button) { button.disabled = true; });
     request({ operation: 'publish', listing: data }).then(function (response) {
       listing = response.listing;
+      cacheListing(listing);
       localStorage.removeItem(draftKey);
       fill(listing);
       form.hidden = true;
@@ -227,6 +241,7 @@
     root.querySelectorAll('[data-status-action]').forEach(function (button) { button.disabled = true; });
     request({ operation: 'unpublish' }).then(function (response) {
       listing = response.listing;
+      cacheListing(listing);
       updateActionLabels(listing);
       showMessage('Your listing has been unpublished.');
     }).catch(function (error) {
@@ -266,6 +281,14 @@
     reader.readAsDataURL(file);
   };
 
+  var initialListing = cachedListing();
+  if (initialListing) {
+    listing = initialListing;
+    loading.hidden = true;
+    fill(listing);
+    showPreview(savedDraft() || listing);
+  }
+
   fetch(endpoint).then(function (response) {
     return response.json().then(function (data) {
       if (!response.ok) throw new Error(data.error || 'Unable to load your listing');
@@ -273,6 +296,7 @@
     });
   }).then(function (data) {
     listing = data.listing;
+    cacheListing(listing);
     loading.hidden = true;
     if (listing) {
       fill(listing);
