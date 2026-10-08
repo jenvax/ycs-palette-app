@@ -1,6 +1,6 @@
 {% assign ycs_menu_path = request.path %}
 {% assign ycs_menu_section = 'my-ycs' %}
-{% if ycs_menu_path == routes.account_url %}
+{% if ycs_menu_path == routes.account_url or ycs_menu_path == '/pages/digital-downloads' %}
   {% assign ycs_menu_section = 'account' %}
 {% elsif page.template_suffix == 'ycs-learning-lesson' or ycs_menu_path contains '/learn' %}
   {% assign ycs_menu_section = 'learn' %}

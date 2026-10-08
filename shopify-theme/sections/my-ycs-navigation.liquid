@@ -1,0 +1,28 @@
+<div class="my-ycs-standalone-navigation">
+  {% render 'my-ycs-logo' %}
+</div>
+
+{% style %}
+  .shopify-section-header,
+  #shopify-section-header,
+  .site-header,
+  .header-wrapper,
+  .header,
+  .bredcrumbWrap,
+  .breadcrumb,
+  nav.breadcrumb {
+    display: none !important;
+  }
+
+  .my-ycs-standalone-navigation {
+    min-height: 76px;
+  }
+{% endstyle %}
+
+{% schema %}
+{
+  "name": "My YCS navigation",
+  "settings": [],
+  "presets": [{ "name": "My YCS navigation" }]
+}
+{% endschema %}

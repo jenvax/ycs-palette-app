@@ -1,0 +1,13 @@
+{
+  "sections": {
+    "navigation": {
+      "type": "my-ycs-navigation",
+      "settings": {}
+    },
+    "main": {
+      "type": "digital-downloads",
+      "settings": {}
+    }
+  },
+  "order": ["navigation", "main"]
+}
