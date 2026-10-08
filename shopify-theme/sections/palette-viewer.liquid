@@ -101,7 +101,7 @@
         <p class="ycs-palette-login__text">
           Please return to My Color Palettes to open a palette you have access to.
         </p>
-        <a href="/pages/my-palettes" class="ycs-palette-login__button">
+        <a href="/pages/my-palettes?view=owned" class="ycs-palette-login__button">
           Go to My Color Palettes
         </a>
       </div>
@@ -113,7 +113,7 @@
           <a class="ycs-palette-nav-link" href="{{ routes.account_url }}">My Account</a>
           <a class="ycs-palette-nav-link" href="/pages/my-palettes?view=catools">Tools</a>
         {% else %}
-          <a class="ycs-palette-nav-link" href="/pages/my-palettes">My Color Palettes</a>
+          <a class="ycs-palette-nav-link" href="/pages/my-palettes?view=owned">My Color Palettes</a>
         {% endif %}
         {% if is_admin %}
           <a class="ycs-palette-nav-link" href="/pages/my-wardrobes">My Wardrobes</a>
@@ -951,15 +951,15 @@
     const downloadPalettePngsEl = document.getElementById('ycs-download-palette-pngs');
 
     const params = new URLSearchParams(window.location.search);
-    const returnUrl = params.get('returnUrl') || '/pages/my-palettes';
-    const safeReturnUrl = returnUrl.startsWith('/') ? returnUrl : '/pages/my-palettes';
+    const returnUrl = params.get('returnUrl') || '/pages/my-palettes?view=owned';
+    const safeReturnUrl = returnUrl.startsWith('/') ? returnUrl : '/pages/my-palettes?view=owned';
     const returnLabel = 'My Color Palettes';
-    const backLinkEl = document.querySelector('.ycs-palette-nav-link[href="/pages/my-palettes"]');
+    const backLinkEl = document.querySelector('.ycs-palette-nav-link[href="/pages/my-palettes?view=owned"]');
     const unauthorizedReturnButtonEl = document.querySelector('#palette-unauthorized .ycs-palette-login__button');
     const unauthorizedReturnTextEl = document.querySelector('#palette-unauthorized .ycs-palette-login__text');
 
     if (backLinkEl) {
-      backLinkEl.href = '/pages/my-palettes';
+      backLinkEl.href = '/pages/my-palettes?view=owned';
       backLinkEl.textContent = returnLabel;
     }
 
