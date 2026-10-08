@@ -84,7 +84,7 @@
         <div class="ycs-analyze-card__accent ycs-analyze-card__accent--structured"></div>
         <div class="ycs-analyze-card__body">
           <h2>Structured Analysis</h2>
-          <p>Select or create a client, prepare their photo, and begin an analysis.</p>
+          <p>Follow a guided color analysis process to evaluate depth, undertone, and chroma, step by step.</p>
           {% if ycs_free_member %}
             <div class="ycs-analyze-card__member-feature">
               <strong><span aria-hidden="true">&#128274;</span> YCS MEMBER FEATURE</strong>
@@ -92,6 +92,22 @@
             </div>
           {% else %}
             <a href="/pages/tools-photo-prep?mode=trade&amp;workflow=color-analysis&amp;returnUrl=%2Fpages%2Ftools" class="ycs-analyze-hub__button">Open Tool</a>
+          {% endif %}
+        </div>
+      </article>
+
+      <article class="ycs-analyze-card">
+        <div class="ycs-analyze-card__accent ycs-analyze-card__accent--lip-draping"></div>
+        <div class="ycs-analyze-card__body">
+          <h2>Lip &amp; Draping Studio</h2>
+          <p>Experiment with lip colors and digitally drape colors onto photos to see how different shades work with someone's natural coloring.</p>
+          {% if ycs_free_member %}
+            <div class="ycs-analyze-card__member-feature">
+              <strong><span aria-hidden="true">&#128274;</span> YCS MEMBER FEATURE</strong>
+              <a class="ycs-analyze-hub__button" href="/#membership">Join YCS &rarr;</a>
+            </div>
+          {% else %}
+            <a href="/pages/tools-lip-draping" class="ycs-analyze-hub__button">Open Lip &amp; Draping Studio</a>
           {% endif %}
         </div>
       </article>
@@ -118,6 +134,7 @@
   .ycs-analyze-card__accent { height: 10px; }
   .ycs-analyze-card__accent--clients { background: linear-gradient(90deg, #385c7d, #56a3ae, #83c998); }
   .ycs-analyze-card__accent--structured { background: linear-gradient(90deg, #bd315b, #dd7866, #e6bd59); }
+  .ycs-analyze-card__accent--lip-draping { background: linear-gradient(90deg, #8c3f78, #d44b70, #ee8665); }
   .ycs-analyze-card__accent--draping { background: linear-gradient(90deg, #6350a8, #b84f86, #de7b68); }
   .ycs-analyze-card__accent--photos { background: linear-gradient(90deg, #24758c, #53a69b, #9acb7a); }
   .ycs-analyze-card__body { display: flex; min-height: 230px; flex-direction: column; align-items: flex-start; padding: 28px; }
