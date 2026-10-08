@@ -1122,8 +1122,8 @@ if (favoriteBtn) {
   if (returnUrl) params.set('returnUrl', returnUrl);
 
   const baseUrl = hasPaidDrapingAccess
-  ? '/pages/photo-prep?mode=personal&workflow=photo-draping'
-  : '/pages/photo-prep?mode=personal&workflow=photo-draping&trial=sample';
+  ? '/pages/my-photos?mode=personal'
+  : '/pages/my-photos?mode=personal&trial=sample';
 
 photoStudioUrl = `${baseUrl}&${params.toString()}`;
 }
