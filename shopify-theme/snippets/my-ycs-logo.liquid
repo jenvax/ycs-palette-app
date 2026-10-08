@@ -35,6 +35,7 @@
 {% endif %}
 {% assign ycs_lesson_topic_title = '' %}
 {% assign ycs_lesson_topic_index = '' %}
+{% assign ycs_lesson_topic_size = 0 %}
 {% assign ycs_lesson_title_key = page.title | strip | downcase %}
 {% if page.template_suffix == 'ycs-learning-lesson' %}
   {% assign ycs_learning_menu = linklists['ycs-learning-library'] %}
@@ -45,6 +46,7 @@
         {% assign ycs_topic_parts = ycs_topic.title | split: '|' %}
         {% assign ycs_lesson_topic_title = ycs_topic_parts.first | strip %}
         {% assign ycs_lesson_topic_index = ycs_topic_index %}
+        {% assign ycs_lesson_topic_size = ycs_topic.links.size %}
       {% endif %}
     {% endfor %}
   {% endfor %}
@@ -81,7 +83,7 @@
       {% if page.template_suffix == 'ycs-learning-lesson' %}
         <a href="/pages/learn">Back to Learn</a>
         {% assign ycs_lesson_topic_key = ycs_lesson_topic_title | strip | downcase %}
-        {% if ycs_lesson_topic_title != blank and ycs_lesson_topic_key != ycs_lesson_title_key %}
+        {% if ycs_lesson_topic_size > 1 and ycs_lesson_topic_title != blank and ycs_lesson_topic_key != ycs_lesson_title_key %}
           <a href="/pages/learn?topic={{ ycs_lesson_topic_index }}">{{ ycs_lesson_topic_title | escape }}</a>
         {% endif %}
         <a href="{{ request.path }}" class="is-active" aria-current="page">{{ page.title | escape }}</a>
