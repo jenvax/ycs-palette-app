@@ -284,7 +284,9 @@
 
   {% if customer == nil %}
     <div class="ycs-my-palettes__header">
-      <p class="ycs-my-palettes__kicker">Your Color Style</p>
+      {% unless is_owned_palettes_page %}
+        <p class="ycs-my-palettes__kicker">Your Color Style</p>
+      {% endunless %}
       <h1>{{ ycs_page_heading }}</h1>
       <p class="ycs-my-palettes__intro">Please sign in to view your palettes.</p>
       <div class="ycs-my-palettes__signin">
@@ -314,7 +316,9 @@
 </div>
 
     <div class="ycs-my-palettes__header">
-      <p class="ycs-my-palettes__kicker">Your Color Style</p>
+      {% unless is_owned_palettes_page %}
+        <p class="ycs-my-palettes__kicker">Your Color Style</p>
+      {% endunless %}
       <h1>{{ ycs_page_heading }}</h1>
       <p class="ycs-my-palettes__intro">{{ ycs_page_intro }}</p>
     </div>
