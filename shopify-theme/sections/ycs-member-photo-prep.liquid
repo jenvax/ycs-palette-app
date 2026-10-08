@@ -212,7 +212,7 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
         <nav class="ycs-photo-prep-tool-nav" aria-label="My photo tools">
           {% render 'my-ycs-logo' %}
           <a href="/pages/tools" class="ycs-photo-prep-back">Tools</a>
-          <a href="/pages/photo-draping" class="ycs-photo-prep-back">Draping Studio</a>
+          <a href="/pages/draping-studio?view=draping-studio&mode=personal" class="ycs-photo-prep-back">Draping Studio</a>
           <a href="/pages/my-photos" class="ycs-photo-prep-back is-active" aria-current="page">My Photos</a>
         </nav>
       {% elsif can_use_client_management and is_personal_mode_request != true %}
@@ -1814,7 +1814,11 @@ function updateStartAnalysisLink() {
   const query = new URLSearchParams();
 
   if (IS_PERSONAL_MODE) {
-    let href = '/pages/photo-draping';
+    let href = IS_MY_PHOTOS_PAGE ? '/pages/draping-studio' : '/pages/photo-draping';
+
+    if (IS_MY_PHOTOS_PAGE) {
+      query.set('view', 'draping-studio');
+    }
 
     if (state.selectedPersonalPhotoId) {
       query.set('photoId', state.selectedPersonalPhotoId);
@@ -2164,6 +2168,8 @@ function openPersonalPhotoInPrep(buttonEl) {
     card.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
   });
 
+  updateMyPhotosDrapingLink(photoId);
+
   updateStatus();
   updateStartAnalysisLink();
   syncVisibility();
@@ -2175,6 +2181,18 @@ function openPersonalPhotoInPrep(buttonEl) {
   } else {
     showWorkingPhoto(null);
   }
+}
+
+function updateMyPhotosDrapingLink(photoId) {
+  if (!IS_MY_PHOTOS_PAGE) return;
+
+  const drapingLink = document.querySelector('.ycs-photo-prep-tool-nav a[href^="/pages/draping-studio"]');
+  if (!drapingLink) return;
+
+  const query = new URLSearchParams({ view: 'draping-studio', mode: 'personal' });
+  if (photoId) query.set('photoId', photoId);
+  query.set('photoSource', 'PersonalStudioPhotos');
+  drapingLink.href = '/pages/draping-studio?' + query.toString();
 }
 
 function clearSelectedPersonalPhoto(photoId) {
@@ -2270,6 +2288,7 @@ personalLibraryEmptyEl.hidden = true;
       ? new Date(photo.updatedAt).toLocaleDateString()
       : '';
     const drapeQuery = new URLSearchParams({
+      view: 'draping-studio',
       mode: 'personal',
       photoId: photoId,
       photoSource: 'PersonalStudioPhotos'
@@ -2308,7 +2327,7 @@ personalLibraryEmptyEl.hidden = true;
             </button>
             <a
   class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary"
-  href="/pages/photo-draping?${drapeQuery.toString()}"
+  href="/pages/draping-studio?${drapeQuery.toString()}"
 >
   Open Draping Studio
 </a>
@@ -4630,6 +4649,7 @@ if (IS_PERSONAL_MODE || IS_DIY_MODE) {
           card.classList.toggle('is-selected', isSelected);
           card.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
         });
+        updateMyPhotosDrapingLink(String(state.selectedPersonalPhotoId || '').trim());
 
         updateStatus();
         updateStartAnalysisLink();

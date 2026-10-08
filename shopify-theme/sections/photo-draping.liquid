@@ -4,6 +4,11 @@
   {% assign palette_access_string = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
 {% endif %}
 
+{% assign is_my_ycs_draping_page = false %}
+{% if page.handle == 'draping-studio' or template.suffix == 'draping-studio' %}
+  {% assign is_my_ycs_draping_page = true %}
+{% endif %}
+
 {% assign is_style_masters = false %}
 {% if palette_access_string contains ',VIP,' %}
   {% assign is_style_masters = true %}
@@ -97,7 +102,8 @@
 {% endfor %}
 
 <div
-  class="ycs-drape-app"
+  class="ycs-drape-app{% if is_my_ycs_draping_page %} ycs-drape-app--my-ycs{% endif %}"
+  data-is-my-ycs-draping="{% if is_my_ycs_draping_page %}true{% else %}false{% endif %}"
   data-is-style-masters="{{ is_style_masters }}"
   data-has-draping-studio="{% if has_draping_studio_access %}true{% else %}false{% endif %}"
 data-has-draping-studio-starter="{% if has_draping_studio_starter %}true{% else %}false{% endif %}"
@@ -112,7 +118,7 @@ data-has-draping-studio-full="{% if has_draping_studio %}true{% else %}false{% e
 >
   {% if customer == nil %}
     <div class="ycs-drape-login">
-      <h1>Sign in to access Photo Draping Studio</h1>
+      <h1>Sign in to access {% if is_my_ycs_draping_page %}Draping Studio{% else %}Photo Draping Studio{% endif %}</h1>
       <a href="{{ routes.account_login_url }}">Sign In</a>
     </div>
 
@@ -157,9 +163,16 @@ data-has-draping-studio-full="{% if has_draping_studio %}true{% else %}false{% e
 
   {% else %}
     <div class="ycs-drape-topnav">
-      <a href="{{ routes.account_url }}" class="ycs-drape-back-link">My Account</a>
-      <a href="/pages/my-palettes" class="ycs-drape-back-link">My Color Palettes</a>
-      <a href="/pages/photo-prep?mode=personal&workflow=photo-draping" class="ycs-drape-back-link">Photo Prep</a>
+      {% if is_my_ycs_draping_page %}
+        {% render 'my-ycs-logo' %}
+        <a href="/pages/tools" class="ycs-drape-back-link">Tools</a>
+        <a href="/pages/my-photos" class="ycs-drape-back-link">My Photos</a>
+        <a href="/pages/draping-studio?view=draping-studio&mode=personal" class="ycs-drape-back-link is-active" aria-current="page">Draping Studio</a>
+      {% else %}
+        <a href="{{ routes.account_url }}" class="ycs-drape-back-link">My Account</a>
+        <a href="/pages/my-palettes" class="ycs-drape-back-link">My Color Palettes</a>
+        <a href="/pages/photo-prep?mode=personal&workflow=photo-draping" class="ycs-drape-back-link">Photo Prep</a>
+      {% endif %}
 
       {% if is_admin %}
         <a
@@ -174,8 +187,8 @@ data-has-draping-studio-full="{% if has_draping_studio %}true{% else %}false{% e
     <div id="ycs-drape-studio-root" class="ycs-drape-studio" data-mobile-step="photo">
       
       <div class="ycs-drape-header">
-        <p class="ycs-drape-kicker">Your Color Style</p>
-        <h1 class="ycs-drape-title">Photo Draping Studio</h1>
+        {% unless is_my_ycs_draping_page %}<p class="ycs-drape-kicker">Your Color Style</p>{% endunless %}
+        <h1 class="ycs-drape-title">{% if is_my_ycs_draping_page %}Draping Studio{% else %}Photo Draping Studio{% endif %}</h1>
         <p class="ycs-drape-subtitle">
           Upload a clear front-facing photo in natural light.
         </p>

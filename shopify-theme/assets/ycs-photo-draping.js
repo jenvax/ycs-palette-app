@@ -13,6 +13,9 @@
   const IS_SAMPLE_USER = appEl
     ? (readAppData('isSampleUser') === 'true')
     : false;
+  const IS_MY_YCS_DRAPING = appEl
+    ? (readAppData('isMyYcsDraping') === 'true')
+    : false;
 
   const uploadBtn = document.getElementById('ycs-upload-btn');
   const fileInput = document.getElementById('ycs-photo-input');
@@ -463,7 +466,9 @@ const HAS_DRAPING_STUDIO_FULL = appEl
         throw new Error(data.error || 'Could not delete photo');
       }
 
-      window.location.href = '/pages/photo-prep?mode=personal&workflow=photo-draping';
+      window.location.href = IS_MY_YCS_DRAPING
+        ? '/pages/my-photos'
+        : '/pages/photo-prep?mode=personal&workflow=photo-draping';
     } catch (error) {
       hidePhotoProcessing();
       console.error('Failed to delete personal studio photo', error);
@@ -1878,7 +1883,9 @@ function updateFilterArrows() {
   replaceButtons.forEach(function (btn) {
   btn.addEventListener('click', function () {
     if (MODE === 'personal' && (IS_STYLE_MASTERS || HAS_DRAPING_STUDIO || IS_ADMIN)) {
-      let href = '/pages/photo-prep?mode=personal&workflow=photo-draping';
+      let href = IS_MY_YCS_DRAPING
+        ? '/pages/my-photos?mode=personal'
+        : '/pages/photo-prep?mode=personal&workflow=photo-draping';
 
       if (PERSONAL_PHOTO_ID) {
         href += '&photoId=' + encodeURIComponent(PERSONAL_PHOTO_ID);
