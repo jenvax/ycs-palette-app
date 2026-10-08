@@ -2,14 +2,10 @@
 {% assign ycs_free_member = false %}
 {% if customer %}
   {% assign ycs_member_tags = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
-  {% if ycs_member_tags contains ',YCSMEMBER,' or ycs_member_tags contains ',TRADE,' or ycs_member_tags contains ',FREEMEMBER,' or ycs_member_tags contains ',YCS_ADMIN,' %}
-    {% assign ycs_member_access = true %}
-  {% endif %}
-  {% if ycs_member_tags contains ',FREEMEMBER,' %}
-    {% unless ycs_member_tags contains ',YCSMEMBER,' or ycs_member_tags contains ',TRADE,' or ycs_member_tags contains ',YCS_ADMIN,' %}
-      {% assign ycs_free_member = true %}
-    {% endunless %}
-  {% endif %}
+  {% assign ycs_member_access = true %}
+  {% unless ycs_member_tags contains ',YCSMEMBER,' or ycs_member_tags contains ',TRADE,' or ycs_member_tags contains ',YCS_ADMIN,' %}
+    {% assign ycs_free_member = true %}
+  {% endunless %}
 {% endif %}
 
 <section class="ycs-learn-hub">
@@ -29,7 +25,7 @@
       <p class="ycs-learn-hub__kicker">Your Color Style</p>
       <h1>Learn</h1>
       <p>Please sign in to access your membership.</p>
-      <a href="{{ routes.account_login_url }}" class="ycs-learn-hub__button">Sign In</a>
+      <a href="{{ routes.account_login_url }}?return_url=%2Fpages%2Fmy-ycs" class="ycs-learn-hub__button">Sign In</a>
     </header>
   {% elsif ycs_member_access == false %}
     <header class="ycs-learn-hub__header">

@@ -1,11 +1,11 @@
 {% assign tags = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
 {% assign paid = false %}{% assign free = false %}
-{% if tags contains ',YCSMEMBER,' or tags contains ',TRADE,' %}{% assign paid = true %}{% endif %}
-{% if tags contains ',FREEMEMBER,' %}{% assign free = true %}{% endif %}
+{% if tags contains ',YCSMEMBER,' or tags contains ',TRADE,' or tags contains ',YCS_ADMIN,' %}{% assign paid = true %}{% endif %}
+{% if customer and paid == false %}{% assign free = true %}{% endif %}
 <section class="dir"{% if paid %} data-directory-manager data-url="/apps/palette-data" data-customer-id="{{ customer.id }}"{% endif %}>
   <nav>{% render 'my-ycs-logo' %}<a href="/pages/my-ycs">Back to My YCS</a><a href="mailto:support@yourcolorstyle.com">Contact</a></nav>
   {% if customer == nil %}
-    <h1>Directory</h1><p>Please sign in to access your membership.</p><a class="btn" href="{{ routes.account_login_url }}">Sign In</a>
+    <h1>Directory</h1><p>Please sign in to access your membership.</p><a class="btn" href="{{ routes.account_login_url }}?return_url=%2Fpages%2Fmy-ycs">Sign In</a>
   {% elsif paid %}
     <header><small>MY YCS</small><h1>My Directory Listing</h1><p>Create and manage the listing potential clients see in the Your Color Style Color Analyst Directory.</p></header>
     <p data-msg role="status" aria-live="polite" hidden></p><p data-load>Loading your listing...</p>

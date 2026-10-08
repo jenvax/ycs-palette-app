@@ -5,7 +5,7 @@
   {% assign lesson_tags = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
   {% if lesson_tags contains ',YCSMEMBER,' or lesson_tags contains ',TRADE,' or lesson_tags contains ',YCS_ADMIN,' %}
     {% assign lesson_access = true %}
-  {% elsif lesson_tags contains ',FREEMEMBER,' %}
+  {% else %}
     {% assign lesson_is_free_member = true %}
   {% endif %}
 {% endif %}
@@ -34,7 +34,7 @@
   {% if customer == nil %}
     <h1>{{ page.title | escape }}</h1>
     <p>Please sign in to access this lesson.</p>
-    <a class="ycs-lesson__button" href="{{ routes.account_login_url }}">Sign In</a>
+    <a class="ycs-lesson__button" href="{{ routes.account_login_url }}?return_url=%2Fpages%2Fmy-ycs">Sign In</a>
   {% elsif lesson_access %}
     <article>
       <p class="ycs-lesson__kicker">YCS Learning Library</p>

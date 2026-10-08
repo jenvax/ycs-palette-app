@@ -1,16 +1,20 @@
 {% assign ycs_member_access = false %}
 {% assign ycs_free_member = false %}
+{% assign ycs_has_owned_palettes = false %}
 {% if customer %}
   {% assign ycs_member_tags = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
-  {% if ycs_member_tags contains ',YCSMEMBER,' or ycs_member_tags contains ',TRADE,' %}
-    {% assign ycs_member_access = true %}
-  {% endif %}
-  {% if ycs_member_tags contains ',FREEMEMBER,' %}
-    {% assign ycs_member_access = true %}
-    {% unless ycs_member_tags contains ',YCSMEMBER,' or ycs_member_tags contains ',TRADE,' %}
-      {% assign ycs_free_member = true %}
-    {% endunless %}
-  {% endif %}
+  {% assign ycs_member_access = true %}
+  {% unless ycs_member_tags contains ',YCSMEMBER,' or ycs_member_tags contains ',TRADE,' or ycs_member_tags contains ',YCS_ADMIN,' %}
+    {% assign ycs_free_member = true %}
+  {% endunless %}
+  {% assign ycs_palette_codes = 'CWL,CWM,CWD,CCL,CCM,CCD,SWL,SWM,SWD,SCL,SCM,SCD,LO,MO,DO,CWLG,CWMG,CWDG,SWLG,SWMG,SWDG' | split: ',' %}
+  {% for ycs_palette_code in ycs_palette_codes %}
+    {% assign ycs_palette_token = ',' | append: ycs_palette_code | append: ',' %}
+    {% if ycs_member_tags contains ycs_palette_token %}
+      {% assign ycs_has_owned_palettes = true %}
+      {% break %}
+    {% endif %}
+  {% endfor %}
 {% endif %}
 
 <section class="ycs-palettes-hub">
@@ -25,7 +29,7 @@
       <p class="ycs-palettes-hub__kicker">Your Color Style</p>
       <h1>Palettes</h1>
       <p>Please sign in to access your membership.</p>
-      <a href="{{ routes.account_login_url }}" class="ycs-palettes-hub__button">Sign In</a>
+      <a href="{{ routes.account_login_url }}?return_url=%2Fpages%2Fmy-ycs" class="ycs-palettes-hub__button">Sign In</a>
     </header>
   {% elsif ycs_member_access == false %}
     <header class="ycs-palettes-hub__header">
@@ -71,6 +75,17 @@
           {% endif %}
         </div>
       </article>
+
+      {% if ycs_has_owned_palettes %}
+        <article class="ycs-palettes-card">
+          <div class="ycs-palettes-card__accent ycs-palettes-card__accent--owned"></div>
+          <div class="ycs-palettes-card__body">
+            <h2>My Color Palettes</h2>
+            <p>Open the digital color palettes you have purchased from Your Color Style.</p>
+            <a href="/pages/my-palettes?view=owned" class="ycs-palettes-hub__button">View My Palettes</a>
+          </div>
+        </article>
+      {% endif %}
     </div>
   {% endif %}
 </section>
@@ -92,6 +107,7 @@
   .ycs-palettes-card__accent { height: 10px; }
   .ycs-palettes-card__accent--ycs { background: linear-gradient(90deg, #d84360, #ef965c, #e3c957, #55a47a, #4a8fc6); }
   .ycs-palettes-card__accent--custom { background: linear-gradient(90deg, #76559b, #c05287, #dd7b67); }
+  .ycs-palettes-card__accent--owned { background: linear-gradient(90deg, #315f87, #4fa3a0, #8abb68, #e0b951); }
   .ycs-palettes-card__body { display: flex; min-height: 230px; flex-direction: column; align-items: flex-start; padding: 28px; }
   .ycs-palettes-card h2 { margin: 0 0 10px; color: #303139; font-size: 24px; line-height: 1.32; letter-spacing: 0; }
   .ycs-palettes-card p { margin: 0 0 28px; color: #686a72; font-size: 17px; line-height: 1.55; }

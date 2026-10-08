@@ -21,10 +21,20 @@
   {% assign should_render_ycs_my_palettes = false %}
 {% endif %}
 
+{% assign is_owned_palettes_page = false %}
+{% if ycs_my_palettes_page_url contains 'view=owned&' %}
+  {% assign is_owned_palettes_page = true %}
+{% endif %}
+
 {% if should_render_ycs_my_palettes %}
 <div class="ycs-my-palettes">
   <div class="ycs-palette-topnav">
-    <a href="{{ routes.account_url }}" class="palette-back-link">Back to My Account</a>
+    {% if is_owned_palettes_page %}
+      {% render 'my-ycs-logo' %}
+      <a href="/pages/palettes" class="palette-back-link">Back to Palettes</a>
+    {% else %}
+      <a href="{{ routes.account_url }}" class="palette-back-link">Back to My Account</a>
+    {% endif %}
   </div>
 
   {% assign palette_access_string = '' %}
@@ -57,6 +67,9 @@
   {% if is_color_analysis_tools_page %}
     {% assign ycs_page_heading = 'Color Analysis Tools' %}
     {% assign ycs_page_intro = 'Open your color analysis tools and client workflow.' %}
+  {% elsif is_owned_palettes_page %}
+    {% assign ycs_page_heading = 'My Color Palettes' %}
+    {% assign ycs_page_intro = 'Open the digital color palettes you have purchased from Your Color Style.' %}
   {% endif %}
 
   {% assign is_admin = false %}
@@ -275,7 +288,7 @@
       <h1>{{ ycs_page_heading }}</h1>
       <p class="ycs-my-palettes__intro">Please sign in to view your palettes.</p>
       <div class="ycs-my-palettes__signin">
-        <a href="{{ routes.account_login_url }}" class="ycs-my-palettes__signin-button">Sign In</a>
+        <a href="{{ routes.account_login_url }}?return_url=%2Fpages%2Fmy-ycs" class="ycs-my-palettes__signin-button">Sign In</a>
       </div>
     </div>
 
@@ -340,6 +353,7 @@
       {% endif %}
     {% endfor %}
 
+    {% unless is_owned_palettes_page %}
     <div class="ycs-my-palettes__section ycs-my-palettes__section--studio">
       <h2 class="ycs-my-palettes__section-title">{% if is_color_analysis_tools_page %}Tools{% else %}Draping Studio{% endif %}</h2>
       <div class="ycs-my-palettes__grid ycs-my-palettes__grid--2">
@@ -708,6 +722,7 @@
 
       </div>
     </div>
+    {% endunless %}
 
     {% if is_color_analysis_tools_page == false and owned_count > 0 %}
       <div class="ycs-my-palettes__section">
@@ -1076,7 +1091,7 @@
       </div>
     {% endif %}
 
-    {% if is_color_analysis_tools_page == false and palette_access_string contains ',VIP,' and actual_is_admin == false %}
+    {% if is_owned_palettes_page == false and is_color_analysis_tools_page == false and palette_access_string contains ',VIP,' and actual_is_admin == false %}
       <div
         class="ycs-my-palettes__section ycs-style-masters-palettes"
         id="ycs-style-masters-palettes"
@@ -1093,7 +1108,7 @@
       </div>
     {% endif %}
 
-    {% if locked_count > 0 %}
+    {% if is_owned_palettes_page == false and locked_count > 0 %}
       <div class="ycs-my-palettes__section ycs-my-palettes__section--locked">
         <h2 class="ycs-my-palettes__section-title">Explore More Palettes</h2>
 
@@ -1165,6 +1180,12 @@
             {% endunless %}
           {% endfor %}
         </div>
+      </div>
+    {% endif %}
+
+    {% if is_owned_palettes_page and owned_count == 0 %}
+      <div class="ycs-my-palettes__empty">
+        No purchased color palettes are currently available on this account.
       </div>
     {% endif %}
   {% endif %}

@@ -1,15 +1,14 @@
 {% assign ycs_member_access = false %}
 {% assign ycs_free_member = false %}
+{% assign ycs_has_draping_studio = false %}
 {% if customer %}
   {% assign ycs_member_tags = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
-  {% if ycs_member_tags contains ',YCSMEMBER,' or ycs_member_tags contains ',TRADE,' %}
-    {% assign ycs_member_access = true %}
-  {% endif %}
-  {% if ycs_member_tags contains ',FREEMEMBER,' %}
-    {% assign ycs_member_access = true %}
-    {% unless ycs_member_tags contains ',YCSMEMBER,' or ycs_member_tags contains ',TRADE,' %}
-      {% assign ycs_free_member = true %}
-    {% endunless %}
+  {% assign ycs_member_access = true %}
+  {% unless ycs_member_tags contains ',YCSMEMBER,' or ycs_member_tags contains ',TRADE,' or ycs_member_tags contains ',YCS_ADMIN,' %}
+    {% assign ycs_free_member = true %}
+  {% endunless %}
+  {% if ycs_member_tags contains ',DRAPINGSTUDIO,' %}
+    {% assign ycs_has_draping_studio = true %}
   {% endif %}
 {% endif %}
 
@@ -25,7 +24,7 @@
       <p class="ycs-analyze-hub__kicker">Your Color Style</p>
       <h1>Tools</h1>
       <p>Please sign in to access your membership.</p>
-      <a href="{{ routes.account_login_url }}" class="ycs-analyze-hub__button">Sign In</a>
+      <a href="{{ routes.account_login_url }}?return_url=%2Fpages%2Fmy-ycs" class="ycs-analyze-hub__button">Sign In</a>
     </header>
   {% elsif ycs_member_access == false %}
     <header class="ycs-analyze-hub__header">
@@ -72,6 +71,26 @@
           {% endif %}
         </div>
       </article>
+
+      {% if ycs_has_draping_studio %}
+        <article class="ycs-analyze-card">
+          <div class="ycs-analyze-card__accent ycs-analyze-card__accent--draping"></div>
+          <div class="ycs-analyze-card__body">
+            <h2>Draping Studio</h2>
+            <p>Virtually drape colors from your purchased palettes using your saved photo.</p>
+            <a href="/pages/photo-draping" class="ycs-analyze-hub__button">Open Draping Studio</a>
+          </div>
+        </article>
+
+        <article class="ycs-analyze-card">
+          <div class="ycs-analyze-card__accent ycs-analyze-card__accent--photos"></div>
+          <div class="ycs-analyze-card__body">
+            <h2>My Photos</h2>
+            <p>Upload, prepare, and manage the photos you use in Draping Studio.</p>
+            <a href="/pages/photo-prep?mode=personal&amp;workflow=photo-draping&amp;returnUrl=%2Fpages%2Ftools" class="ycs-analyze-hub__button">Open My Photos</a>
+          </div>
+        </article>
+      {% endif %}
     </div>
   {% endif %}
 </section>
@@ -93,6 +112,8 @@
   .ycs-analyze-card__accent { height: 10px; }
   .ycs-analyze-card__accent--clients { background: linear-gradient(90deg, #385c7d, #56a3ae, #83c998); }
   .ycs-analyze-card__accent--structured { background: linear-gradient(90deg, #bd315b, #dd7866, #e6bd59); }
+  .ycs-analyze-card__accent--draping { background: linear-gradient(90deg, #6350a8, #b84f86, #de7b68); }
+  .ycs-analyze-card__accent--photos { background: linear-gradient(90deg, #24758c, #53a69b, #9acb7a); }
   .ycs-analyze-card__body { display: flex; min-height: 230px; flex-direction: column; align-items: flex-start; padding: 28px; }
   .ycs-analyze-card h2 { margin: 0 0 10px; color: #303139; font-size: 24px; line-height: 1.32; letter-spacing: 0; }
   .ycs-analyze-card p { margin: 0 0 28px; color: #686a72; font-size: 17px; line-height: 1.55; }

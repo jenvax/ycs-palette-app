@@ -1,9 +1,7 @@
 {% assign ycs_member_access = false %}
 {% if customer %}
   {% assign ycs_member_tags = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
-  {% if ycs_member_tags contains ',YCSMEMBER,' or ycs_member_tags contains ',TRADE,' or ycs_member_tags contains ',FREEMEMBER,' or ycs_member_tags contains ',YCS_ADMIN,' %}
-    {% assign ycs_member_access = true %}
-  {% endif %}
+  {% assign ycs_member_access = true %}
 {% endif %}
 
 <section class="ycs-member-hub">
@@ -18,7 +16,7 @@
       <p class="ycs-member-hub__kicker">Your Color Style</p>
       <h1>My YCS</h1>
       <p>Please sign in to access your membership.</p>
-      <a href="{{ routes.account_login_url }}" class="ycs-member-hub__button">Sign In</a>
+      <a href="{{ routes.account_login_url }}?return_url=%2Fpages%2Fmy-ycs" class="ycs-member-hub__button">Sign In</a>
     </header>
   {% elsif ycs_member_access == false %}
     <header class="ycs-member-hub__header">
