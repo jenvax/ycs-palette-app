@@ -198,9 +198,9 @@
     id="ycs-open-photo-draping"
     class="ycs-open-photo-draping-btn"
     href="{% if has_paid_access %}
-  /pages/photo-prep?mode=personal&workflow=photo-draping&palette={{ request.params.palette | default: section.settings.default_palette | escape }}
+  /pages/draping-studio?view=draping-studio&mode=personal&palette={{ request.params.palette | default: section.settings.default_palette | escape }}
   {% else %}
-  /pages/photo-prep?mode=personal&workflow=photo-draping&trial=sample&palette={{ request.params.palette | default: section.settings.default_palette | escape }}
+  /pages/draping-studio?view=draping-studio&mode=personal&trial=sample&palette={{ request.params.palette | default: section.settings.default_palette | escape }}
 {% endif %}">
     Draping Studio
   </a>
@@ -1005,10 +1005,10 @@
     if (openPhotoDrapingEl) {
   if (hasPaidDrapingAccess) {
     openPhotoDrapingEl.href =
-      `/pages/photo-prep?mode=personal&workflow=photo-draping&palette=${encodeURIComponent(paletteCode)}`;
+      `/pages/draping-studio?view=draping-studio&mode=personal&palette=${encodeURIComponent(paletteCode)}`;
   } else {
     openPhotoDrapingEl.href =
-      `/pages/photo-prep?mode=personal&workflow=photo-draping&trial=sample&palette=${encodeURIComponent(paletteCode)}`;
+      `/pages/draping-studio?view=draping-studio&mode=personal&trial=sample&palette=${encodeURIComponent(paletteCode)}`;
   }
 }
     const paletteToken = `,${paletteCode},`;
