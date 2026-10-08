@@ -39,7 +39,31 @@
       <p>Manage clients and create guided color analyses.</p>
     </header>
 
+    {% capture ycs_consumer_tool_cards %}
+      {% if ycs_has_draping_studio %}
+        <article class="ycs-analyze-card">
+          <div class="ycs-analyze-card__accent ycs-analyze-card__accent--draping"></div>
+          <div class="ycs-analyze-card__body">
+            <h2>Draping Studio</h2>
+            <p>Virtually drape colors from your purchased palettes using your saved photo.</p>
+            <a href="/pages/photo-draping" class="ycs-analyze-hub__button">Open Draping Studio</a>
+          </div>
+        </article>
+
+        <article class="ycs-analyze-card">
+          <div class="ycs-analyze-card__accent ycs-analyze-card__accent--photos"></div>
+          <div class="ycs-analyze-card__body">
+            <h2>My Photos</h2>
+            <p>Upload, prepare, and manage the photos you use in Draping Studio.</p>
+            <a href="/pages/photo-prep?mode=personal&amp;workflow=photo-draping&amp;returnUrl=%2Fpages%2Ftools" class="ycs-analyze-hub__button">Open My Photos</a>
+          </div>
+        </article>
+      {% endif %}
+    {% endcapture %}
+
     <div class="ycs-analyze-hub__grid">
+      {% if ycs_free_member %}{{ ycs_consumer_tool_cards }}{% endif %}
+
       <article class="ycs-analyze-card">
         <div class="ycs-analyze-card__accent ycs-analyze-card__accent--clients"></div>
         <div class="ycs-analyze-card__body">
@@ -72,25 +96,7 @@
         </div>
       </article>
 
-      {% if ycs_has_draping_studio %}
-        <article class="ycs-analyze-card">
-          <div class="ycs-analyze-card__accent ycs-analyze-card__accent--draping"></div>
-          <div class="ycs-analyze-card__body">
-            <h2>Draping Studio</h2>
-            <p>Virtually drape colors from your purchased palettes using your saved photo.</p>
-            <a href="/pages/photo-draping" class="ycs-analyze-hub__button">Open Draping Studio</a>
-          </div>
-        </article>
-
-        <article class="ycs-analyze-card">
-          <div class="ycs-analyze-card__accent ycs-analyze-card__accent--photos"></div>
-          <div class="ycs-analyze-card__body">
-            <h2>My Photos</h2>
-            <p>Upload, prepare, and manage the photos you use in Draping Studio.</p>
-            <a href="/pages/photo-prep?mode=personal&amp;workflow=photo-draping&amp;returnUrl=%2Fpages%2Ftools" class="ycs-analyze-hub__button">Open My Photos</a>
-          </div>
-        </article>
-      {% endif %}
+      {% unless ycs_free_member %}{{ ycs_consumer_tool_cards }}{% endunless %}
     </div>
   {% endif %}
 </section>

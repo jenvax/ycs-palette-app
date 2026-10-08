@@ -52,11 +52,6 @@
           {% assign topic_key = topic_title | handleize %}
           {% assign show_topic = true %}
           {% assign topic_unlocked = true %}
-          {% unless ycs_free_member %}
-            {% if topic_key == 'free-color-analysis-training' %}
-              {% assign show_topic = false %}
-            {% endif %}
-          {% endunless %}
           {% if ycs_free_member %}
             {% unless topic_key == 'start-here' or topic_key == 'free-color-analysis-training' or topic_key == 'using-the-ycs-tools' %}
               {% assign topic_unlocked = false %}
@@ -89,9 +84,6 @@
         {% assign topic_title = topic_parts.first | strip %}
         {% assign topic_key = topic_title | handleize %}
         {% assign render_topic_lessons = true %}
-        {% unless ycs_free_member %}
-          {% if topic_key == 'free-color-analysis-training' %}{% assign render_topic_lessons = false %}{% endif %}
-        {% endunless %}
         {% if ycs_free_member %}
           {% unless topic_key == 'start-here' or topic_key == 'free-color-analysis-training' or topic_key == 'using-the-ycs-tools' %}
             {% assign render_topic_lessons = false %}

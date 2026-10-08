@@ -44,6 +44,17 @@
     </header>
 
     <div class="ycs-palettes-hub__grid">
+      {% if ycs_has_owned_palettes %}
+        <article class="ycs-palettes-card">
+          <div class="ycs-palettes-card__accent ycs-palettes-card__accent--owned"></div>
+          <div class="ycs-palettes-card__body">
+            <h2>My Color Palettes</h2>
+            <p>Open the digital color palettes you have purchased from Your Color Style.</p>
+            <a href="/pages/my-palettes?view=owned" class="ycs-palettes-hub__button">View My Palettes</a>
+          </div>
+        </article>
+      {% endif %}
+
       <article class="ycs-palettes-card">
         <div class="ycs-palettes-card__accent ycs-palettes-card__accent--ycs"></div>
         <div class="ycs-palettes-card__body">
@@ -76,16 +87,6 @@
         </div>
       </article>
 
-      {% if ycs_has_owned_palettes %}
-        <article class="ycs-palettes-card">
-          <div class="ycs-palettes-card__accent ycs-palettes-card__accent--owned"></div>
-          <div class="ycs-palettes-card__body">
-            <h2>My Color Palettes</h2>
-            <p>Open the digital color palettes you have purchased from Your Color Style.</p>
-            <a href="/pages/my-palettes?view=owned" class="ycs-palettes-hub__button">View My Palettes</a>
-          </div>
-        </article>
-      {% endif %}
     </div>
   {% endif %}
 </section>
