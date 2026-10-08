@@ -30,7 +30,7 @@
 <div class="ycs-my-palettes">
   <div class="ycs-palette-topnav">
     {% if is_owned_palettes_page %}
-      {% render 'my-ycs-logo' %}
+      {% render 'my-ycs-logo', is_owned_palettes_page: is_owned_palettes_page %}
       <a href="/pages/palettes" class="palette-back-link">Back to Palettes</a>
     {% else %}
       <a href="{{ routes.account_url }}" class="palette-back-link">Back to My Account</a>
