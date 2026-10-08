@@ -3550,6 +3550,10 @@
 </script>
 {% endif %}
 
+{% if page.handle == 'my-palettes' %}
+  {% render 'my-ycs-app-footer' %}
+{% endif %}
+
 {% schema %}
 {
   "name": "My Color Palettes",

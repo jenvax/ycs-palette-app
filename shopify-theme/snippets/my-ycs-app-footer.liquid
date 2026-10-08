@@ -1,0 +1,84 @@
+<style>
+  #shopify-section-footer,
+  .shopify-section--footer,
+  .site-footer,
+  footer.footer,
+  footer[role="contentinfo"] {
+    display: none !important;
+  }
+
+  .my-ycs-app-footer {
+    width: 100%;
+    margin-top: 56px;
+    border-top: 1px solid #e7e3f0;
+    background: #faf9fc;
+    color: #55566a;
+  }
+
+  .my-ycs-app-footer__inner {
+    display: flex;
+    width: min(100% - 48px, 1440px);
+    min-height: 76px;
+    margin: 0 auto;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px 32px;
+  }
+
+  .my-ycs-app-footer__copyright {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .my-ycs-app-footer__links {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 12px 24px;
+  }
+
+  .my-ycs-app-footer__links a {
+    color: #313247;
+    font-size: 13px;
+    font-weight: 650;
+    line-height: 1.5;
+    text-decoration: none;
+  }
+
+  .my-ycs-app-footer__links a:hover {
+    color: #5c31bd;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  @media (max-width: 700px) {
+    .my-ycs-app-footer {
+      margin-top: 40px;
+    }
+
+    .my-ycs-app-footer__inner {
+      width: min(100% - 32px, 1440px);
+      min-height: 0;
+      padding: 24px 0;
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .my-ycs-app-footer__links {
+      justify-content: flex-start;
+    }
+  }
+</style>
+
+<div class="my-ycs-app-footer">
+  <div class="my-ycs-app-footer__inner">
+    <p class="my-ycs-app-footer__copyright">&copy; 2026 Fifty Minus Twenty LLC</p>
+    <nav class="my-ycs-app-footer__links" aria-label="My YCS footer navigation">
+      <a href="mailto:support@yourcolorstyle.com">Help &amp; Support</a>
+      <a href="/pages/privacy-policy">Privacy Policy</a>
+      <a href="/pages/terms-of-service">Terms of Service</a>
+    </nav>
+  </div>
+</div>
