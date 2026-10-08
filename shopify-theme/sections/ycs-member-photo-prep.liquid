@@ -4,6 +4,11 @@
   {% assign palette_access_string = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
 {% endif %}
 
+{% assign is_my_photos_page = false %}
+{% if page.handle == 'my-photos' or template.suffix == 'my-photos' %}
+  {% assign is_my_photos_page = true %}
+{% endif %}
+
 {% assign is_ycs_member = false %}
 {% if customer and palette_access_string contains ',YCSMEMBER,' or customer and palette_access_string contains ',TRADE,' %}
   {% assign is_ycs_member = true %}
@@ -22,7 +27,7 @@
 %}
 
 {% assign is_personal_mode_request = false %}
-{% if ycs_page_url contains 'mode=personal' %}
+{% if ycs_page_url contains 'mode=personal' or is_my_photos_page %}
   {% assign is_personal_mode_request = true %}
 {% endif %}
 
@@ -158,6 +163,9 @@
 {% if is_ycs_member %}
   {% assign can_use_photo_prep = true %}
 {% endif %}
+{% if is_my_photos_page and can_use_personal_photo_prep %}
+  {% assign can_use_photo_prep = true %}
+{% endif %}
 
 {% assign can_replace_photo = false %}
 {% if can_use_client_management and is_personal_mode_request != true and is_member_mode_request != true %}
@@ -165,7 +173,8 @@
 {% endif %}
 
 <div
-  class="ycs-photo-prep-app"
+  class="ycs-photo-prep-app{% if is_my_photos_page %} ycs-photo-prep-app--my-photos{% endif %}"
+  data-is-my-photos-page="{% if is_my_photos_page %}true{% else %}false{% endif %}"
   data-is-sample-trial-request="{% if is_sample_trial_request %}true{% else %}false{% endif %}"
   data-is-admin="{% if is_admin %}true{% else %}false{% endif %}"
   data-is-trade="{% if is_trade %}true{% else %}false{% endif %}"
@@ -186,20 +195,27 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
 >
   {% if customer == nil %}
     <div class="ycs-photo-prep-card ycs-photo-prep-card--center">
-      <h1>Sign in to access Photo Prep</h1>
+      <h1>Sign in to access {% if is_my_photos_page %}My Photos{% else %}Photo Prep{% endif %}</h1>
       <a href="{{ routes.account_login_url }}" class="ycs-photo-prep-btn">Sign In</a>
     </div>
 
   {% elsif can_use_photo_prep != true %}
   <div class="ycs-photo-prep-card ycs-photo-prep-card--center">
-    <h1>Photo Prep</h1>
+    <h1>{% if is_my_photos_page %}My Photos{% else %}Photo Prep{% endif %}</h1>
     <p>This tool is not available for your account.</p>
   </div>
 
   {% else %}
 
     <div class="ycs-photo-prep-topbar">
-      {% if can_use_client_management and is_personal_mode_request != true %}
+      {% if is_my_photos_page %}
+        <nav class="ycs-photo-prep-tool-nav" aria-label="My photo tools">
+          {% render 'my-ycs-logo' %}
+          <a href="/pages/tools" class="ycs-photo-prep-back">Tools</a>
+          <a href="/pages/photo-draping" class="ycs-photo-prep-back">Draping Studio</a>
+          <a href="/pages/my-photos" class="ycs-photo-prep-back is-active" aria-current="page">My Photos</a>
+        </nav>
+      {% elsif can_use_client_management and is_personal_mode_request != true %}
         <nav class="ycs-photo-prep-tool-nav" aria-label="Color analysis tools">
           {% render 'my-ycs-logo' %}
           <a href="/pages/my-ycs" class="ycs-photo-prep-back">My YCS</a>
@@ -219,13 +235,17 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
           <a href="/pages/tools-photo-prep" class="ycs-photo-prep-back is-active" aria-current="page">Photo Prep</a>
         </nav>
       {% endunless %}
-      <a href="mailto:support@yourcolorstyle.com" class="ycs-photo-prep-back ycs-photo-prep-contact">Contact</a>
+      {% unless is_my_photos_page %}
+        <a href="mailto:support@yourcolorstyle.com" class="ycs-photo-prep-back ycs-photo-prep-contact">Contact</a>
+      {% endunless %}
     </div>
 
     <div class="ycs-photo-prep-header">
-  <h1 id="ycs-photo-prep-title" class="ycs-photo-prep-title">Photo Prep</h1>
+  <h1 id="ycs-photo-prep-title" class="ycs-photo-prep-title">{% if is_my_photos_page %}My Photos{% else %}Photo Prep{% endif %}</h1>
   <p id="ycs-photo-prep-subtitle" class="ycs-photo-prep-subtitle">
-  {% if is_personal_mode_request %}
+  {% if is_my_photos_page %}
+    Choose a saved photo to adjust, or upload a new photo.
+  {% elsif is_personal_mode_request %}
     Upload a photo, make adjustments, then continue to Draping Studio.
   {% else %}
     Load or upload a customer photo, make color adjustments, then continue to the Color Analysis Tool.
@@ -316,7 +336,7 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
     <div id="ycs-prep-personal-library" class="ycs-photo-prep-panel" hidden>
   <div class="ycs-photo-prep-personal-head">
     <div>
-      <h2 class="ycs-photo-prep-panel-title" style="margin-bottom: 4px;">My Photos</h2>
+      <h2 class="ycs-photo-prep-panel-title" style="margin-bottom: 4px;">{% if is_my_photos_page %}Saved Photos{% else %}My Photos{% endif %}</h2>
       <p id="ycs-prep-personal-library-help" class="ycs-photo-prep-help" style="margin-top: 0;">
   Upload a photo to begin.
 </p>
@@ -1285,6 +1305,11 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
   cursor: pointer;
 }
 
+.ycs-photo-prep-personal-card.is-selected {
+  border-color: #6c3ddd;
+  box-shadow: 0 0 0 2px rgba(108, 61, 221, 0.14);
+}
+
 .ycs-photo-prep-personal-thumb {
   aspect-ratio: 0.9 / 1;
   background: #f6f1ea;
@@ -1338,6 +1363,7 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
   if (!appEl) return;
 
   const IS_ADMIN = appEl.dataset.isAdmin === 'true';
+const IS_MY_PHOTOS_PAGE = appEl.dataset.isMyPhotosPage === 'true';
 const IS_TRADE = appEl.dataset.isTrade === 'true';
 const IS_CATOOL = appEl.dataset.isCatool === 'true';
 const IS_CATOOL_GROWTH = appEl.dataset.isCatoolGrowth === 'true';
@@ -1406,7 +1432,7 @@ const YCS_PALETTE_OPTIONS = [
   ['DO', 'Deep Olive']
 ];
 
-const requestedMode = (params.get('mode') || '').trim().toLowerCase();
+const requestedMode = (params.get('mode') || (IS_MY_PHOTOS_PAGE ? 'personal' : '')).trim().toLowerCase();
 
 const MODE =
   IS_DIY_CATOOL &&
@@ -1591,8 +1617,10 @@ const state = {
   }
 };//State
 
-const DEFAULT_PAGE_TITLE = 'Photo Prep';
-const DEFAULT_PAGE_SUBTITLE = IS_PERSONAL_MODE
+const DEFAULT_PAGE_TITLE = IS_MY_PHOTOS_PAGE ? 'My Photos' : 'Photo Prep';
+const DEFAULT_PAGE_SUBTITLE = IS_MY_PHOTOS_PAGE
+  ? 'Choose a saved photo to adjust, or upload a new photo.'
+  : IS_PERSONAL_MODE
   ? 'Upload a photo, make adjustments, then continue to Draping Studio.'
   : 'Load or upload a customer photo, make color adjustments, then continue to the Color Analysis Tool.';
 const CLIENT_CHOOSER_PAGE_TITLE = 'Who is this color analysis for?';
@@ -2130,6 +2158,12 @@ function openPersonalPhotoInPrep(buttonEl) {
   state.currentBasePhotoUrl = photoUrl || originalUrl || null;
   state.justUploadedNewPhoto = false;
 
+  document.querySelectorAll('.ycs-prep-open-personal-photo-btn').forEach(function (card) {
+    const isSelected = String(card.dataset.photoId || '').trim() === photoId;
+    card.classList.toggle('is-selected', isSelected);
+    card.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+  });
+
   updateStatus();
   updateStartAnalysisLink();
   syncVisibility();
@@ -2213,14 +2247,18 @@ function renderPersonalStudioPhotos(photos) {
 
   if (!Array.isArray(photos) || !photos.length) {
     if (personalLibraryHelpEl) {
-      personalLibraryHelpEl.textContent = 'Upload a photo to begin.';
+      personalLibraryHelpEl.textContent = IS_MY_PHOTOS_PAGE
+        ? 'Upload your first photo to begin.'
+        : 'Upload a photo to begin.';
     }
     personalLibraryEmptyEl.hidden = false;
     return;
   }
 
   if (personalLibraryHelpEl) {
-    personalLibraryHelpEl.textContent = 'Choose a photo for Draping Studio or upload a new one.';
+    personalLibraryHelpEl.textContent = IS_MY_PHOTOS_PAGE
+      ? 'Select a photo to adjust, open it in Draping Studio, or upload a new one.'
+      : 'Choose a photo for Draping Studio or upload a new one.';
   }
 
 personalLibraryEmptyEl.hidden = true;
@@ -2265,6 +2303,9 @@ personalLibraryEmptyEl.hidden = true;
           </div>
 
           <div class="ycs-photo-prep-personal-actions">
+            <button type="button" class="ycs-photo-prep-btn ycs-prep-select-personal-photo-btn">
+              Adjust Photo
+            </button>
             <a
   class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary"
   href="/pages/photo-draping?${drapeQuery.toString()}"
@@ -4583,6 +4624,12 @@ if (IS_PERSONAL_MODE || IS_DIY_MODE) {
         state.adjustedPhotoUrl = selectedPhoto.adjustedPhotoUrl || null;
         state.activePhotoUrl = selectedPhoto.activePhotoUrl || selectedPhoto.adjustedPhotoUrl || selectedPhoto.originalPhotoUrl || null;
         state.currentBasePhotoUrl = state.activePhotoUrl || state.originalPhotoUrl || null;
+
+        document.querySelectorAll('.ycs-prep-open-personal-photo-btn').forEach(function (card) {
+          const isSelected = String(card.dataset.photoId || '').trim() === String(state.selectedPersonalPhotoId || '').trim();
+          card.classList.toggle('is-selected', isSelected);
+          card.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+        });
 
         updateStatus();
         updateStartAnalysisLink();

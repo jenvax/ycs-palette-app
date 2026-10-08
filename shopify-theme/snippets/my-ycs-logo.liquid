@@ -2,7 +2,7 @@
 {% assign ycs_menu_section = 'my-ycs' %}
 {% if page.template_suffix == 'ycs-learning-lesson' or ycs_menu_path contains '/learn' %}
   {% assign ycs_menu_section = 'learn' %}
-{% elsif ycs_menu_path contains '/tools' or ycs_menu_path contains '/photo-prep' %}
+{% elsif ycs_menu_path contains '/tools' or ycs_menu_path contains '/photo-prep' or ycs_menu_path contains '/my-photos' %}
   {% assign ycs_menu_section = 'tools' %}
 {% elsif ycs_menu_path contains 'palette' or ycs_menu_path contains '/member-color' %}
   {% assign ycs_menu_section = 'create' %}
@@ -18,13 +18,15 @@
   {% assign ycs_submenu_section = 'lip-draping' %}
 {% elsif ycs_menu_path contains '/tools-structured' %}
   {% assign ycs_submenu_section = 'structured' %}
+{% elsif ycs_menu_path contains '/my-photos' %}
+  {% assign ycs_submenu_section = 'my-photos' %}
 {% elsif ycs_menu_path contains 'palette' or ycs_menu_path contains '/member-color' %}
   {% assign ycs_submenu_section = 'palettes' %}
 {% elsif ycs_menu_path == '/pages/tools' %}
   {% assign ycs_submenu_section = 'tools' %}
 {% endif %}
 {% assign ycs_use_original_tool_nav = false %}
-{% if ycs_menu_path contains '/tools-clients' or ycs_menu_path contains '/tools-photo-prep' or ycs_menu_path contains '/tools-lip-draping' or ycs_menu_path contains '/tools-structured' %}
+{% if ycs_menu_path contains '/tools-clients' or ycs_menu_path contains '/tools-photo-prep' or ycs_menu_path contains '/tools-lip-draping' or ycs_menu_path contains '/tools-structured' or ycs_menu_path contains '/my-photos' %}
   {% assign ycs_use_original_tool_nav = true %}
 {% endif %}
 {% assign ycs_lesson_topic_title = '' %}
