@@ -212,8 +212,8 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
         <nav class="ycs-photo-prep-tool-nav" aria-label="My photo tools">
           {% render 'my-ycs-logo' %}
           <a href="/pages/tools" class="ycs-photo-prep-back">Tools</a>
-          <a href="/pages/draping-studio?view=draping-studio&mode=personal" class="ycs-photo-prep-back">Draping Studio</a>
           <a href="/pages/my-photos" class="ycs-photo-prep-back is-active" aria-current="page">My Photos</a>
+          <a href="/pages/draping-studio?view=draping-studio&mode=personal" class="ycs-photo-prep-back">Draping Studio</a>
         </nav>
       {% elsif can_use_client_management and is_personal_mode_request != true %}
         <nav class="ycs-photo-prep-tool-nav" aria-label="Color analysis tools">
