@@ -244,7 +244,7 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
   <h1 id="ycs-photo-prep-title" class="ycs-photo-prep-title">{% if is_my_photos_page %}My Photos{% else %}Photo Prep{% endif %}</h1>
   <p id="ycs-photo-prep-subtitle" class="ycs-photo-prep-subtitle">
   {% if is_my_photos_page %}
-    Choose a saved photo to adjust, or upload a new photo.
+    Select a photo to adjust, open it in Draping Studio, or upload a new one.
   {% elsif is_personal_mode_request %}
     Upload a photo, make adjustments, then continue to Draping Studio.
   {% else %}
@@ -333,14 +333,16 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
     <div id="ycs-prep-client-created-note" class="ycs-photo-prep-help" hidden>
       Client saved and ready for photo upload.
     </div>
-    <div id="ycs-prep-personal-library" class="ycs-photo-prep-panel" hidden>
+    <div id="ycs-prep-personal-library" class="ycs-photo-prep-panel{% if is_my_photos_page %} ycs-photo-prep-panel--photo-library{% endif %}" hidden>
   <div class="ycs-photo-prep-personal-head">
-    <div>
-      <h2 class="ycs-photo-prep-panel-title" style="margin-bottom: 4px;">{% if is_my_photos_page %}Saved Photos{% else %}My Photos{% endif %}</h2>
+    {% unless is_my_photos_page %}
+      <div>
+      <h2 class="ycs-photo-prep-panel-title" style="margin-bottom: 4px;">My Photos</h2>
       <p id="ycs-prep-personal-library-help" class="ycs-photo-prep-help" style="margin-top: 0;">
   Upload a photo to begin.
 </p>
-    </div>
+      </div>
+    {% endunless %}
 
     <button type="button" id="ycs-prep-personal-upload-btn" class="ycs-photo-prep-btn">
       Upload New Photo
@@ -624,6 +626,16 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
     max-width: 560px;
     margin: 60px auto;
     text-align: center;
+  }
+
+  .ycs-photo-prep-panel--photo-library {
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+  }
+
+  .ycs-photo-prep-panel--photo-library .ycs-photo-prep-personal-head .ycs-photo-prep-btn {
+    margin-left: auto;
   }
 
   .ycs-photo-prep-meta {
@@ -1619,7 +1631,7 @@ const state = {
 
 const DEFAULT_PAGE_TITLE = IS_MY_PHOTOS_PAGE ? 'My Photos' : 'Photo Prep';
 const DEFAULT_PAGE_SUBTITLE = IS_MY_PHOTOS_PAGE
-  ? 'Choose a saved photo to adjust, or upload a new photo.'
+  ? 'Select a photo to adjust, open it in Draping Studio, or upload a new one.'
   : IS_PERSONAL_MODE
   ? 'Upload a photo, make adjustments, then continue to Draping Studio.'
   : 'Load or upload a customer photo, make color adjustments, then continue to the Color Analysis Tool.';
