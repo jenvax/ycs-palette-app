@@ -69,8 +69,8 @@
   </div>
 </header>
 
-{% unless ycs_menu_path == '/pages/learn' or ycs_menu_path == '/pages/palettes' or ycs_menu_path == '/pages/tools' or ycs_menu_path == '/pages/directory' or ycs_menu_path == '/pages/my-ycs' or ycs_use_original_tool_nav %}
-  <nav class="my-ycs-submenu" aria-label="{% if page.template_suffix == 'ycs-learning-lesson' %}Lesson navigation{% elsif ycs_menu_path == '/pages/ycs-color-palettes' or ycs_menu_path == '/pages/my-custom-palettes' %}Palette navigation{% else %}Professional tools navigation{% endif %}">
+{% unless ycs_menu_path == '/pages/learn' or ycs_menu_path == '/pages/tools' or ycs_menu_path == '/pages/directory' or ycs_menu_path == '/pages/my-ycs' or ycs_use_original_tool_nav %}
+  <nav class="my-ycs-submenu" aria-label="{% if page.template_suffix == 'ycs-learning-lesson' %}Lesson navigation{% elsif ycs_menu_section == 'create' %}Palette navigation{% else %}Professional tools navigation{% endif %}">
     <div class="my-ycs-submenu__inner">
       {% if page.template_suffix == 'ycs-learning-lesson' %}
         <a href="/pages/learn">Back to Learn</a>
@@ -79,8 +79,9 @@
           <a href="/pages/learn?topic={{ ycs_lesson_topic_index }}">{{ ycs_lesson_topic_title | escape }}</a>
         {% endif %}
         <a href="{{ request.path }}" class="is-active" aria-current="page">{{ page.title | escape }}</a>
-      {% elsif ycs_menu_path == '/pages/ycs-color-palettes' or ycs_menu_path == '/pages/my-custom-palettes' %}
+      {% elsif ycs_menu_section == 'create' %}
         <span class="my-ycs-submenu__label">Palettes</span>
+        <a href="/pages/my-palettes?view=owned"{% if ycs_menu_path == '/pages/my-palettes' and is_owned_palettes_page %} class="is-active" aria-current="page"{% endif %}>My Color Palettes</a>
         <a href="/pages/ycs-color-palettes"{% if ycs_menu_path == '/pages/ycs-color-palettes' %} class="is-active" aria-current="page"{% endif %}>YCS Color Palettes</a>
         <a href="/pages/my-custom-palettes"{% if ycs_menu_path == '/pages/my-custom-palettes' %} class="is-active" aria-current="page"{% endif %}>My Custom Palettes</a>
       {% else %}
