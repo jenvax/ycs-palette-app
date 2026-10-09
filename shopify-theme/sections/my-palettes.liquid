@@ -2086,6 +2086,94 @@
     grid-template-columns: 1fr;
   }
 }
+
+{% if is_owned_palettes_page %}
+/* My Color Palettes personal subpage */
+.ycs-my-palettes {
+  --ycs-owned-navy: #12253f;
+  --ycs-owned-muted: #505868;
+  --ycs-owned-border: #e3e8ec;
+  --ycs-owned-accent: #347fa5;
+  --ycs-owned-accent-hover: #24678b;
+  color: #292832;
+  font-family: Poppins, Arial, Tahoma, Verdana, sans-serif;
+}
+
+.ycs-my-palettes .ycs-my-palettes__header h1 {
+  color: var(--ycs-owned-navy);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(36px, 5vw, 52px);
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.ycs-my-palettes .ycs-my-palettes__intro,
+.ycs-my-palettes .ycs-palette-card__subtitle,
+.ycs-my-palettes .ycs-palette-card__lock {
+  color: var(--ycs-owned-muted);
+}
+
+.ycs-my-palettes .ycs-my-palettes__section-title,
+.ycs-my-palettes .ycs-palette-card__text h2 {
+  color: var(--ycs-owned-navy);
+  font-family: Poppins, Arial, Tahoma, Verdana, sans-serif;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.ycs-my-palettes .ycs-palette-card {
+  border: 1px solid var(--ycs-owned-border);
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 18px 45px rgba(23, 57, 77, .08);
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+
+.ycs-my-palettes .ycs-palette-card:hover {
+  border-color: rgba(52, 127, 165, .38);
+  box-shadow: 0 22px 50px rgba(23, 57, 77, .13);
+  transform: translateY(-3px);
+}
+
+.ycs-my-palettes .ycs-palette-card__button,
+.ycs-my-palettes .ycs-my-palettes__signin-button {
+  border-color: var(--ycs-owned-accent);
+  border-radius: 10px;
+  background: var(--ycs-owned-accent);
+  color: #fff;
+  font-family: Poppins, Arial, Tahoma, Verdana, sans-serif;
+  font-weight: 700;
+}
+
+.ycs-my-palettes .ycs-palette-card__button:hover,
+.ycs-my-palettes .ycs-my-palettes__signin-button:hover {
+  border-color: var(--ycs-owned-accent-hover);
+  background: var(--ycs-owned-accent-hover);
+}
+
+.ycs-my-palettes .ycs-palette-card__button--secondary {
+  border-color: #cddfe8;
+  background: #eaf2f6;
+  color: var(--ycs-owned-accent-hover);
+}
+
+.ycs-my-palettes .ycs-palette-card__button--secondary:hover {
+  border-color: #b8d4e1;
+  background: #dcecf3;
+  color: #1c5773;
+}
+
+.ycs-my-palettes .ycs-palette-card__button:focus-visible,
+.ycs-my-palettes .ycs-my-palettes__signin-button:focus-visible {
+  outline: 3px solid rgba(52, 127, 165, .3);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ycs-my-palettes .ycs-palette-card { transition: none; }
+  .ycs-my-palettes .ycs-palette-card:hover { transform: none; }
+}
+{% endif %}
 </style>
 <script>
 (function () {
