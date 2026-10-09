@@ -769,3 +769,31 @@ div.ycs-analysis-topnav:has(> .my-ycs-menu-shell) {
   .ycs-diy-workflow-nav__inner { padding: 0 12px; }
   .ycs-diy-workflow-nav a { padding: 14px 10px; font-size: 14px; }
 }
+
+/* Keep storefront link hover colors from leaking into DIY application buttons. */
+.ycs-photo-prep-app .ycs-photo-prep-btn:not(.ycs-photo-prep-btn--secondary):not(.ycs-photo-prep-btn--outline):not(.ycs-photo-prep-btn--danger):hover,
+.ycs-photo-prep-app .ycs-photo-prep-btn:not(.ycs-photo-prep-btn--secondary):not(.ycs-photo-prep-btn--outline):not(.ycs-photo-prep-btn--danger):focus-visible,
+.ycs-analysis-app .ycs-analysis-save-btn:hover,
+.ycs-analysis-app .ycs-analysis-save-btn:focus-visible,
+.ycs-analysis-app .ycs-analysis-commit-btn.is-selected:hover,
+.ycs-analysis-app .ycs-analysis-commit-btn.is-selected:focus-visible,
+.ycs-diy-hub .ycs-diy-hub__button:hover,
+.ycs-diy-hub .ycs-diy-hub__button:focus-visible,
+.ycs-lesson .ycs-lesson__button:hover,
+.ycs-lesson .ycs-lesson__button:focus-visible {
+  color: #fff !important;
+}
+
+.ycs-photo-prep-app .ycs-photo-prep-btn--secondary:hover,
+.ycs-photo-prep-app .ycs-photo-prep-btn--secondary:focus-visible,
+.ycs-photo-prep-app .ycs-photo-prep-btn--outline:hover,
+.ycs-photo-prep-app .ycs-photo-prep-btn--outline:focus-visible,
+.ycs-analysis-app .ycs-analysis-commit-btn:hover,
+.ycs-analysis-app .ycs-analysis-commit-btn:focus-visible {
+  color: #2f2a25 !important;
+}
+
+.ycs-photo-prep-app .ycs-photo-prep-btn--danger:hover,
+.ycs-photo-prep-app .ycs-photo-prep-btn--danger:focus-visible {
+  color: #a33a2b !important;
+}
