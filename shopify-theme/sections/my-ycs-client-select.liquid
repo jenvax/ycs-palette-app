@@ -44,15 +44,8 @@
       <p data-selector-intro>Choose the client you want to analyze. We will take you to the next step based on their saved photo.</p>
     </header>
 
-    <div class="ycs-client-select__toolbar">
-      <div>
-        <h2>Clients</h2>
-        <p>Select a client to continue.</p>
-      </div>
-      <div class="ycs-client-select__toolbar-actions">
-        <a class="ycs-client-select__button ycs-client-select__button--secondary" href="/pages/tools-clients">Create New Client</a>
-        <button class="ycs-client-select__button ycs-client-select__button--secondary" type="button" data-refresh>Refresh</button>
-      </div>
+    <div class="ycs-client-select__actions">
+      <a class="ycs-client-select__button ycs-client-select__button--secondary" href="/pages/tools-clients?newClient=1">Create New Client</a>
     </div>
 
     <p class="ycs-client-select__status" data-status role="status" aria-live="polite">Loading clients...</p>
@@ -62,13 +55,13 @@
 
 {% style %}
   .shopify-section-header,#shopify-section-header,.site-header,.header-wrapper,.header,#shopify-section-footer,.shopify-section--footer,.site-footer,footer{display:none!important}
-  .ycs-client-select{max-width:1120px;min-height:62vh;margin:0 auto;padding:22px 24px 80px;color:#292832;font-family:Poppins,Arial,Tahoma,Verdana,sans-serif}
+  .ycs-client-select{max-width:1120px;min-height:62vh;margin:0 auto;padding:86px 24px 80px;color:#292832;font-family:Poppins,Arial,Tahoma,Verdana,sans-serif}
   .ycs-client-select__nav{display:flex;align-items:center;gap:28px;margin-bottom:38px}.ycs-client-select__nav>a{position:relative;color:#55566a;font-weight:650;text-decoration:none}.ycs-client-select__nav>a.is-active{color:#6546ce}.ycs-client-select__nav>a.is-active:after{position:absolute;right:0;bottom:-12px;left:0;height:3px;border-radius:3px;background:#7b5cff;content:""}
   .ycs-client-select__header{max-width:760px;margin-bottom:34px}.ycs-client-select__kicker{margin:0 0 8px;color:#6546ce;font-size:13px;font-weight:700;text-transform:uppercase}.ycs-client-select__header h1,.ycs-client-select__message h1{margin:0;color:#12253f;font-family:Georgia,"Times New Roman",serif;font-size:clamp(38px,5vw,52px);font-weight:400;line-height:1.1;letter-spacing:0}.ycs-client-select__header>p:last-child{margin:14px 0 0;color:#505868;font-size:18px;line-height:1.6}
-  .ycs-client-select__toolbar{display:flex;align-items:center;justify-content:space-between;gap:24px;margin-bottom:18px;padding:22px 24px;border:1px solid #ece8e3;border-radius:18px;background:#fff}.ycs-client-select__toolbar h2{margin:0;color:#12253f;font-size:22px}.ycs-client-select__toolbar p{margin:5px 0 0;color:#505868}.ycs-client-select__toolbar-actions{display:flex;flex-wrap:wrap;gap:10px}
+  .ycs-client-select__actions{display:flex;justify-content:flex-end;margin:-4px 0 22px}
   .ycs-client-select__button{display:inline-flex;min-height:44px;align-items:center;justify-content:center;padding:10px 18px;border:1px solid #7b5cff;border-radius:10px;background:#7b5cff;color:#fff;font:700 14px Poppins,Arial,Tahoma,Verdana,sans-serif;text-decoration:none;cursor:pointer;transition:background-color .18s ease,border-color .18s ease,transform .18s ease}.ycs-client-select__button:hover{border-color:#6546ce;background:#6546ce;color:#fff;transform:translateY(-1px)}.ycs-client-select__button--secondary{border-color:#dcd3ff;background:#f0ebff;color:#6546ce}.ycs-client-select__button--secondary:hover{border-color:#cec1ff;background:#e7deff;color:#5336b3}.ycs-client-select__button:focus-visible{outline:3px solid rgba(123,92,255,.3);outline-offset:3px}
   .ycs-client-select__status{margin:22px 0;color:#505868}.ycs-client-select__list{display:grid;gap:12px}.ycs-client-select__item{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:20px;padding:20px 22px;border:1px solid #ece8e3;border-radius:18px;background:#fff;box-shadow:0 10px 26px rgba(32,28,45,.05)}.ycs-client-select__name{margin:0;color:#12253f;font-size:18px;font-weight:700}.ycs-client-select__meta{margin:4px 0 0;color:#505868;font-size:14px}.ycs-client-select__message{padding:50px 0}.ycs-client-select__message .ycs-client-select__button{margin-top:24px}
-  @media(max-width:700px){.ycs-client-select{padding:18px 16px 60px}.ycs-client-select__nav{gap:18px;overflow-x:auto}.ycs-client-select__toolbar{align-items:stretch;flex-direction:column;padding:20px}.ycs-client-select__toolbar-actions{display:grid;grid-template-columns:1fr}.ycs-client-select__item{grid-template-columns:1fr}.ycs-client-select__item .ycs-client-select__button{width:100%}}
+  @media(max-width:700px){.ycs-client-select{padding:78px 16px 60px}.ycs-client-select__nav{gap:18px;overflow-x:auto}.ycs-client-select__actions{justify-content:stretch}.ycs-client-select__actions .ycs-client-select__button{width:100%}.ycs-client-select__item{grid-template-columns:1fr}.ycs-client-select__item .ycs-client-select__button{width:100%}}
   @media(prefers-reduced-motion:reduce){.ycs-client-select__button{transition:none}.ycs-client-select__button:hover{transform:none}}
 {% endstyle %}
 
@@ -86,7 +79,6 @@
   const appBaseUrl = root.dataset.appBaseUrl || '';
   const list = root.querySelector('[data-client-list]');
   const status = root.querySelector('[data-status]');
-  const refresh = root.querySelector('[data-refresh]');
   const currentWorkflow = root.querySelector('[data-current-workflow]');
 
   currentWorkflow.textContent = workflowLabel;
@@ -134,7 +126,6 @@
     status.hidden = false;
     status.textContent = 'Loading clients...';
     list.innerHTML = '';
-    refresh.disabled = true;
     try {
       const response = await fetch(appBaseUrl + '/api/get-consultant-clients?consultantId=' + encodeURIComponent(customerId));
       const text = await response.text();
@@ -145,12 +136,9 @@
     } catch (error) {
       status.hidden = false;
       status.textContent = error.message || 'Could not load clients.';
-    } finally {
-      refresh.disabled = false;
     }
   }
 
-  refresh.addEventListener('click', loadClients);
   loadClients();
 })();
 </script>
