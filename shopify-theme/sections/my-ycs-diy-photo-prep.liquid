@@ -2004,7 +2004,8 @@ if (state.firstName) {
     } else if (state.originalPhotoUrl) {
       clientCreatedNote.textContent = 'Your photo is ready for the Color Analysis Tool.';
     } else {
-      clientCreatedNote.textContent = 'Upload a photo to begin your color analysis.';
+      clientCreatedNote.textContent = '';
+      clientCreatedNote.hidden = true;
     }
     return;
   }
