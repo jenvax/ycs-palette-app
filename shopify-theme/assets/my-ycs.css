@@ -712,3 +712,52 @@ div:has(> .my-ycs-menu-shell[data-original-tools-nav]) > a[data-global-nav-dupli
   .ycs-diy-card:hover,
   .ycs-diy-hub__button:hover { transform: none; }
 }
+/* DIY analysis workflow: shared contextual navigation for Photo Prep and Structured Analysis. */
+.ycs-diy-workflow-nav {
+  width: 100%;
+  border-top: 1px solid #ece8f7;
+  border-bottom: 1px solid #e5e0f2;
+  background: #f8f6ff;
+  font-family: Poppins, Arial, Tahoma, Verdana, sans-serif;
+}
+
+.ycs-diy-workflow-nav__inner {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 24px;
+  overflow-x: auto;
+}
+
+.ycs-diy-workflow-nav a {
+  position: relative;
+  flex: 0 0 auto;
+  padding: 16px 14px;
+  color: #515264;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.ycs-diy-workflow-nav a:hover,
+.ycs-diy-workflow-nav a.is-active {
+  color: #6546ce;
+}
+
+.ycs-diy-workflow-nav a.is-active::after {
+  position: absolute;
+  right: 12px;
+  bottom: 0;
+  left: 12px;
+  height: 4px;
+  border-radius: 4px 4px 0 0;
+  background: #7b5cff;
+  content: '';
+}
+
+@media (max-width: 700px) {
+  .ycs-diy-workflow-nav__inner { padding: 0 12px; }
+  .ycs-diy-workflow-nav a { padding: 14px 10px; font-size: 14px; }
+}

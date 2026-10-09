@@ -1,0 +1,17 @@
+<nav
+  class="ycs-diy-workflow-nav"
+  aria-label="DIY color analysis steps"
+  data-ycs-diy-workflow-nav
+  data-customer-id="{% if customer %}{{ customer.id }}{% endif %}"
+  data-current-page="{{ current_page | default: '' | escape }}"
+>
+  <div class="ycs-diy-workflow-nav__inner">
+    <a href="/pages/diy-color-analysis">Back to DIY</a>
+    <a href="/pages/diy-photo-prep?mode=diy" data-diy-nav-page="photo-prep">Photo Prep</a>
+    <a href="/pages/diy-structured-analysis?mode=diy&amp;returnStep=depth" data-diy-nav-step="depth" hidden>Depth</a>
+    <a href="/pages/diy-structured-analysis?mode=diy&amp;returnStep=undertone" data-diy-nav-step="undertone" hidden>Undertones</a>
+    <a href="/pages/diy-structured-analysis?mode=diy&amp;returnStep=chroma" data-diy-nav-step="chroma" hidden>Chroma</a>
+  </div>
+</nav>
+
+<script src="{{ 'ycs-diy-workflow-nav.js' | asset_url }}" defer></script>

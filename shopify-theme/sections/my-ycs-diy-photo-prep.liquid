@@ -216,6 +216,8 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
       {% render 'my-ycs-logo' %}
     </div>
 
+    {% render 'my-ycs-diy-workflow-nav', current_page: 'photo-prep' %}
+
     <div class="ycs-photo-prep-header">
   <h1 id="ycs-photo-prep-title" class="ycs-photo-prep-title">Photo Prep</h1>
   <p id="ycs-photo-prep-subtitle" class="ycs-photo-prep-subtitle">
@@ -1457,6 +1459,7 @@ const rawCustomerId = (params.get('customerId') || '').trim();
 const rawClientRecordId = (params.get('clientRecordId') || '').trim();
 const initialPhotoId = (params.get('photoId') || '').trim();
 const initialPhotoSource = (params.get('photoSource') || 'PersonalStudioPhotos').trim();
+const requestedAnalysisStep = (params.get('returnStep') || '').trim().toLowerCase();
 
 const initialCustomerId =
   MODE === 'member'
@@ -1881,6 +1884,9 @@ function updateStartAnalysisLink() {
     query.set('customerId', VIEWER_CUSTOMER_ID);
     query.set('mode', 'diy');
     query.set('returnUrl', safeReturnUrl);
+    if (['depth', 'undertone', 'chroma'].includes(requestedAnalysisStep)) {
+      query.set('returnStep', requestedAnalysisStep);
+    }
 
     const queryString = query.toString();
     startAnalysisBtn.textContent = 'Continue to Structured Analysis';
@@ -3944,6 +3950,7 @@ state.justUploadedNewPhoto = true;
       updateBackLink();
       syncVisibility();
       updateStatus();
+      if (window.YcsDiyWorkflowNav) window.YcsDiyWorkflowNav.refresh();
       showOriginalPhoto(saveData.imageUrl);
       resetControls();
       showWorkingPhoto(saveData.imageUrl);
@@ -4107,6 +4114,7 @@ if (IS_PERSONAL_MODE) {
     updateBackLink();
     syncVisibility();
     updateStatus();
+    if (window.YcsDiyWorkflowNav) window.YcsDiyWorkflowNav.refresh();
 
     showWorkingPhoto(saveData.imageUrl);
     resetControls();

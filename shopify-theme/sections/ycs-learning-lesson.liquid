@@ -23,6 +23,21 @@
 {% if lesson_is_diy and lesson_tags contains ',DIYMEMBER,' %}
   {% assign lesson_access = true %}
 {% endif %}
+{% assign lesson_action_step = '' %}
+{% assign lesson_action_label = '' %}
+{% if lesson_is_diy %}
+  {% assign lesson_title_downcase = page.title | downcase %}
+  {% if page.handle contains 'determine-your-depth' or lesson_title_downcase contains 'determine your depth' %}
+    {% assign lesson_action_step = 'depth' %}
+    {% assign lesson_action_label = 'Determine My Depth' %}
+  {% elsif page.handle contains 'analyze-your-undertones' or lesson_title_downcase contains 'analyze your undertones' %}
+    {% assign lesson_action_step = 'undertone' %}
+    {% assign lesson_action_label = 'Analyze My Undertones' %}
+  {% elsif page.handle contains 'define-your-chroma' or lesson_title_downcase contains 'define your chroma' %}
+    {% assign lesson_action_step = 'chroma' %}
+    {% assign lesson_action_label = 'Define My Chroma' %}
+  {% endif %}
+{% endif %}
 {% if lesson_is_free_member %}
   {% assign lesson_learning_menu = linklists['ycs-learning-library'] %}
   {% for lesson_topic in lesson_learning_menu.links %}
@@ -57,11 +72,73 @@
       {% if lesson_is_diy and page.handle contains 'take-a-good-photo' %}
         <a class="ycs-lesson__button" href="/pages/diy-photo-prep?mode=diy&amp;returnUrl=%2Fpages%2Fdiy-color-analysis">Upload and Adjust My Photo</a>
       {% endif %}
+      {% if lesson_action_step != blank %}
+        <a
+          class="ycs-lesson__button"
+          href="/pages/diy-photo-prep?mode=diy&amp;returnStep={{ lesson_action_step }}"
+          data-diy-lesson-action="{{ lesson_action_step }}"
+        >{{ lesson_action_label }}</a>
+      {% endif %}
     </article>
   {% else %}
     {% render 'my-ycs-locked-access', lock_heading: 'Professional Membership Required', lock_body: 'This lesson is included with YCS Professional Membership, designed for color analysts who work with clients. Explore the professional tools and benefits to see if membership is right for you.' %}
   {% endif %}
 </main>
+
+{% if lesson_access and lesson_action_step != blank and customer %}
+  <script>
+    (function () {
+      var button = document.querySelector('[data-diy-lesson-action]');
+      if (!button) return;
+
+      var customerId = {{ customer.id | json }};
+      var requestedStep = button.getAttribute('data-diy-lesson-action');
+      var appBaseUrl = 'https://ycs-palette-app.vercel.app';
+
+      function requiredStep(transform) {
+        var saved = transform && typeof transform === 'object' ? transform : {};
+        if (requestedStep === 'undertone' && !saved.analysisDepthDecision) return 'depth';
+        if (requestedStep === 'chroma') {
+          if (!saved.analysisDepthDecision) return 'depth';
+          if (!saved.analysisUndertoneDecision) return 'undertone';
+        }
+        return requestedStep;
+      }
+
+      function photoPrepUrl() {
+        return '/pages/diy-photo-prep?mode=diy&returnStep=' + encodeURIComponent(requestedStep);
+      }
+
+      button.addEventListener('click', function (event) {
+        event.preventDefault();
+        button.setAttribute('aria-busy', 'true');
+
+        fetch(appBaseUrl + '/api/get-photo?customerId=' + encodeURIComponent(customerId))
+          .then(function (response) {
+            if (!response.ok) throw new Error('No photo');
+            return response.json();
+          })
+          .then(function (photo) {
+            if (!photo || !photo.activePhotoUrl) {
+              window.location.assign(photoPrepUrl());
+              return;
+            }
+
+            var url = new URL('/pages/diy-structured-analysis', window.location.origin);
+            url.searchParams.set('mode', 'diy');
+            url.searchParams.set('customerId', customerId);
+            url.searchParams.set('returnStep', requiredStep(photo.photoTransform));
+            if (photo.photoId) url.searchParams.set('photoId', photo.photoId);
+            if (photo.photoSource) url.searchParams.set('photoSource', photo.photoSource);
+            window.location.assign(url.pathname + url.search);
+          })
+          .catch(function () {
+            window.location.assign(photoPrepUrl());
+          });
+      });
+    })();
+  </script>
+{% endif %}
 
 {% style %}
   .shopify-section-header,#shopify-section-header,.site-header,.header-wrapper,.header,#shopify-section-footer,.shopify-section--footer,.site-footer,footer{display:none!important}

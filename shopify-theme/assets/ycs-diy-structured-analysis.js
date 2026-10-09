@@ -40,7 +40,9 @@
 
   const ACTIVE_RECORD_ID = CLIENT_RECORD_ID || CUSTOMER_ID || '';
   const RETURN_STEP = (urlParams.get('returnStep') || '').trim().toLowerCase();
-  const forceDepthReturn = RETURN_STEP === 'depth';
+  const REQUESTED_ANALYSIS_STEP = ['depth', 'undertone', 'chroma'].includes(RETURN_STEP)
+    ? RETURN_STEP
+    : '';
   const LAST_ANALYSIS_CLIENT_STORAGE_KEY = 'ycs:last-color-analysis-client:' + (VIEWER_CUSTOMER_ID || 'default');
 
   const HAS_NEW_PHOTO_FLAG = urlParams.get('newPhoto') === '1';
@@ -2590,6 +2592,34 @@ function updateBackLink() {
     return true;
   }
 
+  async function showRequestedAnalysisStep(requestedStep) {
+    if (!requestedStep || !isDrapingPalette(paletteSelect.value)) return false;
+
+    if (requestedStep === 'depth' || !state.analysisDepthDecision) {
+      state.analysisCurrentStep = 'depth';
+      renderDepthStep();
+      saveAnalysisSession();
+      return true;
+    }
+
+    state.selectedDepth = state.analysisDepthDecision;
+    if (depthStepEl) depthStepEl.hidden = true;
+    if (undertoneStepEl) undertoneStepEl.hidden = false;
+    if (chromaStepEl) chromaStepEl.hidden = true;
+    await renderUndertoneSections(state.selectedDepth);
+
+    if (requestedStep === 'undertone' || !state.analysisUndertoneDecision || !state.selectedUndertoneLane) {
+      state.analysisCurrentStep = 'undertone';
+      setLipVisibilityForCurrentStep();
+      saveAnalysisSession();
+      return true;
+    }
+
+    await renderChromaStep(state.selectedUndertoneLane);
+    saveAnalysisSession();
+    return true;
+  }
+
   function commitAnalysisResult(lane, chroma) {
     const result = buildResultFromLaneAndChroma(lane, chroma);
 
@@ -4981,13 +5011,11 @@ window.addEventListener('pointercancel', endGesturePointer);
   !!latestSaved &&
   !!state.photoSessionKey &&
   savedPhotoSessionKey === state.photoSessionKey &&
-  !forceDepthReturn &&
+  !REQUESTED_ANALYSIS_STEP &&
   !HAS_NEW_PHOTO_FLAG;
 
-  if (forceDepthReturn && isDrapingPalette(paletteSelect.value)) {
-    resetAnalysisForNewPhoto();
-    renderDepthStep();
-    saveAnalysisSession();
+  if (await showRequestedAnalysisStep(REQUESTED_ANALYSIS_STEP)) {
+    // The requested step enforces depth and undertone prerequisites.
   } else if (shouldRestoreSavedSession) {
     await restoreGuidedFlowFromSession();
   } else if (await restoreGuidedFlowFromDecisions()) {
