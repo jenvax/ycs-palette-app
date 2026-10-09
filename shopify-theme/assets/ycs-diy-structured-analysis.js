@@ -2743,7 +2743,14 @@ function updateBackLink() {
       chromaResultTextEl.textContent = state.analysisResult.resultLabel;
     }
 
-    saveAnalysisProgress();
+    const progressSave = saveAnalysisProgress();
+    if (IS_DIY_MODE) {
+      Promise.resolve(progressSave).finally(function () {
+        window.location.assign('/pages/step-5-get-your-color-palette?result=' + encodeURIComponent(result.resultCode));
+      });
+      return;
+    }
+
     saveClientColorType(result)
       .then(function () {
         if (chromaResultEl && chromaResultTextEl) {

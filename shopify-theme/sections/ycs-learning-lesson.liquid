@@ -65,7 +65,7 @@
     <p>Please sign in to access this lesson.</p>
     <a class="ycs-lesson__button" href="{{ routes.account_login_url }}?return_url=%2Fpages%2Fmy-ycs">Sign In</a>
   {% elsif lesson_access %}
-    <article>
+    <article{% if lesson_is_diy and page.handle == 'step-5-get-your-color-palette' %} data-diy-result-page hidden{% endif %}>
       <p class="ycs-lesson__kicker">YCS Learning Library</p>
       <h1>{{ page.title | escape }}</h1>
       <div class="ycs-lesson__content rte">{{ page.content }}</div>
@@ -73,6 +73,14 @@
         <section class="ycs-lesson__mini-palette" data-diy-mini-palette hidden>
           <h2 data-diy-mini-palette-title></h2>
           <img data-diy-mini-palette-image src="" alt="" />
+        </section>
+        <section class="ycs-lesson__palette-offer" data-diy-palette-offer hidden>
+          <p class="ycs-lesson__palette-offer-kicker">Your Next Step</p>
+          <h2>Love Your Colors? Take Your Full Palette With You.</h2>
+          <p>You've discovered your color type! Your mini palette is just the beginning. Get your complete digital color palette to explore more of your best colors and make confident choices when shopping, getting dressed, and building your wardrobe.</p>
+          <p class="ycs-lesson__palette-price"><strong>$24.97</strong><span>One-time purchase</span></p>
+          <a class="ycs-lesson__palette-offer-button" data-diy-palette-offer-link href="#"></a>
+          <p class="ycs-lesson__palette-offer-note">Your complete palette, available digitally whenever you need it.</p>
         </section>
       {% endif %}
       {% if lesson_is_diy and page.handle contains 'take-a-good-photo' %}
@@ -149,41 +157,68 @@
 {% if lesson_access and lesson_is_diy and page.handle == 'step-5-get-your-color-palette' and customer %}
   <script>
     (function () {
+      var page = document.querySelector('[data-diy-result-page]');
       var wrap = document.querySelector('[data-diy-mini-palette]');
       var title = document.querySelector('[data-diy-mini-palette-title]');
       var image = document.querySelector('[data-diy-mini-palette-image]');
-      if (!wrap || !title || !image) return;
+      var offer = document.querySelector('[data-diy-palette-offer]');
+      var offerLink = document.querySelector('[data-diy-palette-offer-link]');
+      if (!page || !wrap || !title || !image || !offer || !offerLink) return;
 
       var palettes = {
         LO: {
           label: 'Light Olive',
-          image: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/light-olive-mini-color-palette.png?v=1791571232'
+          image: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/light-olive-mini-color-palette.png?v=1791571232',
+          variant: '48065993769184'
         },
         MO: {
           label: 'Medium Olive',
-          image: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/medium-olive-mini-color-palette.png?v=1791571232'
+          image: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/medium-olive-mini-color-palette.png?v=1791571232',
+          variant: '48066001633504'
         },
         DO: {
           label: 'Deep Olive',
-          image: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/deep-olive-mini-color-palette.png?v=1791571232'
-        }
+          image: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/deep-olive-mini-color-palette.png?v=1791571232',
+          variant: '48065972797664'
+        },
+        CCL: { label: 'Clear Cool Light', variant: '46767297691872' },
+        CCM: { label: 'Clear Cool Medium', variant: '46765168001248' },
+        CCD: { label: 'Clear Cool Deep', variant: '46735667003616' },
+        CWL: { label: 'Clear Warm Light', variant: '46735667036384' },
+        CWM: { label: 'Clear Warm Medium', variant: '46735667101920' },
+        CWD: { label: 'Clear Warm Deep', variant: '46735667167456' },
+        SWL: { label: 'Soft Warm Light', variant: '46735667298528' },
+        SWM: { label: 'Soft Warm Medium', variant: '46735667364064' },
+        SWD: { label: 'Soft Warm Deep', variant: '46735667429600' },
+        SCL: { label: 'Soft Cool Light', variant: '46769541152992' },
+        SCM: { label: 'Soft Cool Medium', variant: '46735667232992' },
+        SCD: { label: 'Soft Cool Deep', variant: '46735667265760' }
       };
 
       function codeFromLabel(label) {
         var normalized = String(label || '').trim().toLowerCase();
-        if (normalized === 'light olive') return 'LO';
-        if (normalized === 'medium olive') return 'MO';
-        if (normalized === 'deep olive') return 'DO';
+        var codes = Object.keys(palettes);
+        for (var index = 0; index < codes.length; index += 1) {
+          if (palettes[codes[index]].label.toLowerCase() === normalized) return codes[index];
+        }
         return '';
       }
 
       function renderPalette(code) {
         var palette = palettes[String(code || '').toUpperCase()];
         if (!palette) return false;
-        title.textContent = palette.label + ' Mini Color Palette';
-        image.src = palette.image;
-        image.alt = palette.label + ' mini color palette';
-        wrap.hidden = false;
+        if (palette.image) {
+          title.textContent = palette.label + ' Mini Color Palette';
+          image.src = palette.image;
+          image.alt = palette.label + ' mini color palette';
+          wrap.hidden = false;
+        } else {
+          wrap.hidden = true;
+        }
+        offerLink.textContent = 'Get My ' + palette.label + ' Digital Palette';
+        offerLink.href = '/products/digital-color-palettes?variant=' + palette.variant + '#order';
+        offer.hidden = false;
+        page.hidden = false;
         return true;
       }
 
@@ -225,7 +260,17 @@
   .ycs-lesson__mini-palette{margin-top:34px}
   .ycs-lesson__mini-palette h2{margin:0 0 18px;color:#12253f;font-family:Georgia,"Times New Roman",serif;font-size:30px;font-weight:400}
   .ycs-lesson__mini-palette img{display:block;width:100%;max-width:760px;height:auto;border-radius:8px}
-  @media(max-width:700px){.ycs-lesson{padding:22px 16px 60px}.ycs-lesson__nav{margin-bottom:36px}.ycs-lesson h1{font-size:36px}.ycs-lesson__content{font-size:17px}}
+  .ycs-lesson__palette-offer{margin-top:32px;padding:30px;border:1px solid #ded8ef;border-radius:8px;background:#faf9ff;color:#505868}
+  .ycs-lesson__palette-offer-kicker{margin:0 0 10px;color:#6546ce;font-size:13px;font-weight:700;text-transform:uppercase}
+  .ycs-lesson__palette-offer h2{margin:0 0 14px;color:#12253f;font-family:Georgia,"Times New Roman",serif;font-size:30px;font-weight:400;line-height:1.2}
+  .ycs-lesson__palette-offer>p:not(.ycs-lesson__palette-offer-kicker):not(.ycs-lesson__palette-price):not(.ycs-lesson__palette-offer-note){margin:0;font-size:17px;line-height:1.65}
+  .ycs-lesson__palette-price{display:flex;align-items:baseline;gap:14px;margin:22px 0 18px}
+  .ycs-lesson__palette-price strong{color:#12253f;font-family:Georgia,"Times New Roman",serif;font-size:34px;font-weight:400}
+  .ycs-lesson__palette-price span{font-size:15px}
+  .ycs-lesson__palette-offer-button{display:flex;justify-content:center;width:100%;padding:14px 20px;border-radius:8px;background:#7b5cff;color:#fff!important;font-weight:700;text-align:center;text-decoration:none;transition:background-color .18s ease,transform .18s ease}
+  .ycs-lesson__palette-offer-button:hover{background:#6546ce;color:#fff!important;transform:translateY(-1px)}
+  .ycs-lesson__palette-offer-note{margin:18px 0 0;font-size:14px}
+  @media(max-width:700px){.ycs-lesson{padding:22px 16px 60px}.ycs-lesson__nav{margin-bottom:36px}.ycs-lesson h1{font-size:36px}.ycs-lesson__content{font-size:17px}.ycs-lesson__palette-offer{padding:22px 18px}.ycs-lesson__palette-offer h2{font-size:26px}}
   @media(prefers-reduced-motion:reduce){.ycs-lesson__button{transition:none}.ycs-lesson__button:hover{transform:none}}
 {% endstyle %}
 
