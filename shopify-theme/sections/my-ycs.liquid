@@ -1,7 +1,15 @@
 {% assign ycs_member_access = false %}
+{% assign ycs_professional_access = false %}
+{% assign ycs_diy_access = false %}
 {% if customer %}
   {% assign ycs_member_tags = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
   {% assign ycs_member_access = true %}
+  {% if ycs_member_tags contains ',YCSMEMBER,' or ycs_member_tags contains ',TRADE,' or ycs_member_tags contains ',YCS_ADMIN,' %}
+    {% assign ycs_professional_access = true %}
+  {% endif %}
+  {% if ycs_member_tags contains ',DIYMEMBER,' %}
+    {% assign ycs_diy_access = true %}
+  {% endif %}
 {% endif %}
 
 <section class="ycs-member-hub">
@@ -29,7 +37,7 @@
     </header>
 
     <div class="ycs-member-hub__grid">
-      {% if ycs_member_tags contains ',DIYMEMBER,' %}
+      {% if ycs_diy_access %}
         <article class="ycs-member-card ycs-member-card--diy">
           <div class="ycs-member-card__accent ycs-member-card__accent--diy"></div>
           <div class="ycs-member-card__body">
@@ -40,41 +48,43 @@
         </article>
       {% endif %}
 
-      <article class="ycs-member-card ycs-member-card--neutral">
-        <div class="ycs-member-card__accent ycs-member-card__accent--learn"></div>
-        <div class="ycs-member-card__body">
-          <h2>Learn</h2>
-          <p class="ycs-member-card__subtitle">Build your color analysis skills with the YCS Learning Library.</p>
-          <a href="/pages/learn" class="ycs-member-hub__button">Explore Library</a>
-        </div>
-      </article>
+      {% unless ycs_diy_access and ycs_professional_access == false %}
+        <article class="ycs-member-card ycs-member-card--neutral">
+          <div class="ycs-member-card__accent ycs-member-card__accent--learn"></div>
+          <div class="ycs-member-card__body">
+            <h2>Learn</h2>
+            <p class="ycs-member-card__subtitle">Build your color analysis skills with the YCS Learning Library.</p>
+            <a href="/pages/learn" class="ycs-member-hub__button">Explore Library</a>
+          </div>
+        </article>
 
-      <article class="ycs-member-card ycs-member-card--professional">
-        <div class="ycs-member-card__accent ycs-member-card__accent--analyze"></div>
-        <div class="ycs-member-card__body">
-          <h2>Tools</h2>
-          <p class="ycs-member-card__subtitle">Analyze clients, manage their results, and access your professional tools.</p>
-          <a href="/pages/tools" class="ycs-member-hub__button">Open Tools</a>
-        </div>
-      </article>
+        <article class="ycs-member-card ycs-member-card--professional">
+          <div class="ycs-member-card__accent ycs-member-card__accent--analyze"></div>
+          <div class="ycs-member-card__body">
+            <h2>Tools</h2>
+            <p class="ycs-member-card__subtitle">Analyze clients, manage their results, and access your professional tools.</p>
+            <a href="/pages/tools" class="ycs-member-hub__button">Open Tools</a>
+          </div>
+        </article>
 
-      <article class="ycs-member-card ycs-member-card--personal">
-        <div class="ycs-member-card__accent ycs-member-card__accent--create"></div>
-        <div class="ycs-member-card__body">
-          <h2>Palettes</h2>
-          <p class="ycs-member-card__subtitle">Explore YCS color palettes or create custom palettes for your clients.</p>
-          <a href="/pages/palettes" class="ycs-member-hub__button">Explore Palettes</a>
-        </div>
-      </article>
+        <article class="ycs-member-card ycs-member-card--personal">
+          <div class="ycs-member-card__accent ycs-member-card__accent--create"></div>
+          <div class="ycs-member-card__body">
+            <h2>Palettes</h2>
+            <p class="ycs-member-card__subtitle">Explore YCS color palettes or create custom palettes for your clients.</p>
+            <a href="/pages/palettes" class="ycs-member-hub__button">Explore Palettes</a>
+          </div>
+        </article>
 
-      <article class="ycs-member-card ycs-member-card--professional">
-        <div class="ycs-member-card__accent ycs-member-card__accent--grow"></div>
-        <div class="ycs-member-card__body">
-          <h2>Directory</h2>
-          <p class="ycs-member-card__subtitle">Get discovered by potential clients with your Color Analyst Directory listing.</p>
-          <a href="/pages/directory" class="ycs-member-hub__button" data-directory-button>Submit My Listing</a>
-        </div>
-      </article>
+        <article class="ycs-member-card ycs-member-card--professional">
+          <div class="ycs-member-card__accent ycs-member-card__accent--grow"></div>
+          <div class="ycs-member-card__body">
+            <h2>Directory</h2>
+            <p class="ycs-member-card__subtitle">Get discovered by potential clients with your Color Analyst Directory listing.</p>
+            <a href="/pages/directory" class="ycs-member-hub__button" data-directory-button>Submit My Listing</a>
+          </div>
+        </article>
+      {% endunless %}
     </div>
   {% endif %}
 </section>
