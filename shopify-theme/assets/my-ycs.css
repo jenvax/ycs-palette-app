@@ -728,6 +728,14 @@ div:has(> .my-ycs-menu-shell[data-original-tools-nav]) > a[data-global-nav-dupli
   font-family: Poppins, Arial, Tahoma, Verdana, sans-serif;
 }
 
+/* Structured Analysis lays its children out with a 10px flex gap. Pull the
+   workflow bar through that first gap, then compensate below it so the page
+   content keeps the same spacing. */
+.ycs-analysis-shell > .ycs-diy-workflow-nav {
+  margin-top: -10px;
+  margin-bottom: 18px;
+}
+
 /* The fixed global header uses its parent as a height placeholder. On the DIY
    tools, the contextual bar owns the spacing below the header instead. */
 div.ycs-photo-prep-topbar:has(> .my-ycs-menu-shell),
