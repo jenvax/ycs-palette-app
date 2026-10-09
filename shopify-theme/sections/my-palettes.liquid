@@ -730,7 +730,9 @@
 
     {% if is_color_analysis_tools_page == false and owned_count > 0 %}
       <div class="ycs-my-palettes__section">
-        <h2 class="ycs-my-palettes__section-title">My Color Palettes</h2>
+        {% unless is_owned_palettes_page %}
+          <h2 class="ycs-my-palettes__section-title">My Color Palettes</h2>
+        {% endunless %}
         <div class="ycs-my-palettes__grid ycs-my-palettes__grid--{{ owned_count }}">
           {% for block in section.blocks %}
             {% assign palette_code = block.settings.palette_code | upcase | strip %}
