@@ -1,6 +1,8 @@
 {% assign ycs_member_access = false %}
 {% assign ycs_professional_access = false %}
 {% assign ycs_diy_access = false %}
+{% assign ycs_has_owned_palettes = false %}
+{% assign ycs_has_draping_studio = false %}
 {% if customer %}
   {% assign ycs_member_tags = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
   {% assign ycs_member_access = true %}
@@ -10,6 +12,17 @@
   {% if ycs_member_tags contains ',DIYMEMBER,' %}
     {% assign ycs_diy_access = true %}
   {% endif %}
+  {% if ycs_member_tags contains ',DRAPINGSTUDIO,' %}
+    {% assign ycs_has_draping_studio = true %}
+  {% endif %}
+  {% assign ycs_owned_palette_codes = 'CWL,CWM,CWD,CCL,CCM,CCD,SWL,SWM,SWD,SCL,SCM,SCD,LO,MO,DO,CWLG,CWMG,CWDG,SWLG,SWMG,SWDG' | split: ',' %}
+  {% for ycs_palette_code in ycs_owned_palette_codes %}
+    {% assign ycs_palette_tag = ',' | append: ycs_palette_code | append: ',' %}
+    {% if ycs_member_tags contains ycs_palette_tag %}
+      {% assign ycs_has_owned_palettes = true %}
+      {% break %}
+    {% endif %}
+  {% endfor %}
 {% endif %}
 
 <section class="ycs-member-hub">
@@ -36,7 +49,18 @@
       <p><em>Everything you need to learn, analyze, create, and grow with Your Color Style.</em></p>
     </header>
 
-    <div class="ycs-member-hub__grid">
+    {% assign ycs_has_consumer_cards = false %}
+    {% if ycs_diy_access %}
+      {% assign ycs_has_consumer_cards = true %}
+    {% endif %}
+    {% if ycs_professional_access == false %}
+      {% if ycs_has_owned_palettes or ycs_has_draping_studio %}
+        {% assign ycs_has_consumer_cards = true %}
+      {% endif %}
+    {% endif %}
+
+    {% if ycs_has_consumer_cards %}
+      <div class="ycs-member-hub__grid ycs-member-hub__grid--consumer">
       {% if ycs_diy_access %}
         <article class="ycs-member-card ycs-member-card--diy">
           <div class="ycs-member-card__accent ycs-member-card__accent--diy"></div>
@@ -48,13 +72,57 @@
         </article>
       {% endif %}
 
-      {% unless ycs_diy_access and ycs_professional_access == false %}
+      {% if ycs_professional_access == false and ycs_has_owned_palettes %}
+        <article class="ycs-member-card ycs-member-card--personal">
+          <div class="ycs-member-card__accent ycs-member-card__accent--create"></div>
+          <div class="ycs-member-card__body">
+            <h2>My Color Palettes</h2>
+            <p class="ycs-member-card__subtitle">Open the digital color palettes you have purchased from Your Color Style.</p>
+            <a href="/pages/my-palettes?view=owned" class="ycs-member-hub__button">View My Palettes</a>
+          </div>
+        </article>
+      {% endif %}
+
+      {% if ycs_professional_access == false and ycs_has_draping_studio %}
+        <article class="ycs-member-card ycs-member-card--personal">
+          <div class="ycs-member-card__accent ycs-member-card__accent--create"></div>
+          <div class="ycs-member-card__body">
+            <h2>My Photos</h2>
+            <p class="ycs-member-card__subtitle">Upload, select, and adjust your photos for the Photo Draping Studio.</p>
+            <a href="/pages/my-photos" class="ycs-member-hub__button">Open My Photos</a>
+          </div>
+        </article>
+
+        <article class="ycs-member-card ycs-member-card--personal">
+          <div class="ycs-member-card__accent ycs-member-card__accent--create"></div>
+          <div class="ycs-member-card__body">
+            <h2>Photo Draping Studio</h2>
+            <p class="ycs-member-card__subtitle">See yourself alongside the colors in your purchased digital palettes. Compare shades to discover your favorites.</p>
+            <a href="/pages/draping-studio?view=draping-studio&amp;mode=personal" class="ycs-member-hub__button">Open Draping Studio</a>
+          </div>
+        </article>
+      {% endif %}
+      </div>
+    {% endif %}
+
+    <section class="ycs-member-hub__professional{% if ycs_has_consumer_cards %} ycs-member-hub__professional--separated{% endif %}" aria-label="YCS Professional">
+      {% if ycs_professional_access == false or ycs_has_consumer_cards %}
+        <h2 class="ycs-member-hub__section-heading" id="ycs-professional-heading">YCS Professional</h2>
+      {% endif %}
+      <div class="ycs-member-hub__grid">
         <article class="ycs-member-card ycs-member-card--neutral">
           <div class="ycs-member-card__accent ycs-member-card__accent--learn"></div>
           <div class="ycs-member-card__body">
             <h2>Learn</h2>
             <p class="ycs-member-card__subtitle">Build your color analysis skills with the YCS Learning Library.</p>
-            <a href="/pages/learn" class="ycs-member-hub__button">Explore Library</a>
+            {% if ycs_professional_access %}
+              <a href="/pages/learn" class="ycs-member-hub__button">Explore Library</a>
+            {% else %}
+              <div class="ycs-member-card__locked-access">
+                <strong><span aria-hidden="true">&#128274;</span> YCS MEMBER FEATURE</strong>
+                <a href="/#membership" class="ycs-member-hub__button">Join YCS</a>
+              </div>
+            {% endif %}
           </div>
         </article>
 
@@ -63,7 +131,14 @@
           <div class="ycs-member-card__body">
             <h2>Tools</h2>
             <p class="ycs-member-card__subtitle">Analyze clients, manage their results, and access your professional tools.</p>
-            <a href="/pages/tools" class="ycs-member-hub__button">Open Tools</a>
+            {% if ycs_professional_access %}
+              <a href="/pages/tools" class="ycs-member-hub__button">Open Tools</a>
+            {% else %}
+              <div class="ycs-member-card__locked-access">
+                <strong><span aria-hidden="true">&#128274;</span> YCS MEMBER FEATURE</strong>
+                <a href="/#membership" class="ycs-member-hub__button">Join YCS</a>
+              </div>
+            {% endif %}
           </div>
         </article>
 
@@ -72,7 +147,14 @@
           <div class="ycs-member-card__body">
             <h2>Palettes</h2>
             <p class="ycs-member-card__subtitle">Explore YCS color palettes or create custom palettes for your clients.</p>
-            <a href="/pages/palettes" class="ycs-member-hub__button">Explore Palettes</a>
+            {% if ycs_professional_access %}
+              <a href="/pages/palettes" class="ycs-member-hub__button">Explore Palettes</a>
+            {% else %}
+              <div class="ycs-member-card__locked-access">
+                <strong><span aria-hidden="true">&#128274;</span> YCS MEMBER FEATURE</strong>
+                <a href="/#membership" class="ycs-member-hub__button">Join YCS</a>
+              </div>
+            {% endif %}
           </div>
         </article>
 
@@ -81,11 +163,18 @@
           <div class="ycs-member-card__body">
             <h2>Directory</h2>
             <p class="ycs-member-card__subtitle">Get discovered by potential clients with your Color Analyst Directory listing.</p>
-            <a href="/pages/directory" class="ycs-member-hub__button" data-directory-button>Submit My Listing</a>
+            {% if ycs_professional_access %}
+              <a href="/pages/directory" class="ycs-member-hub__button" data-directory-button>Submit My Listing</a>
+            {% else %}
+              <div class="ycs-member-card__locked-access">
+                <strong><span aria-hidden="true">&#128274;</span> YCS MEMBER FEATURE</strong>
+                <a href="/#membership" class="ycs-member-hub__button">Join YCS</a>
+              </div>
+            {% endif %}
           </div>
         </article>
-      {% endunless %}
-    </div>
+      </div>
+    </section>
   {% endif %}
 </section>
 
@@ -225,6 +314,22 @@
     gap: 22px;
   }
 
+  .ycs-member-hub__professional--separated {
+    margin-top: 44px;
+    padding-top: 36px;
+    border-top: 1px solid var(--ycs-dashboard-border);
+  }
+
+  .ycs-member-hub__section-heading {
+    margin: 0 0 22px;
+    color: var(--ycs-dashboard-navy);
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 30px;
+    font-weight: 400;
+    line-height: 1.2;
+    letter-spacing: 0;
+  }
+
   .ycs-member-card {
     overflow: hidden;
     border: 1px solid var(--ycs-dashboard-border);
@@ -284,6 +389,27 @@
     font-size: 17px;
     font-weight: 400;
     line-height: 1.55;
+  }
+
+  .ycs-member-card__locked-access {
+    display: flex;
+    width: 100%;
+    margin-top: auto;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .ycs-member-card__locked-access strong {
+    color: var(--ycs-dashboard-muted);
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.35;
+  }
+
+  .ycs-member-card__locked-access .ycs-member-hub__button {
+    margin-top: 0;
+    flex: 0 0 auto;
   }
 
   .ycs-member-hub__button {
@@ -369,6 +495,11 @@
     .ycs-member-card__body {
       min-height: 205px;
       padding: 24px;
+    }
+
+    .ycs-member-card__locked-access {
+      align-items: flex-start;
+      flex-direction: column;
     }
   }
 {% endstyle %}
