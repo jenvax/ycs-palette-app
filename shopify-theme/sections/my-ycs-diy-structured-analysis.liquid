@@ -528,6 +528,15 @@
       ← Back to Depth
     </button>
 
+    <button
+      type="button"
+      id="ycs-analysis-choose-olive"
+      class="ycs-analysis-olive-btn"
+      hidden
+    >
+      Choose Olive
+    </button>
+
     <div class="ycs-analysis-step-apply-row">
       <span class="ycs-analysis-apply-label">Apply to</span>
       <div class="ycs-analysis-panel-toggle">
@@ -875,6 +884,30 @@
   justify-content: space-between;
   gap: 10px;
   margin: 6px 0 12px;
+}
+
+.ycs-analysis-olive-btn {
+  width: 100%;
+  min-height: 42px;
+  margin: 10px 0 4px;
+  padding: 9px 14px;
+  border: 0;
+  border-radius: 8px;
+  background: #7b5cff;
+  color: #fff;
+  font: 700 13px/1.3 Poppins, Arial, sans-serif;
+  cursor: pointer;
+}
+
+.ycs-analysis-olive-btn:hover,
+.ycs-analysis-olive-btn:focus-visible {
+  background: #6546ce;
+  color: #fff;
+}
+
+.ycs-analysis-olive-btn:disabled {
+  opacity: .6;
+  cursor: wait;
 }
 
 .ycs-lip-actions {

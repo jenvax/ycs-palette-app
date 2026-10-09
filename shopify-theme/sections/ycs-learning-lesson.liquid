@@ -69,6 +69,12 @@
       <p class="ycs-lesson__kicker">YCS Learning Library</p>
       <h1>{{ page.title | escape }}</h1>
       <div class="ycs-lesson__content rte">{{ page.content }}</div>
+      {% if lesson_is_diy and page.handle == 'step-5-get-your-color-palette' %}
+        <section class="ycs-lesson__mini-palette" data-diy-mini-palette hidden>
+          <h2 data-diy-mini-palette-title></h2>
+          <img data-diy-mini-palette-image src="" alt="" />
+        </section>
+      {% endif %}
       {% if lesson_is_diy and page.handle contains 'take-a-good-photo' %}
         <a class="ycs-lesson__button" href="/pages/diy-photo-prep?mode=diy&amp;returnUrl=%2Fpages%2Fdiy-color-analysis">Upload and Adjust My Photo</a>
       {% endif %}
@@ -140,6 +146,67 @@
   </script>
 {% endif %}
 
+{% if lesson_access and lesson_is_diy and page.handle == 'step-5-get-your-color-palette' and customer %}
+  <script>
+    (function () {
+      var wrap = document.querySelector('[data-diy-mini-palette]');
+      var title = document.querySelector('[data-diy-mini-palette-title]');
+      var image = document.querySelector('[data-diy-mini-palette-image]');
+      if (!wrap || !title || !image) return;
+
+      var palettes = {
+        LO: {
+          label: 'Light Olive',
+          image: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/light-olive-mini-color-palette.png?v=1791571232'
+        },
+        MO: {
+          label: 'Medium Olive',
+          image: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/medium-olive-mini-color-palette.png?v=1791571232'
+        },
+        DO: {
+          label: 'Deep Olive',
+          image: 'https://cdn.shopify.com/s/files/1/0623/6284/5408/files/deep-olive-mini-color-palette.png?v=1791571232'
+        }
+      };
+
+      function codeFromLabel(label) {
+        var normalized = String(label || '').trim().toLowerCase();
+        if (normalized === 'light olive') return 'LO';
+        if (normalized === 'medium olive') return 'MO';
+        if (normalized === 'deep olive') return 'DO';
+        return '';
+      }
+
+      function renderPalette(code) {
+        var palette = palettes[String(code || '').toUpperCase()];
+        if (!palette) return false;
+        title.textContent = palette.label + ' Mini Color Palette';
+        image.src = palette.image;
+        image.alt = palette.label + ' mini color palette';
+        wrap.hidden = false;
+        return true;
+      }
+
+      var requestedCode = new URLSearchParams(window.location.search).get('result');
+      renderPalette(requestedCode);
+
+      fetch('https://ycs-palette-app.vercel.app/api/get-photo?customerId={{ customer.id }}')
+        .then(function (response) {
+          if (!response.ok) throw new Error('No saved DIY result');
+          return response.json();
+        })
+        .then(function (photo) {
+          var transform = photo && photo.photoTransform ? photo.photoTransform : {};
+          var savedCode = codeFromLabel(transform.analysisChromaDecision);
+          if (savedCode) renderPalette(savedCode);
+        })
+        .catch(function () {
+          /* The result query still renders the palette immediately after selection. */
+        });
+    })();
+  </script>
+{% endif %}
+
 {% style %}
   .shopify-section-header,#shopify-section-header,.site-header,.header-wrapper,.header,#shopify-section-footer,.shopify-section--footer,.site-footer,footer{display:none!important}
   body{margin-top:0!important;padding-top:0!important}
@@ -155,6 +222,9 @@
   .ycs-lesson__button{display:inline-flex;margin-top:18px;padding:12px 20px;border-radius:10px;background:#7b5cff;color:#fff;font-weight:700;text-decoration:none;transition:background-color .18s ease,transform .18s ease}
   .ycs-lesson__button:hover{background:#6546ce;color:#fff!important;transform:translateY(-1px)}
   .ycs-lesson__button:focus-visible,.ycs-lesson__content a:focus-visible{outline:3px solid rgba(123,92,255,.3);outline-offset:3px}
+  .ycs-lesson__mini-palette{margin-top:34px}
+  .ycs-lesson__mini-palette h2{margin:0 0 18px;color:#12253f;font-family:Georgia,"Times New Roman",serif;font-size:30px;font-weight:400}
+  .ycs-lesson__mini-palette img{display:block;width:100%;max-width:760px;height:auto;border-radius:8px}
   @media(max-width:700px){.ycs-lesson{padding:22px 16px 60px}.ycs-lesson__nav{margin-bottom:36px}.ycs-lesson h1{font-size:36px}.ycs-lesson__content{font-size:17px}}
   @media(prefers-reduced-motion:reduce){.ycs-lesson__button{transition:none}.ycs-lesson__button:hover{transform:none}}
 {% endstyle %}

@@ -191,6 +191,7 @@
   const chromaSectionsEl = document.getElementById('ycs-analysis-chroma-sections');
   const chromaCopyEl = document.getElementById('ycs-analysis-chroma-copy');
   const resetUndertoneBtn = document.getElementById('ycs-analysis-reset-undertone');
+  const chooseOliveBtn = document.getElementById('ycs-analysis-choose-olive');
 
   const chromaResultEl = document.getElementById('ycs-analysis-chroma-result');
   const chromaResultTextEl = document.getElementById('ycs-analysis-chroma-result-text');
@@ -1789,7 +1790,7 @@ function applySharedLipState(shared) {
   function saveAnalysisProgress(options) {
     updateDecisionSummary();
     saveAnalysisSession();
-    savePhotoTransform(Object.assign({ silent: true }, options || {}));
+    return savePhotoTransform(Object.assign({ silent: true }, options || {}));
   }
 
   function getCompletedLipShapes() {
@@ -3240,6 +3241,11 @@ function updateBackLink() {
     const depthKey = selectedDepth || state.selectedDepth;
     if (!depthKey || !grouped[depthKey]) return;
 
+    if (chooseOliveBtn) {
+      chooseOliveBtn.hidden = false;
+      chooseOliveBtn.textContent = 'Choose ' + depthKey + ' Olive';
+    }
+
     const block = document.createElement('section');
     block.className = 'ycs-analysis-undertone-block';
 
@@ -3269,6 +3275,32 @@ function updateBackLink() {
 
     autoApplyFirstGuidedColorsIfNeeded();
     refreshGuidedSwatches();
+  }
+
+  async function chooseOliveResult() {
+    const depth = state.analysisDepthDecision || state.selectedDepth;
+    const codeByDepth = { Light: 'LO', Medium: 'MO', Deep: 'DO' };
+    const resultCode = codeByDepth[depth];
+    if (!resultCode) return;
+
+    const resultLabel = depth + ' Olive';
+    state.analysisResult.depth = depth;
+    state.analysisResult.undertone = 'Olive';
+    state.analysisResult.chroma = '';
+    state.analysisResult.resultCode = resultCode;
+    state.analysisResult.resultLabel = resultLabel;
+    state.analysisUndertoneDecision = 'Olive';
+    state.analysisChromaDecision = resultLabel;
+    state.analysisCompletedAt = new Date().toISOString();
+    state.analysisCurrentStep = 'complete';
+
+    if (chooseOliveBtn) {
+      chooseOliveBtn.disabled = true;
+      chooseOliveBtn.textContent = 'Saving ' + resultLabel + '...';
+    }
+
+    await saveAnalysisProgress();
+    window.location.assign('/pages/step-5-get-your-color-palette?result=' + encodeURIComponent(resultCode));
   }
 
   function autoApplyFirstGuidedColorsIfNeeded() {
@@ -4927,6 +4959,10 @@ const y = ((e.clientY - svgRect.top) / svgRect.height) * 1000;
 
   if (restorePositionBtn) {
     restorePositionBtn.addEventListener('click', restoreSavedPhotoPosition);
+  }
+
+  if (chooseOliveBtn) {
+    chooseOliveBtn.addEventListener('click', chooseOliveResult);
   }
 
   if (resetUndertoneBtn) {
