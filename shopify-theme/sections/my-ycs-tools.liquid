@@ -1,15 +1,24 @@
 {% assign ycs_member_access = false %}
 {% assign ycs_free_member = false %}
 {% assign ycs_has_draping_studio = false %}
+{% assign ycs_has_owned_palettes = false %}
 {% if customer %}
   {% assign ycs_member_tags = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
   {% assign ycs_member_access = true %}
   {% unless ycs_member_tags contains ',YCSMEMBER,' or ycs_member_tags contains ',TRADE,' or ycs_member_tags contains ',YCS_ADMIN,' %}
     {% assign ycs_free_member = true %}
   {% endunless %}
-  {% if ycs_member_tags contains ',DRAPINGSTUDIO,' %}
+  {% if ycs_member_tags contains ',DRAPINGSTUDIO,' or ycs_member_tags contains ',DRAPINGSTUDIOSTARTER,' %}
     {% assign ycs_has_draping_studio = true %}
   {% endif %}
+  {% assign ycs_palette_codes = 'CWL,CWM,CWD,CCL,CCM,CCD,SWL,SWM,SWD,SCL,SCM,SCD,LO,MO,DO,CWLG,CWMG,CWDG,SWLG,SWMG,SWDG' | split: ',' %}
+  {% for ycs_palette_code in ycs_palette_codes %}
+    {% assign ycs_palette_token = ',' | append: ycs_palette_code | append: ',' %}
+    {% if ycs_member_tags contains ycs_palette_token %}
+      {% assign ycs_has_owned_palettes = true %}
+      {% break %}
+    {% endif %}
+  {% endfor %}
 {% endif %}
 
 <section class="ycs-analyze-hub">
@@ -40,24 +49,31 @@
     </header>
 
     {% capture ycs_consumer_tool_cards %}
-      {% if ycs_has_draping_studio %}
+      {% if ycs_has_owned_palettes or ycs_has_draping_studio %}
         <article class="ycs-analyze-card">
           <div class="ycs-analyze-card__accent ycs-analyze-card__accent--draping"></div>
           <div class="ycs-analyze-card__body">
-            <h2>Draping Studio</h2>
-            <p>Virtually drape colors from your purchased palettes using your saved photo.</p>
-            <a href="/pages/draping-studio?view=draping-studio&mode=personal" class="ycs-analyze-hub__button">Open Draping Studio</a>
+            <h2>Photo Draping Studio</h2>
+            {% if ycs_has_draping_studio %}
+              <p>See yourself alongside the colors in your purchased digital palettes. Compare shades to discover your favorites.</p>
+              <a href="/pages/draping-studio?view=draping-studio&mode=personal" class="ycs-analyze-hub__button">Open Draping Studio</a>
+            {% else %}
+              <p>See yourself in the colors of your digital palettes. Compare shades side by side with your photo to discover your best colors.</p>
+              <a href="/products/photo-draping-studio" class="ycs-analyze-hub__button">Unlock for $10</a>
+            {% endif %}
           </div>
         </article>
 
-        <article class="ycs-analyze-card">
-          <div class="ycs-analyze-card__accent ycs-analyze-card__accent--photos"></div>
-          <div class="ycs-analyze-card__body">
-            <h2>My Photos</h2>
-            <p>Upload, prepare, and manage the photos you use in Draping Studio.</p>
-            <a href="/pages/my-photos" class="ycs-analyze-hub__button">Open My Photos</a>
-          </div>
-        </article>
+        {% if ycs_has_draping_studio %}
+          <article class="ycs-analyze-card">
+            <div class="ycs-analyze-card__accent ycs-analyze-card__accent--photos"></div>
+            <div class="ycs-analyze-card__body">
+              <h2>My Photos</h2>
+              <p>Upload, prepare, and manage the photos you use in Draping Studio.</p>
+              <a href="/pages/my-photos" class="ycs-analyze-hub__button">Open My Photos</a>
+            </div>
+          </article>
+        {% endif %}
       {% endif %}
     {% endcapture %}
 
