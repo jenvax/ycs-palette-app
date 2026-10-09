@@ -90,7 +90,7 @@
   </div>
 </header>
 
-{% unless ycs_menu_section == 'account' or ycs_menu_path == '/pages/learn' or ycs_menu_path == '/pages/tools' or ycs_menu_path == '/pages/palettes' or ycs_menu_path == '/pages/my-palettes' or ycs_menu_path == '/pages/directory' or ycs_menu_path == '/pages/my-ycs' or ycs_use_original_tool_nav %}
+{% unless ycs_menu_section == 'account' or ycs_menu_path == '/pages/learn' or ycs_menu_path == '/pages/tools' or ycs_menu_path == '/pages/palettes' or ycs_menu_path == '/pages/my-palettes' or ycs_menu_path == '/pages/directory' or ycs_menu_path == '/pages/my-ycs' or ycs_menu_path == '/pages/diy-color-analysis' or ycs_use_original_tool_nav %}
   <nav class="my-ycs-submenu" aria-label="{% if page.template_suffix == 'ycs-learning-lesson' %}Lesson navigation{% elsif ycs_menu_section == 'create' %}Palette navigation{% else %}Professional tools navigation{% endif %}">
     <div class="my-ycs-submenu__inner">
       {% if page.template_suffix == 'ycs-learning-lesson' %}
