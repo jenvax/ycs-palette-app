@@ -16,7 +16,7 @@
   | replace: '%3D', '='
 %}
 
-{% unless ycs_select_url contains 'stage=prep' %}
+{% unless ycs_select_url contains 'clientRecordId=' or ycs_select_url contains 'adminCustomerId=' or ycs_select_url contains 'customerId=' or ycs_select_url contains 'demoClientId=' %}
 <section
   class="ycs-client-select"
   data-ycs-client-select
@@ -33,7 +33,7 @@
   {% if customer == nil %}
     <div class="ycs-client-select__message">
       <h1>Sign in to select a client</h1>
-      <a class="ycs-client-select__button" href="{{ routes.account_login_url }}?return_url=%2Fpages%2Ftools-photo-prep">Sign In</a>
+      <a class="ycs-client-select__button" href="{{ routes.account_login_url }}?return_url={{ request.path | url_encode }}">Sign In</a>
     </div>
   {% elsif ycs_select_access == false %}
     {% render 'my-ycs-locked-access', lock_heading: 'Access Your Professional Tools', lock_body: 'Select clients and use the YCS color analysis tools with a YCS Professional Membership.' %}
@@ -55,13 +55,13 @@
 
 {% style %}
   .shopify-section-header,#shopify-section-header,.site-header,.header-wrapper,.header,#shopify-section-footer,.shopify-section--footer,.site-footer,footer{display:none!important}
-  .ycs-client-select{max-width:1120px;min-height:62vh;margin:0 auto;padding:86px 24px 80px;color:#292832;font-family:Poppins,Arial,Tahoma,Verdana,sans-serif}
+  .ycs-client-select{max-width:1120px;min-height:62vh;margin:0 auto;padding:154px 24px 80px;color:#292832;font-family:Poppins,Arial,Tahoma,Verdana,sans-serif}
   .ycs-client-select__nav{display:flex;align-items:center;gap:28px;margin-bottom:38px}.ycs-client-select__nav>a{position:relative;color:#55566a;font-weight:650;text-decoration:none}.ycs-client-select__nav>a.is-active{color:#6546ce}.ycs-client-select__nav>a.is-active:after{position:absolute;right:0;bottom:-12px;left:0;height:3px;border-radius:3px;background:#7b5cff;content:""}
   .ycs-client-select__header{max-width:760px;margin-bottom:34px}.ycs-client-select__kicker{margin:0 0 8px;color:#6546ce;font-size:13px;font-weight:700;text-transform:uppercase}.ycs-client-select__header h1,.ycs-client-select__message h1{margin:0;color:#12253f;font-family:Georgia,"Times New Roman",serif;font-size:clamp(38px,5vw,52px);font-weight:400;line-height:1.1;letter-spacing:0}.ycs-client-select__header>p:last-child{margin:14px 0 0;color:#505868;font-size:18px;line-height:1.6}
   .ycs-client-select__actions{display:flex;justify-content:flex-end;margin:-4px 0 22px}
   .ycs-client-select__button{display:inline-flex;min-height:44px;align-items:center;justify-content:center;padding:10px 18px;border:1px solid #7b5cff;border-radius:10px;background:#7b5cff;color:#fff;font:700 14px Poppins,Arial,Tahoma,Verdana,sans-serif;text-decoration:none;cursor:pointer;transition:background-color .18s ease,border-color .18s ease,transform .18s ease}.ycs-client-select__button:hover{border-color:#6546ce;background:#6546ce;color:#fff;transform:translateY(-1px)}.ycs-client-select__button--secondary{border-color:#dcd3ff;background:#f0ebff;color:#6546ce}.ycs-client-select__button--secondary:hover{border-color:#cec1ff;background:#e7deff;color:#5336b3}.ycs-client-select__button:focus-visible{outline:3px solid rgba(123,92,255,.3);outline-offset:3px}
   .ycs-client-select__status{margin:22px 0;color:#505868}.ycs-client-select__list{display:grid;gap:12px}.ycs-client-select__item{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:20px;padding:20px 22px;border:1px solid #ece8e3;border-radius:18px;background:#fff;box-shadow:0 10px 26px rgba(32,28,45,.05)}.ycs-client-select__name{margin:0;color:#12253f;font-size:18px;font-weight:700}.ycs-client-select__meta{margin:4px 0 0;color:#505868;font-size:14px}.ycs-client-select__message{padding:50px 0}.ycs-client-select__message .ycs-client-select__button{margin-top:24px}
-  @media(max-width:700px){.ycs-client-select{padding:78px 16px 60px}.ycs-client-select__nav{gap:18px;overflow-x:auto}.ycs-client-select__actions{justify-content:stretch}.ycs-client-select__actions .ycs-client-select__button{width:100%}.ycs-client-select__item{grid-template-columns:1fr}.ycs-client-select__item .ycs-client-select__button{width:100%}}
+  @media(max-width:700px){.ycs-client-select{padding:138px 16px 60px}.ycs-client-select__nav{gap:18px;overflow-x:auto}.ycs-client-select__actions{justify-content:stretch}.ycs-client-select__actions .ycs-client-select__button{width:100%}.ycs-client-select__item{grid-template-columns:1fr}.ycs-client-select__item .ycs-client-select__button{width:100%}}
   @media(prefers-reduced-motion:reduce){.ycs-client-select__button{transition:none}.ycs-client-select__button:hover{transform:none}}
 {% endstyle %}
 
@@ -72,7 +72,7 @@
   if (!root) return;
 
   const params = new URLSearchParams(window.location.search);
-  const workflow = params.get('workflow') === 'lip-draping' ? 'lip-draping' : 'color-analysis';
+  const workflow = window.location.pathname.includes('tools-lip-draping') || params.get('workflow') === 'lip-draping' ? 'lip-draping' : 'color-analysis';
   const targetPath = workflow === 'lip-draping' ? '/pages/tools-lip-draping' : '/pages/tools-structured';
   const workflowLabel = workflow === 'lip-draping' ? 'Lip & Draping Studio' : 'Structured Analysis';
   const customerId = root.dataset.customerId || '';
@@ -103,7 +103,7 @@
     url.searchParams.set('clientRecordId', clientRecordId);
     url.searchParams.set('mode', 'trade');
     url.searchParams.set('workflow', workflow);
-    url.searchParams.set('returnUrl', window.location.pathname + '?workflow=' + encodeURIComponent(workflow));
+    url.searchParams.set('returnUrl', window.location.pathname);
     if (!adjustedPhotoUrl(client)) url.searchParams.set('stage', 'prep');
     return url.pathname + url.search;
   }

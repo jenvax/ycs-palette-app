@@ -172,7 +172,6 @@
   {% assign can_replace_photo = true %}
 {% endif %}
 
-{% if ycs_page_url contains 'stage=prep' %}
 <div
   class="ycs-photo-prep-app{% if is_my_photos_page %} ycs-photo-prep-app--my-photos{% endif %}"
   data-is-my-photos-page="{% if is_my_photos_page %}true{% else %}false{% endif %}"
@@ -4743,8 +4742,6 @@ if (initialCustomerId && !IS_PERSONAL_MODE && !IS_MEMBER_PHOTO_MODE) {
 }
 })();
 </script>
-
-{% endif %}
 
 {% schema %}
 {

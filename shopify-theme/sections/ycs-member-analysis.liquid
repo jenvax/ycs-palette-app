@@ -23,6 +23,8 @@
   | append: '&'
 %}
 
+{% if ycs_page_url contains 'clientRecordId=' or ycs_page_url contains 'adminCustomerId=' or ycs_page_url contains 'customerId=' or ycs_page_url contains 'demoClientId=' %}
+
 {% assign is_admin = false %}
 {% if palette_access_string contains ',YCS_ADMIN,' %}
   {% assign is_admin = true %}
@@ -2515,6 +2517,8 @@
 </style>
 
 {{ 'ycs-member-analysis.js' | asset_url | script_tag }}
+
+{% endif %}
 
 {% schema %}
 {

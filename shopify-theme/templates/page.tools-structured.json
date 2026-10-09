@@ -1,5 +1,9 @@
 {
   "sections": {
+    "selector": {
+      "type": "my-ycs-client-select",
+      "settings": {}
+    },
     "main": {
       "type": "ycs-member-analysis",
       "settings": {}
@@ -9,5 +13,5 @@
       "settings": {}
     }
   },
-  "order": ["main", "app_footer"]
+  "order": ["selector", "main", "app_footer"]
 }
