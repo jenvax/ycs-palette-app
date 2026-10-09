@@ -1,0 +1,544 @@
+/* ==========================================================================
+   My YCS application styles
+
+   Shared presentation for the authenticated My YCS experience. Page-specific
+   editors and visual tools keep their own layout CSS beside their markup; this
+   file owns the application shell and reusable interface states.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Application design tokens
+   -------------------------------------------------------------------------- */
+body:has(.my-ycs-menu-shell) {
+  --my-ycs-ink: #12253f;
+  --my-ycs-text: #505868;
+  --my-ycs-violet: #5c31bd;
+  --my-ycs-violet-strong: #6546ce;
+  --my-ycs-violet-bright: #7b5cff;
+  --my-ycs-lavender: #f0ebff;
+  --my-ycs-subnav: #f8f6ff;
+  --my-ycs-border: #e7e3f0;
+  --my-ycs-sans: Poppins, Arial, Tahoma, Verdana, sans-serif;
+  --my-ycs-serif: Georgia, "Times New Roman", serif;
+}
+
+/* --------------------------------------------------------------------------
+   Theme chrome suppression
+
+   My YCS supplies its own application header and footer. These selectors hide
+   the storefront equivalents only on pages where the My YCS shell is present.
+   -------------------------------------------------------------------------- */
+body:has(.my-ycs-menu-shell) #shopify-section-header,
+body:has(.my-ycs-menu-shell) .shopify-section-header,
+body:has(.my-ycs-menu-shell) .site-header,
+body:has(.my-ycs-menu-shell) .header-wrapper,
+body:has(.my-ycs-menu-shell) .header,
+body:has(.my-ycs-menu-shell) .bredcrumbWrap,
+body:has(.my-ycs-menu-shell) .breadcrumb,
+body:has(.my-ycs-menu-shell) nav.breadcrumb,
+body:has(.my-ycs-menu-shell) #shopify-section-footer,
+body:has(.my-ycs-menu-shell) .shopify-section--footer,
+body:has(.my-ycs-menu-shell) .site-footer,
+body:has(.my-ycs-menu-shell) footer.footer,
+body:has(.my-ycs-menu-shell) footer[role="contentinfo"] {
+  display: none !important;
+}
+
+.my-ycs-standalone-navigation {
+  min-height: 76px;
+}
+
+/* --------------------------------------------------------------------------
+   Global application navigation
+
+   Fixed desktop header, responsive drawer, logo, primary links, and account
+   utilities shared by every My YCS page.
+   -------------------------------------------------------------------------- */
+nav:has(> .my-ycs-menu-shell),
+div:has(> .my-ycs-menu-shell) {
+  display: block !important;
+  min-height: 76px !important;
+  margin-bottom: 28px !important;
+  padding: 0 !important;
+}
+
+nav:has(> .my-ycs-submenu),
+div:has(> .my-ycs-submenu) {
+  min-height: 126px !important;
+}
+
+nav:has(> .my-ycs-menu-shell) > a,
+div:has(> .my-ycs-menu-shell) > a {
+  display: none !important;
+}
+
+.my-ycs-menu-shell {
+  position: fixed !important;
+  inset: 0 0 auto !important;
+  z-index: 10020 !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-bottom: 1px solid #ece9f2 !important;
+  background: rgba(255, 255, 255, .97) !important;
+  box-shadow: 0 4px 18px rgba(26, 32, 48, .06) !important;
+  backdrop-filter: blur(12px);
+}
+
+.my-ycs-menu-shell__inner {
+  display: flex;
+  width: min(100% - 48px, 1440px);
+  min-height: 76px;
+  margin: 0 auto;
+  align-items: center;
+}
+
+.my-ycs-menu-shell__logo {
+  display: inline-flex !important;
+  flex: 0 0 auto;
+  margin-right: clamp(38px, 6vw, 92px) !important;
+  padding: 0 !important;
+  align-items: center !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  text-decoration: none !important;
+}
+
+.my-ycs-menu-shell__logo img {
+  display: block;
+  width: 120px;
+  max-width: none;
+  height: auto;
+}
+
+.my-ycs-menu-shell__drawer {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+}
+
+.my-ycs-menu-shell__primary,
+.my-ycs-menu-shell__utility {
+  display: flex !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+.my-ycs-menu-shell__primary a,
+.my-ycs-menu-shell__utility a {
+  display: inline-flex !important;
+  min-height: 42px !important;
+  padding: 0 16px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 0 !important;
+  border-radius: 14px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #111b35 !important;
+  font-family: var(--my-ycs-sans);
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  text-decoration: none !important;
+  white-space: nowrap;
+}
+
+.my-ycs-menu-shell__primary a:hover,
+.my-ycs-menu-shell__primary a.is-active,
+.my-ycs-menu-shell__utility a:hover,
+.my-ycs-menu-shell__utility a.is-active {
+  background: var(--my-ycs-lavender) !important;
+  color: var(--my-ycs-violet) !important;
+}
+
+.my-ycs-menu-shell__utility {
+  margin-left: auto !important;
+  padding-left: 20px !important;
+  border-left: 1px solid #dedbe7 !important;
+}
+
+.my-ycs-menu-shell__utility a + a {
+  margin-left: 4px !important;
+  padding-left: 28px !important;
+  border-left: 1px solid #dedbe7 !important;
+  border-radius: 0 !important;
+}
+
+.my-ycs-menu-shell__toggle {
+  display: none;
+  width: 52px;
+  min-height: 52px;
+  margin-left: auto;
+  padding: 5px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 3px;
+  border: 0;
+  background: transparent;
+  color: #111b35;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.my-ycs-menu-shell__toggle-icon,
+.my-ycs-menu-shell__toggle-icon::before,
+.my-ycs-menu-shell__toggle-icon::after {
+  display: block;
+  width: 23px;
+  height: 2px;
+  background: #111b35;
+  content: "";
+  transition: transform .2s ease, opacity .2s ease;
+}
+
+.my-ycs-menu-shell__toggle-icon { position: relative; }
+.my-ycs-menu-shell__toggle-icon::before { position: absolute; top: -7px; left: 0; }
+.my-ycs-menu-shell__toggle-icon::after { position: absolute; top: 7px; left: 0; }
+.my-ycs-menu-shell.is-open .my-ycs-menu-shell__toggle-icon { background: transparent; }
+.my-ycs-menu-shell.is-open .my-ycs-menu-shell__toggle-icon::before { top: 0; transform: rotate(45deg); }
+.my-ycs-menu-shell.is-open .my-ycs-menu-shell__toggle-icon::after { top: 0; transform: rotate(-45deg); }
+
+/* --------------------------------------------------------------------------
+   Contextual secondary navigation
+
+   Used for Learn lessons, palette subpages, and tool workflows. Some legacy
+   tool sections emit their contextual links as siblings of the global menu;
+   the :has() rules below normalize those links into the same secondary bar.
+   -------------------------------------------------------------------------- */
+.my-ycs-submenu {
+  position: fixed !important;
+  top: 76px !important;
+  left: 0 !important;
+  z-index: 10019 !important;
+  display: block !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--my-ycs-border) !important;
+  background: var(--my-ycs-subnav) !important;
+  box-shadow: none !important;
+}
+
+.my-ycs-submenu__inner {
+  display: flex;
+  width: min(100% - 48px, 1440px);
+  min-height: 50px;
+  margin: 0 auto;
+  align-items: center;
+  gap: 28px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.my-ycs-submenu__inner::-webkit-scrollbar { display: none; }
+
+.my-ycs-submenu__label {
+  flex: 0 0 auto;
+  color: var(--my-ycs-violet);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.my-ycs-submenu a,
+nav:has(> .my-ycs-menu-shell[data-original-tools-nav]) > a,
+div:has(> .my-ycs-menu-shell[data-original-tools-nav]) > a {
+  position: relative !important;
+  display: inline-flex !important;
+  flex: 0 0 auto !important;
+  min-height: 50px !important;
+  margin: 0 !important;
+  padding: 0 2px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #55566a !important;
+  font-family: var(--my-ycs-sans);
+  font-size: 14px !important;
+  font-weight: 650 !important;
+  line-height: 1 !important;
+  text-decoration: none !important;
+  white-space: nowrap;
+}
+
+.my-ycs-submenu a:hover,
+.my-ycs-submenu a.is-active,
+nav:has(> .my-ycs-menu-shell[data-original-tools-nav]) > a:hover,
+nav:has(> .my-ycs-menu-shell[data-original-tools-nav]) > a.is-active,
+div:has(> .my-ycs-menu-shell[data-original-tools-nav]) > a:hover,
+div:has(> .my-ycs-menu-shell[data-original-tools-nav]) > a.is-active {
+  color: var(--my-ycs-violet) !important;
+}
+
+.my-ycs-submenu a.is-active::after,
+nav:has(> .my-ycs-menu-shell[data-original-tools-nav]) > a.is-active::after,
+div:has(> .my-ycs-menu-shell[data-original-tools-nav]) > a.is-active::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: #6c3ddd;
+  content: "";
+}
+
+div:has(> nav.has-contextual-links > .my-ycs-menu-shell[data-original-tools-nav]) {
+  min-height: 126px !important;
+}
+
+div:has(> div.has-contextual-links > .my-ycs-menu-shell[data-original-tools-nav]) {
+  padding-top: 126px !important;
+}
+
+nav:has(> .my-ycs-menu-shell[data-original-tools-nav]),
+div:has(> .my-ycs-menu-shell[data-original-tools-nav]) {
+  position: fixed !important;
+  top: 76px !important;
+  right: 0 !important;
+  left: 0 !important;
+  z-index: 10019 !important;
+  display: none !important;
+  width: 100% !important;
+  min-height: 50px !important;
+  margin: 0 !important;
+  padding: 0 max(24px, calc((100vw - 1440px) / 2)) !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 28px !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--my-ycs-border) !important;
+  background: var(--my-ycs-subnav) !important;
+  box-shadow: none !important;
+}
+
+nav.has-contextual-links:has(> .my-ycs-menu-shell[data-original-tools-nav]),
+div.has-contextual-links:has(> .my-ycs-menu-shell[data-original-tools-nav]) {
+  display: flex !important;
+}
+
+nav:has(> .my-ycs-menu-shell[data-original-tools-nav])::before,
+div:has(> .my-ycs-menu-shell[data-original-tools-nav])::before {
+  flex: 0 0 auto;
+  color: var(--my-ycs-violet);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  content: "Tools";
+}
+
+nav:has(> .my-ycs-menu-shell[data-original-tools-nav]) > a[hidden],
+div:has(> .my-ycs-menu-shell[data-original-tools-nav]) > a[hidden],
+nav:has(> .my-ycs-menu-shell[data-original-tools-nav]) > a[data-global-nav-duplicate],
+div:has(> .my-ycs-menu-shell[data-original-tools-nav]) > a[data-global-nav-duplicate] {
+  display: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   Locked membership state
+
+   Reusable upgrade message shown when a customer opens a gated My YCS area.
+   -------------------------------------------------------------------------- */
+.ycs-locked-access {
+  width: min(920px, 100%);
+  margin: 34px auto 72px;
+  padding: 18px 24px 28px;
+  color: #292832;
+  font-family: var(--my-ycs-sans);
+  text-align: center;
+}
+
+.ycs-locked-access__icon {
+  display: grid;
+  width: 84px;
+  height: 84px;
+  margin: 0 auto 28px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--my-ycs-lavender);
+  color: var(--my-ycs-violet-strong);
+}
+
+.ycs-locked-access h2 {
+  margin: 0;
+  color: var(--my-ycs-ink);
+  font-family: var(--my-ycs-sans);
+  font-size: clamp(28px, 4vw, 38px);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+.ycs-locked-access p {
+  max-width: 860px;
+  margin: 24px auto 28px;
+  color: var(--my-ycs-text);
+  font-size: clamp(17px, 2vw, 20px);
+  line-height: 1.65;
+}
+
+.ycs-locked-access__button {
+  display: inline-flex;
+  min-height: 48px;
+  padding: 12px 28px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--my-ycs-violet-bright);
+  border-radius: 10px;
+  background: var(--my-ycs-violet-bright);
+  color: #fff !important;
+  font-family: var(--my-ycs-sans);
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color .18s ease, border-color .18s ease, transform .18s ease;
+}
+
+.ycs-locked-access__button:hover {
+  border-color: var(--my-ycs-violet-strong);
+  background: var(--my-ycs-violet-strong);
+  color: #fff !important;
+  transform: translateY(-1px);
+}
+
+.ycs-locked-access__button:focus-visible {
+  outline: 3px solid rgba(123, 92, 255, .3);
+  outline-offset: 3px;
+}
+
+/* --------------------------------------------------------------------------
+   Minimal application footer
+   -------------------------------------------------------------------------- */
+.my-ycs-app-footer {
+  width: 100%;
+  margin-top: 56px;
+  border-top: 1px solid var(--my-ycs-border);
+  background: #faf9fc;
+  color: #55566a;
+  font-family: var(--my-ycs-sans);
+}
+
+.my-ycs-app-footer__inner {
+  display: flex;
+  width: min(100% - 48px, 1440px);
+  min-height: 76px;
+  margin: 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px 32px;
+}
+
+.my-ycs-app-footer__copyright {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.my-ycs-app-footer__links {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+}
+
+.my-ycs-app-footer__links a {
+  color: #313247;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.5;
+  text-decoration: none;
+}
+
+.my-ycs-app-footer__links a:hover {
+  color: var(--my-ycs-violet);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* --------------------------------------------------------------------------
+   Responsive application shell
+   -------------------------------------------------------------------------- */
+@media (max-width: 1100px) {
+  div:has(> nav.has-contextual-links > .my-ycs-menu-shell[data-original-tools-nav]) { min-height: 118px !important; }
+  div:has(> div.has-contextual-links > .my-ycs-menu-shell[data-original-tools-nav]) { padding-top: 118px !important; }
+
+  nav:has(> .my-ycs-menu-shell),
+  div:has(> .my-ycs-menu-shell) {
+    min-height: 68px !important;
+    margin-bottom: 22px !important;
+  }
+
+  nav:has(> .my-ycs-submenu),
+  div:has(> .my-ycs-submenu) { min-height: 118px !important; }
+
+  nav:has(> .my-ycs-menu-shell[data-original-tools-nav]),
+  div:has(> .my-ycs-menu-shell[data-original-tools-nav]) {
+    top: 68px !important;
+    min-height: 50px !important;
+    margin-bottom: 22px !important;
+    padding: 0 16px !important;
+    flex-wrap: nowrap !important;
+    gap: 24px !important;
+    overflow-x: auto !important;
+    scrollbar-width: none;
+  }
+
+  nav:has(> .my-ycs-menu-shell[data-original-tools-nav])::-webkit-scrollbar,
+  div:has(> .my-ycs-menu-shell[data-original-tools-nav])::-webkit-scrollbar { display: none; }
+
+  .my-ycs-menu-shell__inner { width: 100%; min-height: 68px; padding: 0 16px; }
+  .my-ycs-menu-shell__logo { margin-right: 0 !important; }
+  .my-ycs-menu-shell__logo img { width: 104px; }
+  .my-ycs-menu-shell__toggle { display: flex; }
+  .my-ycs-menu-shell__drawer {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: 0;
+    display: none;
+    max-height: calc(100vh - 68px);
+    padding: 12px 16px 20px;
+    border-top: 1px solid #ece9f2;
+    background: #fff;
+    box-shadow: 0 14px 26px rgba(26, 32, 48, .12);
+    overflow-y: auto;
+  }
+
+  .my-ycs-menu-shell.is-open .my-ycs-menu-shell__drawer { display: block; }
+  .my-ycs-menu-shell__primary,
+  .my-ycs-menu-shell__utility { display: grid !important; grid-template-columns: 1fr !important; gap: 3px !important; }
+  .my-ycs-menu-shell__primary a,
+  .my-ycs-menu-shell__utility a { width: 100%; min-height: 42px !important; padding: 0 12px !important; justify-content: flex-start !important; border-radius: 8px !important; }
+  .my-ycs-menu-shell__utility { margin: 10px 0 0 !important; padding: 10px 0 0 !important; border-top: 1px solid #dedbe7 !important; border-left: 0 !important; }
+  .my-ycs-menu-shell__utility a + a { margin: 0 !important; padding-left: 12px !important; border-left: 0 !important; border-radius: 8px !important; }
+  .my-ycs-submenu { top: 68px !important; }
+  .my-ycs-submenu__inner { width: 100%; min-height: 50px; padding: 0 16px; gap: 24px; }
+  .my-ycs-submenu a { min-height: 50px !important; }
+}
+
+@media (max-width: 700px) {
+  .ycs-locked-access { margin-top: 24px; padding-inline: 8px; }
+  .ycs-locked-access__icon { width: 72px; height: 72px; margin-bottom: 22px; }
+  .my-ycs-app-footer { margin-top: 40px; }
+  .my-ycs-app-footer__inner { width: min(100% - 32px, 1440px); min-height: 0; padding: 24px 0; align-items: flex-start; flex-direction: column; }
+  .my-ycs-app-footer__links { justify-content: flex-start; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ycs-locked-access__button { transition: none; }
+  .ycs-locked-access__button:hover { transform: none; }
+}
