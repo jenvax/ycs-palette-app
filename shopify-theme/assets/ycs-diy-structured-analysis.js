@@ -2620,6 +2620,7 @@ function updateBackLink() {
     }
 
     state.selectedDepth = state.analysisDepthDecision;
+    hideDepthStageDrapes();
     if (depthStepEl) depthStepEl.hidden = true;
     if (undertoneStepEl) undertoneStepEl.hidden = false;
     if (chromaStepEl) chromaStepEl.hidden = true;
