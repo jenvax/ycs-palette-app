@@ -36,11 +36,11 @@
     <header class="ycs-member-hub__header">
       <p class="ycs-member-hub__kicker">Your Color Style</p>
       <h1>My YCS</h1>
-      <p>Please sign in to access your membership.</p>
+      <p>Please sign in to access My YCS.</p>
       <a href="{{ routes.account_login_url }}?return_url=%2Fpages%2Fmy-ycs" class="ycs-member-hub__button">Sign In</a>
     </header>
   {% elsif ycs_member_access == false %}
-    {% render 'my-ycs-locked-access', lock_heading: 'Join My YCS', lock_body: 'Build your color knowledge and access professional tools, palettes, and resources with a YCS Membership.' %}
+    {% render 'my-ycs-locked-access', lock_heading: 'Professional Membership Required', lock_body: 'This feature is included with YCS Professional Membership, designed for color analysts who work with clients. Explore the professional tools and benefits to see if membership is right for you.' %}
   {% else %}
     {% assign ycs_member_first_name = customer.first_name | default: customer.name | split: ' ' | first %}
     <header class="ycs-member-hub__header">
@@ -120,8 +120,8 @@
               <a href="/pages/learn" class="ycs-member-hub__button">Explore Library</a>
             {% else %}
               <div class="ycs-member-card__locked-access">
-                <strong><span aria-hidden="true">&#128274;</span> YCS MEMBER FEATURE</strong>
-                <a href="/#membership" class="ycs-member-hub__button">Join YCS</a>
+                <strong><span aria-hidden="true">&#128274;</span> Professional Membership Required</strong>
+                <a href="/#membership" class="ycs-member-hub__button">Explore Professional Membership</a>
               </div>
             {% endif %}
           </div>
@@ -136,8 +136,8 @@
               <a href="/pages/tools" class="ycs-member-hub__button">Open Tools</a>
             {% else %}
               <div class="ycs-member-card__locked-access">
-                <strong><span aria-hidden="true">&#128274;</span> YCS MEMBER FEATURE</strong>
-                <a href="/#membership" class="ycs-member-hub__button">Join YCS</a>
+                <strong><span aria-hidden="true">&#128274;</span> Professional Membership Required</strong>
+                <a href="/#membership" class="ycs-member-hub__button">Explore Professional Membership</a>
               </div>
             {% endif %}
           </div>
@@ -152,8 +152,8 @@
               <a href="/pages/palettes" class="ycs-member-hub__button">Explore Palettes</a>
             {% else %}
               <div class="ycs-member-card__locked-access">
-                <strong><span aria-hidden="true">&#128274;</span> YCS MEMBER FEATURE</strong>
-                <a href="/#membership" class="ycs-member-hub__button">Join YCS</a>
+                <strong><span aria-hidden="true">&#128274;</span> Professional Membership Required</strong>
+                <a href="/#membership" class="ycs-member-hub__button">Explore Professional Membership</a>
               </div>
             {% endif %}
           </div>
@@ -168,8 +168,8 @@
               <a href="/pages/directory" class="ycs-member-hub__button" data-directory-button>Submit My Listing</a>
             {% else %}
               <div class="ycs-member-card__locked-access">
-                <strong><span aria-hidden="true">&#128274;</span> YCS MEMBER FEATURE</strong>
-                <a href="/#membership" class="ycs-member-hub__button">Join YCS</a>
+                <strong><span aria-hidden="true">&#128274;</span> Professional Membership Required</strong>
+                <a href="/#membership" class="ycs-member-hub__button">Explore Professional Membership</a>
               </div>
             {% endif %}
           </div>

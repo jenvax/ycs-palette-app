@@ -56,8 +56,7 @@
       <div class="ycs-lesson__content rte">{{ page.content }}</div>
     </article>
   {% else %}
-    <h1>{{ page.title | escape }}</h1>
-    <p>An active YCS membership is required to access this lesson.</p>
+    {% render 'my-ycs-locked-access', lock_heading: 'Professional Membership Required', lock_body: 'This lesson is included with YCS Professional Membership, designed for color analysts who work with clients. Explore the professional tools and benefits to see if membership is right for you.' %}
   {% endif %}
 </main>
 

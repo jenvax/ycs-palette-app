@@ -9,7 +9,7 @@
 {% endif %}
 
 <section class="ycs-palettes-hub">
-  <nav class="ycs-palettes-hub__nav" aria-label="Membership navigation">
+  <nav class="ycs-palettes-hub__nav" aria-label="My YCS navigation">
     {% render 'my-ycs-logo' %}
     <a href="/pages/my-ycs" class="ycs-palettes-hub__link">Back to My YCS</a>
     <a href="mailto:support@yourcolorstyle.com" class="ycs-palettes-hub__link">Contact</a>
@@ -19,11 +19,11 @@
     <header class="ycs-palettes-hub__header">
       <p class="ycs-palettes-hub__kicker">Your Color Style</p>
       <h1>Palettes</h1>
-      <p>Please sign in to access your membership.</p>
+      <p>Please sign in to access My YCS.</p>
       <a href="{{ routes.account_login_url }}?return_url=%2Fpages%2Fmy-ycs" class="ycs-palettes-hub__button">Sign In</a>
     </header>
   {% elsif ycs_member_access == false %}
-    {% render 'my-ycs-locked-access', lock_heading: 'Explore Your Color Palettes', lock_body: 'Access YCS palettes and create custom palettes for your clients with a YCS Professional Membership.' %}
+    {% render 'my-ycs-locked-access', lock_heading: 'Professional Membership Required', lock_body: 'Access YCS palettes and create custom palettes for your clients with a YCS Professional Membership.' %}
   {% else %}
     <header class="ycs-palettes-hub__header">
       <p class="ycs-palettes-hub__kicker">My YCS</p>
@@ -35,11 +35,11 @@
         <div class="ycs-palettes-card__accent ycs-palettes-card__accent--ycs"></div>
         <div class="ycs-palettes-card__body">
           <h2>YCS Color Palettes</h2>
-          <p>Explore the complete collection of Your Color Style color palettes included with your membership.</p>
+          <p>Explore the complete collection of Your Color Style color palettes included with your YCS Professional Membership.</p>
           {% if ycs_free_member %}
             <div class="ycs-palettes-card__member-feature">
-              <strong><span aria-hidden="true">&#128274;</span> YCS MEMBER FEATURE</strong>
-              <a class="ycs-palettes-hub__button" href="/#membership">Join YCS &rarr;</a>
+              <strong><span aria-hidden="true">&#128274;</span> Professional Membership Required</strong>
+              <a class="ycs-palettes-hub__button" href="/#membership">Explore Professional Membership</a>
             </div>
           {% else %}
             <a href="/pages/ycs-color-palettes" class="ycs-palettes-hub__button">View YCS Palettes</a>
@@ -54,8 +54,8 @@
           <p>Create and manage personalized color palettes using your own custom colors.</p>
           {% if ycs_free_member %}
             <div class="ycs-palettes-card__member-feature">
-              <strong><span aria-hidden="true">&#128274;</span> YCS MEMBER FEATURE</strong>
-              <a class="ycs-palettes-hub__button" href="/#membership">Join YCS &rarr;</a>
+              <strong><span aria-hidden="true">&#128274;</span> Professional Membership Required</strong>
+              <a class="ycs-palettes-hub__button" href="/#membership">Explore Professional Membership</a>
             </div>
           {% else %}
             <a href="/pages/my-custom-palettes" class="ycs-palettes-hub__button">My Custom Palettes</a>

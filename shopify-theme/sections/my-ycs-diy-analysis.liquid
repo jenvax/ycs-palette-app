@@ -7,7 +7,7 @@
 {% endif %}
 
 <section class="ycs-diy-hub" data-diy-color-analysis data-customer-id="{% if customer %}{{ customer.id }}{% endif %}">
-  <nav class="ycs-diy-hub__nav" aria-label="Membership navigation">
+  <nav class="ycs-diy-hub__nav" aria-label="My YCS navigation">
     {% render 'my-ycs-logo' %}
     <a href="/pages/my-ycs" class="ycs-diy-hub__link">Back to My YCS</a>
     <a href="mailto:support@yourcolorstyle.com" class="ycs-diy-hub__link">Contact</a>
@@ -20,7 +20,7 @@
       <a href="{{ routes.account_login_url }}?return_url=%2Fpages%2Fdiy-color-analysis" class="ycs-diy-hub__button">Sign In</a>
     </header>
   {% elsif diy_access == false %}
-    {% render 'my-ycs-locked-access', lock_heading: 'DIY Color Analysis', lock_body: 'A DIY Color Analysis membership is required to access this guided experience.' %}
+    {% render 'my-ycs-locked-access', lock_heading: 'DIY Color Analysis', lock_body: 'DIY Color Analysis access is required to use this guided experience.', lock_button_label: 'Back to My YCS', lock_button_url: '/pages/my-ycs' %}
   {% else %}
     <header class="ycs-diy-hub__header">
       <h1>DIY Color Analysis</h1>

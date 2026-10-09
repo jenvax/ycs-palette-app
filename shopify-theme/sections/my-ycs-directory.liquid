@@ -5,7 +5,7 @@
 <section class="dir{% if free %} dir--locked{% endif %}"{% if paid %} data-directory-manager data-url="/apps/palette-data" data-customer-id="{{ customer.id }}"{% endif %}>
   <nav>{% render 'my-ycs-logo' %}<a href="/pages/my-ycs">Back to My YCS</a><a href="mailto:support@yourcolorstyle.com">Contact</a></nav>
   {% if customer == nil %}
-    <h1>Directory</h1><p>Please sign in to access your membership.</p><a class="btn" href="{{ routes.account_login_url }}?return_url=%2Fpages%2Fmy-ycs">Sign In</a>
+    <h1>Directory</h1><p>Please sign in to access My YCS.</p><a class="btn" href="{{ routes.account_login_url }}?return_url=%2Fpages%2Fmy-ycs">Sign In</a>
   {% elsif paid %}
     <header><small>MY YCS</small><h1>My Directory Listing</h1><p>Create and manage the listing potential clients see in the Your Color Style Color Analyst Directory.</p></header>
     <p data-msg role="status" aria-live="polite" hidden></p><p data-load>Loading your listing...</p>
@@ -36,8 +36,8 @@
     </dialog>
   {% elsif free %}
     <header><small>MY YCS</small><h1>Get Listed in the Color Analyst Directory</h1><p>Connect with people who are looking for professional color analysis services.</p><p>YCS members can be listed in the <strong>Your Color Style Color Analyst Directory</strong>, giving potential clients a way to discover you and learn more about your services.</p></header>
-    <section class="summary"><div><h2>Your Directory Listing</h2><p><strong>&#128274; Directory listings are included with YCS membership.</strong></p><p>Join Your Color Style to submit your business information and be included in the directory while your membership is active.</p><a class="btn" href="/#membership">Join Your Color Style</a><p><a href="/pages/find-a-color-analyst">View the Color Analyst Directory &rarr;</a></p></div></section>
-  {% else %}{% render 'my-ycs-locked-access', lock_heading: 'Get Listed in the Color Analyst Directory', lock_body: 'Create a professional directory listing and help potential clients discover your services with a YCS Membership.' %}{% endif %}
+    <section class="summary"><div><h2>Your Directory Listing</h2><p><strong>&#128274; Professional Membership Required</strong></p><p>Directory listings are included with YCS Professional Membership for color analysts who work with clients.</p><a class="btn" href="/#membership">Explore Professional Membership</a><p><a href="/pages/find-a-color-analyst">View the Color Analyst Directory &rarr;</a></p></div></section>
+  {% else %}{% render 'my-ycs-locked-access', lock_heading: 'Professional Membership Required', lock_body: 'Create a professional directory listing and help potential clients discover your services with a YCS Professional Membership.' %}{% endif %}
 </section>
 {% if paid %}<script src="{{ 'ycs-directory-manager.js' | asset_url }}" defer></script><script src="{{ 'ycs-directory-cropper.js' | asset_url }}" defer></script>{% endif %}
 {% style %}

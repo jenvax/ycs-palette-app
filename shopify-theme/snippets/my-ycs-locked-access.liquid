@@ -1,3 +1,5 @@
+{% assign ycs_lock_button_label = lock_button_label | default: 'Explore Professional Membership' %}
+{% assign ycs_lock_button_url = lock_button_url | default: '/#membership' %}
 <section class="ycs-locked-access" aria-labelledby="ycs-locked-access-title">
   <div class="ycs-locked-access__icon" aria-hidden="true">
     <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -8,5 +10,5 @@
   </div>
   <h2 id="ycs-locked-access-title">{{ lock_heading | escape }}</h2>
   <p>{{ lock_body | escape }}</p>
-  <a class="ycs-locked-access__button" href="/#membership">Join YCS</a>
+  <a class="ycs-locked-access__button" href="{{ ycs_lock_button_url }}">{{ ycs_lock_button_label | escape }}</a>
 </section>

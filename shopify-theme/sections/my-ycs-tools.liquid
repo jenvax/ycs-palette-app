@@ -22,7 +22,7 @@
 {% endif %}
 
 <section class="ycs-analyze-hub">
-  <nav class="ycs-analyze-hub__topnav" aria-label="Membership navigation">
+  <nav class="ycs-analyze-hub__topnav" aria-label="My YCS navigation">
     {% render 'my-ycs-logo' %}
     <a href="/pages/my-ycs" class="ycs-analyze-hub__back">Back to My YCS</a>
     <a href="mailto:support@yourcolorstyle.com" class="ycs-analyze-hub__back">Contact</a>
@@ -32,11 +32,11 @@
     <header class="ycs-analyze-hub__header">
       <p class="ycs-analyze-hub__kicker">Your Color Style</p>
       <h1>Tools</h1>
-      <p>Please sign in to access your membership.</p>
+      <p>Please sign in to access My YCS.</p>
       <a href="{{ routes.account_login_url }}?return_url=%2Fpages%2Fmy-ycs" class="ycs-analyze-hub__button">Sign In</a>
     </header>
   {% elsif ycs_member_access == false %}
-    {% render 'my-ycs-locked-access', lock_heading: 'Access Your Professional Tools', lock_body: 'Manage clients and use the YCS color analysis tools with a YCS Professional Membership.' %}
+    {% render 'my-ycs-locked-access', lock_heading: 'Professional Membership Required', lock_body: 'Manage clients and use the YCS color analysis tools with a YCS Professional Membership, designed for color analysts who work with clients.' %}
   {% else %}
     <header class="ycs-analyze-hub__header">
       <p class="ycs-analyze-hub__kicker">My YCS</p>
@@ -83,8 +83,8 @@
           <p>Manage your clients, prepare photos, create color analyses reports, and send digital color palettes to your clients.</p>
           {% if ycs_free_member %}
             <div class="ycs-analyze-card__member-feature">
-              <strong><span aria-hidden="true">&#128274;</span> YCS MEMBER FEATURE</strong>
-              <a class="ycs-analyze-hub__button" href="/#membership">Join YCS &rarr;</a>
+              <strong><span aria-hidden="true">&#128274;</span> Professional Membership Required</strong>
+              <a class="ycs-analyze-hub__button" href="/#membership">Explore Professional Membership</a>
             </div>
           {% else %}
             <a href="/pages/tools-clients" class="ycs-analyze-hub__button">Open My Clients</a>
@@ -99,8 +99,8 @@
           <p>Follow a guided color analysis process to evaluate depth, undertone, and chroma, step by step.</p>
           {% if ycs_free_member %}
             <div class="ycs-analyze-card__member-feature">
-              <strong><span aria-hidden="true">&#128274;</span> YCS MEMBER FEATURE</strong>
-              <a class="ycs-analyze-hub__button" href="/#membership">Join YCS &rarr;</a>
+              <strong><span aria-hidden="true">&#128274;</span> Professional Membership Required</strong>
+              <a class="ycs-analyze-hub__button" href="/#membership">Explore Professional Membership</a>
             </div>
           {% else %}
             <a href="/pages/tools-structured" class="ycs-analyze-hub__button">Open Tool</a>
@@ -115,8 +115,8 @@
           <p>Compare your client side by side with different color palettes, experiment with lip colors, and see how different shades complement their natural coloring.</p>
           {% if ycs_free_member %}
             <div class="ycs-analyze-card__member-feature">
-              <strong><span aria-hidden="true">&#128274;</span> YCS MEMBER FEATURE</strong>
-              <a class="ycs-analyze-hub__button" href="/#membership">Join YCS &rarr;</a>
+              <strong><span aria-hidden="true">&#128274;</span> Professional Membership Required</strong>
+              <a class="ycs-analyze-hub__button" href="/#membership">Explore Professional Membership</a>
             </div>
           {% else %}
             <a href="/pages/tools-lip-draping" class="ycs-analyze-hub__button">Open Lip &amp; Draping Studio</a>

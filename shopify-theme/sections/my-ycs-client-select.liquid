@@ -36,7 +36,7 @@
       <a class="ycs-client-select__button" href="{{ routes.account_login_url }}?return_url={{ request.path | url_encode }}">Sign In</a>
     </div>
   {% elsif ycs_select_access == false %}
-    {% render 'my-ycs-locked-access', lock_heading: 'Access Your Professional Tools', lock_body: 'Select clients and use the YCS color analysis tools with a YCS Professional Membership.' %}
+    {% render 'my-ycs-locked-access', lock_heading: 'Professional Membership Required', lock_body: 'Select clients and use the YCS color analysis tools with a YCS Professional Membership.' %}
   {% else %}
     <header class="ycs-client-select__header">
       <p class="ycs-client-select__kicker">My YCS Tools</p>

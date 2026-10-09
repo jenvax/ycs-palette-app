@@ -239,9 +239,9 @@
 
   {% elsif is_ycs_member == false %}
     {% if section.settings.member_view == 'custom' %}
-      {% render 'my-ycs-locked-access', lock_heading: 'Create Your Own Color Palettes', lock_body: 'Create, save, and manage custom palettes for your clients with a YCS Professional Membership.' %}
+      {% render 'my-ycs-locked-access', lock_heading: 'Professional Membership Required', lock_body: 'Create, save, and manage custom palettes for your clients with a YCS Professional Membership.' %}
     {% else %}
-      {% render 'my-ycs-locked-access', lock_heading: 'Explore YCS Color Palettes', lock_body: 'The complete Your Color Style palette collection is available with a YCS Professional Membership. Join to explore palettes and use them in your color analysis work.' %}
+      {% render 'my-ycs-locked-access', lock_heading: 'Professional Membership Required', lock_body: 'The complete Your Color Style palette collection is available with a YCS Professional Membership. Explore professional membership to use these palettes in your color analysis work.' %}
     {% endif %}
 
   {% else %}
@@ -491,7 +491,7 @@
 
               {% if palette_access_string contains ',VIP,' or is_admin %}
                 <p class="ycs-palette-card__studio-note ycs-palette-card__studio-note--open">
-                  Included with your membership
+                  Included with your YCS Professional Membership
                 </p>
               {% elsif has_draping_studio_starter %}
   <p class="ycs-palette-card__studio-note ycs-palette-card__studio-note--open">

@@ -9,7 +9,7 @@
 {% endif %}
 
 <section class="ycs-learn-hub">
-  <nav class="ycs-learn-hub__nav" aria-label="Membership navigation">
+  <nav class="ycs-learn-hub__nav" aria-label="My YCS navigation">
     {% render 'my-ycs-logo' %}
     <a href="/pages/my-ycs" class="ycs-learn-hub__link">Back to My YCS</a>
     <a href="mailto:support@yourcolorstyle.com" class="ycs-learn-hub__link">Contact</a>
@@ -24,11 +24,11 @@
     <header class="ycs-learn-hub__header">
       <p class="ycs-learn-hub__kicker">Your Color Style</p>
       <h1>Learn</h1>
-      <p>Please sign in to access your membership.</p>
+      <p>Please sign in to access My YCS.</p>
       <a href="{{ routes.account_login_url }}?return_url=%2Fpages%2Fmy-ycs" class="ycs-learn-hub__button">Sign In</a>
     </header>
   {% elsif ycs_member_access == false %}
-    {% render 'my-ycs-locked-access', lock_heading: 'Explore the YCS Learning Library', lock_body: 'Develop your color analysis skills with lessons and training included with a YCS Membership.' %}
+    {% render 'my-ycs-locked-access', lock_heading: 'Professional Membership Required', lock_body: 'Develop your color analysis skills with lessons and training included with a YCS Professional Membership.' %}
   {% else %}
     <header class="ycs-learn-hub__header" data-learn-header>
       <p class="ycs-learn-hub__kicker">My YCS</p>
@@ -61,8 +61,8 @@
                 <p>{% if topic_description != blank %}{{ topic_description | escape }}{% else %}{{ topic.links.size }} lesson{% unless topic.links.size == 1 %}s{% endunless %}{% endif %}</p>
                 {% if topic_unlocked == false %}
                   <div class="ycs-learn-card__member-feature">
-                    <strong><span aria-hidden="true">&#128274;</span> YCS MEMBER FEATURE</strong>
-                    <a class="ycs-learn-hub__button" href="/#membership">Join YCS &rarr;</a>
+                    <strong><span aria-hidden="true">&#128274;</span> Professional Membership Required</strong>
+                    <a class="ycs-learn-hub__button" href="/#membership">Explore Professional Membership</a>
                   </div>
                 {% elsif topic.links.size == 1 %}
                   <a class="ycs-learn-hub__button" href="{{ topic.links.first.url }}">Open Lesson</a>
