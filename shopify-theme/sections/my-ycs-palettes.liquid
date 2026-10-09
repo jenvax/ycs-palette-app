@@ -32,11 +32,7 @@
       <a href="{{ routes.account_login_url }}?return_url=%2Fpages%2Fmy-ycs" class="ycs-palettes-hub__button">Sign In</a>
     </header>
   {% elsif ycs_member_access == false %}
-    <header class="ycs-palettes-hub__header">
-      <p class="ycs-palettes-hub__kicker">Your Color Style</p>
-      <h1>Palettes</h1>
-      <p>This membership is not available on your account.</p>
-    </header>
+    {% render 'my-ycs-locked-access', lock_heading: 'Explore Your Color Palettes', lock_body: 'Access YCS palettes and create custom palettes for your clients with a YCS Professional Membership.' %}
   {% else %}
     <header class="ycs-palettes-hub__header">
       <p class="ycs-palettes-hub__kicker">My YCS</p>

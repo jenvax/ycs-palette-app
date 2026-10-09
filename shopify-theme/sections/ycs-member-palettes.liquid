@@ -238,10 +238,11 @@
     </div>
 
   {% elsif is_ycs_member == false %}
-    <div class="ycs-my-palettes__header">
-      <h1>{{ ycs_page_heading }}</h1>
-      <p class="ycs-my-palettes__intro">This membership is not available on your account.</p>
-    </div>
+    {% if section.settings.member_view == 'custom' %}
+      {% render 'my-ycs-locked-access', lock_heading: 'Create Your Own Color Palettes', lock_body: 'Create, save, and manage custom palettes for your clients with a YCS Professional Membership.' %}
+    {% else %}
+      {% render 'my-ycs-locked-access', lock_heading: 'Explore YCS Color Palettes', lock_body: 'The complete Your Color Style palette collection is available with a YCS Professional Membership. Join to explore palettes and use them in your color analysis work.' %}
+    {% endif %}
 
   {% else %}
     <div id="ycs-tools-tos-overlay" class="ycs-tools-tos-overlay">

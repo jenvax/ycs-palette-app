@@ -19,11 +19,7 @@
       <a href="{{ routes.account_login_url }}?return_url=%2Fpages%2Fmy-ycs" class="ycs-member-hub__button">Sign In</a>
     </header>
   {% elsif ycs_member_access == false %}
-    <header class="ycs-member-hub__header">
-      <p class="ycs-member-hub__kicker">Your Color Style</p>
-      <h1>My YCS</h1>
-      <p>This membership is not available on your account.</p>
-    </header>
+    {% render 'my-ycs-locked-access', lock_heading: 'Join My YCS', lock_body: 'Build your color knowledge and access professional tools, palettes, and resources with a YCS Membership.' %}
   {% else %}
     {% assign ycs_member_first_name = customer.first_name | default: customer.name | split: ' ' | first %}
     <header class="ycs-member-hub__header">
