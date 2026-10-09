@@ -713,6 +713,11 @@ div:has(> .my-ycs-menu-shell[data-original-tools-nav]) > a[data-global-nav-dupli
   .ycs-diy-hub__button:hover { transform: none; }
 }
 /* DIY analysis workflow: shared contextual navigation for Photo Prep and Structured Analysis. */
+.ycs-photo-prep-app:has(.ycs-diy-workflow-nav),
+.ycs-analysis-app:has(.ycs-diy-workflow-nav) {
+  padding-top: 0 !important;
+}
+
 .ycs-diy-workflow-nav {
   box-sizing: border-box;
   width: 100vw;
