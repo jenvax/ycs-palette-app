@@ -1,7 +1,11 @@
 {
   "sections": {
-    "main": {
-      "type": "ycs-member-photo-prep",
+    "selector": {
+      "type": "my-ycs-client-select",
+      "settings": {}
+    },
+    "prep": {
+      "type": "my-ycs-client-photo-prep",
       "settings": {}
     },
     "app_footer": {
@@ -9,5 +13,5 @@
       "settings": {}
     }
   },
-  "order": ["main", "app_footer"]
+  "order": ["selector", "prep", "app_footer"]
 }

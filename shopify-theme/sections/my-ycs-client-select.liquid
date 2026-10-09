@@ -1,0 +1,162 @@
+{% assign ycs_select_tags = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
+{% assign ycs_select_access = false %}
+{% if customer and ycs_select_tags contains ',YCSMEMBER,' or customer and ycs_select_tags contains ',TRADE,' or customer and ycs_select_tags contains ',YCS_ADMIN,' %}
+  {% assign ycs_select_access = true %}
+{% endif %}
+
+{% capture ycs_select_header %}{{ content_for_header }}{% endcapture %}
+{% assign ycs_select_url = ycs_select_header
+  | split: '"pageurl":"'
+  | last
+  | split: '"'
+  | first
+  | replace: '\/', '/'
+  | replace: '\\u0026', '&'
+  | replace: '%3F', '?'
+  | replace: '%3D', '='
+%}
+
+{% unless ycs_select_url contains 'stage=prep' %}
+<section
+  class="ycs-client-select"
+  data-ycs-client-select
+  data-customer-id="{{ customer.id }}"
+  data-app-base-url="https://ycs-palette-app.vercel.app"
+>
+  <nav class="ycs-client-select__nav" aria-label="Professional tools navigation">
+    {% render 'my-ycs-logo' %}
+    <a href="/pages/tools">Tools</a>
+    <a href="/pages/tools-clients">My Clients</a>
+    <a href="#" data-current-workflow class="is-active" aria-current="page">Structured Analysis</a>
+  </nav>
+
+  {% if customer == nil %}
+    <div class="ycs-client-select__message">
+      <h1>Sign in to select a client</h1>
+      <a class="ycs-client-select__button" href="{{ routes.account_login_url }}?return_url=%2Fpages%2Ftools-photo-prep">Sign In</a>
+    </div>
+  {% elsif ycs_select_access == false %}
+    {% render 'my-ycs-locked-access', lock_heading: 'Access Your Professional Tools', lock_body: 'Select clients and use the YCS color analysis tools with a YCS Professional Membership.' %}
+  {% else %}
+    <header class="ycs-client-select__header">
+      <p class="ycs-client-select__kicker">My YCS Tools</p>
+      <h1 data-selector-title>Select a Client</h1>
+      <p data-selector-intro>Choose the client you want to analyze. We will take you to the next step based on their saved photo.</p>
+    </header>
+
+    <div class="ycs-client-select__toolbar">
+      <div>
+        <h2>Clients</h2>
+        <p>Select a client to continue.</p>
+      </div>
+      <div class="ycs-client-select__toolbar-actions">
+        <a class="ycs-client-select__button ycs-client-select__button--secondary" href="/pages/tools-clients">Create New Client</a>
+        <button class="ycs-client-select__button ycs-client-select__button--secondary" type="button" data-refresh>Refresh</button>
+      </div>
+    </div>
+
+    <p class="ycs-client-select__status" data-status role="status" aria-live="polite">Loading clients...</p>
+    <div class="ycs-client-select__list" data-client-list></div>
+  {% endif %}
+</section>
+
+{% style %}
+  .shopify-section-header,#shopify-section-header,.site-header,.header-wrapper,.header,#shopify-section-footer,.shopify-section--footer,.site-footer,footer{display:none!important}
+  .ycs-client-select{max-width:1120px;min-height:62vh;margin:0 auto;padding:22px 24px 80px;color:#292832;font-family:Poppins,Arial,Tahoma,Verdana,sans-serif}
+  .ycs-client-select__nav{display:flex;align-items:center;gap:28px;margin-bottom:38px}.ycs-client-select__nav>a{position:relative;color:#55566a;font-weight:650;text-decoration:none}.ycs-client-select__nav>a.is-active{color:#6546ce}.ycs-client-select__nav>a.is-active:after{position:absolute;right:0;bottom:-12px;left:0;height:3px;border-radius:3px;background:#7b5cff;content:""}
+  .ycs-client-select__header{max-width:760px;margin-bottom:34px}.ycs-client-select__kicker{margin:0 0 8px;color:#6546ce;font-size:13px;font-weight:700;text-transform:uppercase}.ycs-client-select__header h1,.ycs-client-select__message h1{margin:0;color:#12253f;font-family:Georgia,"Times New Roman",serif;font-size:clamp(38px,5vw,52px);font-weight:400;line-height:1.1;letter-spacing:0}.ycs-client-select__header>p:last-child{margin:14px 0 0;color:#505868;font-size:18px;line-height:1.6}
+  .ycs-client-select__toolbar{display:flex;align-items:center;justify-content:space-between;gap:24px;margin-bottom:18px;padding:22px 24px;border:1px solid #ece8e3;border-radius:18px;background:#fff}.ycs-client-select__toolbar h2{margin:0;color:#12253f;font-size:22px}.ycs-client-select__toolbar p{margin:5px 0 0;color:#505868}.ycs-client-select__toolbar-actions{display:flex;flex-wrap:wrap;gap:10px}
+  .ycs-client-select__button{display:inline-flex;min-height:44px;align-items:center;justify-content:center;padding:10px 18px;border:1px solid #7b5cff;border-radius:10px;background:#7b5cff;color:#fff;font:700 14px Poppins,Arial,Tahoma,Verdana,sans-serif;text-decoration:none;cursor:pointer;transition:background-color .18s ease,border-color .18s ease,transform .18s ease}.ycs-client-select__button:hover{border-color:#6546ce;background:#6546ce;color:#fff;transform:translateY(-1px)}.ycs-client-select__button--secondary{border-color:#dcd3ff;background:#f0ebff;color:#6546ce}.ycs-client-select__button--secondary:hover{border-color:#cec1ff;background:#e7deff;color:#5336b3}.ycs-client-select__button:focus-visible{outline:3px solid rgba(123,92,255,.3);outline-offset:3px}
+  .ycs-client-select__status{margin:22px 0;color:#505868}.ycs-client-select__list{display:grid;gap:12px}.ycs-client-select__item{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:20px;padding:20px 22px;border:1px solid #ece8e3;border-radius:18px;background:#fff;box-shadow:0 10px 26px rgba(32,28,45,.05)}.ycs-client-select__name{margin:0;color:#12253f;font-size:18px;font-weight:700}.ycs-client-select__meta{margin:4px 0 0;color:#505868;font-size:14px}.ycs-client-select__message{padding:50px 0}.ycs-client-select__message .ycs-client-select__button{margin-top:24px}
+  @media(max-width:700px){.ycs-client-select{padding:18px 16px 60px}.ycs-client-select__nav{gap:18px;overflow-x:auto}.ycs-client-select__toolbar{align-items:stretch;flex-direction:column;padding:20px}.ycs-client-select__toolbar-actions{display:grid;grid-template-columns:1fr}.ycs-client-select__item{grid-template-columns:1fr}.ycs-client-select__item .ycs-client-select__button{width:100%}}
+  @media(prefers-reduced-motion:reduce){.ycs-client-select__button{transition:none}.ycs-client-select__button:hover{transform:none}}
+{% endstyle %}
+
+{% if customer and ycs_select_access %}
+<script>
+(function () {
+  const root = document.querySelector('[data-ycs-client-select]');
+  if (!root) return;
+
+  const params = new URLSearchParams(window.location.search);
+  const workflow = params.get('workflow') === 'lip-draping' ? 'lip-draping' : 'color-analysis';
+  const targetPath = workflow === 'lip-draping' ? '/pages/tools-lip-draping' : '/pages/tools-structured';
+  const workflowLabel = workflow === 'lip-draping' ? 'Lip & Draping Studio' : 'Structured Analysis';
+  const customerId = root.dataset.customerId || '';
+  const appBaseUrl = root.dataset.appBaseUrl || '';
+  const list = root.querySelector('[data-client-list]');
+  const status = root.querySelector('[data-status]');
+  const refresh = root.querySelector('[data-refresh]');
+  const currentWorkflow = root.querySelector('[data-current-workflow]');
+
+  currentWorkflow.textContent = workflowLabel;
+  currentWorkflow.href = window.location.pathname + '?workflow=' + encodeURIComponent(workflow);
+
+  function escapeHtml(value) {
+    const node = document.createElement('div');
+    node.textContent = value == null ? '' : String(value);
+    return node.innerHTML;
+  }
+
+  function adjustedPhotoUrl(client) {
+    if (client && client.adjustedPhotoUrl) return client.adjustedPhotoUrl;
+    const photos = client && Array.isArray(client.photos) ? client.photos : [];
+    const adjusted = photos.find(function (photo) { return photo && photo.adjustedPhotoUrl; });
+    return adjusted ? adjusted.adjustedPhotoUrl : '';
+  }
+
+  function destination(client) {
+    const clientRecordId = client.clientRecordId || client.airtableRecordId || '';
+    const url = new URL(adjustedPhotoUrl(client) ? targetPath : '/pages/tools-photo-prep', window.location.origin);
+    url.searchParams.set('clientRecordId', clientRecordId);
+    url.searchParams.set('mode', 'trade');
+    url.searchParams.set('workflow', workflow);
+    url.searchParams.set('returnUrl', window.location.pathname + '?workflow=' + encodeURIComponent(workflow));
+    if (!adjustedPhotoUrl(client)) url.searchParams.set('stage', 'prep');
+    return url.pathname + url.search;
+  }
+
+  function render(clients) {
+    if (!clients.length) {
+      status.textContent = 'No clients yet. Create a client to begin.';
+      list.innerHTML = '';
+      return;
+    }
+    status.hidden = true;
+    list.innerHTML = clients.map(function (client) {
+      const name = [client.firstName || '', client.lastName || ''].filter(Boolean).join(' ') || 'Unnamed client';
+      const photoStatus = adjustedPhotoUrl(client) ? 'Adjusted photo ready' : 'Photo preparation required';
+      return '<article class="ycs-client-select__item"><div><h2 class="ycs-client-select__name">' + escapeHtml(name) + '</h2><p class="ycs-client-select__meta">' + escapeHtml(client.email || 'No email') + ' · ' + photoStatus + '</p></div><a class="ycs-client-select__button" href="' + escapeHtml(destination(client)) + '">Continue</a></article>';
+    }).join('');
+  }
+
+  async function loadClients() {
+    status.hidden = false;
+    status.textContent = 'Loading clients...';
+    list.innerHTML = '';
+    refresh.disabled = true;
+    try {
+      const response = await fetch(appBaseUrl + '/api/get-consultant-clients?consultantId=' + encodeURIComponent(customerId));
+      const text = await response.text();
+      let data;
+      try { data = JSON.parse(text); } catch (error) { throw new Error('Could not load clients.'); }
+      if (!response.ok) throw new Error(data.error || 'Could not load clients.');
+      render(Array.isArray(data.clients) ? data.clients : []);
+    } catch (error) {
+      status.hidden = false;
+      status.textContent = error.message || 'Could not load clients.';
+    } finally {
+      refresh.disabled = false;
+    }
+  }
+
+  refresh.addEventListener('click', loadClients);
+  loadClients();
+})();
+</script>
+{% endif %}
+{% endunless %}
+
+{% schema %}
+{"name":"My YCS Client Select","settings":[],"presets":[{"name":"My YCS Client Select"}]}
+{% endschema %}
