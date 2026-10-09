@@ -315,6 +315,10 @@
     gap: 22px;
   }
 
+  .ycs-member-hub__grid--consumer {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .ycs-member-hub__professional--separated {
     margin-top: 44px;
     padding-top: 36px;
@@ -472,6 +476,12 @@
     }
   }
 
+  @media (max-width: 980px) {
+    .ycs-member-hub__grid--consumer {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
   @media (max-width: 720px) {
     .ycs-member-hub {
       padding: 22px 16px 52px;
@@ -489,7 +499,8 @@
       font-size: 17px;
     }
 
-    .ycs-member-hub__grid {
+    .ycs-member-hub__grid,
+    .ycs-member-hub__grid--consumer {
       grid-template-columns: 1fr;
     }
 
