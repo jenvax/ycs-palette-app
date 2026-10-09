@@ -154,6 +154,7 @@
   const lipFinishBtn = document.getElementById('ycs-lip-finish');
   const lipUndoBtn = document.getElementById('ycs-lip-undo');
   const lipClearBtn = document.getElementById('ycs-lip-clear');
+  const lipCancelBtn = document.getElementById('ycs-lip-cancel');
   const lipGuidesToggleBtn = document.getElementById('ycs-lip-guides-toggle');
   const lipDoneBtn = document.getElementById('ycs-lip-done');
   const lipVisibilityToggleBtn = document.getElementById('ycs-lip-visibility-toggle');
@@ -346,6 +347,8 @@
       rightFilter: 'all'
     }
   };
+
+  let lipEditSnapshot = null;
 
   const gestureState = {
     pointers: new Map(),
@@ -1358,6 +1361,47 @@ function applySharedLipState(shared) {
     });
   }
 
+  function captureLipEditSnapshot() {
+    return {
+      leftColor: state.lip.leftColor,
+      rightColor: state.lip.rightColor,
+      leftVisible: state.lip.leftVisible,
+      rightVisible: state.lip.rightVisible,
+      closed: state.lip.closed,
+      points: state.lip.points.map(function (point) { return { x: point.x, y: point.y }; }),
+      shapes: state.lip.shapes.map(function (shape) {
+        if (!shape) return shape;
+        return {
+          closed: !!shape.closed,
+          points: (shape.points || []).map(function (point) { return { x: point.x, y: point.y }; })
+        };
+      }),
+      activeShapeIndex: state.lip.activeShapeIndex
+    };
+  }
+
+  function restoreLipEditSnapshot() {
+    const snapshot = lipEditSnapshot;
+    if (snapshot) {
+      state.lip.leftColor = snapshot.leftColor;
+      state.lip.rightColor = snapshot.rightColor;
+      state.lip.leftVisible = snapshot.leftVisible;
+      state.lip.rightVisible = snapshot.rightVisible;
+      state.lip.closed = snapshot.closed;
+      state.lip.points = snapshot.points;
+      state.lip.shapes = snapshot.shapes;
+      state.lip.activeShapeIndex = snapshot.activeShapeIndex;
+    } else {
+      clearLipMask();
+    }
+
+    lipEditSnapshot = null;
+    exitLipEditingUi();
+    updateLipActionButtons();
+    syncLipOpacityControl();
+    renderLips();
+  }
+
   function exitLipEditingUi() {
     state.lip.editing = false;
     state.lip.adjusting = false;
@@ -1604,6 +1648,7 @@ function applySharedLipState(shared) {
       if (getCompletedLipShapes().length) {
         savePhotoTransform({ silent: true });
       }
+      lipEditSnapshot = null;
     };
   }
 
@@ -1797,6 +1842,36 @@ function applySharedLipState(shared) {
     renderLips();
   }
 
+  function getSavedPositionStorageKey() {
+    return 'ycs-explicit-photo-position:' + [
+      CLIENT_RECORD_ID || CUSTOMER_ID || DEMO_CLIENT_ID || 'default',
+      PHOTO_ID || '',
+      PHOTO_SOURCE || ''
+    ].join(':');
+  }
+
+  function rememberExplicitlySavedPosition() {
+    try {
+      localStorage.setItem(getSavedPositionStorageKey(), JSON.stringify({
+        x: state.x,
+        y: state.y,
+        scale: state.scale
+      }));
+    } catch (error) {
+      console.warn('Could not remember the saved photo position', error);
+    }
+  }
+
+  function getExplicitlySavedPosition() {
+    try {
+      const raw = localStorage.getItem(getSavedPositionStorageKey());
+      return raw ? JSON.parse(raw) : null;
+    } catch (error) {
+      console.warn('Could not read the saved photo position', error);
+      return null;
+    }
+  }
+
   async function savePhotoTransform(options) {
     options = options || {};
     const silent = !!options.silent;
@@ -1883,6 +1958,18 @@ function applySharedLipState(shared) {
   }
 
   async function restoreSavedPhotoPosition() {
+    exitLipEditingUi();
+    updateLipActionButtons();
+    renderLips();
+
+    const explicitPosition = getExplicitlySavedPosition();
+    if (explicitPosition) {
+      applySavedTransform(explicitPosition);
+      reapplyImageTransformAfterRender();
+      alert('Saved position restored.');
+      return;
+    }
+
     if (IS_FREE_ANALYSIS_DEMO) {
       const storedTransform = getStoredFreeTrialValue(DEMO_CLIENT_ID, 'transform');
 
@@ -4399,6 +4486,7 @@ function syncLipOpacityControl() {
 
   if (lipEditBtn) {
   lipEditBtn.onclick = function () {
+      lipEditSnapshot = captureLipEditSnapshot();
       state.lip.editing = true;
       state.lip.adjusting = false;
       state.lip.closed = false;
@@ -4427,6 +4515,7 @@ function syncLipOpacityControl() {
 
   if (lipEditAgainBtn) {
     lipEditAgainBtn.onclick = function () {
+      lipEditSnapshot = captureLipEditSnapshot();
       state.lip.movingPhoto = false;
       if (lipMovePhotoBtn) lipMovePhotoBtn.textContent = 'Move Photo';
 
@@ -4588,6 +4677,12 @@ if (lipAddShapeBtn) {
 
       updateLipActionButtons();
       renderLips();
+    };
+  }
+
+  if (lipCancelBtn) {
+    lipCancelBtn.onclick = function () {
+      restoreLipEditSnapshot();
     };
   }
 
@@ -4825,6 +4920,7 @@ const y = ((e.clientY - svgRect.top) / svgRect.height) * 1000;
 
   if (savePositionBtn) {
     savePositionBtn.addEventListener('click', function () {
+      rememberExplicitlySavedPosition();
       savePhotoTransform();
     });
   }
