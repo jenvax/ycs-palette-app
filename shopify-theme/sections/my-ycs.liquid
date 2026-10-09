@@ -33,7 +33,7 @@
     </header>
 
     <div class="ycs-member-hub__grid">
-      <article class="ycs-member-card">
+      <article class="ycs-member-card ycs-member-card--neutral">
         <div class="ycs-member-card__accent ycs-member-card__accent--learn"></div>
         <div class="ycs-member-card__body">
           <h2>Learn</h2>
@@ -42,7 +42,7 @@
         </div>
       </article>
 
-      <article class="ycs-member-card">
+      <article class="ycs-member-card ycs-member-card--professional">
         <div class="ycs-member-card__accent ycs-member-card__accent--analyze"></div>
         <div class="ycs-member-card__body">
           <h2>Tools</h2>
@@ -51,7 +51,7 @@
         </div>
       </article>
 
-      <article class="ycs-member-card">
+      <article class="ycs-member-card ycs-member-card--personal">
         <div class="ycs-member-card__accent ycs-member-card__accent--create"></div>
         <div class="ycs-member-card__body">
           <h2>Palettes</h2>
@@ -60,7 +60,7 @@
         </div>
       </article>
 
-      <article class="ycs-member-card">
+      <article class="ycs-member-card ycs-member-card--professional">
         <div class="ycs-member-card__accent ycs-member-card__accent--grow"></div>
         <div class="ycs-member-card__body">
           <h2>Directory</h2>
@@ -117,10 +117,21 @@
   }
 
   .ycs-member-hub {
+    --ycs-dashboard-navy: #12253f;
+    --ycs-dashboard-ink: #292832;
+    --ycs-dashboard-muted: #505868;
+    --ycs-dashboard-border: #ece8e3;
+    --ycs-dashboard-shadow: 0 18px 45px rgba(32, 28, 45, .08);
+    --ycs-dashboard-pro: #7b5cff;
+    --ycs-dashboard-pro-hover: #6546ce;
+    --ycs-dashboard-personal: #347fa5;
+    --ycs-dashboard-personal-hover: #24678b;
+    --ycs-dashboard-neutral: #8057c9;
+    --ycs-dashboard-neutral-hover: #6546ce;
     max-width: 1180px;
     margin: 0 auto;
     padding: 28px 24px 72px;
-    color: #313238;
+    color: var(--ycs-dashboard-ink);
   }
 
   .ycs-member-hub__topnav {
@@ -183,30 +194,36 @@
 
   .ycs-member-card {
     overflow: hidden;
-    border: 1px solid #e7e3df;
-    border-radius: 8px;
+    border: 1px solid var(--ycs-dashboard-border);
+    border-radius: 24px;
     background: #fff;
-    box-shadow: 0 8px 24px rgba(37, 39, 46, .06);
+    box-shadow: var(--ycs-dashboard-shadow);
+    transition: transform 200ms ease, box-shadow 200ms ease;
   }
 
   .ycs-member-card__accent {
-    height: 10px;
+    height: 5px;
   }
 
   .ycs-member-card__accent--learn {
-    background: linear-gradient(90deg, #cc3c68, #e88b66, #eccf68);
+    background: var(--ycs-dashboard-neutral);
   }
 
   .ycs-member-card__accent--analyze {
-    background: linear-gradient(90deg, #385c7d, #56a3ae, #83c998);
+    background: var(--ycs-dashboard-pro);
   }
 
   .ycs-member-card__accent--create {
-    background: linear-gradient(90deg, #76559b, #c05287, #dd7b67);
+    background: var(--ycs-dashboard-personal);
   }
 
   .ycs-member-card__accent--grow {
-    background: linear-gradient(90deg, #356c58, #86a052, #d1b94d);
+    background: var(--ycs-dashboard-pro);
+  }
+
+  .ycs-member-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 22px 52px rgba(32, 28, 45, .12);
   }
 
   .ycs-member-card__body {
@@ -219,7 +236,7 @@
 
   .ycs-member-card h2 {
     margin: 0 0 10px;
-    color: #303139;
+    color: var(--ycs-dashboard-navy);
     font-size: 24px;
     line-height: 1.32;
     letter-spacing: 0;
@@ -227,7 +244,7 @@
 
   .ycs-member-card__subtitle {
     margin: 0 0 28px;
-    color: #686a72;
+    color: var(--ycs-dashboard-muted);
     font-size: 17px;
     line-height: 1.55;
   }
@@ -238,19 +255,56 @@
     margin-top: auto;
     align-items: center;
     justify-content: center;
-    border-radius: 6px;
-    background: #cf3f65;
+    border-radius: 999px;
+    background: var(--ycs-dashboard-pro);
     color: #fff;
     font-size: 15px;
     font-weight: 700;
     line-height: 1.2;
-    padding: 12px 20px;
+    padding: 12px 24px;
     text-decoration: none;
+    transition: background-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
   }
 
   .ycs-member-hub__button:hover {
-    background: #b72f55;
+    background: var(--ycs-dashboard-pro-hover);
     color: #fff;
+    transform: translateY(-1px);
+  }
+
+  .ycs-member-card--personal .ycs-member-hub__button {
+    background: var(--ycs-dashboard-personal);
+  }
+
+  .ycs-member-card--personal .ycs-member-hub__button:hover {
+    background: var(--ycs-dashboard-personal-hover);
+  }
+
+  .ycs-member-card--neutral .ycs-member-hub__button {
+    background: #f0ebff;
+    color: var(--ycs-dashboard-neutral-hover);
+  }
+
+  .ycs-member-card--neutral .ycs-member-hub__button:hover {
+    background: #e7deff;
+    color: var(--ycs-dashboard-neutral-hover);
+  }
+
+  .ycs-member-hub__button:focus-visible {
+    outline: 3px solid rgba(77, 161, 255, .55);
+    outline-offset: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ycs-member-card,
+    .ycs-member-hub__button {
+      transition: none;
+    }
+
+    .ycs-member-card:hover,
+    .ycs-member-hub__button:hover {
+      transform: none;
+    }
   }
 
   @media (max-width: 720px) {
