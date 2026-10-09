@@ -84,6 +84,17 @@
         </article>
       {% endif %}
 
+      {% if ycs_has_owned_palettes and ycs_has_draping_studio == false %}
+        <article class="ycs-member-card ycs-member-card--personal">
+          <div class="ycs-member-card__accent ycs-member-card__accent--create"></div>
+          <div class="ycs-member-card__body">
+            <h2>Photo Draping Studio</h2>
+            <p class="ycs-member-card__subtitle">See yourself in the colors of your digital palettes. Compare shades side by side with your photo to discover your best colors.</p>
+            <a href="/products/photo-draping-studio" class="ycs-member-hub__button">Unlock for $10</a>
+          </div>
+        </article>
+      {% endif %}
+
       {% if ycs_professional_access == false and ycs_has_draping_studio %}
         <article class="ycs-member-card ycs-member-card--personal">
           <div class="ycs-member-card__accent ycs-member-card__accent--create"></div>
