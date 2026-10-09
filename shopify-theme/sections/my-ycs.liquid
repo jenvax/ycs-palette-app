@@ -29,6 +29,17 @@
     </header>
 
     <div class="ycs-member-hub__grid">
+      {% if ycs_member_tags contains ',DIYMEMBER,' %}
+        <article class="ycs-member-card ycs-member-card--diy">
+          <div class="ycs-member-card__accent ycs-member-card__accent--diy"></div>
+          <div class="ycs-member-card__body">
+            <h2>DIY Color Analysis</h2>
+            <p class="ycs-member-card__subtitle">Learn the Your Color Style method and discover your best colors through a guided, step-by-step analysis of your own coloring.</p>
+            <a href="/pages/diy-color-analysis" class="ycs-member-hub__button" data-diy-analysis-button data-customer-id="{{ customer.id }}">Start My Color Analysis</a>
+          </div>
+        </article>
+      {% endif %}
+
       <article class="ycs-member-card ycs-member-card--neutral">
         <div class="ycs-member-card__accent ycs-member-card__accent--learn"></div>
         <div class="ycs-member-card__body">
@@ -71,6 +82,19 @@
 {% if customer and ycs_member_access %}
   <script>
     (function () {
+      var diyButton = document.querySelector('[data-diy-analysis-button]');
+      if (diyButton) {
+        try {
+          var diyProgressKey = 'ycs_diy_analysis_started_' + diyButton.dataset.customerId;
+          if (localStorage.getItem(diyProgressKey) === 'true') {
+            diyButton.textContent = 'Continue My Color Analysis';
+          }
+          diyButton.addEventListener('click', function () {
+            localStorage.setItem(diyProgressKey, 'true');
+          });
+        } catch (error) {}
+      }
+
       var button = document.querySelector('[data-directory-button]');
       if (!button) return;
 

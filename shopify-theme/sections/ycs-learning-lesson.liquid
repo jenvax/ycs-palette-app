@@ -1,6 +1,7 @@
 {% assign lesson_access = false %}
 {% assign lesson_is_free_member = false %}
 {% assign lesson_topic_key = '' %}
+{% assign lesson_is_diy = false %}
 {% if customer %}
   {% assign lesson_tags = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
   {% if lesson_tags contains ',YCSMEMBER,' or lesson_tags contains ',TRADE,' or lesson_tags contains ',YCS_ADMIN,' %}
@@ -8,6 +9,19 @@
   {% else %}
     {% assign lesson_is_free_member = true %}
   {% endif %}
+{% endif %}
+
+{% assign lesson_diy_menu = linklists['diy-color-analysis'] %}
+{% if lesson_diy_menu != blank %}
+  {% for diy_lesson_link in lesson_diy_menu.links %}
+    {% if diy_lesson_link.url == request.path %}
+      {% assign lesson_is_diy = true %}
+    {% endif %}
+  {% endfor %}
+{% endif %}
+
+{% if lesson_is_diy and lesson_tags contains ',DIYMEMBER,' %}
+  {% assign lesson_access = true %}
 {% endif %}
 {% if lesson_is_free_member %}
   {% assign lesson_learning_menu = linklists['ycs-learning-library'] %}

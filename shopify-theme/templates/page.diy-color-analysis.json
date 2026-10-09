@@ -1,0 +1,15 @@
+{
+  "sections": {
+    "main": {
+      "type": "my-ycs-diy-analysis",
+      "settings": {
+        "diy_menu": "diy-color-analysis"
+      }
+    },
+    "app_footer": {
+      "type": "my-ycs-app-footer",
+      "settings": {}
+    }
+  },
+  "order": ["main", "app_footer"]
+}

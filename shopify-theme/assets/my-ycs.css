@@ -542,3 +542,173 @@ div:has(> .my-ycs-menu-shell[data-original-tools-nav]) > a[data-global-nav-dupli
   .ycs-locked-access__button { transition: none; }
   .ycs-locked-access__button:hover { transform: none; }
 }
+
+/* --------------------------------------------------------------------------
+   DIY Color Analysis journey
+
+   Lesson-card index available only to customers tagged DIYMEMBER. The layout
+   mirrors the Learn topic cards while remaining independent of that library.
+   -------------------------------------------------------------------------- */
+.ycs-diy-hub {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 28px 24px 72px;
+  color: #292832;
+  font-family: var(--my-ycs-sans);
+}
+
+.ycs-diy-hub__nav {
+  display: flex;
+  margin-bottom: 42px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.ycs-diy-hub__link {
+  color: #4b4d55;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.ycs-diy-hub__link:hover { text-decoration: underline; }
+
+.ycs-diy-hub__header {
+  max-width: 820px;
+  margin-bottom: 42px;
+}
+
+.ycs-diy-hub__header h1 {
+  margin: 0 0 14px;
+  color: var(--my-ycs-ink);
+  font-family: var(--my-ycs-serif);
+  font-size: 42px;
+  font-weight: 400;
+  line-height: 1.14;
+  letter-spacing: 0;
+}
+
+.ycs-diy-hub__header p {
+  margin: 0;
+  color: var(--my-ycs-text);
+  font-size: 19px;
+  line-height: 1.6;
+}
+
+.ycs-diy-hub__header .ycs-diy-hub__button { margin-top: 22px; }
+
+.ycs-diy-hub__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.ycs-diy-card {
+  overflow: hidden;
+  border: 1px solid #ece8e3;
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 18px 45px rgba(32, 28, 45, .08);
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+.ycs-diy-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 22px 52px rgba(32, 28, 45, .12);
+}
+
+.ycs-diy-card__accent {
+  height: 5px;
+  background: var(--my-ycs-violet-bright);
+}
+
+.ycs-diy-card__body {
+  display: flex;
+  min-height: 250px;
+  padding: 28px;
+  align-items: flex-start;
+  flex-direction: column;
+}
+
+.ycs-diy-card h2,
+.ycs-diy-hub__setup h2 {
+  margin: 0 0 10px;
+  color: var(--my-ycs-ink);
+  font-family: var(--my-ycs-sans);
+  font-size: 23px;
+  font-weight: 700;
+  line-height: 1.32;
+  letter-spacing: 0;
+}
+
+.ycs-diy-card p,
+.ycs-diy-hub__setup p {
+  margin: 0 0 28px;
+  color: var(--my-ycs-text);
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.ycs-diy-hub__button {
+  display: inline-flex;
+  min-height: 46px;
+  margin-top: auto;
+  padding: 12px 24px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--my-ycs-violet-bright);
+  color: #fff;
+  font-family: var(--my-ycs-sans);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-decoration: none;
+  transition: background-color 200ms ease, transform 200ms ease;
+}
+
+.ycs-diy-hub__button:hover {
+  background: var(--my-ycs-violet-strong);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.ycs-diy-hub__button:focus-visible {
+  outline: 3px solid rgba(123, 92, 255, .3);
+  outline-offset: 3px;
+}
+
+.ycs-diy-hub__setup {
+  max-width: 760px;
+  padding: 28px;
+  border: 1px solid #dcd3ff;
+  border-radius: 16px;
+  background: #faf8ff;
+}
+
+.ycs-diy-hub__setup p { margin-bottom: 0; }
+
+.ycs-member-card__accent--diy { background: #347fa5; }
+.ycs-member-card--diy .ycs-member-hub__button { background: #347fa5; }
+.ycs-member-card--diy .ycs-member-hub__button:hover { background: #24678b; }
+
+@media (max-width: 980px) {
+  .ycs-diy-hub__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+  .ycs-diy-hub { padding: 22px 16px 52px; }
+  .ycs-diy-hub__nav { margin-bottom: 30px; }
+  .ycs-diy-hub__header h1 { font-size: 32px; }
+  .ycs-diy-hub__header p { font-size: 17px; }
+  .ycs-diy-hub__grid { grid-template-columns: 1fr; }
+  .ycs-diy-card__body { min-height: 220px; padding: 24px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ycs-diy-card,
+  .ycs-diy-hub__button { transition: none; }
+  .ycs-diy-card:hover,
+  .ycs-diy-hub__button:hover { transform: none; }
+}

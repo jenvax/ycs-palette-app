@@ -38,6 +38,7 @@
 {% assign ycs_lesson_topic_title = '' %}
 {% assign ycs_lesson_topic_index = '' %}
 {% assign ycs_lesson_topic_size = 0 %}
+{% assign ycs_lesson_is_diy = false %}
 {% assign ycs_lesson_title_key = page.title | strip | downcase %}
 {% if page.template_suffix == 'ycs-learning-lesson' %}
   {% assign ycs_learning_menu = linklists['ycs-learning-library'] %}
@@ -52,6 +53,14 @@
       {% endif %}
     {% endfor %}
   {% endfor %}
+  {% assign ycs_diy_menu = linklists['diy-color-analysis'] %}
+  {% if ycs_diy_menu != blank %}
+    {% for ycs_diy_lesson in ycs_diy_menu.links %}
+      {% if ycs_diy_lesson.url == ycs_menu_path %}
+        {% assign ycs_lesson_is_diy = true %}
+      {% endif %}
+    {% endfor %}
+  {% endif %}
 {% endif %}
 
 <header class="my-ycs-menu-shell" data-my-ycs-menu{% if ycs_use_original_tool_nav %} data-original-tools-nav{% endif %}>
@@ -83,10 +92,14 @@
   <nav class="my-ycs-submenu" aria-label="{% if page.template_suffix == 'ycs-learning-lesson' %}Lesson navigation{% elsif ycs_menu_section == 'create' %}Palette navigation{% else %}Professional tools navigation{% endif %}">
     <div class="my-ycs-submenu__inner">
       {% if page.template_suffix == 'ycs-learning-lesson' %}
-        <a href="/pages/learn">Back to Learn</a>
-        {% assign ycs_lesson_topic_key = ycs_lesson_topic_title | strip | downcase %}
-        {% if ycs_lesson_topic_size > 1 and ycs_lesson_topic_title != blank and ycs_lesson_topic_key != ycs_lesson_title_key %}
-          <a href="/pages/learn?topic={{ ycs_lesson_topic_index }}">{{ ycs_lesson_topic_title | escape }}</a>
+        {% if ycs_lesson_is_diy %}
+          <a href="/pages/diy-color-analysis">Back to DIY Color Analysis</a>
+        {% else %}
+          <a href="/pages/learn">Back to Learn</a>
+          {% assign ycs_lesson_topic_key = ycs_lesson_topic_title | strip | downcase %}
+          {% if ycs_lesson_topic_size > 1 and ycs_lesson_topic_title != blank and ycs_lesson_topic_key != ycs_lesson_title_key %}
+            <a href="/pages/learn?topic={{ ycs_lesson_topic_index }}">{{ ycs_lesson_topic_title | escape }}</a>
+          {% endif %}
         {% endif %}
         <a href="{{ request.path }}" class="is-active" aria-current="page">{{ page.title | escape }}</a>
       {% elsif ycs_menu_section == 'create' %}

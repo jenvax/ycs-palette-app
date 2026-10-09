@@ -1,0 +1,88 @@
+{% assign diy_access = false %}
+{% if customer %}
+  {% assign diy_tags = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
+  {% if diy_tags contains ',DIYMEMBER,' %}
+    {% assign diy_access = true %}
+  {% endif %}
+{% endif %}
+
+<section class="ycs-diy-hub" data-diy-color-analysis data-customer-id="{% if customer %}{{ customer.id }}{% endif %}">
+  <nav class="ycs-diy-hub__nav" aria-label="Membership navigation">
+    {% render 'my-ycs-logo' %}
+    <a href="/pages/my-ycs" class="ycs-diy-hub__link">Back to My YCS</a>
+    <a href="mailto:support@yourcolorstyle.com" class="ycs-diy-hub__link">Contact</a>
+  </nav>
+
+  {% if customer == nil %}
+    <header class="ycs-diy-hub__header">
+      <h1>DIY Color Analysis</h1>
+      <p>Please sign in to begin your color analysis.</p>
+      <a href="{{ routes.account_login_url }}?return_url=%2Fpages%2Fdiy-color-analysis" class="ycs-diy-hub__button">Sign In</a>
+    </header>
+  {% elsif diy_access == false %}
+    {% render 'my-ycs-locked-access', lock_heading: 'DIY Color Analysis', lock_body: 'A DIY Color Analysis membership is required to access this guided experience.' %}
+  {% else %}
+    <header class="ycs-diy-hub__header">
+      <h1>DIY Color Analysis</h1>
+      <p>Learn the Your Color Style method and discover your best colors through a guided, step-by-step analysis of your own coloring.</p>
+    </header>
+
+    {% assign diy_menu = section.settings.diy_menu %}
+    {% if diy_menu == blank %}
+      {% assign diy_menu = linklists['diy-color-analysis'] %}
+    {% endif %}
+
+    {% if diy_menu != blank and diy_menu.links.size > 0 %}
+      <div class="ycs-diy-hub__grid">
+        {% for lesson in diy_menu.links %}
+          {% assign lesson_parts = lesson.title | split: '|' %}
+          {% assign lesson_title = lesson_parts.first | strip %}
+          {% assign lesson_description = lesson_parts[1] | strip %}
+          <article class="ycs-diy-card">
+            <div class="ycs-diy-card__accent"></div>
+            <div class="ycs-diy-card__body">
+              <h2>{{ lesson_title | escape }}</h2>
+              {% if lesson_description != blank %}<p>{{ lesson_description | escape }}</p>{% endif %}
+              <a class="ycs-diy-hub__button" href="{{ lesson.url }}">Open Lesson</a>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% elsif diy_tags contains ',YCS_ADMIN,' or diy_access %}
+      <div class="ycs-diy-hub__setup">
+        <h2>Add the DIY Color Analysis lessons</h2>
+        <p>Create a Shopify navigation menu with the handle <strong>diy-color-analysis</strong>. Add each lesson page as a top-level link using <strong>Lesson title | Short description</strong>.</p>
+      </div>
+    {% endif %}
+  {% endif %}
+</section>
+
+{% if customer and diy_access %}
+  <script>
+    (function () {
+      var root = document.querySelector('[data-diy-color-analysis]');
+      if (!root) return;
+      try {
+        localStorage.setItem('ycs_diy_analysis_started_' + root.dataset.customerId, 'true');
+      } catch (error) {}
+    })();
+  </script>
+{% endif %}
+
+{% schema %}
+{
+  "name": "DIY Color Analysis",
+  "settings": [
+    {
+      "type": "link_list",
+      "id": "diy_menu",
+      "label": "DIY lesson menu"
+    }
+  ],
+  "presets": [
+    {
+      "name": "DIY Color Analysis"
+    }
+  ]
+}
+{% endschema %}
