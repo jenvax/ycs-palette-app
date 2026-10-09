@@ -1,0 +1,13 @@
+{
+  "sections": {
+    "main": {
+      "type": "my-ycs-diy-structured-analysis",
+      "settings": {}
+    },
+    "app_footer": {
+      "type": "my-ycs-app-footer",
+      "settings": {}
+    }
+  },
+  "order": ["main", "app_footer"]
+}

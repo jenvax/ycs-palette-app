@@ -54,6 +54,9 @@
       <p class="ycs-lesson__kicker">YCS Learning Library</p>
       <h1>{{ page.title | escape }}</h1>
       <div class="ycs-lesson__content rte">{{ page.content }}</div>
+      {% if lesson_is_diy and page.handle contains 'take-a-good-photo' %}
+        <a class="ycs-lesson__button" href="/pages/diy-photo-prep?mode=diy&amp;returnUrl=%2Fpages%2Fdiy-color-analysis">Upload and Adjust My Photo</a>
+      {% endif %}
     </article>
   {% else %}
     {% render 'my-ycs-locked-access', lock_heading: 'Professional Membership Required', lock_body: 'This lesson is included with YCS Professional Membership, designed for color analysts who work with clients. Explore the professional tools and benefits to see if membership is right for you.' %}
