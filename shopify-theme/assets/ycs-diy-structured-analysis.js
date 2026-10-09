@@ -1084,6 +1084,23 @@ function updateManageClientLink() {
       state.analysisCurrentStep === 'complete'
     );
 
+    // An explicit workflow destination must win over saved decisions. The
+    // requested-step renderer has already prepared the matching UI; changing
+    // visibility from entitlement state here would create a mixed step screen.
+    if (state.analysisCurrentStep === 'depth') {
+      if (depthStepEl) depthStepEl.hidden = false;
+      if (undertoneStepEl) undertoneStepEl.hidden = true;
+      if (chromaStepEl) chromaStepEl.hidden = true;
+      return;
+    }
+
+    if (state.analysisCurrentStep === 'undertone' && hasDepthDecision) {
+      if (depthStepEl) depthStepEl.hidden = true;
+      if (undertoneStepEl) undertoneStepEl.hidden = false;
+      if (chromaStepEl) chromaStepEl.hidden = true;
+      return;
+    }
+
     if (!hasDepthDecision) {
       if (depthStepEl) depthStepEl.hidden = false;
       if (undertoneStepEl) undertoneStepEl.hidden = true;
