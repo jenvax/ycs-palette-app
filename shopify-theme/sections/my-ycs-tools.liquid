@@ -8,7 +8,7 @@
   {% unless ycs_member_tags contains ',YCSMEMBER,' or ycs_member_tags contains ',TRADE,' or ycs_member_tags contains ',YCS_ADMIN,' %}
     {% assign ycs_free_member = true %}
   {% endunless %}
-  {% if ycs_member_tags contains ',DRAPINGSTUDIO,' or ycs_member_tags contains ',DRAPINGSTUDIOSTARTER,' %}
+  {% if ycs_member_tags contains ',DRAPINGSTUDIO,' %}
     {% assign ycs_has_draping_studio = true %}
   {% endif %}
   {% assign ycs_palette_codes = 'CWL,CWM,CWD,CCL,CCM,CCD,SWL,SWM,SWD,SCL,SCM,SCD,LO,MO,DO,CWLG,CWMG,CWDG,SWLG,SWMG,SWDG' | split: ',' %}
