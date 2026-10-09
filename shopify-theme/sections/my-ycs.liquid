@@ -53,10 +53,11 @@
     {% if ycs_diy_access %}
       {% assign ycs_has_consumer_cards = true %}
     {% endif %}
-    {% if ycs_professional_access == false %}
-      {% if ycs_has_owned_palettes or ycs_has_draping_studio %}
-        {% assign ycs_has_consumer_cards = true %}
-      {% endif %}
+    {% if ycs_has_owned_palettes %}
+      {% assign ycs_has_consumer_cards = true %}
+    {% endif %}
+    {% if ycs_professional_access == false and ycs_has_draping_studio %}
+      {% assign ycs_has_consumer_cards = true %}
     {% endif %}
 
     {% if ycs_has_consumer_cards %}
@@ -72,7 +73,7 @@
         </article>
       {% endif %}
 
-      {% if ycs_professional_access == false and ycs_has_owned_palettes %}
+      {% if ycs_has_owned_palettes %}
         <article class="ycs-member-card ycs-member-card--personal">
           <div class="ycs-member-card__accent ycs-member-card__accent--create"></div>
           <div class="ycs-member-card__body">
