@@ -759,6 +759,10 @@ div.ycs-analysis-topnav:has(> .my-ycs-menu-shell) {
   text-decoration: none;
 }
 
+.ycs-diy-workflow-nav a[hidden] {
+  display: none !important;
+}
+
 .ycs-diy-workflow-nav a:hover,
 .ycs-diy-workflow-nav a.is-active {
   color: #6546ce;
