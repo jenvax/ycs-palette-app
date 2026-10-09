@@ -1,11 +1,20 @@
 {% assign ycs_member_access = false %}
 {% assign ycs_free_member = false %}
+{% assign ycs_has_owned_palettes = false %}
 {% if customer %}
   {% assign ycs_member_tags = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
   {% assign ycs_member_access = true %}
   {% unless ycs_member_tags contains ',YCSMEMBER,' or ycs_member_tags contains ',TRADE,' or ycs_member_tags contains ',YCS_ADMIN,' %}
     {% assign ycs_free_member = true %}
   {% endunless %}
+  {% assign ycs_palette_codes = 'CWL,CWM,CWD,CCL,CCM,CCD,SWL,SWM,SWD,SCL,SCM,SCD,LO,MO,DO,CWLG,CWMG,CWDG,SWLG,SWMG,SWDG' | split: ',' %}
+  {% for ycs_palette_code in ycs_palette_codes %}
+    {% assign ycs_palette_token = ',' | append: ycs_palette_code | append: ',' %}
+    {% if ycs_member_tags contains ycs_palette_token %}
+      {% assign ycs_has_owned_palettes = true %}
+      {% break %}
+    {% endif %}
+  {% endfor %}
 {% endif %}
 
 <section class="ycs-palettes-hub">
@@ -31,6 +40,17 @@
     </header>
 
     <div class="ycs-palettes-hub__grid">
+      {% if ycs_has_owned_palettes %}
+        <article class="ycs-palettes-card ycs-palettes-card--personal">
+          <div class="ycs-palettes-card__accent ycs-palettes-card__accent--owned"></div>
+          <div class="ycs-palettes-card__body">
+            <h2>My Color Palettes</h2>
+            <p>Open the digital color palettes you have purchased from Your Color Style.</p>
+            <a href="/pages/my-palettes?view=owned" class="ycs-palettes-hub__button">View My Palettes</a>
+          </div>
+        </article>
+      {% endif %}
+
       <article class="ycs-palettes-card ycs-palettes-card--professional">
         <div class="ycs-palettes-card__accent ycs-palettes-card__accent--ycs"></div>
         <div class="ycs-palettes-card__body">
