@@ -714,9 +714,10 @@ div:has(> .my-ycs-menu-shell[data-original-tools-nav]) > a[data-global-nav-dupli
 }
 /* DIY analysis workflow: shared contextual navigation for Photo Prep and Structured Analysis. */
 .ycs-diy-workflow-nav {
-  width: 100%;
+  box-sizing: border-box;
+  width: 100vw;
   margin: 0 0 28px;
-  border-top: 1px solid #ece8f7;
+  margin-left: calc(50% - 50vw);
   border-bottom: 1px solid #e5e0f2;
   background: #f8f6ff;
   font-family: Poppins, Arial, Tahoma, Verdana, sans-serif;
@@ -731,20 +732,24 @@ div.ycs-analysis-topnav:has(> .my-ycs-menu-shell) {
 
 .ycs-diy-workflow-nav__inner {
   display: flex;
-  align-items: stretch;
-  gap: 8px;
-  max-width: 1440px;
+  align-items: center;
+  gap: 28px;
+  width: min(100% - 48px, 1440px);
+  min-height: 50px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0;
   overflow-x: auto;
 }
 
 .ycs-diy-workflow-nav a {
   position: relative;
+  display: inline-flex;
+  align-items: center;
   flex: 0 0 auto;
-  padding: 16px 14px;
+  min-height: 50px;
+  padding: 0 2px;
   color: #515264;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   text-decoration: none;
 }
@@ -756,18 +761,23 @@ div.ycs-analysis-topnav:has(> .my-ycs-menu-shell) {
 
 .ycs-diy-workflow-nav a.is-active::after {
   position: absolute;
-  right: 12px;
+  right: 0;
   bottom: 0;
-  left: 12px;
-  height: 4px;
-  border-radius: 4px 4px 0 0;
+  left: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
   background: #7b5cff;
   content: '';
 }
 
 @media (max-width: 700px) {
-  .ycs-diy-workflow-nav__inner { padding: 0 12px; }
-  .ycs-diy-workflow-nav a { padding: 14px 10px; font-size: 14px; }
+  .ycs-diy-workflow-nav__inner {
+    gap: 20px;
+    width: 100%;
+    min-height: 48px;
+    padding: 0 16px;
+  }
+  .ycs-diy-workflow-nav a { min-height: 48px; }
 }
 
 /* Keep storefront link hover colors from leaking into DIY application buttons. */
