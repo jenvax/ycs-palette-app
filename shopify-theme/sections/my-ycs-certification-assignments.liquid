@@ -1,0 +1,59 @@
+{% assign certification_access = false %}
+{% if customer %}
+  {% assign certification_tags = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
+  {% if certification_tags contains ',YCSMEMBER_CERTIFICATION,' %}
+    {% assign certification_access = true %}
+  {% endif %}
+{% endif %}
+
+{% assign assignment_titles = 'Setting Up the Photo|Determining Depth - Light, Medium or Deep|Undertones - Warm, Cool or Olive|Chroma - Clear or Soft|Dominance & Specificity|Your Final Submissions' | split: '|' %}
+{% assign assignment_handles = 'certification-assignment-1-setting-up-the-photo|certification-assignment-2-determining-depth|certification-assignment-3-undertones|certification-assignment-4-chroma|certification-assignment-5-dominance-specificity|certification-assignment-6-final-submissions' | split: '|' %}
+
+<main class="ycs-certification-hub">
+  {% render 'my-ycs-logo' %}
+
+  {% if customer == nil %}
+    <section class="ycs-certification-hub__message">
+      <h1>Certification Assignments</h1>
+      <p>Please sign in to access your certification assignments.</p>
+      <a class="ycs-certification-hub__button" href="{{ routes.account_login_url }}?return_url=%2Fpages%2Fcertification-assignments">Sign In</a>
+    </section>
+  {% elsif certification_access %}
+    <header class="ycs-certification-hub__header">
+      <p class="ycs-certification-hub__kicker">YCS Certification</p>
+      <h1>Certification Assignments</h1>
+      <p>Complete each practical assignment as you work through the certification program.</p>
+    </header>
+
+    <section class="ycs-certification-hub__grid" aria-label="Certification assignments">
+      {% for assignment_title in assignment_titles %}
+        <article class="ycs-certification-card">
+          <p class="ycs-certification-card__number">Assignment #{{ forloop.index }}</p>
+          <h2>{{ assignment_title | escape }}</h2>
+          <a class="ycs-certification-hub__button" href="/pages/{{ assignment_handles[forloop.index0] }}">Open Assignment</a>
+        </article>
+      {% endfor %}
+    </section>
+  {% else %}
+    {% render 'my-ycs-locked-access', lock_heading: 'Certification Access Required', lock_body: 'These assignments are available to members currently enrolled in the YCS Certification program.', lock_button_label: 'Back to My YCS', lock_button_url: '/pages/my-ycs' %}
+  {% endif %}
+</main>
+
+{% style %}
+  .shopify-section-header,#shopify-section-header,.site-header,.header-wrapper,.header,#shopify-section-footer,.shopify-section--footer,.site-footer,footer{display:none!important}
+  body{margin-top:0!important;padding-top:0!important}
+  .ycs-certification-hub{max-width:1180px;margin:0 auto;padding:28px 24px 72px;color:#292832;font-family:Poppins,Arial,Tahoma,Verdana,sans-serif}
+  .ycs-certification-hub__header,.ycs-certification-hub__message{max-width:800px;margin:42px 0}
+  .ycs-certification-hub__kicker,.ycs-certification-card__number{margin:0 0 8px;color:#6546ce;font-size:13px;font-weight:700;text-transform:uppercase}
+  .ycs-certification-hub h1{margin:0 0 14px;color:#12253f;font-family:Georgia,"Times New Roman",serif;font-size:42px;font-weight:400;line-height:1.14;letter-spacing:0}
+  .ycs-certification-hub__header>p:last-child,.ycs-certification-hub__message p{margin:0;color:#505868;font-size:18px;line-height:1.6}
+  .ycs-certification-hub__grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}
+  .ycs-certification-card{display:flex;min-height:250px;flex-direction:column;align-items:flex-start;padding:28px;border:1px solid #ece8e3;border-top:5px solid #7b5cff;border-radius:8px;background:#fff;box-shadow:0 18px 45px rgba(32,28,45,.08)}
+  .ycs-certification-card h2{margin:0 0 24px;color:#12253f;font-size:23px;font-weight:700;line-height:1.35;letter-spacing:0}
+  .ycs-certification-hub__button{display:inline-flex;min-height:46px;margin-top:auto;align-items:center;justify-content:center;padding:12px 24px;border-radius:8px;background:#7b5cff;color:#fff!important;font-size:15px;font-weight:700;text-decoration:none;transition:background-color .18s ease,transform .18s ease}
+  .ycs-certification-hub__button:hover{background:#6546ce;color:#fff!important;transform:translateY(-1px)}
+  @media(max-width:720px){.ycs-certification-hub{padding:22px 16px 52px}.ycs-certification-hub h1{font-size:34px}.ycs-certification-hub__grid{grid-template-columns:1fr}.ycs-certification-card{min-height:220px;padding:24px}}
+  @media(prefers-reduced-motion:reduce){.ycs-certification-hub__button{transition:none}.ycs-certification-hub__button:hover{transform:none}}
+{% endstyle %}
+
+{% schema %}{"name":"Certification assignments","settings":[],"presets":[{"name":"Certification assignments"}]}{% endschema %}

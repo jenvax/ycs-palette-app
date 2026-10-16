@@ -1,6 +1,7 @@
 {% assign ycs_member_access = false %}
 {% assign ycs_professional_access = false %}
 {% assign ycs_diy_access = false %}
+{% assign ycs_certification_access = false %}
 {% assign ycs_has_owned_palettes = false %}
 {% assign ycs_has_draping_studio = false %}
 {% if customer %}
@@ -11,6 +12,9 @@
   {% endif %}
   {% if ycs_member_tags contains ',DIYMEMBER,' %}
     {% assign ycs_diy_access = true %}
+  {% endif %}
+  {% if ycs_member_tags contains ',YCSMEMBER_CERTIFICATION,' %}
+    {% assign ycs_certification_access = true %}
   {% endif %}
   {% if ycs_member_tags contains ',DRAPINGSTUDIO,' %}
     {% assign ycs_has_draping_studio = true %}
@@ -130,6 +134,17 @@
             <a href="/pages/learn" class="ycs-member-hub__button">Explore Library</a>
           </div>
         </article>
+
+        {% if ycs_certification_access %}
+          <article class="ycs-member-card ycs-member-card--professional">
+            <div class="ycs-member-card__accent ycs-member-card__accent--analyze"></div>
+            <div class="ycs-member-card__body">
+              <h2>Certification Assignments</h2>
+              <p class="ycs-member-card__subtitle">Complete the six practical assignments required for your YCS certification.</p>
+              <a href="/pages/certification-assignments" class="ycs-member-hub__button">View Assignments</a>
+            </div>
+          </article>
+        {% endif %}
 
         <article class="ycs-member-card ycs-member-card--professional">
           <div class="ycs-member-card__accent ycs-member-card__accent--analyze"></div>
