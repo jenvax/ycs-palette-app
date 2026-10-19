@@ -481,6 +481,14 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
               Save Adjusted Photo
             </button>
 
+            <button type="button" id="ycs-prep-save-original-report-btn" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary" hidden>
+              Save Original for Report
+            </button>
+
+            <button type="button" id="ycs-prep-save-adjusted-report-btn" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary" hidden>
+              Save Adjusted for Report
+            </button>
+
             <div class="ycs-photo-prep-analysis-actions" hidden aria-hidden="true">
               <a id="ycs-prep-start-analysis-btn" href="/pages/tools-structured" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary">
                 Continue
@@ -1569,6 +1577,8 @@ const workingImg = document.getElementById('ycs-prep-working-img');
   const resetBtn = document.getElementById('ycs-prep-reset-btn');
   const useOriginalBtn = document.getElementById('ycs-prep-use-original-btn');
   const saveBtn = document.getElementById('ycs-prep-save-btn');
+  const saveOriginalForReportBtn = document.getElementById('ycs-prep-save-original-report-btn');
+  const saveAdjustedForReportBtn = document.getElementById('ycs-prep-save-adjusted-report-btn');
   const startAnalysisBtn = document.getElementById('ycs-prep-start-analysis-btn');
   const startSignatureAnalysisBtn = document.getElementById('ycs-prep-start-signature-analysis-btn');
 
@@ -1806,10 +1816,13 @@ function syncColorAnalysisToolNav(structuredHref, signatureHref) {
 
 function syncPhotoDependentActions() {
   const hasPhoto = !!(state.hasLoadedPhoto || state.originalPhotoUrl || state.adjustedPhotoUrl || state.activePhotoUrl);
+  const canSaveReportImages = IS_TRADE_MODE && !!state.clientRecordId;
 
   if (replaceBtn) replaceBtn.hidden = !hasPhoto;
   if (useOriginalBtn) useOriginalBtn.hidden = !hasPhoto;
   if (saveBtn) saveBtn.hidden = !hasPhoto;
+  if (saveOriginalForReportBtn) saveOriginalForReportBtn.hidden = !canSaveReportImages || !state.originalPhotoUrl;
+  if (saveAdjustedForReportBtn) saveAdjustedForReportBtn.hidden = !canSaveReportImages || !state.adjustedPhotoUrl;
   if (startAnalysisBtn) startAnalysisBtn.hidden = !hasPhoto || WORKFLOW === 'lip-draping';
   if (startSignatureAnalysisBtn) startSignatureAnalysisBtn.hidden = !hasPhoto || WORKFLOW !== 'lip-draping';
 }
@@ -4153,6 +4166,62 @@ if (IS_PERSONAL_MODE) {
   }
 } //saveAdjustedPhoto
 
+async function savePhotoForReport(photoType) {
+  const isAdjusted = photoType === 'adjusted';
+  const photoUrl = isAdjusted ? state.adjustedPhotoUrl : state.originalPhotoUrl;
+  const button = isAdjusted ? saveAdjustedForReportBtn : saveOriginalForReportBtn;
+  const label = isAdjusted ? 'Adjusted Photo' : 'Original Photo';
+
+  if (!state.clientRecordId) {
+    alert('Select a client before saving a report image.');
+    return;
+  }
+
+  if (!photoUrl) {
+    alert('No ' + photoType + ' photo is available.');
+    return;
+  }
+
+  const originalButtonText = button ? button.textContent : '';
+
+  try {
+    if (button) {
+      button.disabled = true;
+      button.textContent = 'Saving…';
+    }
+
+    const response = await fetch(APP_BASE_URL + '/api/save-draped-image', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        imageBase64: photoUrl,
+        clientRecordId: state.clientRecordId,
+        consultantId: VIEWER_CUSTOMER_ID,
+        panel: 'photo-prep-' + photoType,
+        drapeColorName: label,
+        fileName: 'photo-prep-' + photoType,
+        notes: label + ' saved from My YCS Photo Prep for report use.'
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || 'Could not save the photo for report use.');
+    }
+
+    alert(label + ' saved. It is now available in the report image picker.');
+  } catch (error) {
+    console.error('Could not save Photo Prep image for report use', error);
+    alert(error.message || 'Could not save the photo for report use.');
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = originalButtonText;
+    }
+  }
+}
+
 async function useOriginalPhoto() {
   if (!state.originalPhotoUrl) {
     alert('No original photo is available.');
@@ -4306,6 +4375,18 @@ async function useOriginalPhoto() {
   if (saveBtn) {
     saveBtn.addEventListener('click', function () {
       saveAdjustedPhoto();
+    });
+  }
+
+  if (saveOriginalForReportBtn) {
+    saveOriginalForReportBtn.addEventListener('click', function () {
+      savePhotoForReport('original');
+    });
+  }
+
+  if (saveAdjustedForReportBtn) {
+    saveAdjustedForReportBtn.addEventListener('click', function () {
+      savePhotoForReport('adjusted');
     });
   }
 
