@@ -63,6 +63,8 @@
   let activeSavedDrapedImages = [];
   let activeSavedDrapedImagesClientId = "";
   let coverPhotoDrag = null;
+  let memberReportBranding = { businessName: "", logoUrl: "" };
+  let memberReportBrandingPromise = null;
   const reportTemplateCache = new Map();
   const reportFanTemplatePaletteCodeMap = {
     CWLG: "CWL",
@@ -710,8 +712,8 @@
       reportType: REPORT_TYPE,
       customerName: displayName(client),
       reportDate: new Date().toISOString().slice(0, 10),
-      brandLogoUrl: "",
-      brandName: "Your Color Style",
+      brandLogoUrl: memberReportBranding.logoUrl || "",
+      brandName: memberReportBranding.businessName || "Your Color Style",
       paletteCode,
       paletteName,
       colorFanImageUrl: "",
@@ -850,12 +852,15 @@
     const base = defaultReportDraft(client);
     const incoming = savedDraft && typeof savedDraft === "object" ? savedDraft : {};
     const incomingLogoUrl = String(incoming.brandLogoUrl || "").trim();
+    const incomingBrandName = String(incoming.brandName || "").trim();
+    const usesLegacyBrandName = !incomingBrandName || incomingBrandName === "Your Color Style";
     const reportCustomerName = String(incoming.customerName || "").trim() || base.customerName;
     return {
       ...base,
       ...incoming,
       customerName: reportCustomerName,
-      brandLogoUrl: incomingLogoUrl === YCS_REPORT_LOGO_URL ? "" : incomingLogoUrl,
+      brandLogoUrl: base.brandLogoUrl || (incomingLogoUrl !== YCS_REPORT_LOGO_URL ? incomingLogoUrl : ""),
+      brandName: memberReportBranding.businessName || (usesLegacyBrandName ? base.brandName : incomingBrandName),
       selectedDrapeImageUrl: base.selectedDrapeImageUrl,
       coverPhotoScale: Math.min(Math.max(Number(incoming.coverPhotoScale) || base.coverPhotoScale, 0.7), 2.4),
       coverPhotoX: Math.min(Math.max(Number(incoming.coverPhotoX) || base.coverPhotoX, -120), 120),
@@ -2663,6 +2668,23 @@
     let savedDraft = getLocalReportDraft(client.clientRecordId);
     let savedAt = "";
     let loadedFromServer = false;
+
+    if (!memberReportBrandingPromise) {
+      memberReportBrandingPromise = fetch('/apps/palette-data?action=reportBranding', { credentials: 'same-origin' })
+        .then((response) => response.json().then((data) => {
+          if (!response.ok) throw new Error(data.error || 'Unable to load report branding.');
+          memberReportBranding = {
+            businessName: String(data.branding?.businessName || '').trim(),
+            logoUrl: String(data.branding?.logoUrl || '').trim()
+          };
+          return memberReportBranding;
+        }))
+        .catch((error) => {
+          console.warn('Report branding lookup failed', error);
+          return memberReportBranding;
+        });
+    }
+    await memberReportBrandingPromise;
 
     try {
       const response = await fetch(`${apiBase}/api/get-color-analysis-report?consultantId=${encodeURIComponent(consultantId)}&clientRecordId=${encodeURIComponent(client.clientRecordId)}&reportType=${encodeURIComponent(REPORT_TYPE)}`);

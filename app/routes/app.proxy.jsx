@@ -76,6 +76,8 @@ const PALETTE_TAGS = new Set([
 
 const CUSTOM_PALETTE_PREFIX = "CUSTOM_";
 const STYLE_MASTERS_OWNER_ID = "STYLE_MASTERS";
+const REPORT_BRANDING_CLIENT_ID = "__REPORT_BRANDING__";
+const REPORT_BRANDING_TYPE = "member_branding";
 
 function isCustomPaletteCode(value) {
   return String(value || "").trim().toUpperCase().startsWith(CUSTOM_PALETTE_PREFIX);
@@ -328,6 +330,58 @@ async function getAirtableRecord({ baseId, tableName, token, recordId }) {
   )}/${recordId}`;
 
   return airtableFetchJson(url, token);
+}
+
+async function findReportBrandingRecord({ baseId, token, consultantId }) {
+  const records = await fetchAllAirtableRecords({
+    baseId,
+    tableName: process.env.AIRTABLE_COLOR_ANALYSIS_REPORTS_TABLE || "ColorAnalysisReports",
+    token,
+    formula: `AND({ConsultantId}="${escapeFormulaValue(consultantId)}",{ClientRecordId}="${REPORT_BRANDING_CLIENT_ID}",{ReportType}="${REPORT_BRANDING_TYPE}")`
+  });
+  return records[0] || null;
+}
+
+function reportBrandingFromRecord(record) {
+  if (!record?.fields?.DraftJson) return { businessName: "", logoUrl: "", logoPublicId: "" };
+  try {
+    const parsed = JSON.parse(record.fields.DraftJson);
+    return {
+      businessName: String(parsed.businessName || "").trim(),
+      logoUrl: String(parsed.logoUrl || "").trim(),
+      logoPublicId: String(parsed.logoPublicId || "").trim()
+    };
+  } catch {
+    return { businessName: "", logoUrl: "", logoPublicId: "" };
+  }
+}
+
+async function uploadReportBrandingLogo({ imageBase64, consultantId }) {
+  if (!process.env.CLOUDINARY_API_SECRET || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_CLOUD_NAME) {
+    throw new Error("Logo upload is not configured");
+  }
+  const match = String(imageBase64 || "").match(/^data:(image\/(?:jpeg|png|webp|gif));base64,(.+)$/);
+  if (!match || Buffer.byteLength(match[2], "base64") > 5 * 1024 * 1024) {
+    throw Object.assign(new Error("Upload a JPG, PNG, WebP, or GIF image up to 5 MB"), { status: 400 });
+  }
+  const timestamp = Math.floor(Date.now() / 1000);
+  const folder = `ycs-report-branding/${consultantId}`;
+  const publicId = "logo";
+  const signatureParams = `folder=${folder}&invalidate=true&overwrite=true&public_id=${publicId}&timestamp=${timestamp}`;
+  const signature = crypto.createHash("sha1").update(`${signatureParams}${process.env.CLOUDINARY_API_SECRET}`).digest("hex");
+  const form = new FormData();
+  form.append("file", imageBase64);
+  form.append("api_key", process.env.CLOUDINARY_API_KEY);
+  form.append("timestamp", String(timestamp));
+  form.append("folder", folder);
+  form.append("public_id", publicId);
+  form.append("overwrite", "true");
+  form.append("invalidate", "true");
+  form.append("signature", signature);
+  const response = await fetch(`https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload`, { method: "POST", body: form });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || !data.secure_url) throw new Error(data?.error?.message || "Logo upload failed");
+  return { logoUrl: data.secure_url, logoPublicId: data.public_id };
 }
 
 function normalizeAirtableIdList(value) {
@@ -1229,6 +1283,21 @@ export async function loader({ request }) {
   const AIRTABLE_FAVORITES_TABLE =
     process.env.AIRTABLE_FAVORITES_TABLE || "PaletteFavorites";
 
+  if (action === "reportBranding") {
+    try {
+      const consultantId = await requireSignedDirectoryCustomer(request, url);
+      const record = await findReportBrandingRecord({
+        baseId: AIRTABLE_BASE_ID,
+        token: AIRTABLE_TOKEN,
+        consultantId
+      });
+      return Response.json({ branding: reportBrandingFromRecord(record) });
+    } catch (error) {
+      console.error("reportBranding lookup failed:", error);
+      return Response.json({ error: error.message || "Unable to load report branding" }, { status: error.status || 500 });
+    }
+  }
+
   if (action === "publicColorAnalystDirectory") {
     try {
       return Response.json({ listings: await getPublishedDirectoryListings() });
@@ -1992,6 +2061,47 @@ export async function action({ request }) {
 
   if (request.method !== "POST") {
     return Response.json({ error: "Method not allowed" }, { status: 405 });
+  }
+
+  if (actionName === "reportBranding") {
+    try {
+      const consultantId = await requireSignedDirectoryCustomer(request, url);
+      const body = await request.json();
+      const operation = String(body.operation || "save");
+
+      if (operation === "uploadLogo") {
+        return Response.json({
+          success: true,
+          ...(await uploadReportBrandingLogo({ imageBase64: body.imageBase64, consultantId }))
+        });
+      }
+
+      const branding = {
+        businessName: String(body.businessName || "").trim().slice(0, 160),
+        logoUrl: String(body.logoUrl || "").trim().slice(0, 1000),
+        logoPublicId: String(body.logoPublicId || "").trim().slice(0, 300)
+      };
+      const fields = {
+        ConsultantId: consultantId,
+        ClientRecordId: REPORT_BRANDING_CLIENT_ID,
+        ReportType: REPORT_BRANDING_TYPE,
+        DraftJson: JSON.stringify(branding)
+      };
+      const existing = await findReportBrandingRecord({
+        baseId: AIRTABLE_BASE_ID,
+        token: AIRTABLE_TOKEN,
+        consultantId
+      });
+      const tableName = process.env.AIRTABLE_COLOR_ANALYSIS_REPORTS_TABLE || "ColorAnalysisReports";
+      const record = existing
+        ? await updateAirtableRecord({ baseId: AIRTABLE_BASE_ID, tableName, token: AIRTABLE_TOKEN, recordId: existing.id, fields })
+        : await createAirtableRecord({ baseId: AIRTABLE_BASE_ID, tableName, token: AIRTABLE_TOKEN, fields });
+
+      return Response.json({ success: true, branding: reportBrandingFromRecord(record) });
+    } catch (error) {
+      console.error("reportBranding save failed:", error);
+      return Response.json({ error: error.message || "Unable to save report branding" }, { status: error.status || 500 });
+    }
   }
 
   if (actionName === "colorAnalystDirectory") {
