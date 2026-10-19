@@ -2028,7 +2028,7 @@
     scope: root.dataset.scope || 'private'
   };
   const isStyleMastersAdmin = context.scope === 'stylemasters';
-  const state = { colors: [], palettes: [], activePalette: null, colorSearch: '', csvImportColors: [] };
+  const state = { colors: [], palettes: [], activePalette: null, colorSearch: '', csvImportColors: [], csvImportPaletteId: '' };
 
   function escapeHtml(value) {
     return String(value || '').replace(/[&<>"']/g, function (char) {
@@ -2418,17 +2418,22 @@
     }).join('') + (colors.length > 25 ? '<p class="ycs-custom-batch-summary">+' + (colors.length - 25) + ' more colors</p>' : '') + '</div>';
   }
 
-  function renderCsvImport(error, colors, paletteName) {
+  function renderCsvImport(error, colors, paletteName, paletteId) {
     const parsedColors = Array.isArray(colors) ? colors : [];
     const hasInvalid = parsedColors.some(function (color) { return !color.name || !color.hexCode; });
-    openModal('Upload Color Palette CSV',
-      '<form class="ycs-custom-form" data-ycs-csv-import-form>' +
-        '<label>Palette Name<input name="name" required value="' + escapeHtml(paletteName || '') + '"></label>' +
+    const isAppend = Boolean(paletteId);
+    const activePalette = state.palettes.find(function (palette) { return palette.id === paletteId; });
+    state.csvImportPaletteId = paletteId || '';
+    openModal(isAppend ? 'Add Colors from CSV' : 'Upload Color Palette CSV',
+      '<form class="ycs-custom-form" data-ycs-csv-import-form data-palette-id="' + escapeHtml(paletteId || '') + '">' +
+        (isAppend
+          ? '<p class="ycs-custom-help-text">New colors will be added to <strong>' + escapeHtml((activePalette && activePalette.name) || paletteName || 'this palette') + '</strong>. Exact duplicates already in the palette will be skipped.</p>'
+          : '<label>Palette Name<input name="name" required value="' + escapeHtml(paletteName || '') + '"></label>') +
         '<label>CSV File<input name="csvFile" type="file" accept=".csv,text/csv"' + (parsedColors.length ? '' : ' required') + '></label>' +
         '<p class="ycs-custom-help-text">Use columns named Name, Hex, and optional Category. Two-column CSV files are read as name, hex and categorized as Custom.</p>' +
         '<div data-ycs-csv-preview>' + importPreviewRows(parsedColors) + '</div>' +
         (error ? '<p class="ycs-custom-error">' + escapeHtml(error) + '</p>' : '') +
-        '<div class="ycs-custom-form__actions"><button type="submit" class="ycs-palette-card__button"' + (parsedColors.length && !hasInvalid ? '' : ' disabled') + '>Import Palette</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-close>Cancel</button></div>' +
+        '<div class="ycs-custom-form__actions"><button type="submit" class="ycs-palette-card__button"' + (parsedColors.length && !hasInvalid ? '' : ' disabled') + '>' + (isAppend ? 'Add Colors to Palette' : 'Import Palette') + '</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-close>Cancel</button></div>' +
       '</form>');
   }
 
@@ -2452,6 +2457,7 @@
     openModal(palette.name,
       '<div class="ycs-custom-form__actions" style="margin-bottom:16px">' +
         '<button type="button" class="ycs-palette-card__button" data-ycs-custom-action="add-colors">Add Colors</button>' +
+        '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="append-csv" data-palette-id="' + escapeHtml(palette.id) + '">Add Colors from CSV</button>' +
         '<button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="rename-palette" data-palette-id="' + escapeHtml(palette.id) + '">Rename</button>' +
       '</div>' +
       (colors.length
@@ -3048,10 +3054,15 @@
     if (action === 'create-palette') renderPaletteForm('Create Custom Palette', 'createPalette');
     if (action === 'import-csv') {
       state.csvImportColors = [];
+      state.csvImportPaletteId = '';
       renderCsvImport();
     }
     if (action === 'manage-colors') renderMyColors();
     if (action === 'open-palette' && palette) renderPaletteDetail(palette);
+    if (action === 'append-csv' && palette) {
+      state.csvImportColors = [];
+      renderCsvImport('', [], palette.name, palette.id);
+    }
     if (action === 'create-pdf' && palette) createPalettePdf(palette);
     if (action === 'rename-palette' && palette) renderPaletteForm('Rename Custom Palette', 'renamePalette', palette);
     if (action === 'toggle-vip-visibility' && palette) {
@@ -3093,6 +3104,10 @@
     }
     if (action === 'rename-palette' && palette) renderPaletteForm('Rename Custom Palette', 'renamePalette', palette);
     if (action === 'open-palette' && palette) renderPaletteDetail(palette);
+    if (action === 'append-csv' && palette) {
+      state.csvImportColors = [];
+      renderCsvImport('', [], palette.name, palette.id);
+    }
     if (action === 'add-colors') renderAddColors();
     if (action === 'add-one-color' && state.activePalette && color) {
       requestJson('addColorsToPalette', { paletteId: state.activePalette.id, colorIds: [color.id] }).then(function (json) {
@@ -3169,27 +3184,28 @@
     const form = event.target.closest('[data-ycs-csv-import-form]');
     const file = event.target.files && event.target.files[0];
     const paletteName = form ? new FormData(form).get('name') : '';
+    const paletteId = form ? form.dataset.paletteId || '' : state.csvImportPaletteId;
 
     if (!file) {
       state.csvImportColors = [];
-      renderCsvImport('', state.csvImportColors, paletteName);
+      renderCsvImport('', state.csvImportColors, paletteName, paletteId);
       return;
     }
 
     if (!/\.csv$/i.test(file.name) && file.type && file.type !== 'text/csv') {
       state.csvImportColors = [];
-      renderCsvImport('Choose a CSV file.', state.csvImportColors, paletteName);
+      renderCsvImport('Choose a CSV file.', state.csvImportColors, paletteName, paletteId);
       return;
     }
 
     const reader = new FileReader();
     reader.onload = function () {
       state.csvImportColors = parseColorCsv(reader.result || '');
-      renderCsvImport('', state.csvImportColors, paletteName || file.name.replace(/\.csv$/i, ''));
+      renderCsvImport('', state.csvImportColors, paletteName || file.name.replace(/\.csv$/i, ''), paletteId);
     };
     reader.onerror = function () {
       state.csvImportColors = [];
-      renderCsvImport('Unable to read this CSV file.', state.csvImportColors, paletteName);
+      renderCsvImport('Unable to read this CSV file.', state.csvImportColors, paletteName, paletteId);
     };
     reader.readAsText(file);
   });
@@ -3265,23 +3281,29 @@
     if (csvImportForm) {
       const formData = new FormData(csvImportForm);
       const colors = state.csvImportColors || [];
+      const paletteId = csvImportForm.dataset.paletteId || '';
       const hasInvalid = colors.some(function (color) { return !color.name || !color.hexCode; });
 
       if (!colors.length || hasInvalid) {
-        renderCsvImport('Choose a CSV with valid color names and hex codes.', colors, formData.get('name'));
+        renderCsvImport('Choose a CSV with valid color names and hex codes.', colors, formData.get('name'), paletteId);
         return;
       }
 
-      requestJson('importPaletteCsv', {
+      requestJson(paletteId ? 'appendPaletteCsv' : 'importPaletteCsv', {
+        paletteId: paletteId,
         name: formData.get('name'),
         colors: colors
       }).then(function (json) {
         state.csvImportColors = [];
-        return refreshAfterMutation('Custom palette imported from CSV.').then(function () {
+        state.csvImportPaletteId = '';
+        const message = paletteId
+          ? json.addedCount + ' color' + (json.addedCount === 1 ? '' : 's') + ' added' + (json.skippedCount ? '; ' + json.skippedCount + ' duplicate' + (json.skippedCount === 1 ? '' : 's') + ' skipped.' : '.')
+          : 'Custom palette imported from CSV.';
+        return refreshAfterMutation(message).then(function () {
           renderPaletteDetail(json.palette);
         });
       }).catch(function (error) {
-        renderCsvImport(error.message, colors, formData.get('name'));
+        renderCsvImport(error.message, colors, formData.get('name'), paletteId);
       });
     }
   });

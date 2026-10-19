@@ -773,6 +773,85 @@ export async function action({ request }) {
       return Response.json({ palette: await readPalette(ownerCustomerId, paletteId) }, { headers: corsHeaders });
     }
 
+    if (actionName === "appendPaletteCsv") {
+      const paletteId = cleanString(body.paletteId);
+      const rawColors = Array.isArray(body.colors) ? body.colors : [];
+
+      if (!paletteId) return Response.json({ error: "Missing paletteId" }, { status: 400, headers: corsHeaders });
+      if (!rawColors.length) return Response.json({ error: "Add at least one color to import" }, { status: 400, headers: corsHeaders });
+      if (rawColors.length > 150) {
+        return Response.json(
+          { error: "CSV import is limited to 150 colors at a time" },
+          { status: 400, headers: corsHeaders }
+        );
+      }
+
+      await requireOwnedPaletteRecord(ownerCustomerId, paletteId);
+
+      const colors = rawColors.map((color, index) => ({
+        name: cleanString(color?.name),
+        hexCode: normalizeHex(color?.hexCode || color?.hex),
+        category: normalizeCategory(color?.category),
+        rowNumber: Number(color?.rowNumber || index + 1)
+      }));
+      const invalidColor = colors.find((color) => !color.name || !color.hexCode);
+
+      if (invalidColor) {
+        return Response.json(
+          { error: `CSV row ${invalidColor.rowNumber} needs a color name and valid six-character hex code` },
+          { status: 400, headers: corsHeaders }
+        );
+      }
+
+      const palette = await readPalette(ownerCustomerId, paletteId);
+      const existingKeys = new Set(
+        (palette.colors || []).map(({ color }) =>
+          `${String(color?.name || "").trim().toLowerCase()}|${normalizeHex(color?.hexCode) || ""}`
+        )
+      );
+      const importKeys = new Set();
+      const newColors = colors.filter((color) => {
+        const key = `${color.name.toLowerCase()}|${color.hexCode}`;
+        if (existingKeys.has(key) || importKeys.has(key)) return false;
+        importKeys.add(key);
+        return true;
+      });
+      const joins = await fetchPaletteJoinRecords(ownerCustomerId, paletteId);
+      let displayOrder = joins.reduce(
+        (max, record) => Math.max(max, Number(record.fields?.DisplayOrder || 0)),
+        -1
+      );
+
+      for (const color of newColors) {
+        const colorRecord = await createColorRecord({
+          ColorId: makeId("ccolor"),
+          OwnerCustomerId: ownerCustomerId,
+          Name: color.name,
+          HexCode: color.hexCode,
+          Category: color.category,
+          CreatedAt: nowIso,
+          UpdatedAt: nowIso
+        });
+
+        displayOrder += 1;
+        await createRecord(PALETTE_COLORS_TABLE, {
+          PaletteColorId: makeId("cpcolor"),
+          OwnerCustomerId: ownerCustomerId,
+          PaletteId: paletteId,
+          ColorId: colorRecord.fields?.ColorId,
+          DisplayOrder: displayOrder,
+          CreatedAt: nowIso,
+          UpdatedAt: nowIso
+        });
+      }
+
+      return Response.json({
+        palette: await readPalette(ownerCustomerId, paletteId),
+        addedCount: newColors.length,
+        skippedCount: colors.length - newColors.length
+      }, { headers: corsHeaders });
+    }
+
     if (actionName === "renamePalette") {
       const paletteId = cleanString(body.paletteId);
       const name = cleanString(body.name);
