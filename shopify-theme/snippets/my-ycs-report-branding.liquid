@@ -1,8 +1,7 @@
 <section class="ycs-report-branding" data-report-branding>
   <div class="ycs-report-branding__intro">
-    <p class="ycs-report-branding__kicker">Client Reports</p>
-    <h2>Report Branding</h2>
-    <p>Save the business name and logo that should appear automatically on your client reports.</p>
+    <h2>Business Branding</h2>
+    <p>Save your business name and logo that should appear automatically on your client reports and custom color palettes.</p>
   </div>
   <form class="ycs-report-branding__form" data-report-branding-form>
     <label>Business Name<input type="text" name="businessName" maxlength="160" autocomplete="organization"></label>
@@ -18,7 +17,7 @@
     <input type="hidden" name="logoUrl">
     <input type="hidden" name="logoPublicId">
     <div class="ycs-report-branding__actions">
-      <button type="submit" class="ycs-member-hub__button">Save Report Branding</button>
+      <button type="submit" class="ycs-member-hub__button">Save Business Branding</button>
       <span data-branding-status role="status" aria-live="polite"></span>
     </div>
   </form>
@@ -214,7 +213,7 @@
       setStatus(error.message || 'Unable to save report branding.');
     }).finally(function () {
       button.disabled = false;
-      button.textContent = 'Save Report Branding';
+      button.textContent = 'Save Business Branding';
     });
   });
 })();
