@@ -9,7 +9,7 @@
     <label>
       Business Logo
       <input type="file" name="logoFile" accept="image/png,image/jpeg,image/webp,image/gif" aria-describedby="report-branding-logo-help">
-      <span class="ycs-report-branding__help" id="report-branding-logo-help">For best results, upload a wide logo around 600 x 200 px (minimum 300 px wide). A transparent PNG is recommended. JPG, WebP, and GIF files up to 5 MB are also accepted.</span>
+      <span class="ycs-report-branding__help" id="report-branding-logo-help">For best results, upload a wide logo around 600 x 200 px (minimum 300 px wide). A transparent PNG is recommended. JPG, WebP, and GIF files up to 3 MB are also accepted.</span>
     </label>
     <div class="ycs-report-branding__preview" data-branding-preview hidden>
       <img data-branding-logo width="140" height="80" alt="Business logo preview">
@@ -136,8 +136,13 @@
   }
   function proxyJson(url, options) {
     return fetch(url, Object.assign({ credentials: 'same-origin' }, options || {})).then(function (response) {
-      return response.json().then(function (data) {
-        if (!response.ok) throw new Error(data.error || 'Request failed');
+      return response.text().then(function (body) {
+        let data = {};
+        try { data = body ? JSON.parse(body) : {}; } catch (error) {}
+        if (!response.ok) {
+          if (response.status === 413) throw new Error('That logo is too large. Please choose an image smaller than 3 MB.');
+          throw new Error(data.error || 'The request could not be completed. Please try again.');
+        }
         return data;
       });
     });
@@ -154,6 +159,11 @@
   form.elements.logoFile.addEventListener('change', function () {
     const file = this.files && this.files[0];
     if (!file) return;
+    if (file.size > 3 * 1024 * 1024) {
+      this.value = '';
+      setStatus('That logo is too large. Please choose an image smaller than 3 MB.');
+      return;
+    }
     const reader = new FileReader();
     const input = this;
     setStatus('Uploading logo...');
