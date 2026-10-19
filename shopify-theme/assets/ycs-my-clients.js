@@ -2980,7 +2980,7 @@
   function getPaletteAccessSelection(client, selectionOverride) {
     if (selectionOverride?.paletteCode) return selectionOverride;
     const select = detailEl.querySelector("[data-ycs-palette-access-select]");
-    const paletteCode = String(select?.value || client.paletteCode || "").trim().toUpperCase();
+    const paletteCode = normalizePaletteCode(select?.value || client.paletteCode || "");
     const paletteName = paletteNameForCode(paletteCode);
     return { paletteCode, paletteName };
   }
@@ -4474,10 +4474,11 @@
         activeForm?.querySelector("[name='accessPaletteCode']")?.value ||
         detailEl.querySelector("[name='accessPaletteCode']")?.value ||
         ""
-      ).trim().toUpperCase();
-      const selectedPaletteName = paletteNameForCode(selectedPaletteCode);
-      const paletteAccessSelection = selectedPaletteCode
-        ? { paletteCode: selectedPaletteCode, paletteName: selectedPaletteName }
+      ).trim();
+      const normalizedSelectedPaletteCode = normalizePaletteCode(selectedPaletteCode);
+      const selectedPaletteName = paletteNameForCode(normalizedSelectedPaletteCode);
+      const paletteAccessSelection = normalizedSelectedPaletteCode
+        ? { paletteCode: normalizedSelectedPaletteCode, paletteName: selectedPaletteName }
         : null;
       try {
         if (activeForm && isAdmin) {
