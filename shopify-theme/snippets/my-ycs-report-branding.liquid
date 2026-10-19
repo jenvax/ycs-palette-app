@@ -6,7 +6,11 @@
   </div>
   <form class="ycs-report-branding__form" data-report-branding-form>
     <label>Business Name<input type="text" name="businessName" maxlength="160" autocomplete="organization"></label>
-    <label>Business Logo<input type="file" name="logoFile" accept="image/png,image/jpeg,image/webp,image/gif"></label>
+    <label>
+      Business Logo
+      <input type="file" name="logoFile" accept="image/png,image/jpeg,image/webp,image/gif" aria-describedby="report-branding-logo-help">
+      <span class="ycs-report-branding__help" id="report-branding-logo-help">For best results, upload a wide logo around 600 x 200 px (minimum 300 px wide). A transparent PNG is recommended. JPG, WebP, and GIF files up to 5 MB are also accepted.</span>
+    </label>
     <div class="ycs-report-branding__preview" data-branding-preview hidden>
       <img data-branding-logo width="140" height="80" alt="Business logo preview">
       <button type="button" class="ycs-report-branding__secondary" data-remove-branding-logo>Remove Logo</button>
@@ -68,6 +72,12 @@
     background: #fff;
     color: var(--ycs-dashboard-ink);
     font: inherit;
+  }
+  .ycs-member-hub .ycs-report-branding__help {
+    color: var(--ycs-dashboard-muted);
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.5;
   }
   .ycs-member-hub .ycs-report-branding__preview { display: flex; align-items: center; gap: 16px; }
   .ycs-member-hub .ycs-report-branding__preview[hidden] { display: none; }
