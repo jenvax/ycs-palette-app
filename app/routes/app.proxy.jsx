@@ -931,12 +931,19 @@ async function syncCustomerDirectoryFromShopify({ shop, accessToken, baseId, tok
   };
 }
 
-function clientPaletteAccessHtml(access, token) {
+function clientPaletteAccessHtml(access, token, branding = {}) {
   const paletteCode = access.paletteCode;
   const paletteName = access.paletteName || access.paletteCode;
   const clientName = access.clientName || "Your client";
   const isCustomPalette = isCustomPaletteCode(paletteCode);
   const logoUrl = "https://cdn.shopify.com/s/files/1/0623/6284/5408/files/YourColorStyle_Logo-120.png?v=1643287573";
+  const memberLogoUrl = String(branding.logoUrl || "").trim();
+  const memberBusinessName = String(branding.businessName || "").trim();
+  const customBrandingHtml = memberLogoUrl
+    ? `<img class="ycs-client-palette__member-logo" src="${escapeHtml(memberLogoUrl)}" alt="${escapeHtml(memberBusinessName || "Business logo")}">`
+    : memberBusinessName
+      ? `<p class="ycs-client-palette__business-name">${escapeHtml(memberBusinessName)}</p>`
+      : "";
 
   return `<!doctype html>
 <html lang="en">
@@ -976,6 +983,23 @@ function clientPaletteAccessHtml(access, token) {
       width: 54px;
       height: auto;
       margin: 0 0 18px;
+    }
+    .ycs-client-palette__member-logo {
+      display: block;
+      width: auto;
+      max-width: 240px;
+      height: auto;
+      max-height: 90px;
+      margin: 0 0 18px;
+      object-fit: contain;
+      object-position: left center;
+    }
+    .ycs-client-palette__business-name {
+      margin: 0 0 18px;
+      color: var(--ink);
+      font-size: 22px;
+      font-weight: 800;
+      line-height: 1.2;
     }
     .ycs-client-palette__kicker {
       margin: 0 0 6px;
@@ -1131,6 +1155,11 @@ function clientPaletteAccessHtml(access, token) {
         width: 46px;
         margin-bottom: 14px;
       }
+      .ycs-client-palette__member-logo {
+        max-width: 200px;
+        max-height: 72px;
+        margin-bottom: 14px;
+      }
       .ycs-client-palette__grid {
         grid-template-columns: repeat(4, minmax(0, 1fr));
         column-gap: 6px;
@@ -1142,7 +1171,7 @@ function clientPaletteAccessHtml(access, token) {
 <body>
   <main class="ycs-client-palette" data-palette-code="${escapeHtml(paletteCode)}">
     <header class="ycs-client-palette__header">
-      ${isCustomPalette ? "" : `<img class="ycs-client-palette__logo" src="${escapeHtml(logoUrl)}" alt="Your Color Style">`}
+      ${isCustomPalette ? customBrandingHtml : `<img class="ycs-client-palette__logo" src="${escapeHtml(logoUrl)}" alt="Your Color Style">`}
       <p class="ycs-client-palette__kicker">Your Personal Color Palette</p>
       <h1>${escapeHtml(paletteName)}</h1>
       <p class="ycs-client-palette__prepared">Prepared for ${escapeHtml(clientName)}</p>
@@ -1417,8 +1446,21 @@ export async function loader({ request }) {
       const access = await validateClientPaletteAccessToken({
         token
       });
+      let branding = {};
+      if (isCustomPaletteCode(access.paletteCode)) {
+        try {
+          const brandingRecord = await findReportBrandingRecord({
+            baseId: AIRTABLE_BASE_ID,
+            token: AIRTABLE_TOKEN,
+            consultantId: access.consultantId
+          });
+          branding = reportBrandingFromRecord(brandingRecord);
+        } catch (brandingError) {
+          console.error("clientPaletteView branding lookup failed:", brandingError);
+        }
+      }
 
-      return new Response(clientPaletteAccessHtml(access, token), {
+      return new Response(clientPaletteAccessHtml(access, token, branding), {
         status: 200,
         headers: {
           "Content-Type": "text/html; charset=utf-8",
