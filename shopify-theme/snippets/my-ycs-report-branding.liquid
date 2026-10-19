@@ -140,7 +140,7 @@
         let data = {};
         try { data = body ? JSON.parse(body) : {}; } catch (error) {}
         if (!response.ok) {
-          if (response.status === 413) throw new Error('That logo is too large. Please choose an image smaller than 3 MB.');
+          if (response.status === 413) throw new Error('This image is a little too large to upload. Please choose one smaller than 3 MB.');
           throw new Error(data.error || 'The request could not be completed. Please try again.');
         }
         return data;
@@ -161,7 +161,7 @@
     if (!file) return;
     if (file.size > 3 * 1024 * 1024) {
       this.value = '';
-      setStatus('That logo is too large. Please choose an image smaller than 3 MB.');
+      setStatus('This image is a little too large to upload. Please choose one smaller than 3 MB.');
       return;
     }
     const reader = new FileReader();
