@@ -2366,6 +2366,7 @@
         '<div class="ycs-custom-card__swatches">' + preview + (moreCount ? '<span class="ycs-custom-added-label">+' + moreCount + '</span>' : '') + '</div>' +
         '<label>Assign to Palette<select name="paletteId" required>' + paletteOptions + '</select></label>' +
         (error ? '<p class="ycs-custom-error">' + escapeHtml(error) + '</p>' : '') +
+        '<p class="ycs-custom-help-text" data-ycs-assign-status role="status" aria-live="polite" hidden>Assigning colors...</p>' +
         '<div class="ycs-custom-form__actions"><button type="submit" class="ycs-palette-card__button">Assign Colors</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-action="manage-colors">Cancel</button></div>' +
       '</form>');
   }
@@ -3273,6 +3274,14 @@
       const formData = new FormData(batchColorPaletteForm);
       const colorIds = (batchColorPaletteForm.dataset.colorIds || '').split(',').map(function (colorId) { return colorId.trim(); }).filter(Boolean);
       const paletteId = formData.get('paletteId');
+      const submitButton = batchColorPaletteForm.querySelector('button[type="submit"]');
+      const assignStatus = batchColorPaletteForm.querySelector('[data-ycs-assign-status]');
+      batchColorPaletteForm.setAttribute('aria-busy', 'true');
+      batchColorPaletteForm.querySelectorAll('select, button').forEach(function (control) {
+        control.disabled = true;
+      });
+      if (submitButton) submitButton.textContent = 'Assigning colors...';
+      if (assignStatus) assignStatus.hidden = false;
       requestJson('addColorsToPalette', { paletteId: paletteId, colorIds: colorIds }).then(function () {
         return refreshAfterMutation('Selected colors assigned to palette.');
       }).then(renderMyColors).catch(function (error) {
