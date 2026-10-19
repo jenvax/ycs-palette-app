@@ -1627,7 +1627,7 @@
 .ycs-custom-modal {
   position: fixed;
   inset: 0;
-  z-index: 10000;
+  z-index: 2147483000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2019,6 +2019,7 @@
   const statusEl = root.querySelector('[data-ycs-custom-status]');
   const modalTitle = document.getElementById('ycs-custom-modal-title');
   const modalBody = modal.querySelector('[data-ycs-custom-modal-body]');
+  document.body.appendChild(modal);
   const apiBase = (root.dataset.appBaseUrl || '').replace(/\/$/, '') + '/api/custom-palettes';
   const context = {
     customerId: root.dataset.customerId || '',
@@ -2433,6 +2434,7 @@
         '<p class="ycs-custom-help-text">Use columns named Name, Hex, and optional Category. Two-column CSV files are read as name, hex and categorized as Custom.</p>' +
         '<div data-ycs-csv-preview>' + importPreviewRows(parsedColors) + '</div>' +
         (error ? '<p class="ycs-custom-error">' + escapeHtml(error) + '</p>' : '') +
+        '<p class="ycs-custom-help-text" data-ycs-import-status role="status" aria-live="polite" hidden>Importing colors...</p>' +
         '<div class="ycs-custom-form__actions"><button type="submit" class="ycs-palette-card__button"' + (parsedColors.length && !hasInvalid ? '' : ' disabled') + '>' + (isAppend ? 'Add Colors to Palette' : 'Import Palette') + '</button><button type="button" class="ycs-palette-card__button ycs-palette-card__button--secondary" data-ycs-custom-close>Cancel</button></div>' +
       '</form>');
   }
@@ -3288,6 +3290,15 @@
         renderCsvImport('Choose a CSV with valid color names and hex codes.', colors, formData.get('name'), paletteId);
         return;
       }
+
+      const submitButton = csvImportForm.querySelector('button[type="submit"]');
+      const importStatus = csvImportForm.querySelector('[data-ycs-import-status]');
+      csvImportForm.setAttribute('aria-busy', 'true');
+      csvImportForm.querySelectorAll('input, button').forEach(function (control) {
+        control.disabled = true;
+      });
+      if (submitButton) submitButton.textContent = 'Importing colors...';
+      if (importStatus) importStatus.hidden = false;
 
       requestJson(paletteId ? 'appendPaletteCsv' : 'importPaletteCsv', {
         paletteId: paletteId,
