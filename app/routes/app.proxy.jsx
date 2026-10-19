@@ -1045,6 +1045,7 @@ function clientPaletteAccessHtml(access, token, branding = {}) {
       row-gap: 16px;
     }
     .ycs-client-swatch {
+      position: relative;
       min-width: 0;
     }
     .ycs-client-swatch__button {
@@ -1085,6 +1086,63 @@ function clientPaletteAccessHtml(access, token, branding = {}) {
       font-size: 12px;
       font-weight: 600;
       line-height: 1.15;
+    }
+    .ycs-client-swatch__favorite {
+      position: absolute;
+      top: 7px;
+      right: 7px;
+      z-index: 2;
+      display: inline-flex;
+      width: 32px;
+      height: 32px;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      border-radius: 50%;
+      background: rgba(255,255,255,.3);
+      color: #fff;
+      cursor: pointer;
+      padding: 0;
+      box-shadow: none;
+      transition: transform .16s ease, background .16s ease, opacity .16s ease;
+    }
+    .ycs-client-swatch__favorite:hover {
+      background: rgba(255,255,255,.42);
+      transform: scale(1.06);
+    }
+    .ycs-client-swatch__favorite:focus-visible {
+      outline: 2px solid rgba(0,0,0,.32);
+      outline-offset: 2px;
+    }
+    .ycs-client-swatch__favorite svg {
+      width: 18px;
+      height: 18px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,.24));
+      pointer-events: none;
+    }
+    .ycs-client-swatch__favorite.is-favorite svg {
+      fill: currentColor;
+    }
+    .ycs-client-swatch__favorite.is-saving {
+      opacity: .55;
+      pointer-events: none;
+    }
+    .ycs-client-palette__favorites-heading {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .ycs-client-palette__favorites-heading svg {
+      width: 19px;
+      height: 19px;
+      fill: currentColor;
+      stroke: currentColor;
+      stroke-width: 1.6;
     }
     .ycs-client-palette__footer {
       margin: 44px 0 0;
@@ -1196,6 +1254,8 @@ function clientPaletteAccessHtml(access, token, branding = {}) {
     const viewerNameEl = document.querySelector('[data-color-viewer-name]');
     const viewerCloseEl = document.querySelector('[data-color-viewer-close]');
     let lastSwatchButton = null;
+    let paletteColors = [];
+    let favoriteHexes = new Set();
     const paletteCode = root.dataset.paletteCode;
     const accessToken = ${JSON.stringify(String(token || ""))};
     const categoryOrder = [
@@ -1216,6 +1276,21 @@ function clientPaletteAccessHtml(access, token, branding = {}) {
         : [color.category || 'Other'];
       const next = color.isBest ? ['Best'].concat(categories) : categories;
       return next.filter(Boolean);
+    }
+
+    function normalizeHex(value) {
+      return String(value || '').trim().toLowerCase();
+    }
+
+    function favoriteButtonMarkup(color) {
+      const hex = color.hex || color.color || '#ffffff';
+      const isFavorite = favoriteHexes.has(normalizeHex(hex));
+      return '<button class="ycs-client-swatch__favorite' + (isFavorite ? ' is-favorite' : '') + '" type="button" data-favorite-hex="' + escapeHtml(hex) + '" data-favorite-name="' + escapeHtml(color.name) + '" aria-label="' + (isFavorite ? 'Remove from favorites' : 'Add to favorites') + '" title="' + (isFavorite ? 'Remove from favorites' : 'Add to favorites') + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.2c-.2 0-.4-.1-.6-.2C10.1 19 4 14.7 4 9.6 4 6.9 5.9 5 8.5 5c1.5 0 2.8.7 3.5 1.8C12.7 5.7 14 5 15.5 5 18.1 5 20 6.9 20 9.6c0 5.1-6.1 9.4-7.4 10.4-.2.1-.4.2-.6.2z"></path></svg></button>';
+    }
+
+    function swatchMarkup(color) {
+      const hex = color.hex || color.color || '#ffffff';
+      return '<article class="ycs-client-swatch">' + favoriteButtonMarkup(color) + '<button class="ycs-client-swatch__button" type="button" data-color-name="' + escapeHtml(color.name) + '" data-color-hex="' + escapeHtml(hex) + '" aria-label="View ' + escapeHtml(color.name) + ' full screen"><div class="ycs-client-swatch__color" style="background:' + escapeHtml(hex) + '"></div><div class="ycs-client-swatch__body"><span class="ycs-client-swatch__name">' + escapeHtml(color.name) + '</span></div></button></article>';
     }
 
     function openColorViewer(name, hex, trigger) {
@@ -1250,18 +1325,28 @@ function clientPaletteAccessHtml(access, token, branding = {}) {
       });
       const ordered = categoryOrder.filter(function (category) { return grouped[category]?.length; })
         .concat(Object.keys(grouped).filter(function (category) { return categoryOrder.indexOf(category) === -1; }).sort());
-      sectionsEl.innerHTML = ordered.map(function (category) {
+      const favorites = colors.filter(function (color) {
+        return favoriteHexes.has(normalizeHex(color.hex || color.color));
+      });
+      const favoritesSection = favorites.length
+        ? '<section class="ycs-client-palette__section" data-category="Favorites"><h2 class="ycs-client-palette__favorites-heading"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.2c-.2 0-.4-.1-.6-.2C10.1 19 4 14.7 4 9.6 4 6.9 5.9 5 8.5 5c1.5 0 2.8.7 3.5 1.8C12.7 5.7 14 5 15.5 5 18.1 5 20 6.9 20 9.6c0 5.1-6.1 9.4-7.4 10.4-.2.1-.4.2-.6.2z"></path></svg>Favorites</h2><div class="ycs-client-palette__grid">' + favorites.map(swatchMarkup).join('') + '</div></section>'
+        : '';
+      sectionsEl.innerHTML = favoritesSection + ordered.map(function (category) {
         return '<section class="ycs-client-palette__section"><h2>' + escapeHtml(category) + '</h2><div class="ycs-client-palette__grid">' +
-          grouped[category].map(function (color) {
-            const hex = color.hex || color.color || '#ffffff';
-            return '<article class="ycs-client-swatch"><button class="ycs-client-swatch__button" type="button" data-color-name="' + escapeHtml(color.name) + '" data-color-hex="' + escapeHtml(hex) + '" aria-label="View ' + escapeHtml(color.name) + ' full screen"><div class="ycs-client-swatch__color" style="background:' + escapeHtml(hex) + '"></div><div class="ycs-client-swatch__body"><span class="ycs-client-swatch__name">' + escapeHtml(color.name) + '</span></div></button></article>';
-          }).join('') +
+          grouped[category].map(swatchMarkup).join('') +
         '</div></section>';
       }).join('');
       statusEl.textContent = '';
     }
 
     sectionsEl.addEventListener('click', function (event) {
+      const favoriteButton = event.target.closest('[data-favorite-hex]');
+      if (favoriteButton) {
+        event.preventDefault();
+        event.stopPropagation();
+        toggleLinkFavorite(favoriteButton);
+        return;
+      }
       const button = event.target.closest('[data-color-hex]');
       if (!button) return;
       openColorViewer(button.dataset.colorName || '', button.dataset.colorHex || '#ffffff', button);
@@ -1282,13 +1367,59 @@ function clientPaletteAccessHtml(access, token, branding = {}) {
     const colorsUrl = /^CUSTOM_/i.test(paletteCode)
       ? '/apps/palette-data?action=clientPaletteColors&token=' + encodeURIComponent(accessToken)
       : '/apps/palette-data?palette=' + encodeURIComponent(paletteCode);
+    const favoritesUrl = '/apps/palette-data?action=clientPaletteFavorites&token=' + encodeURIComponent(accessToken);
 
-    fetch(colorsUrl, { credentials: 'same-origin' })
-      .then(function (response) { return response.json().then(function (data) {
-        if (!response.ok || !Array.isArray(data.colors)) throw new Error(data.error || 'Unable to load palette colors.');
-        if (!data.colors.length) throw new Error('No colors were found for this palette.');
-        render(data.colors);
-      }); })
+    function toggleLinkFavorite(button) {
+      const hex = button.dataset.favoriteHex || '';
+      const colorName = button.dataset.favoriteName || '';
+      if (!hex || button.classList.contains('is-saving')) return;
+      const normalizedHex = normalizeHex(hex);
+      const wasFavorite = favoriteHexes.has(normalizedHex);
+      button.classList.add('is-saving');
+      if (wasFavorite) favoriteHexes.delete(normalizedHex);
+      else favoriteHexes.add(normalizedHex);
+      render(paletteColors);
+
+      fetch('/apps/palette-data?action=clientPaletteFavorites', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: accessToken, colorName: colorName, hex: hex })
+      }).then(function (response) {
+        return response.json().then(function (data) {
+          if (!response.ok || !data.success) throw new Error(data.error || 'Unable to update favorites.');
+          if (data.isFavorite) favoriteHexes.add(normalizedHex);
+          else favoriteHexes.delete(normalizedHex);
+          render(paletteColors);
+        });
+      }).catch(function (error) {
+        if (wasFavorite) favoriteHexes.add(normalizedHex);
+        else favoriteHexes.delete(normalizedHex);
+        render(paletteColors);
+        statusEl.textContent = error.message || 'Could not update favorites right now.';
+      });
+    }
+
+    Promise.all([
+      fetch(colorsUrl, { credentials: 'same-origin' }).then(function (response) {
+        return response.json().then(function (data) {
+          if (!response.ok || !Array.isArray(data.colors)) throw new Error(data.error || 'Unable to load palette colors.');
+          return data.colors;
+        });
+      }),
+      fetch(favoritesUrl, { credentials: 'same-origin' }).then(function (response) {
+        return response.json().then(function (data) {
+          if (!response.ok || !Array.isArray(data.favorites)) throw new Error(data.error || 'Unable to load favorites.');
+          return data.favorites;
+        });
+      })
+    ])
+      .then(function (results) {
+        paletteColors = results[0];
+        if (!paletteColors.length) throw new Error('No colors were found for this palette.');
+        favoriteHexes = new Set(results[1].map(normalizeHex));
+        render(paletteColors);
+      })
       .catch(function (error) {
         statusEl.textContent = error.message || 'Unable to load this palette.';
       });
@@ -1537,6 +1668,29 @@ export async function loader({ request }) {
       console.error("clientPaletteColors failed:", error);
       return Response.json(
         { error: error.message || "Failed to load custom palette colors" },
+        { status: error.status || 500 }
+      );
+    }
+  }
+
+  if (action === "clientPaletteFavorites") {
+    try {
+      const access = await validateClientPaletteAccessToken({
+        token: url.searchParams.get("token")
+      });
+      const favorites = await getFavorites({
+        customerId: `CLIENT_LINK_${access.id}`,
+        paletteCode: access.paletteCode,
+        baseId: AIRTABLE_BASE_ID,
+        tableName: AIRTABLE_FAVORITES_TABLE,
+        token: AIRTABLE_TOKEN
+      });
+
+      return Response.json({ favorites });
+    } catch (error) {
+      console.error("clientPaletteFavorites failed:", error);
+      return Response.json(
+        { error: error.message || "Failed to load favorites" },
         { status: error.status || 500 }
       );
     }
@@ -2440,6 +2594,39 @@ export async function action({ request }) {
     );
   }
 }
+  if (actionName === "clientPaletteFavorites") {
+    try {
+      const body = await request.json();
+      const access = await validateClientPaletteAccessToken({
+        token: body.token
+      });
+      const colorName = String(body.colorName || "").trim();
+      const hex = String(body.hex || "").trim();
+
+      if (!hex) {
+        return Response.json({ error: "Missing color" }, { status: 400 });
+      }
+
+      const result = await toggleFavorite({
+        customerId: `CLIENT_LINK_${access.id}`,
+        paletteCode: access.paletteCode,
+        colorName,
+        hex,
+        baseId: AIRTABLE_BASE_ID,
+        tableName: AIRTABLE_FAVORITES_TABLE,
+        token: AIRTABLE_TOKEN
+      });
+
+      return Response.json(result);
+    } catch (error) {
+      console.error("clientPaletteFavorites update failed:", error);
+      return Response.json(
+        { error: error.message || "Failed to update favorites" },
+        { status: error.status || 500 }
+      );
+    }
+  }
+
   if (actionName !== "toggleFavorite") {
     return Response.json({ error: "Unknown action" }, { status: 400 });
   }
