@@ -6,5 +6,6 @@ import { normalizePaletteCode } from "../app/services/palette-codes.server.js";
 test("normalizes only supported palette codes for trade access", () => {
   assert.equal(normalizePaletteCode(" ccl "), "CCL");
   assert.equal(normalizePaletteCode("swmg"), "SWMG");
+  assert.equal(normalizePaletteCode(" custom_palette_123 "), "CUSTOM_palette_123");
   assert.equal(normalizePaletteCode("not-a-palette"), "");
 });

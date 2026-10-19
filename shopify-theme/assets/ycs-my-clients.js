@@ -2963,6 +2963,7 @@
     return `
       <div class="ycs-clients__palette-credit-status${isLoaded && balance <= 0 ? " is-empty" : ""}" data-ycs-trade-palette-credit-status>
         <p>${escapeHtml(text)}</p>
+        <p>Custom palettes can be shared without using a credit.</p>
       ${purchaseButton}
       </div>
     `;
@@ -2996,7 +2997,7 @@
   function renderClientPaletteAccessSection(client) {
     const paletteCode = String(client.paletteCode || "").trim().toUpperCase();
     const canGrantPaletteAccess = isAdmin || usesPrivatePaletteLinks;
-    const isDisabled = canGrantPaletteAccess && !hasTradePaletteCredits();
+    const isDisabled = false;
     if (!canGrantPaletteAccess) return "";
     const sectionTitle = "Digital Palette Access";
     const sectionIntro = "Give this client private access to their digital color palette.";
@@ -3089,7 +3090,8 @@
     const button = detailEl.querySelector("[data-ycs-grant-client-palette-access]");
     const section = detailEl.querySelector(".ycs-clients__palette-access-section");
     if (!button || !section || !usesPrivatePaletteLinks) return;
-    const shouldDisable = !hasTradePaletteCredits();
+    const selectedCode = normalizePaletteCode(detailEl.querySelector("[data-ycs-palette-access-select]")?.value);
+    const shouldDisable = Boolean(selectedCode) && !isCustomPaletteCode(selectedCode) && !hasTradePaletteCredits();
     button.disabled = shouldDisable;
     const existingMessage = section.querySelector("[data-ycs-palette-credit-required]");
     if (shouldDisable && !existingMessage) {
@@ -4002,7 +4004,15 @@
       return;
     }
 
-    const confirmed = window.confirm(`Create ${paletteName} palette for ${displayName(client)}? This will use 1 color palette credit.`);
+    if (!isCustomPaletteCode(paletteCode) && !hasTradePaletteCredits()) {
+      showPurchaseCreditsStatus();
+      return;
+    }
+
+    const confirmationMessage = isCustomPaletteCode(paletteCode)
+      ? `Create a private ${paletteName} palette link for ${displayName(client)}? No color palette credit will be used.`
+      : `Create ${paletteName} palette for ${displayName(client)}? This will use 1 color palette credit.`;
+    const confirmed = window.confirm(confirmationMessage);
     if (!confirmed) {
       setStatus("Client color palette was not changed.", true);
       return;
@@ -4912,6 +4922,9 @@
   });
 
   root.addEventListener("change", (event) => {
+    if (event.target.closest("[data-ycs-palette-access-select]")) {
+      updateTradePaletteAccessControls();
+    }
     if (!canCreateReports) return;
     const reportForm = event.target.closest("[data-ycs-report-form]");
     if (!reportForm) return;

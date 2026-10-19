@@ -39,9 +39,10 @@ function airtableConfig() {
   return { baseId, token, tableName };
 }
 
-async function airtableRequest({ method = "GET", recordId, params, body, fetcher = fetch }) {
-  const { baseId, token, tableName } = airtableConfig();
-  const url = new URL(`https://api.airtable.com/v0/${baseId}/${encodeURIComponent(tableName)}${recordId ? `/${recordId}` : ""}`);
+async function airtableRequest({ method = "GET", recordId, params, body, tableName, fetcher = fetch }) {
+  const config = airtableConfig();
+  const selectedTableName = tableName || config.tableName;
+  const url = new URL(`https://api.airtable.com/v0/${config.baseId}/${encodeURIComponent(selectedTableName)}${recordId ? `/${recordId}` : ""}`);
 
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
@@ -54,7 +55,7 @@ async function airtableRequest({ method = "GET", recordId, params, body, fetcher
   const response = await fetcher(url.toString(), {
     method,
     headers: {
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${config.token}`,
       "Content-Type": "application/json"
     },
     body: body ? JSON.stringify(body) : undefined
@@ -69,6 +70,36 @@ async function airtableRequest({ method = "GET", recordId, params, body, fetcher
   }
 
   return data;
+}
+
+function customPaletteIdFromCode(paletteCode) {
+  return cleanString(paletteCode).replace(/^CUSTOM_/i, "");
+}
+
+async function requireOwnedCustomPalette({ consultantId, paletteCode, fetcher = fetch }) {
+  const paletteId = customPaletteIdFromCode(paletteCode);
+  if (!paletteId) {
+    const error = new Error("Select a valid custom palette before creating the client palette.");
+    error.status = 400;
+    throw error;
+  }
+
+  const data = await airtableRequest({
+    tableName: "CustomPalettes",
+    params: {
+      filterByFormula: `AND({OwnerCustomerId}="${escapeFormulaString(consultantId)}",{PaletteId}="${escapeFormulaString(paletteId)}")`,
+      maxRecords: 1
+    },
+    fetcher
+  });
+
+  if (!data.records?.[0]) {
+    const error = new Error("That custom palette could not be found in your account.");
+    error.status = 404;
+    throw error;
+  }
+
+  return data.records[0];
 }
 
 function isUnknownAirtableFieldError(error) {
@@ -423,7 +454,8 @@ export async function giveTradeClientPaletteAccess({
 }) {
   const safeConsultantId = cleanString(consultantId);
   const safePaletteCode = normalizePaletteCode(paletteCode);
-  const safePaletteName = cleanString(paletteName) || PALETTE_NAMES[safePaletteCode] || safePaletteCode;
+  const isCustomPalette = safePaletteCode.startsWith("CUSTOM_");
+  let safePaletteName = cleanString(paletteName) || PALETTE_NAMES[safePaletteCode] || safePaletteCode;
 
   if (!safeConsultantId) {
     throw new Error("Missing consultantId");
@@ -435,6 +467,15 @@ export async function giveTradeClientPaletteAccess({
 
   if (verifyShopifyAccess) {
     await requireTradePaletteAccess(safeConsultantId);
+  }
+
+  if (isCustomPalette) {
+    const customPaletteRecord = await requireOwnedCustomPalette({
+      consultantId: safeConsultantId,
+      paletteCode: safePaletteCode,
+      fetcher
+    });
+    safePaletteName = cleanString(customPaletteRecord.fields?.Name) || safePaletteName;
   }
 
   const client = await findClientForTrade({
@@ -455,13 +496,15 @@ export async function giveTradeClientPaletteAccess({
     clientRecordId: client.clientRecordId,
     fetcher
   });
-  const startingBalance = await getTradePaletteCreditBalance({
-    tradeCustomerId: safeConsultantId,
-    fetcher
-  });
-  const alreadyRecordedUsage = startingBalance.events.some((event) => event.key === existingUsageKey);
+  const startingBalance = isCustomPalette
+    ? null
+    : await getTradePaletteCreditBalance({
+        tradeCustomerId: safeConsultantId,
+        fetcher
+      });
+  const alreadyRecordedUsage = startingBalance?.events.some((event) => event.key === existingUsageKey) || false;
 
-  if (!existingAccess && !alreadyRecordedUsage && startingBalance.balance < 1) {
+  if (!isCustomPalette && !existingAccess && !alreadyRecordedUsage && startingBalance.balance < 1) {
     const error = new Error("You need at least 1 color palette credit to give a customer palette access.");
     error.status = 402;
     error.balance = startingBalance.balance;
@@ -497,7 +540,7 @@ export async function giveTradeClientPaletteAccess({
 
   let usageEvent = null;
   let creditEventCreated = false;
-  if (accessResult.created) {
+  if (accessResult.created && !isCustomPalette) {
     const usageResult = await recordTradePaletteCreditEvent({
       tradeCustomerId: safeConsultantId,
       eventType: "usage",
@@ -515,10 +558,12 @@ export async function giveTradeClientPaletteAccess({
     creditEventCreated = usageResult.created === true;
   }
 
-  const endingBalance = await getTradePaletteCreditBalance({
-    tradeCustomerId: safeConsultantId,
-    fetcher
-  });
+  const endingBalance = isCustomPalette
+    ? null
+    : await getTradePaletteCreditBalance({
+        tradeCustomerId: safeConsultantId,
+        fetcher
+      });
 
   return {
     success: true,
@@ -531,8 +576,9 @@ export async function giveTradeClientPaletteAccess({
     createdAccessLink: accessResult.created,
     alreadyHadAccess: !accessResult.created,
     creditUsed: creditEventCreated,
+    customPalette: isCustomPalette,
     creditEvent: usageEvent,
-    balance: endingBalance.balance
+    ...(endingBalance ? { balance: endingBalance.balance } : {})
   };
 }
 
