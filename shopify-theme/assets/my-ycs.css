@@ -811,6 +811,12 @@ div.ycs-analysis-topnav:has(> .my-ycs-menu-shell) {
   color: #fff !important;
 }
 
+.ycs-analysis-app .ycs-analysis-save-btn:disabled {
+  opacity: .65;
+  cursor: wait;
+  transform: none;
+}
+
 .ycs-photo-prep-app .ycs-photo-prep-btn--secondary:hover,
 .ycs-photo-prep-app .ycs-photo-prep-btn--secondary:focus-visible,
 .ycs-photo-prep-app .ycs-photo-prep-btn--outline:hover,

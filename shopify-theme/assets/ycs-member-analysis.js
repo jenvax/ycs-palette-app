@@ -4916,15 +4916,30 @@ function endGesturePointer(event) {
 window.addEventListener('pointerup', endGesturePointer);
 window.addEventListener('pointercancel', endGesturePointer);
 
+  async function savePanelViewWithState(panel, button) {
+    if (!button || button.disabled) return;
+
+    const originalLabel = button.textContent.trim();
+    button.disabled = true;
+    button.textContent = 'Saving...';
+
+    try {
+      await downloadPanelView(panel);
+    } finally {
+      button.disabled = false;
+      button.textContent = originalLabel;
+    }
+  }
+
   if (saveLeftBtn) {
     saveLeftBtn.addEventListener('click', function () {
-      downloadPanelView('left');
+      savePanelViewWithState('left', saveLeftBtn);
     });
   }
 
   if (saveRightBtn) {
     saveRightBtn.addEventListener('click', function () {
-      downloadPanelView('right');
+      savePanelViewWithState('right', saveRightBtn);
     });
   }
 
