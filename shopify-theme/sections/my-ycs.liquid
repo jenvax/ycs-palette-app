@@ -53,6 +53,10 @@
       <p><em>Everything you need to learn, analyze, create, and grow with Your Color Style.</em></p>
     </header>
 
+    {% if ycs_professional_access %}
+      {% render 'my-ycs-report-branding' %}
+    {% endif %}
+
     {% assign ycs_has_consumer_cards = false %}
     {% if ycs_diy_access %}
       {% assign ycs_has_consumer_cards = true %}

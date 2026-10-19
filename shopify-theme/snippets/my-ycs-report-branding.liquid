@@ -1,0 +1,200 @@
+<section class="ycs-report-branding" data-report-branding>
+  <div class="ycs-report-branding__intro">
+    <p class="ycs-report-branding__kicker">Client Reports</p>
+    <h2>Report Branding</h2>
+    <p>Save the business name and logo that should appear automatically on your client reports.</p>
+  </div>
+  <form class="ycs-report-branding__form" data-report-branding-form>
+    <label>Business Name<input type="text" name="businessName" maxlength="160" autocomplete="organization"></label>
+    <label>Business Logo<input type="file" name="logoFile" accept="image/png,image/jpeg,image/webp,image/gif"></label>
+    <div class="ycs-report-branding__preview" data-branding-preview hidden>
+      <img data-branding-logo width="140" height="80" alt="Business logo preview">
+      <button type="button" class="ycs-report-branding__secondary" data-remove-branding-logo>Remove Logo</button>
+    </div>
+    <input type="hidden" name="logoUrl">
+    <input type="hidden" name="logoPublicId">
+    <div class="ycs-report-branding__actions">
+      <button type="submit" class="ycs-member-hub__button">Save Report Branding</button>
+      <span data-branding-status role="status" aria-live="polite"></span>
+    </div>
+  </form>
+</section>
+
+<style>
+  .ycs-member-hub .ycs-report-branding {
+    display: grid;
+    grid-template-columns: minmax(220px, .8fr) minmax(320px, 1.2fr);
+    gap: 32px;
+    margin: 0 0 42px;
+    padding: 28px;
+    border: 1px solid var(--ycs-dashboard-border);
+    border-top: 5px solid var(--ycs-dashboard-pro);
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: var(--ycs-dashboard-shadow);
+  }
+  .ycs-member-hub .ycs-report-branding__kicker {
+    margin: 0 0 6px;
+    color: var(--ycs-dashboard-pro-hover);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .ycs-member-hub .ycs-report-branding h2 {
+    margin: 0 0 8px;
+    color: var(--ycs-dashboard-navy);
+    font-size: 24px;
+    font-weight: 700;
+  }
+  .ycs-member-hub .ycs-report-branding__intro > p:last-child {
+    margin: 0;
+    color: var(--ycs-dashboard-muted);
+    line-height: 1.55;
+  }
+  .ycs-member-hub .ycs-report-branding__form { display: grid; gap: 16px; }
+  .ycs-member-hub .ycs-report-branding label {
+    display: grid;
+    gap: 6px;
+    color: var(--ycs-dashboard-navy);
+    font-weight: 700;
+  }
+  .ycs-member-hub .ycs-report-branding input[type="text"],
+  .ycs-member-hub .ycs-report-branding input[type="file"] {
+    width: 100%;
+    border: 1px solid #d9d5e2;
+    border-radius: 6px;
+    padding: 11px 12px;
+    background: #fff;
+    color: var(--ycs-dashboard-ink);
+    font: inherit;
+  }
+  .ycs-member-hub .ycs-report-branding__preview { display: flex; align-items: center; gap: 16px; }
+  .ycs-member-hub .ycs-report-branding__preview[hidden] { display: none; }
+  .ycs-member-hub .ycs-report-branding__preview img {
+    width: 140px;
+    max-height: 80px;
+    object-fit: contain;
+    object-position: left center;
+  }
+  .ycs-member-hub .ycs-report-branding__secondary {
+    min-height: 42px;
+    border: 1px solid var(--ycs-dashboard-pro);
+    border-radius: 8px;
+    padding: 9px 16px;
+    background: #fff;
+    color: var(--ycs-dashboard-pro-hover);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .ycs-member-hub .ycs-report-branding__secondary:hover {
+    background: #f0ebff;
+    color: var(--ycs-dashboard-pro-hover);
+  }
+  .ycs-member-hub .ycs-report-branding__actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+  .ycs-member-hub .ycs-report-branding__actions .ycs-member-hub__button {
+    margin-top: 0;
+    border: 0;
+    cursor: pointer;
+  }
+  .ycs-member-hub [data-branding-status] { color: var(--ycs-dashboard-muted); font-weight: 600; }
+  @media (max-width: 720px) {
+    .ycs-member-hub .ycs-report-branding { grid-template-columns: 1fr; padding: 22px; }
+  }
+</style>
+
+<script>
+(function () {
+  const root = document.querySelector('[data-report-branding]');
+  if (!root) return;
+  const form = root.querySelector('[data-report-branding-form]');
+  const status = root.querySelector('[data-branding-status]');
+  const preview = root.querySelector('[data-branding-preview]');
+  const image = root.querySelector('[data-branding-logo]');
+
+  function setStatus(message) { status.textContent = message || ''; }
+  function showLogo(url) {
+    form.elements.logoUrl.value = url || '';
+    image.src = url || '';
+    preview.hidden = !url;
+  }
+  function proxyJson(url, options) {
+    return fetch(url, Object.assign({ credentials: 'same-origin' }, options || {})).then(function (response) {
+      return response.json().then(function (data) {
+        if (!response.ok) throw new Error(data.error || 'Request failed');
+        return data;
+      });
+    });
+  }
+
+  proxyJson('/apps/palette-data?action=reportBranding')
+    .then(function (data) {
+      form.elements.businessName.value = data.branding.businessName || '';
+      form.elements.logoPublicId.value = data.branding.logoPublicId || '';
+      showLogo(data.branding.logoUrl || '');
+    })
+    .catch(function (error) { setStatus(error.message || 'Unable to load report branding.'); });
+
+  form.elements.logoFile.addEventListener('change', function () {
+    const file = this.files && this.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    const input = this;
+    setStatus('Uploading logo...');
+    input.disabled = true;
+    reader.onload = function () {
+      proxyJson('/apps/palette-data?action=reportBranding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ operation: 'uploadLogo', imageBase64: reader.result })
+      }).then(function (data) {
+        showLogo(data.logoUrl);
+        form.elements.logoPublicId.value = data.logoPublicId || '';
+        setStatus('Logo uploaded. Save your branding to apply it to reports.');
+      }).catch(function (error) {
+        setStatus(error.message || 'Unable to upload logo.');
+      }).finally(function () {
+        input.disabled = false;
+        input.value = '';
+      });
+    };
+    reader.onerror = function () { input.disabled = false; setStatus('Unable to read that image.'); };
+    reader.readAsDataURL(file);
+  });
+
+  root.querySelector('[data-remove-branding-logo]').addEventListener('click', function () {
+    showLogo('');
+    form.elements.logoPublicId.value = '';
+    setStatus('Logo removed. Save your branding to confirm.');
+  });
+
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    const button = form.querySelector('button[type="submit"]');
+    button.disabled = true;
+    button.textContent = 'Saving...';
+    setStatus('Saving report branding...');
+    proxyJson('/apps/palette-data?action=reportBranding', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        businessName: form.elements.businessName.value,
+        logoUrl: form.elements.logoUrl.value,
+        logoPublicId: form.elements.logoPublicId.value
+      })
+    }).then(function () {
+      setStatus('Report branding saved.');
+    }).catch(function (error) {
+      setStatus(error.message || 'Unable to save report branding.');
+    }).finally(function () {
+      button.disabled = false;
+      button.textContent = 'Save Report Branding';
+    });
+  });
+})();
+</script>
