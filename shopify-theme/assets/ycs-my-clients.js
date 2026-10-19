@@ -197,6 +197,7 @@
   function paletteLabel(client) {
     const code = String(client.paletteCode || "").trim();
     const name = String(client.paletteName || "").trim();
+    if (isCustomPaletteCode(code)) return name || "Custom Palette";
     if (code && name) return `${name} (${code})`;
     return name || code || "";
   }
