@@ -385,6 +385,11 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
                   <img id="ycs-prep-original-img" class="ycs-photo-prep-preview-img" alt="Original photo preview" />
                 </div>
               </div>
+              <div class="ycs-photo-prep-pane-save">
+                <button type="button" id="ycs-prep-save-original-report-btn" class="ycs-photo-prep-report-save-btn" hidden>
+                  Save Original Photo
+                </button>
+              </div>
             </div>
 
             <div class="ycs-photo-prep-pane">
@@ -409,6 +414,11 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
                   <div class="ycs-photo-prep-loading-dots"><span></span><span></span><span></span></div>
                   <p id="ycs-prep-loading-text">Loading…</p>
                 </div>
+              </div>
+              <div class="ycs-photo-prep-pane-save">
+                <button type="button" id="ycs-prep-save-adjusted-report-btn" class="ycs-photo-prep-report-save-btn" hidden>
+                  Save Adjusted Photo
+                </button>
               </div>
             </div>
           </div>
@@ -478,15 +488,7 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
             </button>
 
             <button type="button" id="ycs-prep-save-btn" class="ycs-photo-prep-btn">
-              Save Adjusted Photo
-            </button>
-
-            <button type="button" id="ycs-prep-save-original-report-btn" class="ycs-photo-prep-report-save-btn" hidden>
-              Save Original Photo
-            </button>
-
-            <button type="button" id="ycs-prep-save-adjusted-report-btn" class="ycs-photo-prep-report-save-btn" hidden>
-              Save Adjusted Photo
+              Save Adjustments
             </button>
 
             <div class="ycs-photo-prep-analysis-actions" hidden aria-hidden="true">
@@ -844,6 +846,17 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
 
   .ycs-photo-prep-pane {
     min-width: 0;
+  }
+
+  .ycs-photo-prep-pane-save {
+    display: flex;
+    min-height: 34px;
+    margin-top: 10px;
+    justify-content: flex-end;
+  }
+
+  .ycs-photo-prep-pane-save:not(:has(.ycs-photo-prep-report-save-btn:not([hidden]))) {
+    display: none;
   }
 
   .ycs-photo-prep-pane-head {
