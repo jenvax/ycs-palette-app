@@ -481,12 +481,12 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
               Save Adjusted Photo
             </button>
 
-            <button type="button" id="ycs-prep-save-original-report-btn" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary" hidden>
-              Save Original for Report
+            <button type="button" id="ycs-prep-save-original-report-btn" class="ycs-photo-prep-report-save-btn" hidden>
+              Save Original Photo
             </button>
 
-            <button type="button" id="ycs-prep-save-adjusted-report-btn" class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary" hidden>
-              Save Adjusted for Report
+            <button type="button" id="ycs-prep-save-adjusted-report-btn" class="ycs-photo-prep-report-save-btn" hidden>
+              Save Adjusted Photo
             </button>
 
             <div class="ycs-photo-prep-analysis-actions" hidden aria-hidden="true">
@@ -1269,6 +1269,42 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
   .ycs-photo-prep-btn--secondary {
     background: #e9e1d6;
     color: #2f2a25;
+  }
+
+  .ycs-photo-prep-report-save-btn {
+    display: inline-flex;
+    min-height: 34px;
+    padding: 7px 12px;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 999px;
+    background: #111;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.4;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color .18s ease, box-shadow .18s ease, transform .18s ease;
+  }
+
+  .ycs-photo-prep-report-save-btn[hidden] {
+    display: none !important;
+  }
+
+  .ycs-photo-prep-report-save-btn:hover,
+  .ycs-photo-prep-report-save-btn:focus-visible {
+    background: #000;
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgba(0,0,0,.14);
+  }
+
+  .ycs-photo-prep-report-save-btn:disabled {
+    opacity: .65;
+    cursor: wait;
+    transform: none;
   }
 
   @media screen and (max-width: 900px) {
@@ -4166,6 +4202,46 @@ if (IS_PERSONAL_MODE) {
   }
 } //saveAdjustedPhoto
 
+async function renderPhotoPrepImageForExport(photoUrl) {
+  let imageDataUrl = photoUrl;
+
+  if (!String(photoUrl || '').startsWith('data:image/')) {
+    const response = await fetch(APP_BASE_URL + '/api/proxy-image?url=' + encodeURIComponent(photoUrl));
+    const data = await response.json();
+
+    if (!response.ok || !data.imageBase64) {
+      throw new Error(data.error || 'Could not prepare the photo for saving.');
+    }
+
+    imageDataUrl = data.imageBase64;
+  }
+
+  const image = await new Promise(function (resolve, reject) {
+    const exportImage = new Image();
+    exportImage.onload = function () { resolve(exportImage); };
+    exportImage.onerror = function () { reject(new Error('Could not load the photo for saving.')); };
+    exportImage.src = imageDataUrl;
+  });
+  const canvas = document.createElement('canvas');
+  canvas.width = image.naturalWidth;
+  canvas.height = image.naturalHeight;
+  canvas.getContext('2d').drawImage(image, 0, 0);
+  return canvas.toDataURL('image/png');
+}
+
+function photoPrepReportFileName(photoType) {
+  const safePart = function (value, fallback) {
+    return String(value || fallback)
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+  };
+  const firstName = safePart(state.firstName, 'client');
+  const lastName = safePart(state.lastName, 'photo');
+  return [firstName, lastName, photoType].join('-');
+}
+
 async function savePhotoForReport(photoType) {
   const isAdjusted = photoType === 'adjusted';
   const photoUrl = isAdjusted ? state.adjustedPhotoUrl : state.originalPhotoUrl;
@@ -4182,38 +4258,52 @@ async function savePhotoForReport(photoType) {
     return;
   }
 
-  const originalButtonText = button ? button.textContent : '';
+  const originalButtonText = button ? button.textContent.trim() : '';
 
   try {
     if (button) {
       button.disabled = true;
-      button.textContent = 'Saving…';
+      button.textContent = 'Saving...';
     }
 
-    const response = await fetch(APP_BASE_URL + '/api/save-draped-image', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        imageBase64: photoUrl,
-        clientRecordId: state.clientRecordId,
-        consultantId: VIEWER_CUSTOMER_ID,
-        panel: 'photo-prep-' + photoType,
-        drapeColorName: label,
-        fileName: 'photo-prep-' + photoType,
-        notes: label + ' saved from My YCS Photo Prep for report use.'
-      })
-    });
+    const imageDataUrl = await renderPhotoPrepImageForExport(photoUrl);
+    const fileName = photoPrepReportFileName(photoType);
 
-    const data = await response.json();
+    try {
+      const response = await fetch(APP_BASE_URL + '/api/save-draped-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageBase64: imageDataUrl,
+          clientRecordId: state.clientRecordId,
+          consultantId: VIEWER_CUSTOMER_ID,
+          panel: 'photo-prep-' + photoType,
+          drapeColorName: label,
+          fileName: fileName,
+          notes: label + ' saved from My YCS Photo Prep for report use.'
+        })
+      });
+      const data = await response.json();
 
-    if (!response.ok || !data.success) {
-      throw new Error(data.error || 'Could not save the photo for report use.');
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Could not save the photo for report use.');
+      }
+    } catch (saveError) {
+      console.warn('Could not save Photo Prep image for report selection', saveError);
+      window.setTimeout(function () {
+        alert('The PNG downloaded, but it could not be saved for report selection yet.');
+      }, 0);
     }
 
-    alert(label + ' saved. It is now available in the report image picker.');
+    const link = document.createElement('a');
+    link.href = imageDataUrl;
+    link.download = fileName + '.png';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
   } catch (error) {
-    console.error('Could not save Photo Prep image for report use', error);
-    alert(error.message || 'Could not save the photo for report use.');
+    console.error('Could not save Photo Prep image', error);
+    alert(error.message || 'Could not save this photo. Please try again.');
   } finally {
     if (button) {
       button.disabled = false;
