@@ -2071,11 +2071,12 @@ function applySharedLipState(shared) {
 }
 
 function refreshGuidedSwatches() {
-  const activeHex = state.activePanel === 'right'
-    ? state.rightColorHex
-    : state.leftColorHex;
-
-  Array.from(undertoneSectionsEl.querySelectorAll('.ycs-analysis-guided-swatch')).forEach(function (btn) {
+  const swatchScope = isPhoneLayout() ? document : undertoneSectionsEl;
+  Array.from(swatchScope.querySelectorAll('.ycs-analysis-guided-swatch')).forEach(function (btn) {
+    let activeHex = state.activePanel === 'right' ? state.rightColorHex : state.leftColorHex;
+    if (isPhoneLayout()) {
+      activeHex = btn.closest('#ycs-analysis-mobile-cool') ? state.rightColorHex : state.leftColorHex;
+    }
     const btnHex = normalizeHex(btn.dataset.hex || '');
     btn.classList.toggle('is-active', btnHex === activeHex);
   });
@@ -3166,7 +3167,11 @@ function updateBackLink() {
     return buckets;
   }
 
-  function createGuidedSwatch(color) {
+  function isPhoneLayout() {
+    return window.matchMedia && window.matchMedia('(max-width: 640px)').matches;
+  }
+
+  function createGuidedSwatch(color, fixedPanel) {
     const hex = normalizeHex(color.hex || color.hexCode || color.colorHex || '');
     const name = color.name || color.colorName || color.title || 'Color';
 
@@ -3180,7 +3185,9 @@ function updateBackLink() {
     btn.title = name;
 
     btn.addEventListener('click', function () {
-      applyDrapeColor(state.activePanel, hex, name);
+      const targetPanel = isPhoneLayout() && fixedPanel ? fixedPanel : state.activePanel;
+      setActivePanel(targetPanel);
+      applyDrapeColor(targetPanel, hex, name);
     });
 
     return btn;
@@ -3211,8 +3218,9 @@ function updateBackLink() {
       return col;
     }
 
+    const fixedPanel = lane.includes('warm') ? 'left' : 'right';
     colors.forEach(function (color) {
-      grid.appendChild(createGuidedSwatch(color));
+      grid.appendChild(createGuidedSwatch(color, fixedPanel));
     });
 
     const commitRow = document.createElement('div');
@@ -3244,6 +3252,16 @@ function updateBackLink() {
 
     const grouped = groupUndertoneColors(state.currentPaletteColors);
     undertoneSectionsEl.innerHTML = '';
+    const mobileWarmEl = document.getElementById('ycs-analysis-mobile-warm');
+    const mobileCoolEl = document.getElementById('ycs-analysis-mobile-cool');
+    if (mobileWarmEl) {
+      mobileWarmEl.innerHTML = '';
+      mobileWarmEl.hidden = true;
+    }
+    if (mobileCoolEl) {
+      mobileCoolEl.innerHTML = '';
+      mobileCoolEl.hidden = true;
+    }
 
     const depthKey = selectedDepth || state.selectedDepth;
     if (!depthKey || !grouped[depthKey]) return;
@@ -3265,8 +3283,18 @@ function updateBackLink() {
 
     const lanePrefix = depthKey.toLowerCase() === 'medium' ? 'med' : depthKey.toLowerCase();
 
-    cols.appendChild(createUndertoneColumn('Warm', lanePrefix + '-warm', grouped[depthKey].warm));
-    cols.appendChild(createUndertoneColumn('Cool', lanePrefix + '-cool', grouped[depthKey].cool));
+    const warmColumn = createUndertoneColumn('Warm', lanePrefix + '-warm', grouped[depthKey].warm);
+    const coolColumn = createUndertoneColumn('Cool', lanePrefix + '-cool', grouped[depthKey].cool);
+
+    if (isPhoneLayout() && mobileWarmEl && mobileCoolEl) {
+      mobileWarmEl.appendChild(warmColumn);
+      mobileCoolEl.appendChild(coolColumn);
+      mobileWarmEl.hidden = false;
+      mobileCoolEl.hidden = false;
+    } else {
+      cols.appendChild(warmColumn);
+      cols.appendChild(coolColumn);
+    }
 
     block.appendChild(title);
     block.appendChild(cols);
@@ -3311,8 +3339,26 @@ function updateBackLink() {
   }
 
   function autoApplyFirstGuidedColorsIfNeeded() {
-    const firstSwatch = undertoneSectionsEl.querySelector('.ycs-analysis-guided-swatch');
+    const swatchScope = isPhoneLayout() ? document : undertoneSectionsEl;
+    const firstSwatch = swatchScope.querySelector('.ycs-analysis-guided-swatch');
     if (!firstSwatch) return;
+
+    if (isPhoneLayout()) {
+      const firstWarm = document.querySelector('#ycs-analysis-mobile-warm .ycs-analysis-guided-swatch');
+      const firstCool = document.querySelector('#ycs-analysis-mobile-cool .ycs-analysis-guided-swatch');
+      const warmHexes = Array.from(document.querySelectorAll('#ycs-analysis-mobile-warm .ycs-analysis-guided-swatch'))
+        .map(function (btn) { return normalizeHex(btn.dataset.hex); });
+      const coolHexes = Array.from(document.querySelectorAll('#ycs-analysis-mobile-cool .ycs-analysis-guided-swatch'))
+        .map(function (btn) { return normalizeHex(btn.dataset.hex); });
+      if (firstWarm && !warmHexes.includes(normalizeHex(state.leftColorHex))) {
+        applyDrapeColor('left', firstWarm.dataset.hex, firstWarm.dataset.name);
+      }
+      if (firstCool && !coolHexes.includes(normalizeHex(state.rightColorHex))) {
+        applyDrapeColor('right', firstCool.dataset.hex, firstCool.dataset.name);
+      }
+      setActivePanel('left');
+      return;
+    }
 
     if (!state.leftColorHex) {
       applyDrapeColor('left', firstSwatch.dataset.hex, firstSwatch.dataset.name);

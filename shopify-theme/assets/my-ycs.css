@@ -709,12 +709,18 @@ div:has(> .my-ycs-menu-shell[data-original-tools-nav]) > a[data-global-nav-dupli
   .ycs-diy-hub__header { margin-bottom: 30px; }
   .ycs-diy-hub__header h1 { font-size: 32px; }
   .ycs-diy-hub__header p { font-size: 17px; }
-  .ycs-diy-hub__grid { grid-template-columns: 1fr; }
-  .ycs-diy-card { border-radius: 16px; }
-  .ycs-diy-card__body { min-height: 0; padding: 22px 20px; }
-  .ycs-diy-card h2 { font-size: 21px; }
-  .ycs-diy-card p { margin-bottom: 22px; }
-  .ycs-diy-hub__button { width: 100%; min-height: 48px; }
+  .ycs-diy-hub__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .ycs-diy-card { border-radius: 14px; }
+  .ycs-diy-card__body { min-height: 100%; padding: 16px 14px; }
+  .ycs-diy-card h2 { font-size: 17px; line-height: 1.25; }
+  .ycs-diy-card p { margin-bottom: 18px; font-size: 13px; line-height: 1.45; }
+  .ycs-diy-hub__button {
+    width: 100%;
+    min-height: 44px;
+    padding: 9px 8px;
+    font-size: 13px;
+    text-align: center;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

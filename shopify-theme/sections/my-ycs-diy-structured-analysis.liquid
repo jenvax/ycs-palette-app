@@ -362,6 +362,8 @@
           </div>
         </div>
 
+        <div id="ycs-analysis-mobile-warm" class="ycs-analysis-mobile-undertone-lane" hidden></div>
+
         <div class="ycs-analysis-stage-panel" data-panel="right">
           <div class="ycs-analysis-photo-stage">
             <div class="ycs-analysis-photo-frame" id="ycs-analysis-frame-right">
@@ -459,6 +461,8 @@
             </div>
           </div>
         </div>
+
+        <div id="ycs-analysis-mobile-cool" class="ycs-analysis-mobile-undertone-lane" hidden></div>
 
         <aside class="ycs-analysis-comparison-rail ycs-analysis-comparison-rail--right" hidden>
           <div class="ycs-analysis-comparison-side">
@@ -2531,6 +2535,69 @@
 
   /* Phone layout for DIY analysis. This section is not used by trade tools. */
   @media screen and (max-width: 640px) {
+    .ycs-analysis-mobile-undertone-lane {
+      display: none;
+    }
+
+    .ycs-analysis-app:has(#ycs-analysis-undertone-step:not([hidden]))
+      .ycs-analysis-mobile-undertone-lane:not([hidden]) {
+      display: block;
+      min-width: 0;
+      padding: 14px;
+      border: 1px solid #ece7df;
+      border-radius: 16px;
+      background: #fff;
+    }
+
+    .ycs-analysis-app:has(#ycs-analysis-undertone-step:not([hidden]))
+      #ycs-analysis-undertone-step .ycs-analysis-step-apply-row,
+    .ycs-analysis-app:has(#ycs-analysis-undertone-step:not([hidden]))
+      #ycs-analysis-undertone-sections {
+      display: none;
+    }
+
+    .ycs-analysis-app:has(#ycs-analysis-undertone-step:not([hidden]))
+      #ycs-analysis-save-left,
+    .ycs-analysis-app:has(#ycs-analysis-undertone-step:not([hidden]))
+      #ycs-analysis-save-right {
+      font-size: 0;
+    }
+
+    .ycs-analysis-app:has(#ycs-analysis-undertone-step:not([hidden]))
+      #ycs-analysis-save-left::after {
+      content: 'Save Warm View';
+      font-size: 15px;
+    }
+
+    .ycs-analysis-app:has(#ycs-analysis-undertone-step:not([hidden]))
+      #ycs-analysis-save-right::after {
+      content: 'Save Cool View';
+      font-size: 15px;
+    }
+
+    .ycs-analysis-mobile-undertone-lane .ycs-analysis-undertone-column {
+      gap: 8px;
+    }
+
+    .ycs-analysis-mobile-undertone-lane .ycs-analysis-undertone-label {
+      font-size: 12px;
+    }
+
+    .ycs-analysis-mobile-undertone-lane .ycs-analysis-guided-swatches {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 5px;
+    }
+
+    .ycs-analysis-mobile-undertone-lane .ycs-analysis-guided-swatch {
+      border-radius: 6px;
+    }
+
+    .ycs-analysis-mobile-undertone-lane .ycs-analysis-commit-btn {
+      width: 100%;
+      min-height: 44px;
+      margin-top: 6px;
+    }
+
     .ycs-analysis-app {
       width: 100%;
       margin-bottom: 24px;
