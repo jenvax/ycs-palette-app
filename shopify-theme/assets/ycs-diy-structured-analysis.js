@@ -3254,6 +3254,8 @@ function updateBackLink() {
     undertoneSectionsEl.innerHTML = '';
     const mobileWarmEl = document.getElementById('ycs-analysis-mobile-warm');
     const mobileCoolEl = document.getElementById('ycs-analysis-mobile-cool');
+    const mobileTopEl = document.getElementById('ycs-analysis-mobile-undertone-top');
+    const mobileBackDepthBtn = document.getElementById('ycs-analysis-mobile-back-depth');
     if (mobileWarmEl) {
       mobileWarmEl.innerHTML = '';
       mobileWarmEl.hidden = true;
@@ -3262,6 +3264,7 @@ function updateBackLink() {
       mobileCoolEl.innerHTML = '';
       mobileCoolEl.hidden = true;
     }
+    if (mobileTopEl) mobileTopEl.hidden = true;
 
     const depthKey = selectedDepth || state.selectedDepth;
     if (!depthKey || !grouped[depthKey]) return;
@@ -3288,9 +3291,22 @@ function updateBackLink() {
 
     if (isPhoneLayout() && mobileWarmEl && mobileCoolEl) {
       mobileWarmEl.appendChild(warmColumn);
+      const mobileOliveBtn = document.createElement('button');
+      mobileOliveBtn.type = 'button';
+      mobileOliveBtn.className = 'ycs-analysis-olive-btn';
+      mobileOliveBtn.textContent = 'Choose ' + depthKey + ' Olive';
+      mobileOliveBtn.addEventListener('click', chooseOliveResult);
+      mobileWarmEl.appendChild(mobileOliveBtn);
       mobileCoolEl.appendChild(coolColumn);
       mobileWarmEl.hidden = false;
       mobileCoolEl.hidden = false;
+      if (mobileTopEl) mobileTopEl.hidden = false;
+      if (mobileBackDepthBtn && !mobileBackDepthBtn.dataset.bound) {
+        mobileBackDepthBtn.addEventListener('click', function () {
+          if (resetDepthBtn) resetDepthBtn.click();
+        });
+        mobileBackDepthBtn.dataset.bound = 'true';
+      }
     } else {
       cols.appendChild(warmColumn);
       cols.appendChild(coolColumn);

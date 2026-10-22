@@ -262,6 +262,12 @@
           </div>
         </aside>
 
+        <div id="ycs-analysis-mobile-undertone-top" class="ycs-analysis-mobile-undertone-top" hidden>
+          <button type="button" id="ycs-analysis-mobile-back-depth" class="ycs-analysis-reset-link">
+            &larr; Back to Depth
+          </button>
+        </div>
+
         <div class="ycs-analysis-stage-panel" data-panel="left">
           <div class="ycs-analysis-photo-stage">
             <div class="ycs-analysis-photo-frame" id="ycs-analysis-frame-left">
@@ -2539,6 +2545,19 @@
       display: none;
     }
 
+    .ycs-analysis-mobile-undertone-top {
+      display: none;
+    }
+
+    .ycs-analysis-app:has(#ycs-analysis-undertone-step:not([hidden]))
+      .ycs-analysis-mobile-undertone-top:not([hidden]) {
+      display: block;
+    }
+
+    .ycs-analysis-mobile-undertone-top .ycs-analysis-reset-link {
+      min-height: 44px;
+    }
+
     .ycs-analysis-app:has(#ycs-analysis-undertone-step:not([hidden]))
       .ycs-analysis-mobile-undertone-lane:not([hidden]) {
       display: block;
@@ -2551,6 +2570,12 @@
 
     .ycs-analysis-app:has(#ycs-analysis-undertone-step:not([hidden]))
       #ycs-analysis-undertone-step .ycs-analysis-step-apply-row,
+    .ycs-analysis-app:has(#ycs-analysis-undertone-step:not([hidden]))
+      #ycs-analysis-undertone-step > .ycs-analysis-reset-link,
+    .ycs-analysis-app:has(#ycs-analysis-undertone-step:not([hidden]))
+      #ycs-analysis-undertone-step .ycs-lip-panel,
+    .ycs-analysis-app:has(#ycs-analysis-undertone-step:not([hidden]))
+      #ycs-analysis-choose-olive,
     .ycs-analysis-app:has(#ycs-analysis-undertone-step:not([hidden]))
       #ycs-analysis-undertone-sections {
       display: none;
@@ -2596,6 +2621,12 @@
       width: 100%;
       min-height: 44px;
       margin-top: 6px;
+    }
+
+    .ycs-analysis-mobile-undertone-lane .ycs-analysis-olive-btn {
+      width: 100%;
+      min-height: 44px;
+      margin-top: 10px;
     }
 
     .ycs-analysis-app {
