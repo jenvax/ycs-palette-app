@@ -2834,7 +2834,7 @@ function updateBackLink() {
   renderLips();
 }
 
-  function createChromaSwatch(color) {
+  function createChromaSwatch(color, fixedPanel) {
     const hex = normalizeHex(color.hex || color.hexCode || color.colorHex || '');
     const name = color.name || color.colorName || color.title || 'Color';
 
@@ -2848,7 +2848,9 @@ function updateBackLink() {
     btn.title = name;
 
     btn.addEventListener('click', function () {
-      applyDrapeColor(state.activePanel, hex, name);
+      const targetPanel = isPhoneLayout() && fixedPanel ? fixedPanel : state.activePanel;
+      setActivePanel(targetPanel);
+      applyDrapeColor(targetPanel, hex, name);
     });
 
     return btn;
@@ -2897,7 +2899,7 @@ function updateBackLink() {
     }
   }
 
-  function createChromaColumn(fullLabel, colors, lane, chroma) {
+  function createChromaColumn(fullLabel, colors, lane, chroma, fixedPanel) {
     const col = document.createElement('div');
     col.className = 'ycs-analysis-chroma-column';
 
@@ -2923,7 +2925,7 @@ function updateBackLink() {
     }
 
     colors.forEach(function (color) {
-      grid.appendChild(createChromaSwatch(color));
+      grid.appendChild(createChromaSwatch(color, fixedPanel));
     });
 
     const actionRow = document.createElement('div');
@@ -2980,6 +2982,18 @@ function updateBackLink() {
     }
     setLipVisibilityForCurrentStep();
     chromaSectionsEl.innerHTML = '';
+    const mobileClearEl = document.getElementById('ycs-analysis-mobile-warm');
+    const mobileSoftEl = document.getElementById('ycs-analysis-mobile-cool');
+    const mobileTopEl = document.getElementById('ycs-analysis-mobile-undertone-top');
+    const mobileBackBtn = document.getElementById('ycs-analysis-mobile-back-depth');
+    if (mobileClearEl) {
+      mobileClearEl.innerHTML = '';
+      mobileClearEl.hidden = true;
+    }
+    if (mobileSoftEl) {
+      mobileSoftEl.innerHTML = '';
+      mobileSoftEl.hidden = true;
+    }
     updateLipActionButtons();
 
     if (chromaCopyEl) {
@@ -3008,19 +3022,56 @@ function updateBackLink() {
     const cols = document.createElement('div');
     cols.className = 'ycs-analysis-chroma-columns';
 
-    cols.appendChild(createChromaColumn(
-      getChromaDisplayLabel(lane, 'clear'),
+    const clearColumn = createChromaColumn(
+      isPhoneLayout() ? 'Clear' : getChromaDisplayLabel(lane, 'clear'),
       clearColors,
       lane,
-      'Clear'
-    ));
+      'Clear',
+      'left'
+    );
 
-    cols.appendChild(createChromaColumn(
-      getChromaDisplayLabel(lane, 'soft'),
+    const softColumn = createChromaColumn(
+      isPhoneLayout() ? 'Soft' : getChromaDisplayLabel(lane, 'soft'),
       softColors,
       lane,
-      'Soft'
-    ));
+      'Soft',
+      'right'
+    );
+
+    if (isPhoneLayout() && mobileClearEl && mobileSoftEl) {
+      mobileClearEl.appendChild(clearColumn);
+      mobileSoftEl.appendChild(softColumn);
+      mobileClearEl.hidden = false;
+      mobileSoftEl.hidden = false;
+      if (mobileTopEl) mobileTopEl.hidden = false;
+      if (mobileBackBtn) mobileBackBtn.textContent = '\u2190 Back to Undertones';
+      if (mobileBackBtn && !mobileBackBtn.dataset.bound) {
+        mobileBackBtn.addEventListener('click', function () {
+          if (chromaStepEl && !chromaStepEl.hidden) {
+            if (resetUndertoneBtn) resetUndertoneBtn.click();
+          } else if (resetDepthBtn) {
+            resetDepthBtn.click();
+          }
+        });
+        mobileBackBtn.dataset.bound = 'true';
+      }
+      const firstClear = mobileClearEl.querySelector('.ycs-analysis-guided-swatch');
+      const firstSoft = mobileSoftEl.querySelector('.ycs-analysis-guided-swatch');
+      const clearHexes = Array.from(mobileClearEl.querySelectorAll('.ycs-analysis-guided-swatch'))
+        .map(function (btn) { return normalizeHex(btn.dataset.hex); });
+      const softHexes = Array.from(mobileSoftEl.querySelectorAll('.ycs-analysis-guided-swatch'))
+        .map(function (btn) { return normalizeHex(btn.dataset.hex); });
+      if (firstClear && !clearHexes.includes(normalizeHex(state.leftColorHex))) {
+        applyDrapeColor('left', firstClear.dataset.hex, firstClear.dataset.name);
+      }
+      if (firstSoft && !softHexes.includes(normalizeHex(state.rightColorHex))) {
+        applyDrapeColor('right', firstSoft.dataset.hex, firstSoft.dataset.name);
+      }
+      setActivePanel('left');
+    } else {
+      cols.appendChild(clearColumn);
+      cols.appendChild(softColumn);
+    }
 
     block.appendChild(cols);
     chromaSectionsEl.appendChild(block);
@@ -3301,9 +3352,14 @@ function updateBackLink() {
       mobileWarmEl.hidden = false;
       mobileCoolEl.hidden = false;
       if (mobileTopEl) mobileTopEl.hidden = false;
+      if (mobileBackDepthBtn) mobileBackDepthBtn.textContent = '\u2190 Back to Depth';
       if (mobileBackDepthBtn && !mobileBackDepthBtn.dataset.bound) {
         mobileBackDepthBtn.addEventListener('click', function () {
-          if (resetDepthBtn) resetDepthBtn.click();
+          if (chromaStepEl && !chromaStepEl.hidden) {
+            if (resetUndertoneBtn) resetUndertoneBtn.click();
+          } else if (resetDepthBtn) {
+            resetDepthBtn.click();
+          }
         });
         mobileBackDepthBtn.dataset.bound = 'true';
       }
@@ -3461,6 +3517,8 @@ function updateBackLink() {
 
     depthSectionsEl.innerHTML = '';
 
+    renderMobileDepthComparison();
+
     ['Light', 'Medium', 'Deep'].forEach(function (depth) {
       depthSectionsEl.appendChild(createDepthCard(depth));
     });
@@ -3473,6 +3531,61 @@ function updateBackLink() {
     }
 
     updateLipActionButtons();
+  }
+
+  function renderMobileDepthComparison() {
+    const container = document.getElementById('ycs-analysis-mobile-depth');
+    if (!container) return;
+    container.innerHTML = '';
+    container.hidden = !isPhoneLayout();
+    if (!isPhoneLayout()) return;
+
+    const grayscaleLabel = document.createElement('label');
+    grayscaleLabel.className = 'ycs-analysis-mobile-depth__grayscale';
+    const grayscaleInput = document.createElement('input');
+    grayscaleInput.type = 'checkbox';
+    grayscaleInput.checked = !!state.grayscale;
+    grayscaleInput.addEventListener('change', function () {
+      if (!grayscaleToggle) return;
+      grayscaleToggle.checked = grayscaleInput.checked;
+      grayscaleToggle.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    grayscaleLabel.appendChild(grayscaleInput);
+    grayscaleLabel.appendChild(document.createTextNode('View photos in grayscale'));
+    container.appendChild(grayscaleLabel);
+
+    ['Light', 'Medium', 'Deep'].forEach(function (depth) {
+      const card = document.createElement('section');
+      card.className = 'ycs-analysis-mobile-depth__card';
+
+      const frame = document.createElement('div');
+      frame.className = 'ycs-analysis-mobile-depth__frame';
+
+      const photo = document.createElement('img');
+      photo.className = 'ycs-analysis-depth-photo';
+      photo.src = leftImg.currentSrc || leftImg.src;
+      photo.alt = depth + ' depth comparison';
+      photo.draggable = false;
+
+      const ring = document.createElement('img');
+      ring.className = 'ycs-analysis-depth-stage-drape';
+      ring.src = getDepthDrapeImage(depth);
+      ring.alt = depth + ' depth ring';
+
+      const selectBtn = document.createElement('button');
+      selectBtn.type = 'button';
+      selectBtn.className = 'ycs-analysis-commit-btn ycs-analysis-mobile-depth__select';
+      selectBtn.textContent = 'Select ' + depth;
+      selectBtn.addEventListener('click', function () { selectDepth(depth); });
+
+      frame.appendChild(photo);
+      frame.appendChild(ring);
+      card.appendChild(frame);
+      card.appendChild(selectBtn);
+      container.appendChild(card);
+    });
+
+    updateImageTransform();
   }
 
   async function selectDepth(depth) {

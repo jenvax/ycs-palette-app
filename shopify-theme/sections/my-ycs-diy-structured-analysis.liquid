@@ -262,6 +262,8 @@
           </div>
         </aside>
 
+        <div id="ycs-analysis-mobile-depth" class="ycs-analysis-mobile-depth" hidden></div>
+
         <div id="ycs-analysis-mobile-undertone-top" class="ycs-analysis-mobile-undertone-top" hidden>
           <button type="button" id="ycs-analysis-mobile-back-depth" class="ycs-analysis-reset-link">
             &larr; Back to Depth
@@ -2541,6 +2543,69 @@
 
   /* Phone layout for DIY analysis. This section is not used by trade tools. */
   @media screen and (max-width: 640px) {
+    .ycs-analysis-mobile-depth {
+      display: none;
+    }
+
+    .ycs-analysis-app:has(#ycs-analysis-depth-step:not([hidden]))
+      .ycs-analysis-mobile-depth:not([hidden]) {
+      display: grid;
+      gap: 18px;
+    }
+
+    .ycs-analysis-app:has(#ycs-analysis-depth-step:not([hidden]))
+      .ycs-analysis-stage-panel,
+    .ycs-analysis-app:has(#ycs-analysis-depth-step:not([hidden]))
+      #ycs-analysis-guided-panel {
+      display: none;
+    }
+
+    .ycs-analysis-mobile-depth__grayscale {
+      display: flex;
+      min-height: 44px;
+      padding: 12px 14px;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid #ece7df;
+      border-radius: 12px;
+      background: #fff;
+      font-weight: 700;
+    }
+
+    .ycs-analysis-mobile-depth__card {
+      display: grid;
+      gap: 10px;
+    }
+
+    .ycs-analysis-mobile-depth__frame {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4 / 5;
+      overflow: hidden;
+      border: 1px solid #e5ddd3;
+      border-radius: 16px;
+      background: #f7f3ed;
+    }
+
+    .ycs-analysis-mobile-depth__frame .ycs-analysis-depth-photo {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      transform-origin: center;
+    }
+
+    .ycs-analysis-mobile-depth__frame .ycs-analysis-depth-stage-drape {
+      display: block !important;
+    }
+
+    .ycs-analysis-mobile-depth__select {
+      width: 100%;
+      min-height: 48px;
+    }
+
     .ycs-analysis-mobile-undertone-lane {
       display: none;
     }
@@ -2566,6 +2631,28 @@
       border: 1px solid #ece7df;
       border-radius: 16px;
       background: #fff;
+    }
+
+    .ycs-analysis-app:has(#ycs-analysis-chroma-step:not([hidden]))
+      .ycs-analysis-mobile-undertone-lane:not([hidden]) {
+      display: block;
+      min-width: 0;
+      padding: 14px;
+      border: 1px solid #ece7df;
+      border-radius: 16px;
+      background: #fff;
+    }
+
+    .ycs-analysis-app:has(#ycs-analysis-chroma-step:not([hidden]))
+      .ycs-analysis-mobile-undertone-top:not([hidden]) {
+      display: block;
+    }
+
+    .ycs-analysis-app:has(#ycs-analysis-chroma-step:not([hidden]))
+      #ycs-analysis-chroma-sections,
+    .ycs-analysis-app:has(#ycs-analysis-chroma-step:not([hidden]))
+      #ycs-analysis-chroma-step > .ycs-analysis-reset-link {
+      display: none;
     }
 
     .ycs-analysis-app:has(#ycs-analysis-undertone-step:not([hidden]))
@@ -2597,6 +2684,25 @@
     .ycs-analysis-app:has(#ycs-analysis-undertone-step:not([hidden]))
       #ycs-analysis-save-right::after {
       content: 'Save Cool View';
+      font-size: 15px;
+    }
+
+    .ycs-analysis-app:has(#ycs-analysis-chroma-step:not([hidden]))
+      #ycs-analysis-save-left,
+    .ycs-analysis-app:has(#ycs-analysis-chroma-step:not([hidden]))
+      #ycs-analysis-save-right {
+      font-size: 0;
+    }
+
+    .ycs-analysis-app:has(#ycs-analysis-chroma-step:not([hidden]))
+      #ycs-analysis-save-left::after {
+      content: 'Save Clear View';
+      font-size: 15px;
+    }
+
+    .ycs-analysis-app:has(#ycs-analysis-chroma-step:not([hidden]))
+      #ycs-analysis-save-right::after {
+      content: 'Save Soft View';
       font-size: 15px;
     }
 
