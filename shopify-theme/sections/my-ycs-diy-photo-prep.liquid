@@ -187,6 +187,7 @@
   data-is-catool-growth="{% if is_ycs_member %}true{% else %}false{% endif %}"
   data-is-catool-free="false"
   data-is-diy-catool="{% if is_diy_catool %}true{% else %}false{% endif %}"
+  data-is-diy-member="{% if is_diy_member %}true{% else %}false{% endif %}"
   data-is-simple-analyst="{% if is_simple_analyst %}true{% else %}false{% endif %}"
   data-can-use-photo-prep="{% if can_use_photo_prep %}true{% else %}false{% endif %}"
   data-can-use-client-management="{% if can_use_client_management %}true{% else %}false{% endif %}"
@@ -1443,6 +1444,7 @@ const IS_CATOOL = appEl.dataset.isCatool === 'true';
 const IS_CATOOL_GROWTH = appEl.dataset.isCatoolGrowth === 'true';
 const IS_CATOOL_FREE = appEl.dataset.isCatoolFree === 'true';
 const IS_DIY_CATOOL = appEl.dataset.isDiyCatool === 'true';
+const IS_DIY_MEMBER = appEl.dataset.isDiyMember === 'true';
 const IS_SIMPLE_ANALYST = appEl.dataset.isSimpleAnalyst === 'true';
 const CAN_USE_CLIENT_MANAGEMENT = appEl.dataset.canUseClientManagement === 'true';
 const CAN_USE_PHOTO_PREP = appEl.dataset.canUsePhotoPrep === 'true';
@@ -1808,9 +1810,25 @@ function buildMyClientsUrl() {
   }
 
 async function loadPhotoPrepUsage() {
-  if (uploadBtn) uploadBtn.disabled = false;
-  if (replaceBtn) replaceBtn.disabled = false;
-  if (personalUploadBtn) personalUploadBtn.disabled = false;
+  let canUpload = true;
+  if (IS_DIY_MODE && IS_DIY_MEMBER && !IS_ADMIN) {
+    try {
+      const query = new URLSearchParams({
+        customerId: VIEWER_CUSTOMER_ID,
+        tool: 'photo-prep',
+        mode: 'diy',
+        isDiyMember: 'true'
+      });
+      const response = await fetch(APP_BASE_URL + '/api/get-upload-usage?' + query.toString());
+      const usage = await response.json();
+      canUpload = response.ok && usage.allowed !== false;
+    } catch (error) {
+      console.error('Could not load DIY upload usage', error);
+    }
+  }
+  if (uploadBtn) uploadBtn.disabled = !canUpload;
+  if (replaceBtn) replaceBtn.disabled = !canUpload;
+  if (personalUploadBtn) personalUploadBtn.disabled = !canUpload;
 }
 
   function updateBackLink() {
@@ -3991,7 +4009,9 @@ const saveUrl = (IS_PERSONAL_MODE || IS_DIY_MODE || (IS_MEMBER_PHOTO_MODE && !is
       customerId: IS_MEMBER_PHOTO_MODE ? state.customerId : VIEWER_CUSTOMER_ID,
       photoId: state.selectedPersonalPhotoId,
       photoSource: state.selectedPhotoSource,
-      saveType: 'original'
+      saveType: 'original',
+      mode: IS_DIY_MODE ? 'diy' : MODE,
+      isDiyMember: IS_DIY_MEMBER
     }
   : {
       imageBase64: cleanedForSave,

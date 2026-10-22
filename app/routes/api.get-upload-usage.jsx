@@ -1,3 +1,5 @@
+import { getDiyUploadUsage } from "../services/diy-upload-usage.server.js";
+
 function getCorsHeaders(origin) {
   const allowedOrigins = [
     "https://yourcolorstyle.com",
@@ -34,6 +36,14 @@ export async function loader({ request }) {
 
   const url = new URL(request.url);
   const tool = cleanString(url.searchParams.get("tool")) || "photo-draping";
+  const customerId = cleanString(url.searchParams.get("customerId"));
+  const mode = cleanString(url.searchParams.get("mode"));
+  const isDiyMember = String(url.searchParams.get("isDiyMember") || "").toLowerCase() === "true";
+
+  if (tool === "photo-prep" && mode === "diy" && isDiyMember && customerId) {
+    const usage = await getDiyUploadUsage(customerId);
+    return Response.json(usage, { status: 200, headers: corsHeaders });
+  }
 
   return Response.json(
     {

@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { evaluatePhotoQuality } from "../services/photo-quality.server.js";
 import { savePhotoQualityEvaluation } from "../services/photo-quality-feedback.server.js";
+import { getDiyUploadUsage, incrementDiyUploadUsage } from "../services/diy-upload-usage.server.js";
 
 function getCorsHeaders(origin) {
   const allowedOrigins = [
@@ -131,6 +132,8 @@ export async function action({ request }) {
       photoTransform,
       label,
       isAdmin,
+      mode: requestMode,
+      isDiyMember,
       qualityImageBase64
     } = await request.json();
 
@@ -140,12 +143,27 @@ export async function action({ request }) {
     const mode = String(saveType || "original").trim().toLowerCase();
     const isAdjusted = mode === "adjusted";
     const shouldEvaluatePhotoQuality = toBool(isAdmin);
+    const shouldTrackDiyUpload =
+      String(requestMode || "").trim().toLowerCase() === "diy" &&
+      toBool(isDiyMember) &&
+      !toBool(isAdmin) &&
+      !isAdjusted;
 
     if (!imageBase64 || !safeCustomerId) {
       return Response.json(
         { error: "Missing imageBase64 or customerId" },
         { status: 400, headers: corsHeaders }
       );
+    }
+
+    if (shouldTrackDiyUpload) {
+      const usage = await getDiyUploadUsage(safeCustomerId);
+      if (!usage.allowed) {
+        return Response.json(
+          { error: "You have used all 3 DIY photo uploads.", uploadUsage: usage },
+          { status: 429, headers: corsHeaders }
+        );
+      }
     }
 
     const airtableBase = process.env.AIRTABLE_BASE_ID;
@@ -334,6 +352,10 @@ export async function action({ request }) {
       imageUrl
     });
 
+    const uploadUsage = shouldTrackDiyUpload
+      ? await incrementDiyUploadUsage(safeCustomerId)
+      : null;
+
     return Response.json(
       {
         success: true,
@@ -341,7 +363,8 @@ export async function action({ request }) {
         photoSource: "PersonalStudioPhotos",
         imageUrl,
         saveType: mode,
-        photoQuality
+        photoQuality,
+        uploadUsage
       },
       { status: 200, headers: corsHeaders }
     );
