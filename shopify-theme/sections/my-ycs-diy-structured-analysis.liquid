@@ -2528,6 +2528,156 @@
 
 
   }
+
+  /* Phone layout for DIY analysis. This section is not used by trade tools. */
+  @media screen and (max-width: 640px) {
+    .ycs-analysis-app {
+      width: 100%;
+      margin-bottom: 24px;
+      padding: 0 10px 24px;
+      overflow-x: clip;
+    }
+
+    .ycs-analysis-shell {
+      min-width: 0;
+    }
+
+    .ycs-analysis-header {
+      min-width: 0;
+      row-gap: 8px;
+    }
+
+    .ycs-analysis-title {
+      font-size: 22px;
+      line-height: 1.15;
+    }
+
+    .ycs-analysis-subtitle {
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .ycs-analysis-toolbar,
+    .ycs-analysis-guided-panel,
+    .ycs-analysis-standard-panel,
+    .ycs-analysis-stage-panel,
+    .ycs-analysis-comparison-rail {
+      min-width: 0;
+      border-radius: 12px;
+    }
+
+    .ycs-analysis-main-grid,
+    .ycs-analysis-app.is-comparison-mode .ycs-analysis-main-grid {
+      height: auto;
+      min-height: 0;
+      overflow: visible;
+    }
+
+    .ycs-analysis-photo-frame {
+      width: 100%;
+      aspect-ratio: 4 / 5;
+    }
+
+    .ycs-analysis-panel-footer,
+    .ycs-analysis-save-controls {
+      width: 100%;
+    }
+
+    .ycs-analysis-save-controls {
+      align-items: stretch;
+    }
+
+    .ycs-analysis-save-btn,
+    .ycs-analysis-toolbar-link,
+    .ycs-analysis-olive-btn,
+    .ycs-analysis-commit-btn,
+    .ycs-analysis-reset-link,
+    .ycs-lip-actions button,
+    .ycs-lip-actions-inline button {
+      min-height: 44px;
+    }
+
+    .ycs-analysis-mode-actions {
+      display: grid;
+      width: 100%;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .ycs-analysis-mode-btn {
+      min-width: 0;
+      min-height: 46px;
+      padding: 0 10px;
+      white-space: normal;
+      line-height: 1.25;
+    }
+
+    .ycs-analysis-step-apply-row {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .ycs-analysis-panel-toggle {
+      display: grid;
+      width: 100%;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .ycs-analysis-toggle-btn {
+      min-height: 44px;
+    }
+
+    .ycs-analysis-depth-sections {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .ycs-analysis-depth-swatch {
+      border-radius: 12px;
+    }
+
+    .ycs-analysis-depth-meta .ycs-analysis-commit-btn {
+      width: 100%;
+      padding-inline: 6px;
+      white-space: normal;
+    }
+
+    .ycs-analysis-undertone-columns,
+    .ycs-analysis-chroma-columns,
+    .ycs-analysis-comparison-swatches {
+      gap: 8px;
+    }
+
+    .ycs-analysis-comparison-swatches {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .ycs-analysis-swatch {
+      width: 44px;
+      height: 44px;
+    }
+
+    .ycs-analysis-filter-row {
+      align-items: stretch;
+    }
+
+    .ycs-analysis-filter,
+    .ycs-analysis-comparison-filter {
+      min-height: 40px;
+    }
+
+    .ycs-lip-actions,
+    .ycs-lip-actions-inline {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .ycs-lip-actions button,
+    .ycs-lip-actions-inline button {
+      min-width: 0;
+      padding-inline: 8px;
+      white-space: normal;
+    }
+  }
 </style>
 
 {{ 'ycs-diy-structured-analysis.js' | asset_url | script_tag }}

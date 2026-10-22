@@ -1258,6 +1258,102 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
     }
   }
 
+  /* Phone layout for the standalone DIY workflow only. */
+  @media screen and (max-width: 640px) {
+    .ycs-photo-prep-app {
+      width: 100%;
+      padding: 0 12px 32px;
+      overflow-x: clip;
+    }
+
+    .ycs-photo-prep-header {
+      margin-bottom: 12px;
+    }
+
+    .ycs-photo-prep-title {
+      font-size: 26px;
+    }
+
+    .ycs-photo-prep-subtitle {
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .ycs-photo-prep-card,
+    .ycs-photo-prep-panel,
+    .ycs-photo-prep-customer,
+    .ycs-photo-prep-loading-view {
+      border-radius: 14px;
+      padding: 12px;
+    }
+
+    .ycs-photo-prep-compare {
+      gap: 20px;
+    }
+
+    .ycs-photo-prep-stage,
+    .ycs-photo-prep-skeleton-stage {
+      aspect-ratio: 4 / 5;
+      border-radius: 14px;
+    }
+
+    .ycs-photo-prep-preview-wrap,
+    .ycs-photo-prep-loading {
+      inset: 8px;
+      border-radius: 12px;
+    }
+
+    .ycs-photo-prep-preview-img {
+      max-width: 86%;
+      max-height: 86%;
+    }
+
+    .ycs-photo-prep-photo-actions,
+    .ycs-photo-prep-actions,
+    .ycs-photo-prep-analysis-actions,
+    .ycs-photo-prep-personal-actions {
+      width: 100%;
+    }
+
+    .ycs-photo-prep-photo-actions .ycs-photo-prep-btn,
+    .ycs-photo-prep-actions > .ycs-photo-prep-btn,
+    .ycs-photo-prep-analysis-actions .ycs-photo-prep-btn,
+    .ycs-photo-prep-personal-actions .ycs-photo-prep-btn,
+    .ycs-photo-prep-personal-head > .ycs-photo-prep-btn {
+      width: 100%;
+      min-height: 48px;
+    }
+
+    .ycs-photo-prep-personal-head {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .ycs-photo-prep-personal-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .ycs-photo-prep-control {
+      margin-bottom: 14px;
+    }
+
+    .ycs-photo-prep-control input[type="range"] {
+      min-height: 32px;
+    }
+
+    .ycs-photo-prep-edit-panel {
+      align-items: flex-start;
+      padding: 12px;
+      overflow-y: auto;
+    }
+
+    .ycs-photo-prep-edit-card {
+      width: 100%;
+      margin: auto 0;
+      padding: 16px;
+    }
+  }
+
   .ycs-photo-prep-personal-head {
   display: flex;
   align-items: start;
