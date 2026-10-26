@@ -865,7 +865,7 @@
       selectedDrapeImageUrl: base.selectedDrapeImageUrl,
       coverPhotoScale: Math.min(Math.max(Number(incoming.coverPhotoScale) || base.coverPhotoScale, 0.7), 2.4),
       coverPhotoX: Math.min(Math.max(Number(incoming.coverPhotoX) || base.coverPhotoX, -120), 120),
-      coverPhotoY: Math.min(Math.max(Number(incoming.coverPhotoY) || base.coverPhotoY, -120), 120),
+      coverPhotoY: Math.min(Math.max(Number(incoming.coverPhotoY) || base.coverPhotoY, -360), 360),
       customPages: Array.isArray(incoming.customPages)
         ? incoming.customPages.map((page) => ({
           id: String(page.id || makeCustomReportPageId()),
@@ -985,7 +985,7 @@
   function renderCoverArt(draft, extraClass, options = {}) {
     const scale = Math.min(Math.max(Number(draft.coverPhotoScale) || 1, 0.7), 2.4);
     const x = Math.min(Math.max(Number(draft.coverPhotoX) || 0, -120), 120);
-    const y = Math.min(Math.max(Number(draft.coverPhotoY) || 0, -120), 120);
+    const y = Math.min(Math.max(Number(draft.coverPhotoY) || 0, -360), 360);
     const isDraggable = options.interactive && options.draggable;
     const frameAttrs = isDraggable
       ? ' data-ycs-report-cover-photo-drag title="Drag to reposition cover photo"'
@@ -1825,7 +1825,7 @@
                 </div>
                 <label>Zoom<input name="coverPhotoScale" type="range" min="0.7" max="2.4" step="0.05" value="${escapeHtml(draft.coverPhotoScale)}"></label>
                 <label>Move left / right<input name="coverPhotoX" type="range" min="-120" max="120" step="2" value="${escapeHtml(draft.coverPhotoX)}"></label>
-                <label>Move up / down<input name="coverPhotoY" type="range" min="-120" max="120" step="2" value="${escapeHtml(draft.coverPhotoY)}"></label>
+                <label>Move up / down<input name="coverPhotoY" type="range" min="-360" max="360" step="2" value="${escapeHtml(draft.coverPhotoY)}"></label>
               </div>
               <label>Report customer name<input name="customerName" value="${escapeHtml(draft.customerName)}"></label>
               <p class="ycs-report-form__hint">This changes the name on the report cover only. It does not change the client name in My Clients.</p>
@@ -1964,7 +1964,7 @@
     draft.selectedDrapeImageUrl = getAdjustedPhotoUrl(client);
     draft.coverPhotoScale = Math.min(Math.max(Number(formString("coverPhotoScale", draft.coverPhotoScale)) || 1, 0.7), 2.4);
     draft.coverPhotoX = Math.min(Math.max(Number(formString("coverPhotoX", draft.coverPhotoX)) || 0, -120), 120);
-    draft.coverPhotoY = Math.min(Math.max(Number(formString("coverPhotoY", draft.coverPhotoY)) || 0, -120), 120);
+    draft.coverPhotoY = Math.min(Math.max(Number(formString("coverPhotoY", draft.coverPhotoY)) || 0, -360), 360);
     draft.colorWheelImageUrl = formString("colorWheelImageUrl", draft.colorWheelImageUrl);
     draft.depthChoice = choiceKey(formString("depthChoice", draft.depthChoice));
     draft.depthLightImageUrl = formString("depthLightImageUrl", draft.depthLightImageUrl);
@@ -2385,7 +2385,7 @@
     if (!form || !activeReportDraft) return;
 
     const safeX = clampReportNumber(x, -120, 120, 0);
-    const safeY = clampReportNumber(y, -120, 120, 0);
+    const safeY = clampReportNumber(y, -360, 360, 0);
 
     if (form.elements.coverPhotoX) {
       form.elements.coverPhotoX.value = String(safeX);
@@ -2413,7 +2413,7 @@
       startClientX: event.clientX,
       startClientY: event.clientY,
       startX: clampReportNumber(form.elements.coverPhotoX?.value, -120, 120, 0),
-      startY: clampReportNumber(form.elements.coverPhotoY?.value, -120, 120, 0)
+      startY: clampReportNumber(form.elements.coverPhotoY?.value, -360, 360, 0)
     };
 
     frame.classList.add("is-dragging");
