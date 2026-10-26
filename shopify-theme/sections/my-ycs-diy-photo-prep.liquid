@@ -314,6 +314,7 @@ data-is-sample-user="{% if is_sample_user %}true{% else %}false{% endif %}"
       <p id="ycs-prep-personal-library-help" class="ycs-photo-prep-help" style="margin-top: 0;">
   Upload a photo to begin.
 </p>
+      <p id="ycs-prep-personal-upload-usage" class="ycs-photo-prep-help" style="margin: 4px 0 0;" hidden></p>
       </div>
     {% endunless %}
 
@@ -1590,6 +1591,7 @@ const personalLibraryHelpEl = document.getElementById('ycs-prep-personal-library
 const personalLibraryGridEl = document.getElementById('ycs-prep-personal-library-grid');
 const personalLibraryEmptyEl = document.getElementById('ycs-prep-personal-library-empty');
 const personalUploadBtn = document.getElementById('ycs-prep-personal-upload-btn');
+const personalUploadUsageEl = document.getElementById('ycs-prep-personal-upload-usage');
 const photoPrepWorkspace = document.getElementById('ycs-photo-prep-workspace');
 
 const photoPrepLoadingView = document.getElementById('ycs-photo-prep-loading-view');
@@ -1822,6 +1824,13 @@ async function loadPhotoPrepUsage() {
       const response = await fetch(APP_BASE_URL + '/api/get-upload-usage?' + query.toString());
       const usage = await response.json();
       canUpload = response.ok && usage.allowed !== false;
+      if (personalUploadUsageEl && response.ok) {
+        const remaining = Math.max(0, Number(usage.remaining) || 0);
+        personalUploadUsageEl.textContent = remaining === 1
+          ? '1 of your 3 photo uploads remains.'
+          : remaining + ' of your 3 photo uploads remain.';
+        personalUploadUsageEl.hidden = false;
+      }
     } catch (error) {
       console.error('Could not load DIY upload usage', error);
     }
@@ -2363,19 +2372,26 @@ function renderPersonalStudioPhotos(photos) {
   personalLibraryEmptyEl.hidden = true;
 
   if (!Array.isArray(photos) || !photos.length) {
+    if (IS_DIY_MODE && personalUploadBtn) personalUploadBtn.textContent = 'Upload Photo';
     if (personalLibraryHelpEl) {
-      personalLibraryHelpEl.textContent = IS_MY_PHOTOS_PAGE
-        ? 'Upload your first photo to begin.'
-        : 'Upload a photo to begin.';
+      personalLibraryHelpEl.textContent = IS_DIY_MODE
+        ? 'Upload up to 3 photos and choose which one to use for your DIY color analysis.'
+        : IS_MY_PHOTOS_PAGE
+          ? 'Upload your first photo to begin.'
+          : 'Upload a photo to begin.';
     }
     personalLibraryEmptyEl.hidden = false;
     return;
   }
 
+  if (IS_DIY_MODE && personalUploadBtn) personalUploadBtn.textContent = 'Upload Another Photo';
+
   if (personalLibraryHelpEl) {
-    personalLibraryHelpEl.textContent = IS_MY_PHOTOS_PAGE
-      ? 'Select a photo to adjust, open it in Draping Studio, or upload a new one.'
-      : 'Choose a photo for Draping Studio or upload a new one.';
+    personalLibraryHelpEl.textContent = IS_DIY_MODE
+      ? 'Choose the photo to use for your DIY color analysis, or upload another.'
+      : IS_MY_PHOTOS_PAGE
+        ? 'Select a photo to adjust, open it in Draping Studio, or upload a new one.'
+        : 'Choose a photo for Draping Studio or upload a new one.';
   }
 
 personalLibraryEmptyEl.hidden = true;
@@ -2383,6 +2399,7 @@ personalLibraryEmptyEl.hidden = true;
   personalLibraryGridEl.innerHTML = photos.map(function (photo) {
     const thumb = photo.activePhotoUrl || photo.adjustedPhotoUrl || photo.originalPhotoUrl || '';
     const photoId = String(photo.photoId || '').trim();
+    const isSelected = photoId === String(state.selectedPersonalPhotoId || '').trim();
     const updatedAt = photo.updatedAt
       ? new Date(photo.updatedAt).toLocaleDateString()
       : '';
@@ -2401,15 +2418,25 @@ personalLibraryEmptyEl.hidden = true;
       drapeQuery.set('trial', 'sample');
     }
 
+    const secondaryAction = IS_DIY_MODE
+      ? ''
+      : `<a
+  class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary"
+  href="/pages/draping-studio?${drapeQuery.toString()}"
+>
+  Open Draping Studio
+</a>`;
+
     return `
       <div
-        class="ycs-photo-prep-personal-card ycs-prep-open-personal-photo-btn"
+        class="ycs-photo-prep-personal-card ycs-prep-open-personal-photo-btn${isSelected ? ' is-selected' : ''}"
         data-photo-id="${escapeHtml(photoId)}"
         data-photo-url="${escapeHtml(thumb)}"
         data-original-url="${escapeHtml(photo.originalPhotoUrl || '')}"
         data-adjusted-url="${escapeHtml(photo.adjustedPhotoUrl || '')}"
         role="button"
         tabindex="0"
+        aria-pressed="${isSelected ? 'true' : 'false'}"
       >
         <div class="ycs-photo-prep-personal-thumb">
           ${thumb ? `<img src="${escapeHtml(thumb)}" alt="Saved photo" />` : `<div class="ycs-photo-prep-empty"><p>No image</p></div>`}
@@ -2422,14 +2449,9 @@ personalLibraryEmptyEl.hidden = true;
 
           <div class="ycs-photo-prep-personal-actions">
             <button type="button" class="ycs-photo-prep-btn ycs-prep-select-personal-photo-btn">
-              Adjust Photo
+              ${IS_DIY_MODE ? 'Use This Photo' : 'Adjust Photo'}
             </button>
-            <a
-  class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary"
-  href="/pages/draping-studio?${drapeQuery.toString()}"
->
-  Open Draping Studio
-</a>
+            ${secondaryAction}
             <button
               type="button"
               class="ycs-photo-prep-btn ycs-photo-prep-btn--danger ycs-prep-delete-personal-photo-btn"
@@ -2617,7 +2639,12 @@ function syncDiyPhotoPrepVisibility() {
 
   if (createClientPanel) createClientPanel.hidden = true;
   if (customerMetaEl) customerMetaEl.hidden = true;
-  if (personalLibraryEl) personalLibraryEl.hidden = true;
+  if (personalLibraryEl) personalLibraryEl.hidden = false;
+  if (personalUploadBtn) personalUploadBtn.textContent = 'Upload Another Photo';
+  const personalLibraryTitle = personalLibraryEl
+    ? personalLibraryEl.querySelector('.ycs-photo-prep-panel-title')
+    : null;
+  if (personalLibraryTitle) personalLibraryTitle.textContent = 'My DIY Photos';
   if (editClientBtn) editClientBtn.hidden = true;
   if (addMemberPhotoBtn) addMemberPhotoBtn.hidden = true;
 
@@ -4073,7 +4100,7 @@ state.justUploadedNewPhoto = true;
       renderPhotoQualityResult(saveData.photoQuality);
 loadPhotoPrepUsage();
 
-if (IS_PERSONAL_MODE) {
+if (IS_PERSONAL_MODE || IS_DIY_MODE) {
   showLoadingView('Loading your photos...');
 
   loadPersonalStudioPhotos()
@@ -4235,7 +4262,7 @@ if (IS_PERSONAL_MODE) {
     showWorkingPhoto(saveData.imageUrl);
     resetControls();
 
-    if (IS_PERSONAL_MODE) {
+    if (IS_PERSONAL_MODE || IS_DIY_MODE) {
       loadPersonalStudioPhotos().then(function (photos) {
         renderPersonalStudioPhotos(photos);
       });
@@ -4726,13 +4753,11 @@ if (IS_PERSONAL_MODE || IS_DIY_MODE) {
   state.customerId = VIEWER_CUSTOMER_ID;
   state.clientRecordId = null;
 
-  showLoadingView(IS_DIY_MODE ? 'Loading your photo...' : 'Loading your photos...');
+  showLoadingView('Loading your photos...');
 
   loadPersonalStudioPhotos()
     .then(function (photos) {
-      if (IS_PERSONAL_MODE) {
-        renderPersonalStudioPhotos(photos);
-      }
+      renderPersonalStudioPhotos(photos);
 
       if (photos.length) {
         const selectedPhoto = initialPhotoId
