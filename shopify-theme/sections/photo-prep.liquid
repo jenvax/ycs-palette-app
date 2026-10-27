@@ -2050,7 +2050,7 @@ async function loadSelectedPersonalStudioPhoto(photoId) {
   }
 }
 async function loadPersonalStudioPhotos() {
-  const isClientLibrary = IS_TRADE_MODE && !IS_SIMPLE_ANALYST && !!state.clientRecordId;
+  const isClientLibrary = IS_TRADE_MODE && CAN_USE_CLIENT_MANAGEMENT && !!state.clientRecordId;
   if (!(IS_PERSONAL_MODE || IS_DIY_MODE || isClientLibrary) || !APP_BASE_URL) return [];
 
   try {
@@ -2082,7 +2082,7 @@ async function openPersonalPhotoInPrep(buttonEl) {
   const adjustedUrl = String(buttonEl.dataset.adjustedUrl || '').trim();
   const isLegacyPhoto = buttonEl.dataset.legacyPhoto === 'true';
 
-  const isClientLibrary = IS_TRADE_MODE && !IS_SIMPLE_ANALYST && !!state.clientRecordId;
+  const isClientLibrary = IS_TRADE_MODE && CAN_USE_CLIENT_MANAGEMENT && !!state.clientRecordId;
 
   if (isClientLibrary && !isLegacyPhoto) {
     const response = await fetch(APP_BASE_URL + '/api/set-active-photo', {
@@ -2213,7 +2213,7 @@ async function archivePersonalStudioPhoto(photoId) {
 
 function renderPersonalStudioPhotos(photos) {
   if (!personalLibraryGridEl || !personalLibraryEmptyEl) return;
-  const isClientLibrary = IS_TRADE_MODE && !IS_SIMPLE_ANALYST && !!state.clientRecordId;
+  const isClientLibrary = IS_TRADE_MODE && CAN_USE_CLIENT_MANAGEMENT && !!state.clientRecordId;
 
   const libraryTitle = personalLibraryEl
     ? personalLibraryEl.querySelector('.ycs-photo-prep-panel-title')
@@ -3933,7 +3933,7 @@ state.justUploadedNewPhoto = true;
       renderPhotoQualityResult(saveData.photoQuality);
 loadPhotoPrepUsage();
 
-if (IS_PERSONAL_MODE || (IS_TRADE_MODE && !IS_SIMPLE_ANALYST && state.clientRecordId)) {
+if (IS_PERSONAL_MODE || (IS_TRADE_MODE && CAN_USE_CLIENT_MANAGEMENT && state.clientRecordId)) {
   showLoadingView('Loading your photos...');
 
   loadPersonalStudioPhotos()
@@ -4095,7 +4095,7 @@ if (IS_PERSONAL_MODE || (IS_TRADE_MODE && !IS_SIMPLE_ANALYST && state.clientReco
     showWorkingPhoto(saveData.imageUrl);
     resetControls();
 
-    if (IS_PERSONAL_MODE || (IS_TRADE_MODE && !IS_SIMPLE_ANALYST && state.clientRecordId)) {
+    if (IS_PERSONAL_MODE || (IS_TRADE_MODE && CAN_USE_CLIENT_MANAGEMENT && state.clientRecordId)) {
       loadPersonalStudioPhotos().then(function (photos) {
         renderPersonalStudioPhotos(photos);
       });
@@ -4305,7 +4305,7 @@ if (uploadBtn) {
 
 if (personalUploadBtn) {
   personalUploadBtn.addEventListener('click', function () {
-    const isClientLibrary = IS_TRADE_MODE && !IS_SIMPLE_ANALYST && !!state.clientRecordId;
+    const isClientLibrary = IS_TRADE_MODE && CAN_USE_CLIENT_MANAGEMENT && !!state.clientRecordId;
     if (!isClientLibrary) {
       state.customerId = VIEWER_CUSTOMER_ID;
       state.clientRecordId = null;
