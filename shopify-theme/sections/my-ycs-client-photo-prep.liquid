@@ -2546,8 +2546,8 @@ function openFreeTrialClient(clientId) {
     state.email = saveData.email || state.email || null;
   }
 
-  function syncTradePhotoPrepVisibility() {
-  if (!IS_TRADE) return;
+function syncTradePhotoPrepVisibility() {
+  if (!IS_TRADE_MODE || !CAN_USE_CLIENT_MANAGEMENT) return;
 
   const hasClient = !!state.clientRecordId;
 
@@ -4647,7 +4647,7 @@ if (addMemberPhotoBtn) {
       return;
     }
 
-    if (IS_SIMPLE_ANALYST) {
+    if (IS_SIMPLE_ANALYST && !state.clientRecordId) {
       resetPreviewOnly();
       resetControls();
 
