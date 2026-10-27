@@ -103,11 +103,20 @@ export async function action({ request }) {
       );
     }
 
-    const lookup = isConsultantClient
+    const lookup = isConsultantClient && safePhotoId
       ? {
-          tableName: "ConsultantClients",
-          formula: `{ClientRecordId}="${recordId}"`
+          tableName: "PersonalStudioPhotos",
+          formula: safePhotoId.startsWith("rec")
+            ? `RECORD_ID()="${safePhotoId}"`
+            : `AND({PhotoId}="${safePhotoId}", {CustomerId}="${recordId}")`
         }
+      : isConsultantClient
+        ? {
+            tableName: "ConsultantClients",
+            formula: safeClientRecordId.startsWith("rec")
+              ? `RECORD_ID()="${safeClientRecordId}"`
+              : `{ClientRecordId}="${recordId}"`
+          }
       : getCustomerPhotoLookup({
           photoId: safePhotoId,
           photoSource: safePhotoSource,
@@ -147,6 +156,8 @@ export async function action({ request }) {
       nextUrl = fields.OriginalPhotoUrl || null;
     } else if (safePhotoType === "adjusted") {
       nextUrl = fields.AdjustedPhotoUrl || null;
+    } else if (safePhotoType === "active") {
+      nextUrl = fields.ActivePhotoUrl || fields.AdjustedPhotoUrl || fields.OriginalPhotoUrl || null;
     } else {
       return Response.json(
         { error: "Invalid photoType" },
@@ -162,14 +173,39 @@ export async function action({ request }) {
     }
 
     const payload = {
-  fields: {
-    ActivePhotoUrl: nextUrl,
-    PhotoUrl: nextUrl
-  }
-};
+      fields: {
+        ActivePhotoUrl: nextUrl,
+        PhotoUrl: nextUrl,
+        OriginalPhotoUrl: fields.OriginalPhotoUrl || nextUrl,
+        AdjustedPhotoUrl: fields.AdjustedPhotoUrl || null
+      }
+    };
+
+    let patchTableName = lookup.tableName;
+    let patchRecordId = existing.id;
+
+    if (isConsultantClient && safePhotoId) {
+      const clientFormula = safeClientRecordId.startsWith("rec")
+        ? `RECORD_ID()="${safeClientRecordId}"`
+        : `{ClientRecordId}="${safeClientRecordId}"`;
+      const clientResponse = await fetch(
+        `https://api.airtable.com/v0/${airtableBase}/ConsultantClients?filterByFormula=${encodeURIComponent(clientFormula)}`,
+        { headers: { Authorization: `Bearer ${airtableToken}` } }
+      );
+      const clientData = await clientResponse.json();
+      const clientRecord = clientData.records?.[0];
+      if (!clientResponse.ok || !clientRecord) {
+        return Response.json(
+          { error: "Consultant client record not found", details: clientData },
+          { status: 404, headers: corsHeaders }
+        );
+      }
+      patchTableName = "ConsultantClients";
+      patchRecordId = clientRecord.id;
+    }
 
     const patchRes = await fetch(
-      `https://api.airtable.com/v0/${airtableBase}/${lookup.tableName}/${existing.id}`,
+      `https://api.airtable.com/v0/${airtableBase}/${patchTableName}/${patchRecordId}`,
       {
         method: "PATCH",
         headers: {
@@ -198,7 +234,7 @@ export async function action({ request }) {
         customerId: safeCustomerId,
         clientRecordId: safeClientRecordId,
         photoId: safePhotoId,
-        photoSource: lookup.tableName,
+        photoSource: safePhotoId && isConsultantClient ? "PersonalStudioPhotos" : lookup.tableName,
         recordType: isConsultantClient ? "consultant_client" : "shopify_customer"
       },
       { status: 200, headers: corsHeaders }

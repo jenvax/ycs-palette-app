@@ -60,6 +60,7 @@
   let reportPageRailDrag = null;
   let activeSavedDrapedImages = [];
   let activeSavedDrapedImagesClientId = "";
+  let activeClientSourcePhotos = [];
   let coverPhotoDrag = null;
   let memberReportBranding = { businessName: "", logoUrl: "" };
   let memberReportBrandingPromise = null;
@@ -1039,6 +1040,7 @@
 
   function renderClientPhotoManager(client, images, options = {}) {
     const imageList = Array.isArray(images) ? sortSavedImagesForPicker(images, "") : [];
+    const sourcePhotos = Array.isArray(options.sourcePhotos) ? options.sourcePhotos : [];
     const statusHtml = options.loading
       ? `<p class="ycs-client-photo-manager__status">Loading saved draped photos...</p>`
       : options.error
@@ -1047,6 +1049,35 @@
 
     return `
       <section class="ycs-client-photo-manager__panel" data-ycs-client-photo-manager-panel data-client-record-id="${escapeHtml(client.clientRecordId)}">
+        <div class="ycs-client-photo-manager__head">
+          <div>
+            <h3>Client Photos</h3>
+            <p>Choose the active photo used in Photo Prep and the professional tools.</p>
+          </div>
+        </div>
+        ${sourcePhotos.length ? `
+          <div class="ycs-client-photo-manager__grid">
+            ${sourcePhotos.map((photo) => {
+              const photoUrl = photo.activePhotoUrl || photo.adjustedPhotoUrl || photo.originalPhotoUrl || "";
+              return `
+                <article class="ycs-client-photo-manager__card${photo.isActive ? " is-active" : ""}">
+                  <img src="${escapeHtml(photoUrl)}" alt="Client source photo">
+                  <div class="ycs-client-photo-manager__body">
+                    <strong>${photo.isActive ? "Active photo" : "Client photo"}</strong>
+                    <small>${photo.updatedAt ? `Updated ${escapeHtml(formatDate(photo.updatedAt))}` : "Saved photo"}</small>
+                    <button
+                      class="ycs-clients__button${photo.isActive ? " ycs-clients__button--secondary" : ""}"
+                      type="button"
+                      data-ycs-set-active-client-photo="${escapeHtml(photo.photoId)}"
+                      ${photo.isActive || photo.isLegacy ? "disabled" : ""}
+                    >${photo.isActive ? "Active Photo" : "Set as Active Photo"}</button>
+                  </div>
+                </article>
+              `;
+            }).join("")}
+          </div>
+        ` : `<p class="ycs-client-photo-manager__status">No client source photos have been saved yet.</p>`}
+        <hr>
         <div class="ycs-client-photo-manager__head">
           <div>
             <h3>Saved Draped Photos</h3>
@@ -2236,6 +2267,34 @@
     }
 
     return Array.isArray(data.images) ? data.images.filter((image) => image.imageUrl) : [];
+  }
+
+  async function fetchClientSourcePhotos(client) {
+    if (!apiBase || !client?.clientRecordId) return [];
+    const response = await fetch(`${apiBase}/api/get-consultant-client-photos?clientRecordId=${encodeURIComponent(client.clientRecordId)}`);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Unable to load client photos");
+    return Array.isArray(data.photos) ? data.photos : [];
+  }
+
+  async function setActiveClientSourcePhoto(client, photoId) {
+    const response = await fetch(`${apiBase}/api/set-active-photo`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        clientRecordId: client.clientRecordId,
+        photoId,
+        photoSource: "PersonalStudioPhotos",
+        photoType: "active"
+      })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Unable to update the active photo");
+
+    clients = clients.map((entry) => entry.clientRecordId === client.clientRecordId
+      ? { ...entry, activePhotoUrl: data.activePhotoUrl, primaryPhotoUrl: data.activePhotoUrl }
+      : entry);
+    return data;
   }
 
   async function ensureSavedDrapedImagesLoaded(client) {
@@ -3533,9 +3592,12 @@
     scrollClientPhotoManagerIntoView(manager);
 
     try {
-      activeSavedDrapedImages = await fetchSavedDrapedImages(client);
+      [activeClientSourcePhotos, activeSavedDrapedImages] = await Promise.all([
+        fetchClientSourcePhotos(client),
+        fetchSavedDrapedImages(client)
+      ]);
       activeSavedDrapedImagesClientId = client.clientRecordId;
-      manager.innerHTML = renderClientPhotoManager(client, activeSavedDrapedImages);
+      manager.innerHTML = renderClientPhotoManager(client, activeSavedDrapedImages, { sourcePhotos: activeClientSourcePhotos });
       scrollClientPhotoManagerIntoView(manager);
     } catch (error) {
       manager.innerHTML = renderClientPhotoManager(client, [], {
@@ -3558,18 +3620,19 @@
 
     const manager = detailEl.querySelector("[data-ycs-client-photo-manager]");
     if (manager) {
-      manager.innerHTML = renderClientPhotoManager(client, activeSavedDrapedImages, { loading: true });
+      manager.innerHTML = renderClientPhotoManager(client, activeSavedDrapedImages, { loading: true, sourcePhotos: activeClientSourcePhotos });
     }
 
     try {
       await deleteSavedDrapedImages(client, ids);
 
       if (manager) {
-        manager.innerHTML = renderClientPhotoManager(client, activeSavedDrapedImages);
+        manager.innerHTML = renderClientPhotoManager(client, activeSavedDrapedImages, { sourcePhotos: activeClientSourcePhotos });
       }
     } catch (error) {
       if (manager) {
         manager.innerHTML = renderClientPhotoManager(client, activeSavedDrapedImages, {
+          sourcePhotos: activeClientSourcePhotos,
           error: error.message || "Unable to delete saved draped photos."
         });
       }
@@ -4252,6 +4315,7 @@
     const pageBackButton = event.target.closest("[data-ycs-clients-back-link]");
     const addClientButton = event.target.closest("[data-ycs-add-client]");
     const manageClientPhotosButton = event.target.closest("[data-ycs-manage-client-photos]");
+    const setActiveClientPhotoButton = event.target.closest("[data-ycs-set-active-client-photo]");
     const clientPhotoDeleteButton = event.target.closest("[data-ycs-delete-client-photo]");
     const clientPhotoBulkDeleteButton = event.target.closest("[data-ycs-bulk-delete-client-photos]");
     const clientPhotoSelectAll = event.target.closest("[data-ycs-client-photo-select-all]");
@@ -4431,6 +4495,26 @@
       event.preventDefault();
       showClientPhotoManager(manageClientPhotosButton.dataset.ycsManageClientPhotos)
         .catch((error) => setStatus(error.message || "Unable to load saved draped photos.", true));
+    }
+
+    if (setActiveClientPhotoButton) {
+      event.preventDefault();
+      const panel = setActiveClientPhotoButton.closest("[data-ycs-client-photo-manager-panel]");
+      const client = clients.find((item) => item.clientRecordId === panel?.dataset.clientRecordId);
+      if (!client) return;
+      setActiveClientPhotoButton.disabled = true;
+      setActiveClientPhotoButton.textContent = "Updating...";
+      try {
+        await setActiveClientSourcePhoto(client, setActiveClientPhotoButton.dataset.ycsSetActiveClientPhoto);
+        activeClientSourcePhotos = await fetchClientSourcePhotos(client);
+        const manager = detailEl.querySelector("[data-ycs-client-photo-manager]");
+        if (manager) {
+          manager.innerHTML = renderClientPhotoManager(client, activeSavedDrapedImages, { sourcePhotos: activeClientSourcePhotos });
+        }
+        setStatus("Active client photo updated.", true);
+      } catch (error) {
+        setStatus(error.message || "Unable to update the active photo.", true);
+      }
     }
 
     if (clientPhotoDeleteButton) {

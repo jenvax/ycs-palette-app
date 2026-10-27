@@ -2050,16 +2050,17 @@ async function loadSelectedPersonalStudioPhoto(photoId) {
   }
 }
 async function loadPersonalStudioPhotos() {
-  if (!(IS_PERSONAL_MODE || IS_DIY_MODE) || !VIEWER_CUSTOMER_ID || !APP_BASE_URL) return [];
+  const isClientLibrary = IS_TRADE_MODE && !IS_SIMPLE_ANALYST && !!state.clientRecordId;
+  if (!(IS_PERSONAL_MODE || IS_DIY_MODE || isClientLibrary) || !APP_BASE_URL) return [];
 
   try {
-    const response = await fetch(
-      APP_BASE_URL +
-        '/api/get-personal-studio-photos?' +
-        new URLSearchParams({
-          customerId: VIEWER_CUSTOMER_ID
-        }).toString()
-    );
+    const endpoint = isClientLibrary
+      ? '/api/get-consultant-client-photos'
+      : '/api/get-personal-studio-photos';
+    const query = isClientLibrary
+      ? { clientRecordId: state.clientRecordId }
+      : { customerId: VIEWER_CUSTOMER_ID };
+    const response = await fetch(APP_BASE_URL + endpoint + '?' + new URLSearchParams(query).toString());
 
     const data = await response.json();
 
@@ -2074,20 +2075,66 @@ async function loadPersonalStudioPhotos() {
   }
 }
 
-function openPersonalPhotoInPrep(buttonEl) {
+async function openPersonalPhotoInPrep(buttonEl) {
   const photoId = String(buttonEl.dataset.photoId || '').trim();
   const photoUrl = String(buttonEl.dataset.photoUrl || '').trim();
   const originalUrl = String(buttonEl.dataset.originalUrl || '').trim();
   const adjustedUrl = String(buttonEl.dataset.adjustedUrl || '').trim();
+  const isLegacyPhoto = buttonEl.dataset.legacyPhoto === 'true';
 
-  state.customerId = VIEWER_CUSTOMER_ID;
-  state.clientRecordId = null;
-  state.selectedPersonalPhotoId = photoId || null;
+  const isClientLibrary = IS_TRADE_MODE && !IS_SIMPLE_ANALYST && !!state.clientRecordId;
+
+  if (isClientLibrary && !isLegacyPhoto) {
+    const response = await fetch(APP_BASE_URL + '/api/set-active-photo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        clientRecordId: state.clientRecordId,
+        photoId: photoId,
+        photoSource: 'PersonalStudioPhotos',
+        photoType: 'active'
+      })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      alert(data.error || 'Could not make this the active client photo.');
+      return;
+    }
+  } else if (!isClientLibrary) {
+    state.customerId = VIEWER_CUSTOMER_ID;
+    state.clientRecordId = null;
+  }
+  state.selectedPersonalPhotoId = isLegacyPhoto ? null : (photoId || null);
   state.originalPhotoUrl = originalUrl || photoUrl || null;
   state.adjustedPhotoUrl = adjustedUrl || null;
   state.activePhotoUrl = photoUrl || null;
   state.currentBasePhotoUrl = photoUrl || originalUrl || null;
   state.justUploadedNewPhoto = false;
+
+  document.querySelectorAll('.ycs-prep-open-personal-photo-btn').forEach(function (card) {
+    const selected = card === buttonEl;
+    card.classList.toggle('is-selected', selected);
+    card.setAttribute('aria-pressed', selected ? 'true' : 'false');
+    if (isClientLibrary) {
+      const button = card.querySelector('.ycs-photo-prep-personal-actions button');
+      if (button) button.textContent = selected ? 'Active Photo' : 'Use This Photo';
+      const meta = card.querySelector('.ycs-photo-prep-personal-meta');
+      if (meta) {
+        meta.innerHTML = meta.textContent.replace(/^Active photo\s*·\s*/, '');
+        if (selected) meta.insertAdjacentHTML('afterbegin', '<strong>Active photo</strong> · ');
+      }
+    }
+  });
+
+  const nextUrl = new URL(window.location.href);
+  if (isLegacyPhoto) {
+    nextUrl.searchParams.delete('photoId');
+    nextUrl.searchParams.delete('photoSource');
+  } else {
+    nextUrl.searchParams.set('photoId', photoId);
+    nextUrl.searchParams.set('photoSource', 'PersonalStudioPhotos');
+  }
+  window.history.replaceState({}, '', nextUrl.toString());
 
   updateStatus();
   updateStartAnalysisLink();
@@ -2166,20 +2213,31 @@ async function archivePersonalStudioPhoto(photoId) {
 
 function renderPersonalStudioPhotos(photos) {
   if (!personalLibraryGridEl || !personalLibraryEmptyEl) return;
+  const isClientLibrary = IS_TRADE_MODE && !IS_SIMPLE_ANALYST && !!state.clientRecordId;
+
+  const libraryTitle = personalLibraryEl
+    ? personalLibraryEl.querySelector('.ycs-photo-prep-panel-title')
+    : null;
+  if (libraryTitle && isClientLibrary) libraryTitle.textContent = 'Client Photos';
+  if (personalUploadBtn && isClientLibrary) personalUploadBtn.textContent = 'Upload Another Photo';
 
   personalLibraryGridEl.innerHTML = '';
   personalLibraryEmptyEl.hidden = true;
 
   if (!Array.isArray(photos) || !photos.length) {
     if (personalLibraryHelpEl) {
-      personalLibraryHelpEl.textContent = 'Upload a photo to begin.';
+      personalLibraryHelpEl.textContent = isClientLibrary
+        ? 'Upload the first photo for this client.'
+        : 'Upload a photo to begin.';
     }
     personalLibraryEmptyEl.hidden = false;
     return;
   }
 
   if (personalLibraryHelpEl) {
-    personalLibraryHelpEl.textContent = 'Choose a photo for Draping Studio or upload a new one.';
+    personalLibraryHelpEl.textContent = isClientLibrary
+      ? 'Choose the active photo used throughout this client\'s professional tools.'
+      : 'Choose a photo for Draping Studio or upload a new one.';
   }
 
 personalLibraryEmptyEl.hidden = true;
@@ -2187,6 +2245,7 @@ personalLibraryEmptyEl.hidden = true;
   personalLibraryGridEl.innerHTML = photos.map(function (photo) {
     const thumb = photo.activePhotoUrl || photo.adjustedPhotoUrl || photo.originalPhotoUrl || '';
     const photoId = String(photo.photoId || '').trim();
+    const isSelected = photo.isActive || photoId === String(state.selectedPersonalPhotoId || '').trim();
     const updatedAt = photo.updatedAt
       ? new Date(photo.updatedAt).toLocaleDateString()
       : '';
@@ -2206,13 +2265,15 @@ personalLibraryEmptyEl.hidden = true;
 
     return `
       <div
-        class="ycs-photo-prep-personal-card ycs-prep-open-personal-photo-btn"
+        class="ycs-photo-prep-personal-card ycs-prep-open-personal-photo-btn${isSelected ? ' is-selected' : ''}"
         data-photo-id="${escapeHtml(photoId)}"
         data-photo-url="${escapeHtml(thumb)}"
         data-original-url="${escapeHtml(photo.originalPhotoUrl || '')}"
         data-adjusted-url="${escapeHtml(photo.adjustedPhotoUrl || '')}"
+        data-legacy-photo="${photo.isLegacy ? 'true' : 'false'}"
         role="button"
         tabindex="0"
+        aria-pressed="${isSelected ? 'true' : 'false'}"
       >
         <div class="ycs-photo-prep-personal-thumb">
           ${thumb ? `<img src="${escapeHtml(thumb)}" alt="Saved photo" />` : `<div class="ycs-photo-prep-empty"><p>No image</p></div>`}
@@ -2220,11 +2281,15 @@ personalLibraryEmptyEl.hidden = true;
 
         <div class="ycs-photo-prep-personal-body">
           <div class="ycs-photo-prep-personal-meta">
-            ${updatedAt ? `Updated ${escapeHtml(updatedAt)}` : 'Saved photo'}
+            ${isSelected && isClientLibrary ? '<strong>Active photo</strong> · ' : ''}${updatedAt ? `Updated ${escapeHtml(updatedAt)}` : 'Saved photo'}
           </div>
 
           <div class="ycs-photo-prep-personal-actions">
-            <a
+            ${isClientLibrary ? `
+              <button type="button" class="ycs-photo-prep-btn">
+                ${isSelected ? 'Active Photo' : 'Use This Photo'}
+              </button>
+            ` : `<a
   class="ycs-photo-prep-btn ycs-photo-prep-btn--secondary"
   href="/pages/photo-draping?${drapeQuery.toString()}"
 >
@@ -2236,7 +2301,7 @@ personalLibraryEmptyEl.hidden = true;
               data-photo-id="${escapeHtml(photoId)}"
             >
               Delete Photo
-            </button>
+            </button>`}
           </div>
         </div>
       </div>
@@ -2342,6 +2407,7 @@ function openFreeTrialClient(clientId) {
 
   if (createClientPanel) createClientPanel.hidden = hasClient || state.workspaceOpen;
   if (customerMetaEl) customerMetaEl.hidden = !hasClient;
+  if (personalLibraryEl) personalLibraryEl.hidden = !hasClient;
   if (photoPrepWorkspace) photoPrepWorkspace.hidden = !(hasClient && state.workspaceOpen);
 
   updateClientStatusNote();
@@ -3456,6 +3522,13 @@ hideLoadingView();
     } else {
       showWorkingPhoto(null);
     }
+
+    if (shouldLoadAsClientRecord) {
+      loadPersonalStudioPhotos().then(function (photos) {
+        renderPersonalStudioPhotos(photos);
+        syncVisibility();
+      });
+    }
   } catch (error) {
     if (optionPhotoId && options.fallbackToLatestOnMissing) {
       console.warn('Selected photo was not available; falling back to latest member photo.', error);
@@ -3806,6 +3879,7 @@ const saveUrl = (IS_PERSONAL_MODE || IS_DIY_MODE || (IS_MEMBER_PHOTO_MODE && !is
 	      isAdmin: IS_ADMIN,
 	      customerId: state.customerId,
 	      clientRecordId: state.clientRecordId,
+	      photoId: state.selectedPersonalPhotoId,
 	      saveType: 'original',
 	      firstName: clientMetaForSave.firstName,
 	      lastName: clientMetaForSave.lastName,
@@ -3831,7 +3905,7 @@ const saveUrl = (IS_PERSONAL_MODE || IS_DIY_MODE || (IS_MEMBER_PHOTO_MODE && !is
       }
 
       state.selectedPersonalPhotoId =
-  (IS_PERSONAL_MODE || IS_DIY_MODE || IS_MEMBER_PHOTO_MODE)
+  (IS_PERSONAL_MODE || IS_DIY_MODE || IS_MEMBER_PHOTO_MODE || state.clientRecordId)
     ? (saveData.photoId || state.selectedPersonalPhotoId || null)
     : null;
 
@@ -3859,7 +3933,7 @@ state.justUploadedNewPhoto = true;
       renderPhotoQualityResult(saveData.photoQuality);
 loadPhotoPrepUsage();
 
-if (IS_PERSONAL_MODE) {
+if (IS_PERSONAL_MODE || (IS_TRADE_MODE && !IS_SIMPLE_ANALYST && state.clientRecordId)) {
   showLoadingView('Loading your photos...');
 
   loadPersonalStudioPhotos()
@@ -3970,6 +4044,7 @@ if (IS_PERSONAL_MODE) {
           imageBase64: adjustedDataUrl,
 	          customerId: state.customerId,
 	          clientRecordId: state.clientRecordId,
+	          photoId: state.selectedPersonalPhotoId,
 	          saveType: 'adjusted',
 	          firstName: clientMetaForSave.firstName,
 	          lastName: clientMetaForSave.lastName,
@@ -4020,7 +4095,7 @@ if (IS_PERSONAL_MODE) {
     showWorkingPhoto(saveData.imageUrl);
     resetControls();
 
-    if (IS_PERSONAL_MODE) {
+    if (IS_PERSONAL_MODE || (IS_TRADE_MODE && !IS_SIMPLE_ANALYST && state.clientRecordId)) {
       loadPersonalStudioPhotos().then(function (photos) {
         renderPersonalStudioPhotos(photos);
       });
@@ -4230,9 +4305,13 @@ if (uploadBtn) {
 
 if (personalUploadBtn) {
   personalUploadBtn.addEventListener('click', function () {
-    state.customerId = VIEWER_CUSTOMER_ID;
-    state.clientRecordId = null;
+    const isClientLibrary = IS_TRADE_MODE && !IS_SIMPLE_ANALYST && !!state.clientRecordId;
+    if (!isClientLibrary) {
+      state.customerId = VIEWER_CUSTOMER_ID;
+      state.clientRecordId = null;
+    }
     state.selectedPersonalPhotoId = null;
+    state.selectedPhotoSource = 'PersonalStudioPhotos';
 
     updateCustomerMeta();
     updateStartAnalysisLink();
@@ -4307,6 +4386,11 @@ if (addMemberPhotoBtn) {
       fileInput.value = '';
       fileInput.click();
       return;
+    }
+
+    if (IS_TRADE_MODE && state.clientRecordId) {
+      state.selectedPersonalPhotoId = null;
+      state.selectedPhotoSource = 'PersonalStudioPhotos';
     }
 
     if (IS_ADMIN && IS_MEMBER_PHOTO_MODE) {
