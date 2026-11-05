@@ -41,15 +41,24 @@
 
   async function refreshNav(nav) {
     const customerId = String(nav.dataset.customerId || '').trim();
+    const refreshToken = String(Date.now()) + ':' + Math.random();
+    nav.dataset.diyNavRefreshToken = refreshToken;
     syncActiveState(nav);
     if (!customerId) return;
 
     try {
+      const currentParams = new URLSearchParams(window.location.search);
+      const selectedPhotoId = (currentParams.get('photoId') || '').trim();
+      const selectedPhotoSource = (currentParams.get('photoSource') || '').trim();
+      const photoQuery = new URLSearchParams({ customerId: customerId });
+      if (selectedPhotoId) photoQuery.set('photoId', selectedPhotoId);
+      if (selectedPhotoSource) photoQuery.set('photoSource', selectedPhotoSource);
       const response = await fetch(
-        APP_BASE_URL + '/api/get-photo?customerId=' + encodeURIComponent(customerId)
+        APP_BASE_URL + '/api/get-photo?' + photoQuery.toString()
       );
       if (!response.ok) return;
       const photo = await response.json();
+      if (nav.dataset.diyNavRefreshToken !== refreshToken) return;
       if (!photo || !photo.activePhotoUrl) return;
 
       nav.querySelectorAll('[data-diy-nav-step]').forEach(function (link) {

@@ -2276,6 +2276,16 @@ function openPersonalPhotoInPrep(buttonEl) {
     card.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
   });
 
+  const nextUrl = new URL(window.location.href);
+  if (photoId) {
+    nextUrl.searchParams.set('photoId', photoId);
+    nextUrl.searchParams.set('photoSource', 'PersonalStudioPhotos');
+  } else {
+    nextUrl.searchParams.delete('photoId');
+    nextUrl.searchParams.delete('photoSource');
+  }
+  window.history.replaceState({}, '', nextUrl.pathname + nextUrl.search);
+
   updateMyPhotosDrapingLink(photoId);
 
   updateStatus();
@@ -2288,6 +2298,10 @@ function openPersonalPhotoInPrep(buttonEl) {
     showWorkingPhoto(state.activePhotoUrl);
   } else {
     showWorkingPhoto(null);
+  }
+
+  if (window.YcsDiyWorkflowNav && typeof window.YcsDiyWorkflowNav.refresh === 'function') {
+    window.YcsDiyWorkflowNav.refresh();
   }
 }
 
