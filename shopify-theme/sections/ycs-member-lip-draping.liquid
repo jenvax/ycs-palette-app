@@ -5,7 +5,7 @@
 {% endif %}
 
 {% assign is_ycs_member = false %}
-{% if customer and palette_access_string contains ',YCSMEMBER,' or customer and palette_access_string contains ',TRADE,' %}
+{% if customer and palette_access_string contains ',YCSMEMBER,' or customer and palette_access_string contains ',TRADE,' or customer and palette_access_string contains ',YCS_ADMIN,' %}
   {% assign is_ycs_member = true %}
 {% endif %}
 
@@ -77,7 +77,7 @@
 {% endif %}
 
 {% assign is_trade = false %}
-{% if palette_access_string contains ',TRADE,' %}
+{% if palette_access_string contains ',TRADE,' or palette_access_string contains ',YCS_ADMIN,' %}
   {% assign is_trade = true %}
 {% endif %}
 {% if is_trade_july_cohort %}
