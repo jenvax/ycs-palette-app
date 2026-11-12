@@ -30,6 +30,15 @@
     error.textContent = message || '';
   }
 
+  function showPageError(message) {
+    var pageError = root.querySelector('[data-msg]');
+    if (!pageError) return;
+    pageError.hidden = !message;
+    pageError.textContent = message || '';
+    pageError.className = message ? 'error' : '';
+    if (message) pageError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
   function refreshPreviewTools() {
     var visible = Boolean(preview.src && !preview.hidden);
     tools.hidden = !visible;
@@ -70,6 +79,7 @@
     zoom.max = String(Math.max(3, Math.ceil((coverScale / containScale) * 3)));
     zoom.value = '1';
     showError('');
+    showPageError('');
     draw();
     dialog.showModal();
   }
@@ -78,15 +88,20 @@
     if (!file) return;
     source = null;
     if (!/^image\/(jpeg|png|webp)$/.test(file.type) || file.size > 5 * 1024 * 1024) {
-      showError('Choose a JPG, PNG, or WebP image up to 5 MB.');
-      dialog.showModal();
+      showError('');
+      if (dialog.open) dialog.close();
+      showPageError('Please choose a JPG, PNG, or WebP image that is 5 MB or smaller.');
       return;
     }
     var reader = new FileReader();
     reader.onload = function () {
       var image = new Image();
       image.onload = function () { openImage(image); };
-      image.onerror = function () { showError('This image could not be opened. Choose another photo.'); dialog.showModal(); };
+      image.onerror = function () {
+        showError('');
+        if (dialog.open) dialog.close();
+        showPageError('This image could not be opened. Please choose another JPG, PNG, or WebP image.');
+      };
       image.src = reader.result;
     };
     reader.readAsDataURL(file);

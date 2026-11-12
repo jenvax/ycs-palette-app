@@ -17,6 +17,16 @@
   var listing = null;
   var image = { imageUrl: '', imagePublicId: '' };
   var saveTimer = null;
+  var requiredFieldLabels = {
+    name: 'your name',
+    city: 'city',
+    stateProvince: 'state / province',
+    country: 'country',
+    services: 'services offered',
+    websiteUrl: 'website URL',
+    contactEmail: 'contact email',
+    bio: 'short bio'
+  };
 
   function request(body) {
     return fetch(endpoint, {
@@ -39,6 +49,7 @@
     globalStatus.hidden = !message;
     globalStatus.textContent = message || '';
     globalStatus.className = isError ? 'error' : '';
+    if (message && isError) globalStatus.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   function showFormStatus(message) {
@@ -219,6 +230,24 @@
 
   function publish() {
     var data = form.hidden ? (savedDraft() || listing) : formData();
+    var missingFields = Object.keys(requiredFieldLabels).filter(function (field) {
+      return !String((data && data[field]) || '').trim();
+    });
+    if (!data || !data.imageUrl) missingFields.push('image');
+    if (missingFields.length) {
+      if (form.hidden) showForm();
+      var firstMissing = missingFields[0];
+      var firstInput = firstMissing === 'image' ? form.elements.image : form.elements[firstMissing];
+      var labels = missingFields.map(function (field) {
+        return field === 'image' ? 'profile photo or business logo' : requiredFieldLabels[field];
+      });
+      showMessage('Please complete: ' + labels.join(', ') + '.', true);
+      if (firstInput) {
+        firstInput.setAttribute('aria-invalid', 'true');
+        firstInput.focus({ preventScroll: true });
+      }
+      return;
+    }
     showMessage('Publishing listing...');
     root.querySelectorAll('[data-publish], [data-update], [data-status-action]').forEach(function (button) { button.disabled = true; });
     request({ operation: 'publish', listing: data }).then(function (response) {
@@ -230,7 +259,11 @@
       showPreview(listing);
       showMessage('Your listing is published.');
     }).catch(function (error) {
-      showMessage(error.message + (error.errors ? ' ' + Object.keys(error.errors).join(', ') + '.' : ''), true);
+      var errorFields = error.errors ? Object.keys(error.errors) : [];
+      var errorLabels = errorFields.map(function (field) {
+        return field === 'imageUrl' ? 'profile photo or business logo' : (requiredFieldLabels[field] || field);
+      });
+      showMessage(error.message + (errorLabels.length ? ': ' + errorLabels.join(', ') + '.' : ''), true);
     }).finally(function () {
       root.querySelectorAll('[data-publish], [data-update], [data-status-action]').forEach(function (button) { button.disabled = false; });
     });
@@ -261,6 +294,7 @@
   root.querySelectorAll('[data-cancel]').forEach(function (button) { button.addEventListener('click', function () { showPreview(listing); }); });
   form.addEventListener('input', scheduleDraftSave);
   form.addEventListener('change', scheduleDraftSave);
+  form.addEventListener('input', function (event) { event.target.removeAttribute('aria-invalid'); });
   form.elements.bio.addEventListener('input', function () { root.querySelector('[data-count]').textContent = this.value.length; });
 
   form.elements.image.onchange = function () {
