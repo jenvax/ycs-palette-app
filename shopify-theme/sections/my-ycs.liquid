@@ -7,9 +7,13 @@
 {% if customer %}
   {% assign ycs_member_tags = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
   {% assign ycs_member_access = true %}
-  {% if ycs_member_tags contains ',YCSMEMBER,' or ycs_member_tags contains ',TRADE,' or ycs_member_tags contains ',YCS_ADMIN,' %}
-    {% assign ycs_professional_access = true %}
-  {% endif %}
+  {% for customer_tag in customer.tags %}
+    {% assign normalized_customer_tag = customer_tag | strip | upcase %}
+    {% if normalized_customer_tag == 'YCSMEMBER' or normalized_customer_tag == 'TRADE' or normalized_customer_tag == 'YCS_ADMIN' %}
+      {% assign ycs_professional_access = true %}
+      {% break %}
+    {% endif %}
+  {% endfor %}
   {% if ycs_member_tags contains ',DIYMEMBER,' %}
     {% assign ycs_diy_access = true %}
   {% endif %}

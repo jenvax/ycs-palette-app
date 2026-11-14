@@ -1,6 +1,13 @@
-{% assign tags = customer.tags | join: ',' | upcase | prepend: ',' | append: ',' %}
 {% assign paid = false %}{% assign free = false %}
-{% if tags contains ',YCSMEMBER,' or tags contains ',TRADE,' or tags contains ',YCS_ADMIN,' %}{% assign paid = true %}{% endif %}
+{% if customer %}
+  {% for customer_tag in customer.tags %}
+    {% assign normalized_customer_tag = customer_tag | strip | upcase %}
+    {% if normalized_customer_tag == 'YCSMEMBER' or normalized_customer_tag == 'TRADE' or normalized_customer_tag == 'YCS_ADMIN' %}
+      {% assign paid = true %}
+      {% break %}
+    {% endif %}
+  {% endfor %}
+{% endif %}
 {% if customer and paid == false %}{% assign free = true %}{% endif %}
 <section class="dir{% if free %} dir--locked{% endif %}"{% if paid %} data-directory-manager data-url="/apps/palette-data" data-customer-id="{{ customer.id }}"{% endif %}>
   <nav>{% render 'my-ycs-logo' %}<a href="/pages/my-ycs">Back to My YCS</a><a href="mailto:support@yourcolorstyle.com">Contact</a></nav>
