@@ -1,0 +1,54 @@
+{% assign review_access = false %}
+{% assign certification_access = false %}
+{% if customer %}
+  {% for customer_tag in customer.tags %}
+    {% assign normalized_customer_tag = customer_tag | strip | upcase %}
+    {% if normalized_customer_tag == 'YCSMEMBER' %}
+      {% assign review_access = true %}
+    {% elsif normalized_customer_tag == 'YCSMEMBER_CERTIFICATION' %}
+      {% assign certification_access = true %}
+    {% endif %}
+  {% endfor %}
+{% endif %}
+
+<main class="ycs-review-assignment">
+  {% render 'my-ycs-logo' %}
+
+  {% if customer == nil %}
+    <h1>{{ page.title | escape }}</h1>
+    <p>Please sign in to access your color analysis review.</p>
+    <a class="ycs-review-assignment__button" href="{{ routes.account_login_url }}?return_url={{ request.path | url_encode }}">Sign In</a>
+  {% elsif review_access and certification_access == false %}
+    <a class="ycs-review-assignment__back" href="/pages/my-ycs">Back to My YCS</a>
+    <article>
+      <p class="ycs-review-assignment__kicker">Color Analysis Review</p>
+      <h1>{{ page.title | escape }}</h1>
+      <div class="ycs-review-assignment__content rte">{{ page.content }}</div>
+    </article>
+  {% else %}
+    {% render 'my-ycs-locked-access', lock_heading: 'Color Analysis Review Access Required', lock_body: 'This review assignment is available to YCS Professional Members who are not currently enrolled in the certification assignment program.', lock_button_label: 'Back to My YCS', lock_button_url: '/pages/my-ycs' %}
+  {% endif %}
+</main>
+
+{% style %}
+  .shopify-section-header,#shopify-section-header,.site-header,.header-wrapper,.header,#shopify-section-footer,.shopify-section--footer,.site-footer,footer{display:none!important}
+  body{margin-top:0!important;padding-top:0!important}
+  .ycs-review-assignment{max-width:980px;margin:0 auto;padding:104px 24px 80px;color:#292832;font-family:Poppins,Arial,Tahoma,Verdana,sans-serif}
+  .ycs-review-assignment__back{display:inline-flex;margin:34px 0 30px;color:#6546ce;font-weight:700;text-decoration:none}
+  .ycs-review-assignment__kicker{margin:0 0 10px;color:#6546ce;font-size:13px;font-weight:700;text-transform:uppercase}
+  .ycs-review-assignment h1{margin:0 0 28px;color:#12253f;font-family:Georgia,"Times New Roman",serif;font-size:44px;font-weight:400;line-height:1.14;letter-spacing:0}
+  .ycs-review-assignment__content{color:#505868;font-size:18px;line-height:1.7}
+  .ycs-review-assignment__content h2,.ycs-review-assignment__content h3{color:#12253f;font-family:Georgia,"Times New Roman",serif;font-weight:400;letter-spacing:0}
+  .ycs-review-assignment__content a{color:#6546ce}
+  .ycs-review-assignment__button{display:inline-flex;margin-top:18px;padding:12px 24px;border-radius:8px;background:#7b5cff;color:#fff!important;font-weight:700;text-decoration:none}
+  @media(max-width:700px){.ycs-review-assignment{padding:92px 16px 60px}.ycs-review-assignment h1{font-size:34px}.ycs-review-assignment__content{font-size:17px}}
+{% endstyle %}
+
+{% schema %}
+{
+  "name": "Color analysis review",
+  "settings": [],
+  "presets": [{ "name": "Personal review assignment" }]
+}
+{% endschema %}
+
