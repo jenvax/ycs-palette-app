@@ -10,9 +10,10 @@ test("YCSMEMBER and TRADE have directory access", () => {
   assert.equal(hasDirectoryAccess(["FREEMEMBER"]), false);
 });
 
-test("publish validation requires complete valid fields", () => {
+test("publish validation allows an optional valid website URL", () => {
   const listing = normalizeDirectoryListing({ name:"Jen", city:"Richmond", stateProvince:"VA", country:"USA", services:"Virtual", websiteUrl:"https://example.com", contactEmail:"jen@example.com", imageUrl:"https://res.cloudinary.com/example/image.jpg", bio:"I help clients understand their best colors." });
   assert.deepEqual(validateDirectoryListing(listing), {});
+  assert.deepEqual(validateDirectoryListing({ ...listing, websiteUrl:"" }), {});
   assert.ok(validateDirectoryListing(normalizeDirectoryListing({})).name);
   assert.ok(validateDirectoryListing({ ...listing, websiteUrl:"nope" }).websiteUrl);
 });

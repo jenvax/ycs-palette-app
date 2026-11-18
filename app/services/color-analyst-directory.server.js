@@ -41,7 +41,7 @@ function validUrl(value) {
 
 export function validateDirectoryListing(listing) {
   const errors = {};
-  ["name", "city", "stateProvince", "country", "services", "websiteUrl", "contactEmail", "imageUrl", "bio"].forEach((field) => {
+  ["name", "city", "stateProvince", "country", "services", "contactEmail", "imageUrl", "bio"].forEach((field) => {
     if (!listing[field]) errors[field] = "Required";
   });
   if (listing.websiteUrl && !validUrl(listing.websiteUrl)) errors.websiteUrl = "Enter a complete website URL";

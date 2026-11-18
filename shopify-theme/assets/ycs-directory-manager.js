@@ -23,7 +23,6 @@
     stateProvince: 'state / province',
     country: 'country',
     services: 'services offered',
-    websiteUrl: 'website URL',
     contactEmail: 'contact email',
     bio: 'short bio'
   };
